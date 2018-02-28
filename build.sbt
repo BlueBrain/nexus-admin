@@ -58,3 +58,5 @@ inThisBuild(
     releaseEarlyNoGpg             := true,
     releaseEarlyEnableSyncToMaven := false,
   ))
+
+addCommandAlias("review", ";clean;scalafmtSbtCheck;coverage;scapegoat;test;coverageReport;coverageAggregate")
