@@ -15,7 +15,7 @@ class IdRefSpec extends WordSpecLike with Matchers with Randomness {
     }
 
     "construct a prefix mapping" in {
-      idRef.prefix shouldEqual Prefix("nxv","http:/example.com/prefix/")
+      idRef.prefix shouldEqual Prefix("nxv", "http:/example.com/prefix/")
     }
 
     "construct an id" in {

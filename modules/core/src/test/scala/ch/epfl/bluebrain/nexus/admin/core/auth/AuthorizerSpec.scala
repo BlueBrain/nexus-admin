@@ -76,7 +76,7 @@ class AuthorizerSpec
 
     "does not have access when the path does not have the provided permissions" in {
       val path = "a" / "b"
-      whenReady(authorizer.validateAccess(path, Own).failed){ e =>
+      whenReady(authorizer.validateAccess(path, Own).failed) { e =>
         e shouldEqual AuthorizeError.UnmatchedPermission(Own)
       }
     }

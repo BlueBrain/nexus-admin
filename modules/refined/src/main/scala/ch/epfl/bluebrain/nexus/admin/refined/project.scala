@@ -13,7 +13,7 @@ object project extends ProjectInferences {
 
 trait ProjectInferences {
   // $COVERAGE-OFF$
-  final implicit val inference: Inference[ProjectReferencePredicate, IRelativeRef] =
+  final implicit val projectInference: Inference[ProjectReferencePredicate, IRelativeRef] =
     Inference.alwaysValid("A Project Reference is always a valid IRelativeRef")
   // $COVERAGE-ON$
 

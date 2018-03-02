@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.admin.ld
 
 import ch.epfl.bluebrain.nexus.admin.ld.JsonLD.IdType
-import ch.epfl.bluebrain.nexus.admin.refined.ld.Id
+import ch.epfl.bluebrain.nexus.admin.refined.ld.{DecomposableId, Id}
 import io.circe.Json
 import shapeless.Typeable
 
@@ -16,14 +16,14 @@ trait JsonLD {
   def json: Json
 
   /**
-    * The root ''subject'' of the JSON-LD
+    * The optionally available root ''subject'' of the JSON-LD
     */
-  def id: IdType
+  def id: Option[IdType]
 
   /**
-    * The root ''rdf:type'' of the JSON-LD
+    * The optionally available root ''rdf:type'' of the JSON-LD
     */
-  def tpe: Option[Curie]
+  def tpe: Option[IdRef]
 
   /**
     * Attempt to fetch the object for the given predicate ''uri''
@@ -62,7 +62,7 @@ trait JsonLD {
 
 object JsonLD {
 
-//  final def apply(json: Json): JsonLD = JenaJsonLD(json)
+  final def apply(json: Json): JsonLD = JenaJsonLD(json)
 
   implicit def toJson(value: JsonLD): Json = value.json
 
@@ -77,11 +77,11 @@ object JsonLD {
   final case object Empty extends IdType
 
   /**
-    * A ''uri'' Id
+    * An id which is a [[DecomposableId]] (uri)
     *
     * @param value the uri Id
     */
-  final case class IdTypeUri(value: Id) extends IdType
+  final case class IdTypeUri(value: DecomposableId) extends IdType
 
   /**
     * An id which is a Blank Node (does not have a uri)
