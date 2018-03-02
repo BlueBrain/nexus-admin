@@ -16,7 +16,7 @@ final case class Ref[A: IdResolvable](value: A)
 
 object Ref {
   // $COVERAGE-OFF$
-  final implicit val redToResolvable: IdResolvable[ProjectReference] = (a: ProjectReference) => {
+  final implicit val refToResolvable: IdResolvable[ProjectReference] = (a: ProjectReference) => {
     IdRef("projects", "https://nexus.example.ch/v1/projects/", a)
   }
   // $COVERAGE-ON$
