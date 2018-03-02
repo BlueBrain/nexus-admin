@@ -4,7 +4,7 @@ import ch.epfl.bluebrain.nexus.commons.test.Randomness
 import org.scalatest.{Matchers, WordSpecLike}
 import eu.timepit.refined.auto._
 import cats.syntax.show._
-import ch.epfl.bluebrain.nexus.admin.ld.uri.Id
+import ch.epfl.bluebrain.nexus.admin.refined.ld.Id
 class IdRefSpec extends WordSpecLike with Matchers with Randomness {
   "A IdRef" should {
     val idRef: IdRef = IdRef("nxv", "http:/example.com/prefix/", "rev")

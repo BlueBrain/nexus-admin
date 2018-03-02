@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.admin.ld
 
 import cats.Show
 import cats.syntax.show._
-import ch.epfl.bluebrain.nexus.admin.ld.uri.{Id, PrefixName, PrefixValue, Reference}
+import ch.epfl.bluebrain.nexus.admin.refined.ld.{Id, PrefixName, PrefixValue, Reference}
 import eu.timepit.refined.api.RefType._
 
 /**

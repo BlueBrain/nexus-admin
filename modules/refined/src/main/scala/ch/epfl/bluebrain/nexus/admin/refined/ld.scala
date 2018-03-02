@@ -1,29 +1,32 @@
-package ch.epfl.bluebrain.nexus.admin.ld
+package ch.epfl.bluebrain.nexus.admin.refined
 
 import akka.http.scaladsl.model.Uri.Query
-import eu.timepit.refined.api.{Refined, Validate}
 import akka.http.scaladsl.model.{Uri => AkkaUri}
-import ch.epfl.bluebrain.nexus.admin.ld.uri.Uri._
-import eu.timepit.refined.string.MatchesRegex
+import ch.epfl.bluebrain.nexus.admin.refined.ld.Uri._
 import eu.timepit.refined._
+import eu.timepit.refined.api.{Refined, Validate}
+import eu.timepit.refined.string.MatchesRegex
 
 import scala.util.Try
 
 @SuppressWarnings(Array("EmptyCaseClass"))
-object uri {
+object ld {
 
   /**
-    * Refined type for [[Prefix]] names.
+    * Refined type for prefix names.
     */
   type PrefixName = String Refined MatchesRegex[W.`"[a-zA-Z_][a-zA-Z0-9-_.]*"`.T]
+
   /**
-    * Refined type for [[Prefix]] values.
+    * Refined type for prefix values.
     */
   type PrefixValue = String Refined PrefixUri
+
   /**
-    * Refined type for [[Curie]] references.
+    * Refined type for curie references.
     */
   type Reference = String Refined IRelativeRef
+
   /**
     * Refined type for RDF ids.
     */
@@ -32,7 +35,7 @@ object uri {
   final case class Uri()
 
   object Uri {
-    private[uri] def akkaUri(s: String): Try[AkkaUri] =
+    private[ld] def akkaUri(s: String): Try[AkkaUri] =
       Try(AkkaUri(s)).filter(_.isAbsolute)
 
     final implicit def uriValidate: Validate.Plain[String, Uri] = {
@@ -56,7 +59,7 @@ object uri {
                   case Some(fragment) => fragment.isEmpty
                   case None           => uri.path.endsWithSlash
                 }
-              case _           => false
+              case _ => false
             }
           }
           .getOrElse(false)

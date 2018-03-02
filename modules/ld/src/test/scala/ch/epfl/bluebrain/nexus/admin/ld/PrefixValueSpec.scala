@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.admin.ld
 
-import ch.epfl.bluebrain.nexus.admin.ld.uri._
+import ch.epfl.bluebrain.nexus.admin.refined.ld._
 import ch.epfl.bluebrain.nexus.commons.test.Randomness
 import eu.timepit.refined.api.RefType._
 import org.scalatest.{EitherValues, Inspectors, Matchers, WordSpecLike}

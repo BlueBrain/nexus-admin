@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.admin.ld
 
 import cats.Show
-import ch.epfl.bluebrain.nexus.admin.ld.uri.{PrefixName, Reference}
+import ch.epfl.bluebrain.nexus.admin.refined.ld.{PrefixName, Reference}
 
 /**
   * A curie representation as defined in https://www.w3.org/TR/curie/.
