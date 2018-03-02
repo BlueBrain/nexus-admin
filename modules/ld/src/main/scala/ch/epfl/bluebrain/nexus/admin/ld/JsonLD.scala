@@ -71,26 +71,23 @@ object JsonLD {
     */
   sealed trait IdType extends Product with Serializable
 
-  object IdType {
+  /**
+    * An empty ''id'' due to graph recursion
+    */
+  final case object Empty extends IdType
 
-    /**
-      * An empty ''id'' due to graph recursion
-      */
-    final case object Empty extends IdType
+  /**
+    * A ''uri'' Id
+    *
+    * @param value the uri Id
+    */
+  final case class IdTypeUri(value: Id) extends IdType
 
-    /**
-      * A ''uri'' Id
-      *
-      * @param value the uri Id
-      */
-    final case class IdTypeUri(value: Id) extends IdType
-
-    /**
-      * An id which is a Blank Node (does not have a uri)
-      *
-      * @param value the blank node auto-generated string
-      */
-    final case class IdTypeBlank(value: String) extends IdType
-  }
+  /**
+    * An id which is a Blank Node (does not have a uri)
+    *
+    * @param value the blank node auto-generated string
+    */
+  final case class IdTypeBlank(value: String) extends IdType
 
 }
