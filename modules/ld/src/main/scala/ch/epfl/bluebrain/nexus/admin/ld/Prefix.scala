@@ -24,7 +24,7 @@ object Prefix {
     *
     * @param length the length of the prefix name to be created
     */
-  def randomPrefixName(length: Int Refined Greater[W.`1`.T] = 1): PrefixName =
+  def randomPrefixName(length: Int Refined Greater[W.`1`.T] = 5): PrefixName =
     refinedRefType.unsafeWrap(genString(1, startPool) + genString(genInt(length - 1), pool))
 
 }
