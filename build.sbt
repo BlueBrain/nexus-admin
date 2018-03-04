@@ -57,23 +57,33 @@ lazy val refinedEval = "eu.timepit" %% "refined-eval" % refinedVersion // option
 lazy val commonsIam  = "ch.epfl.bluebrain.nexus" %% "iam"          % commonsVersion
 lazy val commonsTest = "ch.epfl.bluebrain.nexus" %% "commons-test" % commonsVersion
 
+lazy val refinements = project
+  .in(file("modules/refined"))
+  .settings(
+    name            := "admin-refined",
+    moduleName      := "admin-refined",
+    coverageEnabled := false,
+    libraryDependencies ++= Seq(
+      akkaHttpCore,
+      refined,
+      refinedCats,
+      refinedEval
+    )
+  )
 // Projects
 lazy val ld = project
+  .dependsOn(refinements)
   .in(file("modules/ld"))
   .settings(
     name       := "admin-ld",
     moduleName := "admin-ld",
     libraryDependencies ++= Seq(
-      akkaHttpCore,
       catsCore,
       circeCore,
+      commonsTest,
       jenaArq,
-      refined,
-      refinedCats,
-      refinedEval,
       shapeless,
-      commonsTest % Test,
-      scalaTest   % Test
+      scalaTest % Test
     )
   )
 
@@ -85,7 +95,7 @@ lazy val root = project
     moduleName            := "admin",
     coverageFailOnMinimum := false
   )
-  .aggregate(ld)
+  .aggregate(ld, refinements)
 
 /* ********************************************************
  ******************** Grouped Settings ********************
