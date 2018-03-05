@@ -6,6 +6,7 @@ import akka.http.scaladsl.model.{Uri => AkkaUri}
 import ch.epfl.bluebrain.nexus.admin.refined.ld.Uri._
 import ch.epfl.bluebrain.nexus.admin.refined.ld.{DecomposableUri, Uri}
 import eu.timepit.refined._
+import eu.timepit.refined.api.Inference.==>
 import eu.timepit.refined.api.RefType.refinedRefType
 import eu.timepit.refined.api.{Inference, Refined, Validate}
 import eu.timepit.refined.string.MatchesRegex
@@ -129,6 +130,6 @@ object ld extends LdInferences {
 
 trait LdInferences {
 
-  final implicit val decompIdInference: Inference[DecomposableUri, Uri] =
+  final implicit val decompIdInference: DecomposableUri ==> Uri =
     Inference.alwaysValid("A ConvertibleId is always valid Uri")
 }

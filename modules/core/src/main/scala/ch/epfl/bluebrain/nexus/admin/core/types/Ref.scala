@@ -1,7 +1,7 @@
-package ch.epfl.bluebrain.nexus.admin.ld
+package ch.epfl.bluebrain.nexus.admin.core.types
 
-import ch.epfl.bluebrain.nexus.admin.refined.project.ProjectReference
-import ch.epfl.bluebrain.nexus.admin.refined.project._
+import ch.epfl.bluebrain.nexus.admin.ld.{IdRef, IdResolvable}
+import ch.epfl.bluebrain.nexus.admin.refined.project.{ProjectReference, _}
 import eu.timepit.refined.auto._
 
 /**
@@ -19,5 +19,6 @@ object Ref {
   final implicit val refToResolvable: IdResolvable[ProjectReference] = (a: ProjectReference) => {
     IdRef("projects", "https://nexus.example.ch/v1/projects/", a)
   }
+  final implicit def aToRef[A: IdResolvable](value: A): Ref[A] = Ref(value)
   // $COVERAGE-ON$
 }

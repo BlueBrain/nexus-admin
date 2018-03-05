@@ -45,10 +45,7 @@ private[ld] final case class JenaJsonLD(json: Json) extends JsonLD {
   }
 
   private def isSelfPredicate(node: Node): Boolean =
-    node.toId match {
-      case Right(idRef) => idRef == nxv.self
-      case _            => false
-    }
+    node.toId.map(_ == nxv.self).getOrElse(false)
 
   override lazy val id: Option[IdType] = idNode.flatMap {
     case node: Node_URI   => applyRef[DecomposableId](node.getURI).map(IdTypeUri).toOption
@@ -70,7 +67,9 @@ private[ld] final case class JenaJsonLD(json: Json) extends JsonLD {
     graph.find(Node.ANY, p, Node.ANY).asScala.map(_.getObject).find(node => node.isLiteral || node.isURI).flatMap {
       case node: Node_URI     => T.cast(node.getURI) orElse T.cast(Uri(node.getURI))
       case node: Node_Literal => T.cast(node.getLiteral.getValue)
-      case _                  => None
+      // $COVERAGE-OFF$
+      case _ => None
+      // $COVERAGE-ON$
     }
   }
 
