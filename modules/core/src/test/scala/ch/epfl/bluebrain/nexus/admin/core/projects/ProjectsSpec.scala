@@ -6,6 +6,7 @@ import cats.instances.try_._
 import ch.epfl.bluebrain.nexus.admin.core.CallerCtx
 import ch.epfl.bluebrain.nexus.admin.core.CallerCtx._
 import ch.epfl.bluebrain.nexus.admin.core.Fault.{CommandRejected, Unexpected}
+import ch.epfl.bluebrain.nexus.admin.core.config.AppConfig.ProjectsConfig
 import ch.epfl.bluebrain.nexus.admin.core.projects.Project.Config
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceRejection._
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceState._
@@ -21,16 +22,18 @@ import ch.epfl.bluebrain.nexus.commons.test.Randomness
 import ch.epfl.bluebrain.nexus.sourcing.mem.MemoryAggregate
 import ch.epfl.bluebrain.nexus.sourcing.mem.MemoryAggregate._
 import eu.timepit.refined.api.RefType.{applyRef, refinedRefType}
+import eu.timepit.refined.auto._
 import io.circe.Json
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, TryValues, WordSpecLike}
 
 import scala.util.{Failure, Success, Try}
-
+import scala.concurrent.duration._
 class ProjectsSpec extends WordSpecLike with Matchers with TryValues with MockitoSugar with Randomness {
 
   private implicit val caller: AnonymousCaller = AnonymousCaller(Anonymous())
   private implicit val clock: Clock            = Clock.systemUTC
+  private implicit val config: ProjectsConfig = ProjectsConfig(3 seconds, "https://nexus.example.ch/v1/projects/")
   private val aggProject                       = MemoryAggregate("projects")(Initial, next, eval).toF[Try]
   private val projects                         = Projects(aggProject)
 

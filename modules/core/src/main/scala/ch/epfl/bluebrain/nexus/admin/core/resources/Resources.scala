@@ -1,5 +1,7 @@
 package ch.epfl.bluebrain.nexus.admin.core.resources
 
+import java.time.Clock
+
 import cats._
 import cats.implicits._
 import cats.MonadError
@@ -24,12 +26,14 @@ import journal.Logger
   * @param agg    the aggregate definition
   * @param F      a MonadError typeclass instance for ''F[_]''
   * @param logger the logger
+  * @param clock  the clock used to issue instants
   * @tparam F the monadic effect type
   * @tparam A the generic type of the id's ''reference''
   */
 class Resources[F[_], A: IdResolvable](agg: Agg[F])(implicit
                                                     F: MonadError[F, Throwable],
-                                                    logger: Logger) {
+                                                    logger: Logger,
+                                                    clock: Clock) {
 
   /**
     * Certain validation to take place during creation operations.
