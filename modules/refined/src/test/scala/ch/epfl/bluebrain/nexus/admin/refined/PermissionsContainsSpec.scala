@@ -21,9 +21,9 @@ class PermissionsContainsSpec extends WordSpecLike with Matchers with EitherValu
 
     "be constructed with inference" in {
       val perms = Permissions(Permission("projects/manage"))
-      applyRef[HasManageProjects](perms).right.value : HasReadProjects
-      applyRef[HasManageProjects](perms).right.value : HasOwnProjects
-      applyRef[HasManageProjects](perms).right.value : HasWriteProjects
+      applyRef[HasManageProjects](perms).right.value: HasReadProjects
+      applyRef[HasManageProjects](perms).right.value: HasOwnProjects
+      applyRef[HasManageProjects](perms).right.value: HasWriteProjects
     }
   }
 }

@@ -8,49 +8,111 @@ import ch.epfl.bluebrain.nexus.admin.core.projects.Project.Value
 import ch.epfl.bluebrain.nexus.admin.core.projects.Projects._
 import ch.epfl.bluebrain.nexus.admin.core.resources.Resources.Agg
 import ch.epfl.bluebrain.nexus.admin.core.resources.{Resource, Resources}
-import ch.epfl.bluebrain.nexus.admin.core.types.ProjectReferenceOps._
+import ch.epfl.bluebrain.nexus.admin.core.types.PrefixValueOps._
 import ch.epfl.bluebrain.nexus.admin.core.types.Ref._
 import ch.epfl.bluebrain.nexus.admin.core.types.RefVersioned
+import ch.epfl.bluebrain.nexus.admin.ld.IdRef
 import ch.epfl.bluebrain.nexus.admin.refined.permissions._
 import ch.epfl.bluebrain.nexus.admin.refined.project._
-import io.circe.Json
 import io.circe.syntax._
 import journal.Logger
 
+/**
+  * Bundles operations that can be performed against a project using the underlying persistence abstraction.
+  *
+  * @param resources the underlying generic resource operations
+  * @param F         a MonadError typeclass instance for ''F[_]''
+  * @tparam F the monadic effect type
+  */
 class Projects[F[_]](resources: Resources[F, ProjectReference])(implicit F: MonadError[F, Throwable]) {
 
   private val tags = Set("project")
 
-  def create(reference: ProjectReference, value: Value)(
-      implicit ctx: CallerCtx,
-      validatePerms: F[HasOwnProjects]): F[RefVersioned[ProjectReference]] =
-    resources.create(reference, value.asJson, tags)
+  /**
+    * Attempts to create a new project instance.
+    *
+    * @param reference the name of the project
+    * @param value     the metadata of the project
+    * @return a [[RefVersioned]] instance wrapped in the abstract ''F[_]'' type
+    *         if successful, or a [[ch.epfl.bluebrain.nexus.admin.core.Fault]] wrapped within ''F[_]'' otherwise
+    */
+  def create(reference: ProjectReference,
+             value: Value)(implicit ctx: CallerCtx, hasPerms: F[HasOwnProjects]): F[RefVersioned[ProjectReference]] =
+    resources.create(reference, value.asJson)(tags, reference.toPersId)
 
+  /**
+    * Attempts to update an existing project instance with a new json payload.
+    *
+    * @param reference the name of the project
+    * @param rev       the last known revision of the project instance
+    * @param value     the metadata of the project
+    * @return a [[RefVersioned]] instance wrapped in the abstract ''F[_]'' type
+    *         if successful, or a [[ch.epfl.bluebrain.nexus.admin.core.Fault]] wrapped within ''F[_]'' otherwise
+    */
   def update(reference: ProjectReference, rev: Long, value: Value)(
       implicit ctx: CallerCtx,
-      validatePerms: F[HasWriteProjects]): F[RefVersioned[ProjectReference]] =
-    resources.update(reference, rev, value.asJson, tags)
+      hasPerms: F[HasWriteProjects]): F[RefVersioned[ProjectReference]] =
+    resources.update(reference, rev, value.asJson)(tags, reference.toPersId)
 
-  def deprecate(reference: ProjectReference, rev: Long)(
-      implicit ctx: CallerCtx,
-      validatePerms: F[HasWriteProjects]): F[RefVersioned[ProjectReference]] =
-    resources.deprecate(reference, rev, tags)
+  /**
+    * Attempts to deprecate a project locking it for further changes and blocking any attempts to create instances conforming to its
+    * definition.
+    *
+    * @param reference the name of the project
+    * @param rev    the last known revision of the project instance
+    * @return a [[RefVersioned]] instance wrapped in the abstract ''F[_]'' type
+    *         if successful, or a [[ch.epfl.bluebrain.nexus.admin.core.Fault]] wrapped within ''F[_]'' otherwise
+    */
+  def deprecate(reference: ProjectReference,
+                rev: Long)(implicit ctx: CallerCtx, hasPerms: F[HasWriteProjects]): F[RefVersioned[ProjectReference]] =
+    resources.deprecate(reference, rev)(tags, reference.toPersId)
 
-  def fetch(reference: ProjectReference): F[Option[Project]] =
-    resources.fetch(reference)
+  /**
+    * Queries the system for the latest revision of the project identified by the argument ''reference''.
+    * The (in)existence of the project is represented by the [[scala.Option]] type wrapped within the ''F[_]'' context.
+    *
+    * @param reference the name of the project
+    * @return an optional [[Project]] instance wrapped in the
+    *         abstract ''F[_]'' type if successful, or a [[ch.epfl.bluebrain.nexus.admin.core.Fault]] wrapped within
+    *         ''F[_]'' otherwise
+    */
+  def fetch(reference: ProjectReference)(implicit hasPerms: F[HasReadProjects]): F[Option[Project]] =
+    resources.fetch(reference)(reference.toPersId)
 
-  def fetch(reference: ProjectReference, rev: Long): F[Option[Project]] =
-    resources.fetch(reference, rev)
+  /**
+    * Queries the system for a specific ''revision'' of the project identified by the argument ''reference''.
+    * The (in)existence of the represented is represented by the [[scala.Option]] type wrapped within the ''F[_]'' context.
+    *
+    * @param reference the name of the project
+    * @return an optional [[Project]] instance wrapped in the
+    *         abstract ''F[_]'' type if successful, or a [[ch.epfl.bluebrain.nexus.admin.core.Fault]] wrapped within
+    *         ''F[_]'' otherwise
+    */
+  def fetch(reference: ProjectReference, rev: Long)(implicit hasPerms: F[HasReadProjects]): F[Option[Project]] =
+    resources.fetch(reference, rev)(reference.toPersId)
 
-  def validateUnlocked(id: ProjectReference): F[Unit] =
-    resources.validateUnlocked(id)
+  /**
+    * Asserts the project exists and it allows modifications on children resources.
+    *
+    * @param reference the name of the project
+    * @return () or the appropriate rejection in the ''F'' context
+    */
+  def validateUnlocked(reference: ProjectReference): F[Unit] =
+    resources.validateUnlocked(reference.toPersId)
+
+  private implicit class IdRefSyntax(reference: ProjectReference) {
+    lazy val toPersId: String = {
+      val idRef: IdRef = reference
+      s"${idRef.prefixValue.host.hashCode.abs.toString.take(5)}-${reference.value}"
+    }
+  }
 
   private implicit def toProject(resource: F[Option[Resource[ProjectReference]]]): F[Option[Project]] =
     resource.flatMap {
       case Some(Resource(id, rev, value, deprecated)) =>
         value.as[Value] match {
-          case Right(value) => F.pure(Some(Project(id, rev, value, deprecated)))
-          case Left(err)    =>
+          case Right(v)  => F.pure(Some(Project(id, rev, v, deprecated)))
+          case Left(err) =>
             // $COVERAGE-OFF$
             logger.error(s"Could not convert json value '$value' to Value", err)
             F.raiseError(Unexpected(s"Could not convert json value '$value' to Value"))
@@ -62,13 +124,17 @@ class Projects[F[_]](resources: Resources[F, ProjectReference])(implicit F: Mona
 
 object Projects {
 
-  private[projects] implicit val logger = Logger[this.type]
+  private[projects] implicit val logger: Logger = Logger[this.type]
 
-  final def apply[F[_]](agg: Agg[F])(implicit F: MonadError[F, Throwable]): Projects[F] = {
-    val resources = new Resources[F, ProjectReference](agg) {
-      override def validate(id: ProjectReference, value: Json): F[Unit] = F.pure(())
-    }
-    new Projects(resources)
-  }
+  /**
+    * Constructs a new ''Projects'' instance that bundles operations that can be performed against projects using the
+    * underlying persistence abstraction.
+    *
+    * @param agg the aggregate definition
+    * @param F   a MonadError typeclass instance for ''F[_]''
+    * @tparam F the monadic effect type
+    */
+  final def apply[F[_]](agg: Agg[F])(implicit F: MonadError[F, Throwable]): Projects[F] =
+    new Projects(new Resources[F, ProjectReference](agg))
 
 }

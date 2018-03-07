@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.admin.refined.project.{ProjectReference, _}
 import eu.timepit.refined.auto._
 
 /**
-  * A reference of a a generic type with an evidence of [[IdResolvable]].
+  * A reference of a generic type with an evidence of [[IdResolvable]].
   * This means than ''A'' can be converted to a [[IdRef]]
   *
   * @param value the instance of A

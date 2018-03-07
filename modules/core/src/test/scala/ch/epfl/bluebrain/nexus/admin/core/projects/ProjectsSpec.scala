@@ -52,6 +52,7 @@ class ProjectsSpec extends WordSpecLike with Matchers with TryValues with Mockit
   "A Project bundle" should {
     implicit val hasWrite = applyRef[HasWriteProjects](Permissions(Read, Permission("projects/write"))).toPermTry
     implicit val hasOwn   = applyRef[HasOwnProjects](Permissions(Read, Permission("projects/own"))).toPermTry
+    implicit val hasRead  = applyRef[HasReadProjects](Permissions(Read, Permission("projects/read"))).toPermTry
 
     "create a new project" in new Context {
       projects.create(id, value).success.value shouldEqual RefVersioned(id, 1L)
