@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.admin.ld
+package ch.epfl.bluebrain.nexus.admin.refined
 
 import ch.epfl.bluebrain.nexus.admin.refined.ld._
 import ch.epfl.bluebrain.nexus.commons.test.Randomness

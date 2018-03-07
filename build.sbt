@@ -32,45 +32,47 @@ val akkaPersistenceCassandraVersion = "0.83"
 val catsVersion                     = "1.0.1"
 val circeVersion                    = "0.9.1"
 val jenaVersion                     = "3.6.0"
+val mockitoVersion                  = "2.15.0"
 val pureconfigVersion               = "0.9.0"
 val refinedVersion                  = "0.8.7"
 val scalaTestVersion                = "3.0.5"
 val shapelessVersion                = "2.3.3"
-val sourcingVersion                 = "0.10.1"
+val sourcingVersion                 = "0.10.3"
 
 // Nexus dependency versions
-val commonsVersion = "0.10.2"
+val commonsVersion = "0.10.4"
 
 // Dependency modules
-lazy val akkaHttpCore = "com.typesafe.akka" %% "akka-http-core" % akkaHttpVersion
-lazy val catsCore     = "org.typelevel"     %% "cats-core"      % catsVersion
-lazy val circeCore    = "io.circe"          %% "circe-core"     % circeVersion
-lazy val jenaArq      = "org.apache.jena"   % "jena-arq"        % jenaVersion
-lazy val shapeless    = "com.chuusai"       %% "shapeless"      % shapelessVersion
-lazy val scalaTest    = "org.scalatest"     %% "scalatest"      % scalaTestVersion
+lazy val akkaDistributed      = "com.typesafe.akka"   %% "akka-distributed-data"     % akkaVersion
+lazy val akkaHttpCore         = "com.typesafe.akka"   %% "akka-http-core"            % akkaHttpVersion
+lazy val akkaPersistenceInMem = "com.github.dnvriend" %% "akka-persistence-inmemory" % akkaPersistenceInMemVersion
+lazy val akkaHttpTestKit      = "com.typesafe.akka"   %% "akka-http-testkit"         % akkaHttpVersion
+lazy val akkaTestKit          = "com.typesafe.akka"   %% "akka-testkit"              % akkaVersion
+lazy val catsCore             = "org.typelevel"       %% "cats-core"                 % catsVersion
+lazy val circeCore            = "io.circe"            %% "circe-core"                % circeVersion
+lazy val jenaArq              = "org.apache.jena"     % "jena-arq"                   % jenaVersion
+lazy val mockitoCore          = "org.mockito"         % "mockito-core"               % mockitoVersion
+lazy val shapeless            = "com.chuusai"         %% "shapeless"                 % shapelessVersion
+lazy val scalaTest            = "org.scalatest"       %% "scalatest"                 % scalaTestVersion
 
-lazy val refined     = "eu.timepit" %% "refined"      % refinedVersion
-lazy val refinedCats = "eu.timepit" %% "refined-cats" % refinedVersion // optional
-lazy val refinedEval = "eu.timepit" %% "refined-eval" % refinedVersion // optional, JVM-only
+lazy val refined = "eu.timepit" %% "refined" % refinedVersion
 
 // Nexus dependency modules
-lazy val commonsIam  = "ch.epfl.bluebrain.nexus" %% "iam"          % commonsVersion
-lazy val commonsTest = "ch.epfl.bluebrain.nexus" %% "commons-test" % commonsVersion
+lazy val commonsIam    = "ch.epfl.bluebrain.nexus" %% "iam"                 % commonsVersion
+lazy val commonsTest   = "ch.epfl.bluebrain.nexus" %% "commons-test"        % commonsVersion
+lazy val sourcingCore  = "ch.epfl.bluebrain.nexus" %% "sourcing-core"       % sourcingVersion
+lazy val sourcingCache = "ch.epfl.bluebrain.nexus" %% "sourcing-akka-cache" % sourcingVersion
+lazy val sourcingMem   = "ch.epfl.bluebrain.nexus" %% "sourcing-mem"        % sourcingVersion
 
+// Projects
 lazy val refinements = project
   .in(file("modules/refined"))
   .settings(
-    name            := "admin-refined",
-    moduleName      := "admin-refined",
-    coverageEnabled := false,
-    libraryDependencies ++= Seq(
-      akkaHttpCore,
-      refined,
-      refinedCats,
-      refinedEval
-    )
+    name                := "admin-refined",
+    moduleName          := "admin-refined",
+    coverageEnabled     := false,
+    libraryDependencies ++= Seq(akkaHttpCore, commonsIam, refined, scalaTest % Test)
   )
-// Projects
 lazy val ld = project
   .dependsOn(refinements)
   .in(file("modules/ld"))
@@ -87,6 +89,25 @@ lazy val ld = project
     )
   )
 
+lazy val core = project
+  .in(file("modules/core"))
+  .dependsOn(ld)
+  .settings(
+    name       := "admin-core",
+    moduleName := "admin-core",
+    libraryDependencies ++= Seq(
+      sourcingCore,
+      sourcingCache,
+      akkaDistributed      % Test,
+      akkaPersistenceInMem % Test,
+      akkaHttpTestKit      % Test,
+      akkaTestKit          % Test,
+      mockitoCore          % Test,
+      scalaTest            % Test,
+      sourcingMem          % Test
+    )
+  )
+
 lazy val root = project
   .in(file("."))
   .settings(noPublish)
@@ -95,7 +116,7 @@ lazy val root = project
     moduleName            := "admin",
     coverageFailOnMinimum := false
   )
-  .aggregate(ld, refinements)
+  .aggregate(refinements, ld, core)
 
 /* ********************************************************
  ******************** Grouped Settings ********************
