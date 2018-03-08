@@ -4,10 +4,10 @@ import akka.http.scaladsl.model.Uri.Path.Segment
 import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model.{Uri => AkkaUri}
 import ch.epfl.bluebrain.nexus.admin.refined.ld.Uri._
-import ch.epfl.bluebrain.nexus.admin.refined.ld.{DecomposableUri, Uri}
+import ch.epfl.bluebrain.nexus.admin.refined.ld._
 import eu.timepit.refined._
 import eu.timepit.refined.api.Inference.==>
-import eu.timepit.refined.api.RefType.refinedRefType
+import eu.timepit.refined.api.RefType._
 import eu.timepit.refined.api.{Inference, Refined, Validate}
 import eu.timepit.refined.string.MatchesRegex
 
@@ -71,8 +71,34 @@ object ld extends LdInferences {
         }
     }
 
-    def decompose(id: DecomposableId): (PrefixValue, Reference) =
-      unsafeDecompose(id.value)
+
+    /**
+      * Interface syntax to expose new functionality into [[PrefixValue]], [[Reference]] tuple type.
+      *
+      * @param value the instance of a [[Tuple2]] of [[PrefixValue]] and [[Reference]]
+      */
+    implicit class ToDecomposableIdSyntax(value: (PrefixValue, Reference)) {
+      /**
+        * Build a [[DecomposableId]] out of an instance of [[PrefixValue]] and [[Reference]]
+        */
+      def decomposableId: DecomposableId = {
+        val (prefixValue, reference) = value
+        refinedRefType.unsafeWrap(s"$prefixValue$reference")
+      }
+    }
+
+    /**
+      * Interface syntax to expose new functionality into [[DecomposableId]] type.
+      *
+      * @param value the instance of a [[DecomposableId]]
+      */
+    implicit class DecomposableIdSyntax(value: DecomposableId) {
+      /**
+        * Decompose the ''value'' into two parts, the [[PrefixValue]] and the [[Reference]]
+        */
+      def decompose: (PrefixValue, Reference) =
+        unsafeDecompose(value.value)
+    }
 
     final implicit def decompUriValidate: Validate.Plain[String, DecomposableUri] =
       Validate.fromPartial(unsafeDecompose, "ValidConvertibleUri", DecomposableUri())

@@ -40,6 +40,7 @@ val shapelessVersion                = "2.3.3"
 val sourcingVersion                 = "0.10.3"
 
 // Nexus dependency versions
+val serviceVersion = "0.10.4"
 val commonsVersion = "0.10.4"
 
 // Dependency modules
@@ -50,6 +51,7 @@ lazy val akkaHttpTestKit      = "com.typesafe.akka"     %% "akka-http-testkit"  
 lazy val akkaTestKit          = "com.typesafe.akka"     %% "akka-testkit"              % akkaVersion
 lazy val catsCore             = "org.typelevel"         %% "cats-core"                 % catsVersion
 lazy val circeCore            = "io.circe"              %% "circe-core"                % circeVersion
+lazy val circeJava8           = "io.circe"              %% "circe-java8"               % circeVersion
 lazy val jenaArq              = "org.apache.jena"       % "jena-arq"                   % jenaVersion
 lazy val mockitoCore          = "org.mockito"           % "mockito-core"               % mockitoVersion
 lazy val pureconfig           = "com.github.pureconfig" %% "pureconfig"                % pureconfigVersion
@@ -61,11 +63,12 @@ lazy val refined           = "eu.timepit" %% "refined"            % refinedVersi
 lazy val refinedPureConfig = "eu.timepit" %% "refined-pureconfig" % refinedVersion
 
 // Nexus dependency modules
-lazy val commonsIam    = "ch.epfl.bluebrain.nexus" %% "iam"                 % commonsVersion
-lazy val commonsTest   = "ch.epfl.bluebrain.nexus" %% "commons-test"        % commonsVersion
-lazy val sourcingCore  = "ch.epfl.bluebrain.nexus" %% "sourcing-core"       % sourcingVersion
-lazy val sourcingCache = "ch.epfl.bluebrain.nexus" %% "sourcing-akka-cache" % sourcingVersion
-lazy val sourcingMem   = "ch.epfl.bluebrain.nexus" %% "sourcing-mem"        % sourcingVersion
+lazy val commonsIam    = "ch.epfl.bluebrain.nexus" %% "iam"                   % commonsVersion
+lazy val commonsTest   = "ch.epfl.bluebrain.nexus" %% "commons-test"          % commonsVersion
+lazy val serialization = "ch.epfl.bluebrain.nexus" %% "service-serialization" % serviceVersion
+lazy val sourcingCore  = "ch.epfl.bluebrain.nexus" %% "sourcing-core"         % sourcingVersion
+lazy val sourcingCache = "ch.epfl.bluebrain.nexus" %% "sourcing-akka-cache"   % sourcingVersion
+lazy val sourcingMem   = "ch.epfl.bluebrain.nexus" %% "sourcing-mem"          % sourcingVersion
 
 // Projects
 lazy val refinements = project
@@ -101,10 +104,12 @@ lazy val core = project
     name       := "admin-core",
     moduleName := "admin-core",
     libraryDependencies ++= Seq(
+      circeJava8,
       pureconfig,
       refinedPureConfig,
       sourcingCore,
       sourcingCache,
+      serialization,
       akkaDistributed      % Test,
       akkaPersistenceInMem % Test,
       akkaHttpTestKit      % Test,

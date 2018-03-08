@@ -15,7 +15,8 @@
       "@id": "http://schema.org/longitude",
       "@type": "xsd:float"
     },
-    "xsd": "http://www.w3.org/2001/XMLSchema#"
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    "invalidPrefixValue": "http://www.example.com/some"
   },
   "name": "The Empire State Building",
   "description": "The Empire State Building is a 102-story landmark in New York City.",

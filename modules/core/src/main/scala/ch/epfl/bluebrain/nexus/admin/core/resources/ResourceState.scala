@@ -4,7 +4,7 @@ import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceCommand._
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceEvent.{ResourceCreated, ResourceDeprecated, ResourceUpdated}
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceRejection._
 import ch.epfl.bluebrain.nexus.admin.core.types.Versioned
-import ch.epfl.bluebrain.nexus.admin.ld.IdRef
+import ch.epfl.bluebrain.nexus.admin.refined.ld.DecomposableId
 import ch.epfl.bluebrain.nexus.commons.iam.acls.Meta
 import io.circe.Json
 
@@ -29,7 +29,7 @@ object ResourceState {
     * @param value      the json payload of the resource
     * @param deprecated the deprecation status
     */
-  final case class Current(id: IdRef, rev: Long, meta: Meta, value: Json, deprecated: Boolean)
+  final case class Current(id: DecomposableId, rev: Long, meta: Meta, value: Json, deprecated: Boolean)
       extends ResourceState
       with Versioned
 

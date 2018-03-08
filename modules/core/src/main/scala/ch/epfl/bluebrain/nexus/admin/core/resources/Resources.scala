@@ -14,6 +14,8 @@ import ch.epfl.bluebrain.nexus.admin.core.resources.Resources.Agg
 import ch.epfl.bluebrain.nexus.admin.core.types.Ref._
 import ch.epfl.bluebrain.nexus.admin.core.types.RefVersioned
 import ch.epfl.bluebrain.nexus.admin.ld.IdResolvable
+import ch.epfl.bluebrain.nexus.admin.refined.ld.DecomposableId
+import ch.epfl.bluebrain.nexus.admin.refined.ld.DecomposableUri._
 import ch.epfl.bluebrain.nexus.admin.refined.permissions._
 import ch.epfl.bluebrain.nexus.sourcing.Aggregate
 import com.github.ghik.silencer.silent
@@ -182,6 +184,9 @@ class Resources[F[_], A: IdResolvable](agg: Agg[F])(implicit
         logger.debug(s"$intent: command '$cmd' evaluation succeeded, generated state: '$state'")
         F.pure(state)
     }
+
+  private implicit def toDecomposableId(id: A): DecomposableId =
+    (id.prefixValue, id.reference).decomposableId
 }
 
 object Resources {

@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.admin.ld
 
 import ch.epfl.bluebrain.nexus.admin.ld.JsonLD.IdType
-import ch.epfl.bluebrain.nexus.admin.refined.ld.{DecomposableId, Id}
+import ch.epfl.bluebrain.nexus.admin.refined.ld._
 import io.circe.Json
 import shapeless.Typeable
 
@@ -58,6 +58,22 @@ trait JsonLD {
     * recursed.
     */
   def deepMerge(otherLD: JsonLD): JsonLD = deepMerge(otherLD.json)
+
+  /**
+    * Attempt to fetch the [[PrefixValue]] for a given ''prefixName''.
+    * It will look up into the JSON-LD @context object whether the ''prefixName'' key exists, and it will return the value associated to it.
+    *
+    * @param prefixName the prefix name to look up into the @context object
+    */
+  def prefixValueOf(prefixName: PrefixName): Option[PrefixValue]
+
+  /**
+    * Attempt to fetch the [[PrefixName]] for a given ''prefixValue''.
+    * It will look up into the JSON-LD @context object whether the ''prefixValue'' value exists, and it will return the key associated to it.
+    *
+    * @param prefixValue the prefix value to look up into the @context object
+    */
+  def prefixNameOf(prefixValue: PrefixValue): Option[PrefixName]
 }
 
 object JsonLD {
