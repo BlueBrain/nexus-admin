@@ -71,13 +71,13 @@ object ld extends LdInferences {
         }
     }
 
-
     /**
       * Interface syntax to expose new functionality into [[PrefixValue]], [[Reference]] tuple type.
       *
       * @param value the instance of a [[Tuple2]] of [[PrefixValue]] and [[Reference]]
       */
     implicit class ToDecomposableIdSyntax(value: (PrefixValue, Reference)) {
+
       /**
         * Build a [[DecomposableId]] out of an instance of [[PrefixValue]] and [[Reference]]
         */
@@ -93,6 +93,7 @@ object ld extends LdInferences {
       * @param value the instance of a [[DecomposableId]]
       */
     implicit class DecomposableIdSyntax(value: DecomposableId) {
+
       /**
         * Decompose the ''value'' into two parts, the [[PrefixValue]] and the [[Reference]]
         */

@@ -29,8 +29,7 @@ class DecomposableIdSpec extends WordSpecLike with Matchers with Randomness with
         "a/b/c/?asdas",
         "#$%^&*()",
         ""
-      ) ++ List.fill(100)(
-        s"https://${genString(5, pool)}.local/${genString(5, pool)}/") ++ List
+      ) ++ List.fill(100)(s"https://${genString(5, pool)}.local/${genString(5, pool)}/") ++ List
         .fill(100)(s"https://${genString(5, pool)}.local/${genString(5, pool)}/${genString(5, pool)}#") ++ List
         .fill(100)(s"https://${genString(5, pool)}.local/${genString(5, pool)}?${genString(5, pool)}")
 
@@ -42,8 +41,8 @@ class DecomposableIdSpec extends WordSpecLike with Matchers with Randomness with
 
     "be constructed with inference" in {
       val prefixValue: PrefixValue = "http://example.com/one/two/"
-      val reference: Reference = "three"
-      val id: DecomposableId = (prefixValue, reference).decomposableId
+      val reference: Reference     = "three"
+      val id: DecomposableId       = (prefixValue, reference).decomposableId
       id shouldEqual ("http://example.com/one/two/three": DecomposableId)
     }
   }
