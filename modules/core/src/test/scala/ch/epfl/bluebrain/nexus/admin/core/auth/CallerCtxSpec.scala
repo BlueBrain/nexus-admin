@@ -12,23 +12,23 @@ import org.scalatest.{Matchers, WordSpecLike}
 class CallerCtxSpec extends WordSpecLike with Matchers with Randomness {
 
   "A CallerCtx" should {
-    val subject       = UserRef("reaml", genString())
-    val authenticated = AuthenticatedRef(Some("reaml"))
-    val group         = GroupRef("realm", genString())
-    val clock         = Clock.systemUTC
+    val subject        = UserRef("realm", genString())
+    val authenticated  = AuthenticatedRef(Some("realm"))
+    val group          = GroupRef("realm", genString())
+    implicit val clock = Clock.systemUTC
 
     "fetch the subject" in {
-      val ctx = CallerCtx(clock, AuthenticatedCaller(None, Set(group, subject, authenticated, Anonymous())))
+      val ctx = CallerCtx(AuthenticatedCaller(None, Set(group, subject, authenticated, Anonymous())))
       ctx.meta.author shouldEqual subject
     }
 
     "fetch the authenticated ref" in {
-      val ctx = CallerCtx(clock, AuthenticatedCaller(None, Set(group, authenticated, Anonymous())))
+      val ctx = CallerCtx(AuthenticatedCaller(None, Set(group, authenticated, Anonymous())))
       ctx.meta.author shouldEqual authenticated
     }
 
     "fetch anonymous" in {
-      val ctx = CallerCtx(clock, AuthenticatedCaller(None, Set[Identity](group)))
+      val ctx = CallerCtx(AuthenticatedCaller(None, Set[Identity](group)))
       ctx.meta.author shouldEqual Anonymous()
     }
   }

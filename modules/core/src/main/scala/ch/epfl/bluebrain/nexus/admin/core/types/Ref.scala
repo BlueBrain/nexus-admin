@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.admin.core.types
 
+import ch.epfl.bluebrain.nexus.admin.core.config.AppConfig.ProjectsConfig
 import ch.epfl.bluebrain.nexus.admin.ld.{IdRef, IdResolvable}
 import ch.epfl.bluebrain.nexus.admin.refined.project.{ProjectReference, _}
 import eu.timepit.refined.auto._
@@ -15,10 +16,14 @@ import eu.timepit.refined.auto._
 final case class Ref[A: IdResolvable](value: A)
 
 object Ref {
-  // $COVERAGE-OFF$
-  final implicit val refToResolvable: IdResolvable[ProjectReference] = (a: ProjectReference) => {
-    IdRef("projects", "https://nexus.example.ch/v1/projects/", a)
-  }
+
+  /**
+    * Builds a [[IdResolvable]] from the available ''config''
+    *
+    * @param config the implicitly available project specific settings
+    */
+  final implicit def refToResolvable(implicit config: ProjectsConfig): IdResolvable[ProjectReference] =
+    (a: ProjectReference) => IdRef("projects", config.prefixValue, a)
+
   final implicit def aToRef[A: IdResolvable](value: A): Ref[A] = Ref(value)
-  // $COVERAGE-ON$
 }

@@ -1,17 +1,20 @@
 package ch.epfl.bluebrain.nexus.admin.core.projects
 
+import java.time.Clock
+
 import cats.MonadError
 import cats.syntax.flatMap._
 import ch.epfl.bluebrain.nexus.admin.core.CallerCtx
 import ch.epfl.bluebrain.nexus.admin.core.Fault.Unexpected
+import ch.epfl.bluebrain.nexus.admin.core.config.AppConfig._
 import ch.epfl.bluebrain.nexus.admin.core.projects.Project.Value
+import ch.epfl.bluebrain.nexus.admin.core.types.Ref._
 import ch.epfl.bluebrain.nexus.admin.core.projects.Projects._
 import ch.epfl.bluebrain.nexus.admin.core.resources.Resources.Agg
 import ch.epfl.bluebrain.nexus.admin.core.resources.{Resource, Resources}
 import ch.epfl.bluebrain.nexus.admin.core.types.PrefixValueOps._
-import ch.epfl.bluebrain.nexus.admin.core.types.Ref._
 import ch.epfl.bluebrain.nexus.admin.core.types.RefVersioned
-import ch.epfl.bluebrain.nexus.admin.ld.IdRef
+import ch.epfl.bluebrain.nexus.admin.ld.{IdRef, IdResolvable}
 import ch.epfl.bluebrain.nexus.admin.refined.permissions._
 import ch.epfl.bluebrain.nexus.admin.refined.project._
 import io.circe.syntax._
@@ -24,7 +27,8 @@ import journal.Logger
   * @param F         a MonadError typeclass instance for ''F[_]''
   * @tparam F the monadic effect type
   */
-class Projects[F[_]](resources: Resources[F, ProjectReference])(implicit F: MonadError[F, Throwable]) {
+class Projects[F[_]](resources: Resources[F, ProjectReference])(implicit F: MonadError[F, Throwable],
+                                                                idRes: IdResolvable[ProjectReference]) {
 
   private val tags = Set("project")
 
@@ -102,7 +106,8 @@ class Projects[F[_]](resources: Resources[F, ProjectReference])(implicit F: Mona
 
   private implicit class IdRefSyntax(reference: ProjectReference) {
     lazy val toPersId: String = {
-      val idRef: IdRef = reference
+      //val idRef: IdRef = refToResolvable.apply(reference)
+      val idRef: IdRef = idRes(reference)
       s"${idRef.prefixValue.host.hashCode.abs.toString.take(5)}-${reference.value}"
     }
   }
@@ -130,11 +135,14 @@ object Projects {
     * Constructs a new ''Projects'' instance that bundles operations that can be performed against projects using the
     * underlying persistence abstraction.
     *
-    * @param agg the aggregate definition
-    * @param F   a MonadError typeclass instance for ''F[_]''
+    * @param agg    the aggregate definition
+    * @param F      a MonadError typeclass instance for ''F[_]''
+    * @param clock  the clock used to issue instants
+    * @param config the project specific settings
     * @tparam F the monadic effect type
     */
-  final def apply[F[_]](agg: Agg[F])(implicit F: MonadError[F, Throwable]): Projects[F] =
+  final def apply[F[_]](
+      agg: Agg[F])(implicit F: MonadError[F, Throwable], clock: Clock, config: ProjectsConfig): Projects[F] =
     new Projects(new Resources[F, ProjectReference](agg))
 
 }
