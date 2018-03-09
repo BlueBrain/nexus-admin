@@ -73,6 +73,12 @@ private[ld] final case class JenaJsonLD(json: Json) extends JsonLD {
     }
   }
 
+  override def prefixValueOf(prefixName: PrefixName): Option[PrefixValue] =
+    Option(graph.getPrefixMapping.getNsPrefixURI(prefixName.value)).flatMap(uri => applyRef[PrefixValue](uri).toOption)
+
+  override def prefixNameOf(prefixValue: PrefixValue): Option[PrefixName] =
+    Option(graph.getPrefixMapping.getNsURIPrefix(prefixValue.value)).flatMap(str => applyRef[PrefixName](str).toOption)
+
   private implicit def idRefToNode(idRef: IdRef): Node = NodeFactory.createURI(idRef.id.toString())
 
   private implicit class NodeSyntax(node: Node) {

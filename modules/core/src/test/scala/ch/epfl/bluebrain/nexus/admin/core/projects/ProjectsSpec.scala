@@ -33,7 +33,7 @@ class ProjectsSpec extends WordSpecLike with Matchers with TryValues with Mockit
 
   private implicit val caller: AnonymousCaller = AnonymousCaller(Anonymous())
   private implicit val clock: Clock            = Clock.systemUTC
-  private implicit val config: ProjectsConfig = ProjectsConfig(3 seconds, "https://nexus.example.ch/v1/projects/")
+  private implicit val config: ProjectsConfig  = ProjectsConfig(3 seconds, "https://nexus.example.ch/v1/projects/")
   private val aggProject                       = MemoryAggregate("projects")(Initial, next, eval).toF[Try]
   private val projects                         = Projects(aggProject)
 

@@ -2,10 +2,11 @@ package ch.epfl.bluebrain.nexus.admin.ld
 
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.admin.ld.JsonLD.{IdTypeBlank, IdTypeUri}
-import ch.epfl.bluebrain.nexus.admin.refined.ld.{PrefixValue, Reference}
+import ch.epfl.bluebrain.nexus.admin.refined.ld._
 import ch.epfl.bluebrain.nexus.commons.test.Resources
 import org.scalatest.{Matchers, OptionValues, WordSpecLike}
 import eu.timepit.refined.auto._
+
 import io.circe.Json
 
 class JsonLDSpec extends WordSpecLike with Matchers with Resources with OptionValues {
@@ -55,6 +56,26 @@ class JsonLDSpec extends WordSpecLike with Matchers with Resources with OptionVa
       val mergedJson   = jsonLD.json deepMerge typedJsonLD.json
       val mergedJsonLD = jsonLD deepMerge typedJsonLD
       mergedJsonLD.json shouldEqual mergedJson
+    }
+
+    "return the prefix value given a prefix name" in {
+      jsonLD.prefixValueOf("xsd").value shouldEqual ("http://www.w3.org/2001/XMLSchema#": PrefixValue)
+    }
+
+    "return None attempting to fetch a prefix value when the prefix value in the json @context is wrong" in {
+      jsonLD.prefixValueOf("invalidPrefixValue") shouldEqual None
+    }
+
+    "return None attempting to fetch a prefix value when the prefix name does not exist in the json @context" in {
+      jsonLD.prefixValueOf("nonExisting") shouldEqual None
+    }
+
+    "return the prefix name given a prefix value" in {
+      jsonLD.prefixNameOf("http://www.w3.org/2001/XMLSchema#").value shouldEqual ("xsd": PrefixName)
+    }
+
+    "return None attempting to fetch a prefix name when the prefix value does not exist in the json @context" in {
+      jsonLD.prefixNameOf("http://non-existinf.com/something/") shouldEqual None
     }
   }
 }

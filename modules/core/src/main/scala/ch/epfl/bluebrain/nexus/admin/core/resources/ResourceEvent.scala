@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.admin.core.resources
 
 import ch.epfl.bluebrain.nexus.admin.core.types.Versioned
-import ch.epfl.bluebrain.nexus.admin.ld.IdRef
+import ch.epfl.bluebrain.nexus.admin.refined.ld.DecomposableId
 import ch.epfl.bluebrain.nexus.commons.iam.acls.Meta
 import io.circe.Json
 
@@ -10,7 +10,7 @@ import io.circe.Json
   */
 sealed trait ResourceEvent extends Product with Serializable with Versioned {
 
-  def id: IdRef
+  def id: DecomposableId
   def meta: Meta
   def tags: Set[String]
 }
@@ -26,7 +26,7 @@ object ResourceEvent {
     * @param tags  the tags added to this event
     * @param value the json payload of the resource
     */
-  final case class ResourceCreated(id: IdRef, rev: Long, meta: Meta, tags: Set[String], value: Json)
+  final case class ResourceCreated(id: DecomposableId, rev: Long, meta: Meta, tags: Set[String], value: Json)
       extends ResourceEvent
 
   /**
@@ -38,7 +38,7 @@ object ResourceEvent {
     * @param tags  the tags added to this event
     * @param value the new json payload of the resource
     */
-  final case class ResourceUpdated(id: IdRef, rev: Long, meta: Meta, tags: Set[String], value: Json)
+  final case class ResourceUpdated(id: DecomposableId, rev: Long, meta: Meta, tags: Set[String], value: Json)
       extends ResourceEvent
 
   /**
@@ -49,6 +49,7 @@ object ResourceEvent {
     * @param meta the metadata associated to this event
     * @param tags the tags added to this event
     */
-  final case class ResourceDeprecated(id: IdRef, rev: Long, meta: Meta, tags: Set[String]) extends ResourceEvent
+  final case class ResourceDeprecated(id: DecomposableId, rev: Long, meta: Meta, tags: Set[String])
+      extends ResourceEvent
 
 }
