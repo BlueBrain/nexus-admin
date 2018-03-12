@@ -66,6 +66,7 @@ lazy val refinedPureConfig = "eu.timepit" %% "refined-pureconfig" % refinedVersi
 lazy val commonsIam    = "ch.epfl.bluebrain.nexus" %% "iam"                   % commonsVersion
 lazy val commonsTest   = "ch.epfl.bluebrain.nexus" %% "commons-test"          % commonsVersion
 lazy val serialization = "ch.epfl.bluebrain.nexus" %% "service-serialization" % serviceVersion
+lazy val serviceHttp   = "ch.epfl.bluebrain.nexus" %% "service-http"          % serviceVersion
 lazy val sourcingCore  = "ch.epfl.bluebrain.nexus" %% "sourcing-core"         % sourcingVersion
 lazy val sourcingCache = "ch.epfl.bluebrain.nexus" %% "sourcing-akka-cache"   % sourcingVersion
 lazy val sourcingMem   = "ch.epfl.bluebrain.nexus" %% "sourcing-mem"          % sourcingVersion
@@ -110,6 +111,7 @@ lazy val core = project
       sourcingCore,
       sourcingCache,
       serialization,
+      serviceHttp,
       akkaDistributed      % Test,
       akkaPersistenceInMem % Test,
       akkaHttpTestKit      % Test,

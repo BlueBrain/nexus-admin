@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.commons.types.Rejection
 /**
   * Enumeration type for rejections returned when attempting to evaluate commands.
   */
-trait ResourceRejection extends Rejection
+sealed trait ResourceRejection extends Rejection
 object ResourceRejection {
 
   /**

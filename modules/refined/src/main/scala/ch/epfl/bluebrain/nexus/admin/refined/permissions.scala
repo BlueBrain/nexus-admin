@@ -12,10 +12,10 @@ import scala.util.Try
 @SuppressWarnings(Array("BoundedByFinalType"))
 object permissions extends PermissionInferences {
 
-  private[refined] type ManageProjects = ContainsPermission[W.`"projects/manage"`.T]
-  private[refined] type ReadProjects   = ContainsPermission[W.`"projects/read"`.T]
-  private[refined] type WriteProjects  = ContainsPermission[W.`"projects/write"`.T]
-  private[refined] type OwnProjects    = ContainsPermission[W.`"projects/own"`.T]
+  type ManageProjects = ContainsPermission[W.`"projects/manage"`.T]
+  type ReadProjects   = ContainsPermission[W.`"projects/read"`.T]
+  type WriteProjects  = ContainsPermission[W.`"projects/write"`.T]
+  type OwnProjects    = ContainsPermission[W.`"projects/own"`.T]
 
   /**
     * Refined type for [[Permissions]] which contain the permission ''projects/manage''
