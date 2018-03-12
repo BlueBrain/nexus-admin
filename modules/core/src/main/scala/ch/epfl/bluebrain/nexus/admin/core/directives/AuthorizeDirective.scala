@@ -14,6 +14,12 @@ import eu.timepit.refined.api.{Refined, Validate}
 
 import scala.concurrent.{ExecutionContext, Future}
 
+/**
+  * Provides the directives to authorize a ''caller''
+  *
+  * @param F a MonadError typeclass instance for ''F[_]''
+  * @tparam F the monadic effect type
+  */
 class AuthorizeDirective[F[_]](implicit F: MonadError[F, Throwable]) {
 
   /**

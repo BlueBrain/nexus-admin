@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.admin.core.Error
 import ch.epfl.bluebrain.nexus.admin.core.Error._
 import ch.epfl.bluebrain.nexus.admin.core.directives.AuthorizeDirective._
 import ch.epfl.bluebrain.nexus.admin.core.routes.{ExceptionHandling, RejectionHandling}
-import ch.epfl.bluebrain.nexus.admin.refined.permissions._
+import ch.epfl.bluebrain.nexus.admin.refined.permissions.{WriteProjects, _}
 import ch.epfl.bluebrain.nexus.commons.http.ContextUri
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport._
 import ch.epfl.bluebrain.nexus.commons.iam.IamClient
@@ -24,7 +24,7 @@ import org.mockito.Mockito
 import org.mockito.Mockito._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.mockito.MockitoSugar
-import org.scalatest.{BeforeAndAfter, Matchers, WordSpecLike}
+import org.scalatest.{BeforeAndAfter, Inspectors, Matchers, WordSpecLike}
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -36,12 +36,13 @@ class AuthorizeDirectiveSpec
     with ScalaFutures
     with Randomness
     with MockitoSugar
-    with BeforeAndAfter {
+    with BeforeAndAfter
+    with Inspectors {
 
   private val authorize: AuthorizeDirective[Future] = fromFuture
-  private implicit val config: Configuration   = Configuration.default.withDiscriminator("type")
-  private val ErrorContext                     = ContextUri(Uri("http://nexus.example.com/contexts/nexus/core/error/v0.1.0"))
-  private implicit val cl: IamClient[Future]   = mock[IamClient[Future]]
+  private implicit val config: Configuration        = Configuration.default.withDiscriminator("type")
+  private val ErrorContext                          = ContextUri(Uri("http://nexus.example.com/contexts/nexus/core/error/v0.1.0"))
+  private implicit val cl: IamClient[Future]        = mock[IamClient[Future]]
 
   private def route[A](resource: Path)(implicit cred: Option[OAuth2BearerToken], V: Validate[Permissions, A]) =
     (handleExceptions(ExceptionHandling.exceptionHandler(ErrorContext)) & handleRejections(
@@ -103,13 +104,20 @@ class AuthorizeDirectiveSpec
       implicit val cred: Option[OAuth2BearerToken] = None
       val path                                     = "/projects/test"
       val acl = FullAccessControlList(
-        (Anonymous(), Path("projects/test"), Permissions(Permission("projects/own"), Permission("projects/write"))))
+        (Anonymous(), Path("projects/test"), Permissions(Permission("projects/manage"), Permission("projects/other"))))
       when(cl.getAcls(Path(path), parents = true, self = true)).thenReturn(Future.successful(acl))
-
-      Get(path) ~> route[WriteProjects](Path(path)) ~> check {
-        status shouldEqual StatusCodes.OK
-        responseAs[String] shouldEqual "Success"
+      forAll(
+        List(route[ReadProjects](Path(path)),
+             route[WriteProjects](Path(path)),
+             route[OwnProjects](Path(path)),
+             route[ManageProjects](Path(path)))) {
+        case r =>
+          Get(path) ~> r ~> check {
+            status shouldEqual StatusCodes.OK
+            responseAs[String] shouldEqual "Success"
+          }
       }
+
     }
   }
 }
