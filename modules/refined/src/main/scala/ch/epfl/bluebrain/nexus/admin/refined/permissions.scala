@@ -6,16 +6,17 @@ import eu.timepit.refined.W
 import eu.timepit.refined.api.Inference.==>
 import eu.timepit.refined.api.{Inference, Refined, Validate}
 import shapeless.Witness
+import eu.timepit.refined.boolean.Or
 
 import scala.util.Try
 
 @SuppressWarnings(Array("BoundedByFinalType"))
 object permissions extends PermissionInferences {
 
-  private[refined] type ManageProjects = ContainsPermission[W.`"projects/manage"`.T]
-  private[refined] type ReadProjects   = ContainsPermission[W.`"projects/read"`.T]
-  private[refined] type WriteProjects  = ContainsPermission[W.`"projects/write"`.T]
-  private[refined] type OwnProjects    = ContainsPermission[W.`"projects/own"`.T]
+  type ManageProjects = ContainsPermission[W.`"projects/manage"`.T]
+  type ReadProjects   = ContainsPermission[W.`"projects/read"`.T] Or ManageProjects
+  type WriteProjects  = ContainsPermission[W.`"projects/write"`.T] Or ManageProjects
+  type OwnProjects    = ContainsPermission[W.`"projects/own"`.T] Or ManageProjects
 
   /**
     * Refined type for [[Permissions]] which contain the permission ''projects/manage''

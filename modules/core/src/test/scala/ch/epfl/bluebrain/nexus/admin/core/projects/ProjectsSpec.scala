@@ -24,12 +24,11 @@ import ch.epfl.bluebrain.nexus.sourcing.mem.MemoryAggregate._
 import eu.timepit.refined.api.RefType.{applyRef, refinedRefType}
 import eu.timepit.refined.auto._
 import io.circe.Json
-import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, TryValues, WordSpecLike}
 
 import scala.util.{Failure, Success, Try}
 import scala.concurrent.duration._
-class ProjectsSpec extends WordSpecLike with Matchers with TryValues with MockitoSugar with Randomness {
+class ProjectsSpec extends WordSpecLike with Matchers with TryValues with Randomness {
 
   private implicit val caller: AnonymousCaller = AnonymousCaller(Anonymous())
   private implicit val clock: Clock            = Clock.systemUTC
