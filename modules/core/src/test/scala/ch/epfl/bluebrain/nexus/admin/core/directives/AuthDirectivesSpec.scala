@@ -177,7 +177,18 @@ class AuthDirectivesSpec
           responseAs[String] shouldEqual "Success"
         }
       }
+    }
 
+    "return internal server error when authorizing and the downstream service is down" in {
+      implicit val cred: Option[OAuth2BearerToken] = Some(ValidCredentials)
+      val path                                     = "projects/proj"
+      when(cl.getAcls(Path(path), parents = true, self = true))
+        .thenReturn(Future.failed(new RuntimeException("downstream error")))
+
+      Get(path) ~> routeAuthorize[ReadProjects](Path(path)) ~> check {
+        status shouldEqual StatusCodes.InternalServerError
+        responseAs[Error].code shouldEqual classNameOf[DownstreamServiceError.type]
+      }
     }
   }
 }
