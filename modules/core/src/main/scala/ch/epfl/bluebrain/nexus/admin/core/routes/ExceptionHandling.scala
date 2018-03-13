@@ -10,8 +10,6 @@ import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceRejection
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceRejection._
 import ch.epfl.bluebrain.nexus.admin.core.routes.ExceptionHandling.InternalError
 import ch.epfl.bluebrain.nexus.commons.http.ContextUri
-import ch.epfl.bluebrain.nexus.commons.types.HttpRejection
-import ch.epfl.bluebrain.nexus.commons.types.HttpRejection._
 import ch.epfl.bluebrain.nexus.service.http.directives.ErrorDirectives._
 import ch.epfl.bluebrain.nexus.service.http.directives.StatusFrom
 import io.circe.generic.extras.Configuration
@@ -33,7 +31,6 @@ class ExceptionHandling(implicit errorContext: ContextUri) {
   private final def exceptionHandler: ExceptionHandler = ExceptionHandler {
     case CommandRejected(r: ResourceRejection) => complete(r)
     case CommandRejected(r: IllegalParam)      => complete(r: CommonRejections)
-    case UnauthorizedAccess                    => complete(UnauthorizedAccess: HttpRejection)
 
     // $COVERAGE-OFF$
     case Unexpected(reason) =>
@@ -53,13 +50,6 @@ class ExceptionHandling(implicit errorContext: ContextUri) {
       case ParentResourceDoesNotExists  => NotFound
       case ResourceIsDeprecated         => BadRequest
       case _: ShapeConstraintViolations => BadRequest
-    }
-
-  private implicit val httpRejections: StatusFrom[HttpRejection] =
-    StatusFrom {
-      case UnauthorizedAccess    => Unauthorized
-      case MethodNotSupported(_) => MethodNotAllowed
-      case _                     => BadRequest
     }
 
   private implicit val commonFrom: StatusFrom[CommonRejections] =

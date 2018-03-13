@@ -32,6 +32,7 @@ import journal.Logger
   * @tparam F the monadic effect type
   * @tparam A the generic type of the id's ''reference''
   */
+@SuppressWarnings(Array("UnusedMethodParameter"))
 class Resources[F[_], A: IdResolvable](agg: Agg[F])(implicit
                                                     F: MonadError[F, Throwable],
                                                     logger: Logger,
@@ -81,9 +82,9 @@ class Resources[F[_], A: IdResolvable](agg: Agg[F])(implicit
     *         if successful, or a [[ch.epfl.bluebrain.nexus.admin.core.Fault]] wrapped within ''F[_]'' otherwise
     */
   def create(id: A, value: Json)(tags: Set[String], persId: String)(implicit ctx: CallerCtx,
-                                                                    hasPerms: F[HasOwnProjects]): F[RefVersioned[A]] =
+                                                                    @silent perms: HasOwnProjects): F[RefVersioned[A]] =
     for {
-      _ <- (validateCreate(id, value), hasPerms).mapN((_, _) => ())
+      _ <- validateCreate(id, value)
       r <- evaluate(CreateResource(id, ctx.meta, tags + persId, value), persId, s"Create res '$id'")
     } yield RefVersioned(id, r.rev)
 
@@ -100,9 +101,9 @@ class Resources[F[_], A: IdResolvable](agg: Agg[F])(implicit
     */
   def update(id: A, rev: Long, value: Json)(tags: Set[String], persId: String)(
       implicit ctx: CallerCtx,
-      hasPerms: F[HasWriteProjects]): F[RefVersioned[A]] =
+      @silent perms: HasWriteProjects): F[RefVersioned[A]] =
     for {
-      _ <- (validateUpdate(id, value), hasPerms).mapN((_, _) => ())
+      _ <- validateUpdate(id, value)
       r <- evaluate(UpdateResource(id, rev, ctx.meta, tags + persId, value), persId, s"Update res '$id'")
     } yield RefVersioned(id, r.rev)
 
@@ -119,9 +120,9 @@ class Resources[F[_], A: IdResolvable](agg: Agg[F])(implicit
     */
   def deprecate(id: A, rev: Long)(tags: Set[String], persId: String)(
       implicit ctx: CallerCtx,
-      hasPerms: F[HasWriteProjects]): F[RefVersioned[A]] =
-    (hasPerms, evaluate(DeprecateResource(id, rev, ctx.meta, tags + persId), persId, s"Deprecate res '$id'"))
-      .mapN((_, r) => RefVersioned(id, r.rev))
+      @silent perms: HasWriteProjects): F[RefVersioned[A]] =
+    evaluate(DeprecateResource(id, rev, ctx.meta, tags + persId), persId, s"Deprecate res '$id'")
+      .map(r => RefVersioned(id, r.rev))
 
   /**
     * Queries the system for the latest revision of the resource identified by the argument ''persId''.
@@ -133,12 +134,10 @@ class Resources[F[_], A: IdResolvable](agg: Agg[F])(implicit
     *         abstract ''F[_]'' type if successful, or a [[ch.epfl.bluebrain.nexus.admin.core.Fault]] wrapped within
     *         ''F[_]'' otherwise
     */
-  def fetch(id: A)(persId: String)(implicit hasPerms: F[HasReadProjects]): F[Option[Resource[A]]] =
-    hasPerms.flatMap { _ =>
-      agg.currentState(persId).map {
-        case Initial    => None
-        case c: Current => Some(Resource(id, c.rev, c.value, c.deprecated))
-      }
+  def fetch(id: A)(persId: String)(implicit @silent perms: HasReadProjects): F[Option[Resource[A]]] =
+    agg.currentState(persId).map {
+      case Initial    => None
+      case c: Current => Some(Resource(id, c.rev, c.value, c.deprecated))
     }
 
   /**
@@ -152,12 +151,10 @@ class Resources[F[_], A: IdResolvable](agg: Agg[F])(implicit
     *         abstract ''F[_]'' type if successful, or a [[ch.epfl.bluebrain.nexus.admin.core.Fault]] wrapped within
     *         ''F[_]'' otherwise
     */
-  def fetch(id: A, rev: Long)(persId: String)(implicit hasPerms: F[HasReadProjects]): F[Option[Resource[A]]] =
-    hasPerms.flatMap { _ =>
-      stateAt(persId, rev).map {
-        case c: Current if c.rev == rev => Some(Resource(id, c.rev, c.value, c.deprecated))
-        case _                          => None
-      }
+  def fetch(id: A, rev: Long)(persId: String)(implicit @silent perms: HasReadProjects): F[Option[Resource[A]]] =
+    stateAt(persId, rev).map {
+      case c: Current if c.rev == rev => Some(Resource(id, c.rev, c.value, c.deprecated))
+      case _                          => None
     }
 
   private def stateAt(persId: String, rev: Long): F[ResourceState] =
