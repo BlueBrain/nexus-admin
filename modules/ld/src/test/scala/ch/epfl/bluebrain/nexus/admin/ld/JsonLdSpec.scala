@@ -4,12 +4,11 @@ import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.admin.ld.JsonLD.{IdTypeBlank, IdTypeUri}
 import ch.epfl.bluebrain.nexus.admin.refined.ld._
 import ch.epfl.bluebrain.nexus.commons.test.Resources
-import org.scalatest.{Matchers, OptionValues, WordSpecLike}
+import org.scalatest.{Inspectors, Matchers, OptionValues, WordSpecLike}
 import eu.timepit.refined.auto._
-
 import io.circe.Json
 
-class JsonLDSpec extends WordSpecLike with Matchers with Resources with OptionValues {
+class JsonLDSpec extends WordSpecLike with Matchers with Resources with OptionValues with Inspectors {
 
   "A JsonLD" should {
     val jsonLD            = JsonLD(jsonContentOf("/no_id.json"))
@@ -76,6 +75,20 @@ class JsonLDSpec extends WordSpecLike with Matchers with Resources with OptionVa
 
     "return None attempting to fetch a prefix name when the prefix value does not exist in the json @context" in {
       jsonLD.prefixNameOf("http://non-existinf.com/something/") shouldEqual None
+    }
+
+    "expand a value" in {
+      jsonLD.expand("xsd:name").value shouldEqual ("http://www.w3.org/2001/XMLSchema#name" : DecomposableId)
+    }
+
+    "expand a value already expanded returns the original value" in {
+      jsonLD.expand("http://www.w3.org/2001/XMLSchema#name").value shouldEqual ("http://www.w3.org/2001/XMLSchema#name" : DecomposableId)
+    }
+
+    "fail to expand a value" in {
+      forAll(List("", "xsd2:name", "something")) { value =>
+        jsonLD.expand(value) shouldEqual None
+      }
     }
   }
 }

@@ -19,7 +19,7 @@ class QueryResourceSpec extends WordSpecLike with Matchers with Inspectors {
 
     "fail to decode" in {
       forAll(List("asd", "")) { str =>
-        decode[QueryId](s""""$str"""") shouldBe a[Left[_, _]]
+        decode[QueryResource](s""""$str"""") shouldBe a[Left[_, _]]
       }
     }
   }
