@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.admin.refined.ld._
   * @param name  the prefix name
   * @param value the value to which the name expands
   */
-class IdRefBuilder(name: PrefixName, value: PrefixValue) {
+class IdRefBuilder(name: PrefixName, val value: PrefixValue) {
 
   /**
     * Change the prefix name of the builder

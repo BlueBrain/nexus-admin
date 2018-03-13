@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.admin.ld
 
 import ch.epfl.bluebrain.nexus.admin.ld.JsonLD.IdType
 import ch.epfl.bluebrain.nexus.admin.refined.ld._
+import eu.timepit.refined.auto._
 import io.circe.Json
 import shapeless.Typeable
 

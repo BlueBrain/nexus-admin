@@ -63,13 +63,14 @@ lazy val refined           = "eu.timepit" %% "refined"            % refinedVersi
 lazy val refinedPureConfig = "eu.timepit" %% "refined-pureconfig" % refinedVersion
 
 // Nexus dependency modules
-lazy val commonsIam    = "ch.epfl.bluebrain.nexus" %% "iam"                   % commonsVersion
-lazy val commonsTest   = "ch.epfl.bluebrain.nexus" %% "commons-test"          % commonsVersion
-lazy val serialization = "ch.epfl.bluebrain.nexus" %% "service-serialization" % serviceVersion
-lazy val serviceHttp   = "ch.epfl.bluebrain.nexus" %% "service-http"          % serviceVersion
-lazy val sourcingCore  = "ch.epfl.bluebrain.nexus" %% "sourcing-core"         % sourcingVersion
-lazy val sourcingCache = "ch.epfl.bluebrain.nexus" %% "sourcing-akka-cache"   % sourcingVersion
-lazy val sourcingMem   = "ch.epfl.bluebrain.nexus" %% "sourcing-mem"          % sourcingVersion
+lazy val commonsIam        = "ch.epfl.bluebrain.nexus" %% "iam"                   % commonsVersion
+lazy val commonsQueryTypes = "ch.epfl.bluebrain.nexus" %% "commons-query-types"   % commonsVersion
+lazy val commonsTest       = "ch.epfl.bluebrain.nexus" %% "commons-test"          % commonsVersion
+lazy val serialization     = "ch.epfl.bluebrain.nexus" %% "service-serialization" % serviceVersion
+lazy val serviceHttp       = "ch.epfl.bluebrain.nexus" %% "service-http"          % serviceVersion
+lazy val sourcingCore      = "ch.epfl.bluebrain.nexus" %% "sourcing-core"         % sourcingVersion
+lazy val sourcingCache     = "ch.epfl.bluebrain.nexus" %% "sourcing-akka-cache"   % sourcingVersion
+lazy val sourcingMem       = "ch.epfl.bluebrain.nexus" %% "sourcing-mem"          % sourcingVersion
 
 // Projects
 lazy val refinements = project
@@ -122,6 +123,20 @@ lazy val core = project
       slf4j                % Test
     )
   )
+lazy val query = project
+  .in(file("modules/query"))
+  .enablePlugins(BuildInfoPlugin)
+  .dependsOn(ld)
+  .settings(
+    buildInfoSettings,
+    name       := "admin-query",
+    moduleName := "admin-query",
+    libraryDependencies ++= Seq(
+      commonsIam,
+      commonsQueryTypes,
+      scalaTest % Test,
+    )
+  )
 
 lazy val root = project
   .in(file("."))
@@ -131,7 +146,7 @@ lazy val root = project
     moduleName            := "admin",
     coverageFailOnMinimum := false
   )
-  .aggregate(refinements, ld, core)
+  .aggregate(refinements, ld, core, query)
 
 /* ********************************************************
  ******************** Grouped Settings ********************
