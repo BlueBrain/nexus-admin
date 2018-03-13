@@ -32,6 +32,7 @@ import journal.Logger
   * @tparam F the monadic effect type
   * @tparam A the generic type of the id's ''reference''
   */
+@SuppressWarnings(Array("UnusedMethodParameter"))
 class Resources[F[_], A: IdResolvable](agg: Agg[F])(implicit
                                                     F: MonadError[F, Throwable],
                                                     logger: Logger,
