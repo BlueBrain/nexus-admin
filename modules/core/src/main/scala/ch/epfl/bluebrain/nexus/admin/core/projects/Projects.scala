@@ -17,6 +17,7 @@ import ch.epfl.bluebrain.nexus.admin.core.types.RefVersioned
 import ch.epfl.bluebrain.nexus.admin.ld.{IdRef, IdResolvable}
 import ch.epfl.bluebrain.nexus.admin.refined.permissions._
 import ch.epfl.bluebrain.nexus.admin.refined.project._
+import com.github.ghik.silencer.silent
 import io.circe.syntax._
 import journal.Logger
 
@@ -41,7 +42,7 @@ class Projects[F[_]](resources: Resources[F, ProjectReference])(implicit F: Mona
     *         if successful, or a [[ch.epfl.bluebrain.nexus.admin.core.Fault]] wrapped within ''F[_]'' otherwise
     */
   def create(reference: ProjectReference,
-             value: Value)(implicit ctx: CallerCtx, hasPerms: F[HasOwnProjects]): F[RefVersioned[ProjectReference]] =
+             value: Value)(implicit ctx: CallerCtx, @silent perms: HasOwnProjects): F[RefVersioned[ProjectReference]] =
     resources.create(reference, value.asJson)(tags, reference.toPersId)
 
   /**
@@ -55,7 +56,7 @@ class Projects[F[_]](resources: Resources[F, ProjectReference])(implicit F: Mona
     */
   def update(reference: ProjectReference, rev: Long, value: Value)(
       implicit ctx: CallerCtx,
-      hasPerms: F[HasWriteProjects]): F[RefVersioned[ProjectReference]] =
+      @silent perms: HasWriteProjects): F[RefVersioned[ProjectReference]] =
     resources.update(reference, rev, value.asJson)(tags, reference.toPersId)
 
   /**
@@ -67,8 +68,9 @@ class Projects[F[_]](resources: Resources[F, ProjectReference])(implicit F: Mona
     * @return a [[RefVersioned]] instance wrapped in the abstract ''F[_]'' type
     *         if successful, or a [[ch.epfl.bluebrain.nexus.admin.core.Fault]] wrapped within ''F[_]'' otherwise
     */
-  def deprecate(reference: ProjectReference,
-                rev: Long)(implicit ctx: CallerCtx, hasPerms: F[HasWriteProjects]): F[RefVersioned[ProjectReference]] =
+  def deprecate(reference: ProjectReference, rev: Long)(
+      implicit ctx: CallerCtx,
+      @silent perms: HasWriteProjects): F[RefVersioned[ProjectReference]] =
     resources.deprecate(reference, rev)(tags, reference.toPersId)
 
   /**
@@ -80,7 +82,7 @@ class Projects[F[_]](resources: Resources[F, ProjectReference])(implicit F: Mona
     *         abstract ''F[_]'' type if successful, or a [[ch.epfl.bluebrain.nexus.admin.core.Fault]] wrapped within
     *         ''F[_]'' otherwise
     */
-  def fetch(reference: ProjectReference)(implicit hasPerms: F[HasReadProjects]): F[Option[Project]] =
+  def fetch(reference: ProjectReference)(implicit @silent perms: HasReadProjects): F[Option[Project]] =
     resources.fetch(reference)(reference.toPersId)
 
   /**
@@ -92,7 +94,7 @@ class Projects[F[_]](resources: Resources[F, ProjectReference])(implicit F: Mona
     *         abstract ''F[_]'' type if successful, or a [[ch.epfl.bluebrain.nexus.admin.core.Fault]] wrapped within
     *         ''F[_]'' otherwise
     */
-  def fetch(reference: ProjectReference, rev: Long)(implicit hasPerms: F[HasReadProjects]): F[Option[Project]] =
+  def fetch(reference: ProjectReference, rev: Long)(implicit @silent perms: HasReadProjects): F[Option[Project]] =
     resources.fetch(reference, rev)(reference.toPersId)
 
   /**

@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.admin.core.projects
 import java.time.Clock
 
 import cats.instances.try_._
-import ch.epfl.bluebrain.nexus.admin.core.CallerCtx
 import ch.epfl.bluebrain.nexus.admin.core.CallerCtx._
 import ch.epfl.bluebrain.nexus.admin.core.Fault.{CommandRejected, Unexpected}
 import ch.epfl.bluebrain.nexus.admin.core.config.AppConfig.ProjectsConfig
@@ -52,9 +51,9 @@ class ProjectsSpec extends WordSpecLike with Matchers with TryValues with Random
   }
 
   "A Project bundle" should {
-    implicit val hasWrite = applyRef[HasWriteProjects](Permissions(Read, Permission("projects/write"))).toPermTry
-    implicit val hasOwn   = applyRef[HasOwnProjects](Permissions(Read, Permission("projects/own"))).toPermTry
-    implicit val hasRead  = applyRef[HasReadProjects](Permissions(Read, Permission("projects/read"))).toPermTry
+    implicit val hasWrite = applyRef[HasWriteProjects](Permissions(Read, Permission("projects/write"))).toPermTry.success.value
+    implicit val hasOwn   = applyRef[HasOwnProjects](Permissions(Read, Permission("projects/own"))).toPermTry.success.value
+    implicit val hasRead  = applyRef[HasReadProjects](Permissions(Read, Permission("projects/read"))).toPermTry.success.value
 
     "create a new project" in new Context {
       projects.create(id, value).success.value shouldEqual RefVersioned(id, 1L)
@@ -137,11 +136,6 @@ class ProjectsSpec extends WordSpecLike with Matchers with TryValues with Random
     "project can be used from a child resource" in new Context {
       projects.create(id, value).success.value shouldEqual RefVersioned(id, 1L)
       projects.validateUnlocked(id).success.value shouldEqual (())
-    }
-
-    "executing operation without containing the required permissions evidence" in new Context {
-      val failedOwn = applyRef[HasOwnProjects](Permissions(Read, Permission("projectsother"))).toPermTry
-      projects.create(id, value)(implicitly[CallerCtx], failedOwn).failure.exception shouldBe a[Unexpected]
     }
   }
 }

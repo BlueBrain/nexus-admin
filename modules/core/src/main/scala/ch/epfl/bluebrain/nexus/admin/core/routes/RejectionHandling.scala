@@ -4,7 +4,7 @@ import akka.http.javadsl.server.AuthorizationFailedRejection
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server.Directives.complete
 import akka.http.scaladsl.server._
-import ch.epfl.bluebrain.nexus.admin.core.directives.AuthenticateDirectives.CustomAuthRejection
+import ch.epfl.bluebrain.nexus.admin.core.directives.AuthDirectives.CustomAuthRejection
 import ch.epfl.bluebrain.nexus.admin.core.rejections.CommonRejections
 import ch.epfl.bluebrain.nexus.admin.core.rejections.CommonRejections._
 import ch.epfl.bluebrain.nexus.commons.http.ContextUri
