@@ -4,6 +4,7 @@ import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.server.Directive1
 import akka.http.scaladsl.server.Directives._
 import cats.MonadError
+import cats.instances.future._
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.admin.core.rejections.CommonRejections.DownstreamServiceError
 import ch.epfl.bluebrain.nexus.commons.iam.IamClient
@@ -67,8 +68,6 @@ object AuthorizeDirective {
     *
     * @param ec the implicitly available [[ExecutionContext]]
     */
-  def fromFuture(implicit ec: ExecutionContext): AuthorizeDirective[Future] = {
-    import cats.instances.future._
+  def fromFuture(implicit ec: ExecutionContext): AuthorizeDirective[Future] =
     new AuthorizeDirective[Future]
-  }
 }
