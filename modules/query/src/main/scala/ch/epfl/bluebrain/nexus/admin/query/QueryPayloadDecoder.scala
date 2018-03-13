@@ -62,6 +62,7 @@ object QueryPayloadDecoder {
     *
     * @param ctx the provided context
     */
-  final def apply(ctx: JsonLD): QueryPayloadDecoder = new QueryPayloadDecoder(Json.obj("@context" -> (ctx.contextValue deepMerge Const.defaultContext.contextValue)))
+  final def apply(ctx: JsonLD): QueryPayloadDecoder =
+    new QueryPayloadDecoder(Json.obj("@context" -> (ctx.contextValue deepMerge Const.defaultContext.contextValue)))
 
 }

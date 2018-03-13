@@ -28,8 +28,8 @@ trait AuthDirectives {
     * @tparam A the restricted subset of [[Permissions]]
     */
   def authorizePath[A](resource: Path)(implicit client: IamClient[Future],
-                                   cred: Option[OAuth2BearerToken],
-                                   V: Validate[Permissions, A]): Directive1[Permissions Refined A] =
+                                       cred: Option[OAuth2BearerToken],
+                                       V: Validate[Permissions, A]): Directive1[Permissions Refined A] =
     onComplete(client.getAcls(resource, self = true, parents = true)).flatMap {
       case Success(acl) =>
         applyRef[Permissions Refined A](acl.permissions) match {
@@ -47,8 +47,8 @@ trait AuthDirectives {
     * @tparam A the restricted subset of [[Permissions]]
     */
   def authorizePath[A](resource: String)(implicit client: IamClient[Future],
-                                     cred: Option[OAuth2BearerToken],
-                                     V: Validate[Permissions, A]): Directive1[Permissions Refined A] =
+                                         cred: Option[OAuth2BearerToken],
+                                         V: Validate[Permissions, A]): Directive1[Permissions Refined A] =
     authorizePath[A](Path(resource))
 
   /**
