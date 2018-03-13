@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.admin.ld
 
 import cats._
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.admin.refined.ld.{Id, PrefixName, PrefixValue, Reference}
+import ch.epfl.bluebrain.nexus.admin.refined.ld._
 import eu.timepit.refined.api.RefType._
 
 /**
@@ -22,7 +22,7 @@ final case class IdRef(prefixName: PrefixName, prefixValue: PrefixValue, referen
   lazy val prefix: Prefix =
     Prefix(prefixName, prefixValue)
 
-  lazy val id: Id =
+  lazy val id: DecomposableId =
     refinedRefType.unsafeWrap(s"${prefixValue.value}${reference.value}")
 }
 

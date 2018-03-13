@@ -23,6 +23,8 @@ object Const {
     val Project           = build("Project")
     val maxAttachmentSize = build("maxAttachmentSize")
     val config            = build("config")
+    val allFields            = build("all")
+
   }
 
 }
