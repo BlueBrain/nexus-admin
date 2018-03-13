@@ -26,8 +26,7 @@ object Const extends Resources {
     Prefix("xsd", "http://www.w3.org/2001/XMLSchema#")
   )
 
-  private val assetsContext =
-    jsonContentOf("/default-context.json").hcursor.get[Json]("@context").getOrElse(Json.obj())
+  private val assetsContext = JsonLD(jsonContentOf("/default-context.json")).contextValue
 
   val defaultContext: JsonLD = Json.obj("@context" -> prefixes.foldLeft(assetsContext) {
     case (json, Prefix(pName, pValue)) => json deepMerge Json.obj(pName.value -> Json.fromString(pValue.value))

@@ -11,8 +11,9 @@ import ch.epfl.bluebrain.nexus.commons.test.Resources
 import ch.epfl.bluebrain.nexus.commons.types.search.{Sort, SortList}
 import io.circe.Json
 import org.scalatest.{Inspectors, Matchers, WordSpecLike}
+import ch.epfl.bluebrain.nexus.admin.query.QueryPayload._
 
-class QueryPayloadDecoderSpec extends WordSpecLike with Matchers with Resources with Inspectors {
+class QueryPayloadSpec extends WordSpecLike with Matchers with Resources with Inspectors {
 
   "A QueryPayload" should {
 
@@ -45,8 +46,7 @@ class QueryPayloadDecoderSpec extends WordSpecLike with Matchers with Resources 
       forAll(list) {
         case (json, model) =>
           val ctx      = JsonLD(json).contextValue
-          val decoders = QueryPayloadDecoder(Json.obj("@context" -> ctx))
-          import decoders._
+          implicit val dec = queryPayloadDecoder(Json.obj("@context" -> ctx))
           json.as[QueryPayload] shouldEqual Right(model.copy(`@context` = ctx deepMerge Const.defaultContext.contextValue))
       }
     }
