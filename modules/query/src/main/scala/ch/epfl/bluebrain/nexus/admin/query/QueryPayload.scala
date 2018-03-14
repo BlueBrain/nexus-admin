@@ -30,7 +30,8 @@ final case class QueryPayload(`@context`: Json = Json.obj(),
 
 object QueryPayload {
 
-  final def queryPayloadDecoder(customerContext: JsonLD): Decoder[QueryPayload] = {
+  final def queryPayloadDecoders(
+      customerContext: JsonLD): (Decoder[Filter], Decoder[Field], Decoder[SortList], Decoder[QueryPayload]) = {
     val ctx: JsonLD = Json.obj("@context" -> (customerContext.contextValue deepMerge Const.defaultContext.contextValue))
 
     implicit val filterDec = Filter.filterDecoder(ctx)
@@ -49,7 +50,7 @@ object QueryPayload {
     implicit val sortlistDecoder: Decoder[SortList] =
       Decoder.decodeList[Sort].map(list => SortList(list))
 
-    Decoder.instance { hc =>
+    val queryPayloadDecoder = Decoder.instance { hc =>
       for {
         filter     <- hc.downField("filter").as[Option[Filter]].map(_ getOrElse Filter.Empty)
         q          <- hc.downField("q").as[Option[String]].map(_ orElse None)
@@ -60,16 +61,9 @@ object QueryPayload {
         fields     <- hc.downField("fields").as[Option[Set[Field]]].map(_ getOrElse Set.empty[Field])
         sort       <- hc.downField("sort").as[Option[SortList]].map(_ getOrElse SortList.Empty)
 
-      } yield
-        (QueryPayload(ctx.hcursor.get[Json]("@context").getOrElse(Json.obj()),
-                      filter,
-                      q,
-                      deprecated,
-                      published,
-                      format,
-                      resource,
-                      fields,
-                      sort))
+      } yield (QueryPayload(ctx.contextValue, filter, q, deprecated, published, format, resource, fields, sort))
     }
+
+    (filterDec, fieldDecoder, sortlistDecoder, queryPayloadDecoder)
   }
 }

@@ -46,7 +46,7 @@ class QueryPayloadSpec extends WordSpecLike with Matchers with Resources with In
       forAll(list) {
         case (json, model) =>
           val ctx      = JsonLD(json).contextValue
-          implicit val dec = queryPayloadDecoder(Json.obj("@context" -> ctx))
+          implicit val (_, _, _, dec) = queryPayloadDecoders(Json.obj("@context" -> ctx))
           json.as[QueryPayload] shouldEqual Right(model.copy(`@context` = ctx deepMerge Const.defaultContext.contextValue))
       }
     }

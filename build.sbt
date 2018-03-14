@@ -97,10 +97,25 @@ lazy val ld = project
     )
   )
 
+lazy val query = project
+  .in(file("modules/query"))
+  .enablePlugins(BuildInfoPlugin)
+  .dependsOn(ld)
+  .settings(
+    buildInfoSettings,
+    name       := "admin-query",
+    moduleName := "admin-query",
+    libraryDependencies ++= Seq(
+      commonsIam,
+      commonsQueryTypes,
+      scalaTest % Test,
+    )
+  )
+
 lazy val core = project
   .in(file("modules/core"))
   .enablePlugins(BuildInfoPlugin)
-  .dependsOn(ld)
+  .dependsOn(query)
   .settings(
     buildInfoSettings,
     name       := "admin-core",
@@ -124,25 +139,11 @@ lazy val core = project
       slf4j                % Test
     )
   )
-lazy val query = project
-  .in(file("modules/query"))
-  .enablePlugins(BuildInfoPlugin)
-  .dependsOn(ld)
-  .settings(
-    buildInfoSettings,
-    name       := "admin-query",
-    moduleName := "admin-query",
-    libraryDependencies ++= Seq(
-      commonsIam,
-      commonsQueryTypes,
-      scalaTest % Test,
-    )
-  )
 
 lazy val service = project
   .in(file("modules/service"))
   .enablePlugins(BuildInfoPlugin)
-  .dependsOn(core, query)
+  .dependsOn(core)
   .settings(
     buildInfoSettings,
     name                  := "admin-service",
