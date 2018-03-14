@@ -23,11 +23,13 @@ import scala.collection.JavaConverters._
   */
 private[ld] final case class JenaJsonLD(json: Json) extends JsonLD {
 
-  private lazy val graph = {
-    val model = ModelFactory.createDefaultModel()
-    RDFDataMgr.read(model, new ByteArrayInputStream(json.noSpaces.getBytes), Lang.JSONLD)
-    model.getGraph
+  private lazy val model = {
+    val m = ModelFactory.createDefaultModel()
+    RDFDataMgr.read(m, new ByteArrayInputStream(json.noSpaces.getBytes), Lang.JSONLD)
+    m
   }
+
+  private lazy val graph = model.getGraph
 
   private lazy val idNode: Option[Node] = {
     val (subs, objs) = graph
@@ -98,4 +100,7 @@ private[ld] final case class JenaJsonLD(json: Json) extends JsonLD {
           }
       } else Left("The current node is not a URI")
   }
+
+  override def expand(value: String): Option[DecomposableId] =
+    applyRef[DecomposableId](model.expandPrefix(value)).toOption
 }

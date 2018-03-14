@@ -17,6 +17,11 @@ trait JsonLD {
   def json: Json
 
   /**
+    * Retrieve the root @context object of the ''json''.
+    */
+  def contextValue: Json = json.hcursor.get[Json]("@context").getOrElse(Json.obj())
+
+  /**
     * The optionally available root ''subject'' of the JSON-LD
     */
   def id: Option[IdType]
@@ -75,11 +80,20 @@ trait JsonLD {
     * @param prefixValue the prefix value to look up into the @context object
     */
   def prefixNameOf(prefixValue: PrefixValue): Option[PrefixName]
+
+  /**
+    * Attempt to expand the ''value'' using the prefix mappings available if possible.
+    * Example: given a value nxv:rev and a prefix mappings available for the prefixName nxv (with a value of prefixValue), return prefixValue+rev.
+    * Otherwise return None.
+    *
+    * @param value the value to expand.
+    */
+  def expand(value: String): Option[DecomposableId]
 }
 
 object JsonLD {
 
-  final def apply(json: Json): JsonLD = JenaJsonLD(json)
+  implicit final def apply(json: Json): JsonLD = JenaJsonLD(json)
 
   implicit def toJson(value: JsonLD): Json = value.json
 
