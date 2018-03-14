@@ -5,20 +5,26 @@ import java.time.Clock
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.admin.core.config.AppConfig._
 import ch.epfl.bluebrain.nexus.admin.refined.ld.PrefixValue
+import ch.epfl.bluebrain.nexus.commons.http.ContextUri
+import ch.epfl.bluebrain.nexus.commons.types.search.Pagination
+import eu.timepit.refined.api.Refined
+import eu.timepit.refined.numeric.{NonNegative, Positive}
+
 import scala.concurrent.duration.{Duration, FiniteDuration}
 
 /**
   * Case class which aggregates the configuration parameters
   *
-  * @param description  the service description namespace
-  * @param instance     the service instance specific settings
-  * @param http         the HTTP binding settings
-  * @param runtime      the service runtime settings
-  * @param cluster      the cluster specific settings
-  * @param persistence  the persistence settings
-  * @param projects     the project specific settings
-  * @param prefixes     the collection of prefixes used throughout the service
-  * @param iam          IAM connection settings
+  * @param description the service description namespace
+  * @param instance    the service instance specific settings
+  * @param http        the HTTP binding settings
+  * @param runtime     the service runtime settings
+  * @param cluster     the cluster specific settings
+  * @param persistence the persistence settings
+  * @param projects    the project specific settings
+  * @param prefixes    the collection of prefixes used throughout the service
+  * @param iam         IAM connection settings
+  * @param pagination  Routes pagination settings
   */
 final case class AppConfig(description: DescriptionConfig,
                            instance: InstanceConfig,
@@ -28,7 +34,8 @@ final case class AppConfig(description: DescriptionConfig,
                            persistence: PersistenceConfig,
                            projects: ProjectsConfig,
                            prefixes: PrefixesConfig,
-                           iam: IamConfig)
+                           iam: IamConfig,
+                           pagination: PaginationConfig)
 
 object AppConfig {
 
@@ -56,12 +63,18 @@ object AppConfig {
 
   final case class ProjectsConfig(passivationTimeout: Duration, prefixValue: PrefixValue)
 
-  final case class PrefixesConfig(coreContext: Uri,
-                                  standardsContext: Uri,
-                                  linksContext: Uri,
-                                  searchContext: Uri,
-                                  distributionContext: Uri,
-                                  errorContext: Uri)
+  final case class PaginationConfig(from: Long Refined NonNegative,
+                                    size: Int Refined Positive,
+                                    maxSize: Int Refined Positive) {
+    val pagination: Pagination = Pagination(from.value, size.value)
+  }
+
+  final case class PrefixesConfig(coreContext: ContextUri,
+                                  standardsContext: ContextUri,
+                                  linksContext: ContextUri,
+                                  searchContext: ContextUri,
+                                  distributionContext: ContextUri,
+                                  errorContext: ContextUri)
 
   final case class IamConfig(baseUri: Uri)
 
