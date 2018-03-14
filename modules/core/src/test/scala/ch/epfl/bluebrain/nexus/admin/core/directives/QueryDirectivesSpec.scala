@@ -132,6 +132,15 @@ class QueryDirectivesSpec
       }
     }
 
+    "reject when invalid JSON" in {
+      Get(s"/?context=${URLEncoder.encode("""{"a": b}]""", "UTF-8")}") ~> route() ~> check {
+        status shouldEqual StatusCodes.BadRequest
+        responseAs[Error] shouldEqual Error("WrongOrInvalidJson",
+          None,
+          "http://localhost/v0/contexts/nexus/core/error/v0.1.0")
+      }
+    }
+
     "extract fields, pagination, q and deprecated when provided" in {
       Get("/?deprecated=true&q=something&from=1&size=30&fields=nxv:one,schema:two,rdf:three,,") ~> route {
         Response(
