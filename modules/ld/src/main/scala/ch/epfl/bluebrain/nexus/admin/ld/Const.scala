@@ -51,6 +51,7 @@ object Const extends Resources {
     val maxAttachmentSize = build("maxAttachmentSize")
     val config            = build("config")
     val allFields         = build("all")
+    val createdAtTime     = build("createdAtTime")
 
   }
 

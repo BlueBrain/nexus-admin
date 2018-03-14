@@ -27,7 +27,7 @@ class PropPathSpec extends WordSpecLike with Matchers with Inspectors with TryVa
     val graph         = model.getGraph
     val prefixMapping = graph.getPrefixMapping
 
-    "build a PathProp form a path with only one uri with prefix and no hoops" in {
+    "build a PathProp from a path with only one uri with prefix and no hoops" in {
       val path       = "nx:schema"
       val parsedPath = PathParser.parse(path, prefixMapping)
       val result     = fromJena(parsedPath).toTry.success.value
@@ -35,7 +35,7 @@ class PropPathSpec extends WordSpecLike with Matchers with Inspectors with TryVa
       result.show shouldEqual s"<${nxv.value}schema>"
     }
 
-    "build a PathProp form a path with only one uri and no hoops" in {
+    "build a PathProp from a path with only one uri and no hoops" in {
       val path       = s"<${nxv.value}schema>"
       val parsedPath = PathParser.parse(path, prefixMapping)
       val result     = fromJena(parsedPath).toTry.success.value
@@ -43,7 +43,7 @@ class PropPathSpec extends WordSpecLike with Matchers with Inspectors with TryVa
       result.show shouldEqual s"<${nxv.value}schema>"
     }
 
-    "build a PathProp form a follow sequence of paths (3 hoops) with prefixes" in {
+    "build a PathProp from a follow sequence of paths (3 hoops) with prefixes" in {
       val path       = "nx:schema / nx:schemaGroup ? / nx:name"
       val parsedPath = PathParser.parse(path, prefixMapping)
       val result     = fromJena(parsedPath).toTry.success.value
@@ -52,13 +52,22 @@ class PropPathSpec extends WordSpecLike with Matchers with Inspectors with TryVa
       result.show shouldEqual s"<${nxv.value}schema>/(<${nxv.value}schemaGroup>)?/<${nxv.value}name>"
     }
 
-    "build a PathProp form a follow sequence of paths (3 hoops)" in {
+    "build a PathProp from a follow sequence of paths (3 hoops)" in {
       val path       = s"<${nxv.value}schema> / <${nxv.value}schemaGroup> ? / <${nxv.value}name>*"
       val parsedPath = PathParser.parse(path, prefixMapping)
       val result     = fromJena(parsedPath).toTry.success.value
       result shouldEqual SeqPath(SeqPath(UriPath(s"${nxv.value}schema"), PathZeroOrOne(s"${nxv.value}schemaGroup")),
         PathZeroOrMore(s"${nxv.value}name"))
       result.show shouldEqual s"<${nxv.value}schema>/(<${nxv.value}schemaGroup>)?/(<${nxv.value}name>)*"
+    }
+
+    "build a PathProp from an arbitrary length path" in {
+      val path       = s"<${nxv.value}schema>+ / <${nxv.value}schemaGroup> ? / <${nxv.value}name>"
+      val parsedPath = PathParser.parse(path, prefixMapping)
+      val result     = fromJena(parsedPath).toTry.success.value
+      result shouldEqual SeqPath(SeqPath(PathOneOrMore(s"${nxv.value}schema"), PathZeroOrOne(s"${nxv.value}schemaGroup")),
+        UriPath(s"${nxv.value}name"))
+      result.show shouldEqual s"(<${nxv.value}schema>)+/(<${nxv.value}schemaGroup>)?/<${nxv.value}name>"
     }
 
     "build a PathProp which find nodes connected but not by rdf:type (either way round)" in {
@@ -70,7 +79,7 @@ class PropPathSpec extends WordSpecLike with Matchers with Inspectors with TryVa
       result.show shouldEqual s"!(<${rdf.value}type>|^<${rdf.value}type>|<${nxv.value}schemaGroup>)"
     }
 
-    "build a PathProp form a alternate sequence of paths (3 hoops) with prefixes" in {
+    "build a PathProp from a alternate sequence of paths (3 hoops) with prefixes" in {
       val path       = "nx:schema / nx:schemaGroup ? | nx:name"
       val parsedPath = PathParser.parse(path, prefixMapping)
       val result     = fromJena(parsedPath).toTry.success.value
