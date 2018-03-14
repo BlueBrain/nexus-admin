@@ -107,6 +107,7 @@ lazy val core = project
     moduleName := "admin-core",
     libraryDependencies ++= Seq(
       circeJava8,
+      commonsQueryTypes,
       pureconfig,
       refinedPureConfig,
       sourcingCore,
@@ -138,6 +139,27 @@ lazy val query = project
     )
   )
 
+lazy val service = project
+  .in(file("modules/service"))
+  .enablePlugins(BuildInfoPlugin)
+  .dependsOn(core, query)
+  .settings(
+    buildInfoSettings,
+    name                  := "admin-service",
+    moduleName            := "admin-service",
+    coverageFailOnMinimum := false,
+    libraryDependencies ++= Seq(
+      akkaDistributed      % Test,
+      akkaPersistenceInMem % Test,
+      akkaHttpTestKit      % Test,
+      akkaTestKit          % Test,
+      mockitoCore          % Test,
+      scalaTest            % Test,
+      sourcingMem          % Test,
+      slf4j                % Test
+    )
+  )
+
 lazy val root = project
   .in(file("."))
   .settings(noPublish)
@@ -146,7 +168,7 @@ lazy val root = project
     moduleName            := "admin",
     coverageFailOnMinimum := false
   )
-  .aggregate(refinements, ld, core, query)
+  .aggregate(refinements, ld, query, core, service)
 
 /* ********************************************************
  ******************** Grouped Settings ********************
