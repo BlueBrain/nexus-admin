@@ -4,7 +4,7 @@ import java.time.Clock
 
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.admin.core.config.AppConfig._
-import ch.epfl.bluebrain.nexus.admin.refined.ld.PrefixValue
+import ch.epfl.bluebrain.nexus.admin.refined.ld.Namespace
 import ch.epfl.bluebrain.nexus.commons.http.ContextUri
 import ch.epfl.bluebrain.nexus.commons.types.search.Pagination
 import eu.timepit.refined.api.Refined
@@ -61,7 +61,7 @@ object AppConfig {
 
   final case class OrgConfig(name: String)
 
-  final case class ProjectsConfig(passivationTimeout: Duration, prefixValue: PrefixValue)
+  final case class ProjectsConfig(passivationTimeout: Duration, prefixValue: Namespace)
 
   final case class PaginationConfig(from: Long Refined NonNegative,
                                     size: Int Refined Positive,

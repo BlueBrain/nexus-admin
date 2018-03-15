@@ -3,28 +3,25 @@ package ch.epfl.bluebrain.nexus.admin.refined
 import akka.http.scaladsl.model.Uri.Path.Segment
 import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model.{Uri => AkkaUri}
-import ch.epfl.bluebrain.nexus.admin.refined.ld.Uri._
-import ch.epfl.bluebrain.nexus.admin.refined.ld._
 import eu.timepit.refined._
-import eu.timepit.refined.api.Inference.==>
 import eu.timepit.refined.api.RefType._
-import eu.timepit.refined.api.{Inference, Refined, Validate}
+import eu.timepit.refined.api.{Refined, Validate}
 import eu.timepit.refined.string.MatchesRegex
 
 import scala.util.Try
 
 @SuppressWarnings(Array("EmptyCaseClass"))
-object ld extends LdInferences {
+object ld {
 
   /**
-    * Refined type for prefix names.
+    * Refined type for prefix (left side on a PrefixMapping).
     */
-  type PrefixName = String Refined MatchesRegex[W.`"[a-zA-Z_][a-zA-Z0-9-_.]*"`.T]
+  type Prefix = String Refined MatchesRegex[W.`"[a-zA-Z_][a-zA-Z0-9-_.]*"`.T]
 
   /**
-    * Refined type for prefix values.
+    * Refined type for the namespace (right side on a PrefixMapping).
     */
-  type PrefixValue = String Refined PrefixUri
+  type Namespace = String Refined PrefixUri
 
   /**
     * Refined type for curie references.
@@ -32,19 +29,14 @@ object ld extends LdInferences {
   type Reference = String Refined IRelativeRef
 
   /**
-    * Refined type for RDF ids.
+    * Refined type for RDF ids that can be decomposed into a [[Namespace]] and a [[Reference]].
     */
   type Id = String Refined Uri
 
-  /**
-    * Refined type for RDF ids that can be decomposed into a [[PrefixValue]] and a [[Reference]].
-    */
-  type DecomposableId = String Refined DecomposableUri
+  final case class Uri()
 
-  final case class DecomposableUri()
-
-  object DecomposableUri {
-    private[ld] def unsafeDecompose(s: String): (PrefixValue, Reference) = {
+  object Uri {
+    private[ld] def unsafeDecompose(s: String): (Namespace, Reference) = {
       val uri = AkkaUri(s)
       if (!uri.isAbsolute) throw new IllegalArgumentException()
       else
@@ -52,14 +44,14 @@ object ld extends LdInferences {
           case Query.Empty =>
             uri.fragment match {
               case Some(fragment) if !fragment.isEmpty =>
-                val value: PrefixValue   = refinedRefType.unsafeWrap(s"${uri.withoutFragment}#")
+                val value: Namespace     = refinedRefType.unsafeWrap(s"${uri.withoutFragment}#")
                 val reference: Reference = refinedRefType.unsafeWrap(fragment)
                 value -> reference
               case Some(_) => throw new IllegalArgumentException(s"The uri '$uri' contains an empty fragment")
               case _ =>
                 uri.path.reverse match {
                   case Segment(head, tail) =>
-                    val value: PrefixValue   = refinedRefType.unsafeWrap(uri.copy(path = tail.reverse).toString())
+                    val value: Namespace     = refinedRefType.unsafeWrap(uri.copy(path = tail.reverse).toString())
                     val reference: Reference = refinedRefType.unsafeWrap(head)
                     value -> reference
                   case _ =>
@@ -72,51 +64,37 @@ object ld extends LdInferences {
     }
 
     /**
-      * Interface syntax to expose new functionality into [[PrefixValue]], [[Reference]] tuple type.
+      * Interface syntax to expose new functionality into [[Namespace]], [[Reference]] tuple type.
       *
-      * @param value the instance of a [[Tuple2]] of [[PrefixValue]] and [[Reference]]
+      * @param value the instance of a [[Tuple2]] of [[Namespace]] and [[Reference]]
       */
-    implicit class ToDecomposableIdSyntax(value: (PrefixValue, Reference)) {
+    implicit class ToIdSyntax(value: (Namespace, Reference)) {
 
       /**
-        * Build a [[DecomposableId]] out of an instance of [[PrefixValue]] and [[Reference]]
+        * Build a [[Id]] out of an instance of [[Namespace]] and [[Reference]]
         */
-      def decomposableId: DecomposableId = {
+      def Id: Id = {
         val (prefixValue, reference) = value
         refinedRefType.unsafeWrap(s"$prefixValue$reference")
       }
     }
 
     /**
-      * Interface syntax to expose new functionality into [[DecomposableId]] type.
+      * Interface syntax to expose new functionality into [[Id]] type.
       *
-      * @param value the instance of a [[DecomposableId]]
+      * @param value the instance of a [[Id]]
       */
-    implicit class DecomposableIdSyntax(value: DecomposableId) {
+    implicit class IdSyntax(value: Id) {
 
       /**
-        * Decompose the ''value'' into two parts, the [[PrefixValue]] and the [[Reference]]
+        * Decompose the ''value'' into two parts, the [[Namespace]] and the [[Reference]]
         */
-      def decompose: (PrefixValue, Reference) =
+      def decompose: (Namespace, Reference) =
         unsafeDecompose(value.value)
     }
 
-    final implicit def decompUriValidate: Validate.Plain[String, DecomposableUri] =
-      Validate.fromPartial(unsafeDecompose, "ValidConvertibleUri", DecomposableUri())
-  }
-
-  final case class Uri()
-
-  object Uri {
-    private[ld] def akkaUri(s: String): Try[AkkaUri] =
-      Try(AkkaUri(s)).filter(_.isAbsolute)
-
-    final implicit def uriValidate: Validate.Plain[String, Uri] = {
-      def validUri(s: String): Boolean =
-        akkaUri(s).map(_ => true).getOrElse(false)
-
-      Validate.fromPredicate(s => validUri(s), s => s"ValidUri($s)", Uri())
-    }
+    final implicit def uriValidate: Validate.Plain[String, Uri] =
+      Validate.fromPartial(unsafeDecompose, "ValidConvertibleUri", Uri())
   }
 
   final case class PrefixUri()
@@ -153,10 +131,6 @@ object ld extends LdInferences {
       Validate.fromPredicate(s => validIRelativeRef(s), s => s"ValidIRelativeRef($s)", IRelativeRef())
     }
   }
-}
 
-trait LdInferences {
-
-  final implicit val decompIdInference: DecomposableUri ==> Uri =
-    Inference.alwaysValid("A ConvertibleId is always valid Uri")
+  private[ld] def akkaUri(s: String): Try[AkkaUri] = Try(AkkaUri(s)).filter(_.isAbsolute)
 }

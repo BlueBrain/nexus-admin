@@ -108,7 +108,7 @@ class Projects[F[_]](resources: Resources[F, ProjectReference])(implicit F: Mona
     lazy val toPersId: String = {
       //val idRef: IdRef = refToResolvable.apply(reference)
       val idRef: IdRef = idRes(reference)
-      s"${idRef.prefixValue.host.hashCode.abs.toString.take(5)}-${reference.value}"
+      s"${idRef.namespace.host.hashCode.abs.toString.take(5)}-${reference.value}"
     }
   }
 

@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.admin.ld
 
 import ch.epfl.bluebrain.nexus.admin.ld.JsonLD.IdType
 import ch.epfl.bluebrain.nexus.admin.refined.ld._
-import eu.timepit.refined.auto._
 import io.circe.Json
 import shapeless.Typeable
 
@@ -66,20 +65,20 @@ trait JsonLD {
   def deepMerge(otherLD: JsonLD): JsonLD = deepMerge(otherLD.json)
 
   /**
-    * Attempt to fetch the [[PrefixValue]] for a given ''prefixName''.
+    * Attempt to fetch the [[Namespace]] for a given ''prefixName''.
     * It will look up into the JSON-LD @context object whether the ''prefixName'' key exists, and it will return the value associated to it.
     *
     * @param prefixName the prefix name to look up into the @context object
     */
-  def prefixValueOf(prefixName: PrefixName): Option[PrefixValue]
+  def prefixValueOf(prefixName: Prefix): Option[Namespace]
 
   /**
-    * Attempt to fetch the [[PrefixName]] for a given ''prefixValue''.
+    * Attempt to fetch the [[Prefix]] for a given ''prefixValue''.
     * It will look up into the JSON-LD @context object whether the ''prefixValue'' value exists, and it will return the key associated to it.
     *
     * @param prefixValue the prefix value to look up into the @context object
     */
-  def prefixNameOf(prefixValue: PrefixValue): Option[PrefixName]
+  def prefixNameOf(prefixValue: Namespace): Option[Prefix]
 
   /**
     * Attempt to expand the ''value'' using the prefix mappings available if possible.
@@ -88,7 +87,7 @@ trait JsonLD {
     *
     * @param value the value to expand.
     */
-  def expand(value: String): Option[DecomposableId]
+  def expand(value: String): Option[Id]
 }
 
 object JsonLD {
@@ -108,11 +107,11 @@ object JsonLD {
   final case object Empty extends IdType
 
   /**
-    * An id which is a [[DecomposableId]] (uri)
+    * An id which is a [[Id]] (uri)
     *
     * @param value the uri Id
     */
-  final case class IdTypeUri(value: DecomposableId) extends IdType
+  final case class IdTypeUri(value: Id) extends IdType
 
   /**
     * An id which is a Blank Node (does not have a uri)

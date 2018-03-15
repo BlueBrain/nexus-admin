@@ -16,7 +16,7 @@ class PrefixValueSpec extends WordSpecLike with Matchers with Inspectors with Ra
           Vector.fill(20)(s"urn:${genString(5, pool).toLowerCase}:${genString(5, pool)}:${genString(5, pool)}/") ++
           Vector.fill(20)(s"urn:${genString(5, pool).toLowerCase}:${genString(5, pool)}:${genString(5, pool)}#")
       forAll(list) { el =>
-        val value = applyRef[PrefixValue](el)
+        val value = applyRef[Namespace](el)
         value.right.value.value shouldEqual el
       }
 
@@ -33,7 +33,7 @@ class PrefixValueSpec extends WordSpecLike with Matchers with Inspectors with Ra
         ""
       )
       forAll(incorrect) { el =>
-        val value = applyRef[PrefixValue](el)
+        val value = applyRef[Namespace](el)
         value.left.value
       }
     }

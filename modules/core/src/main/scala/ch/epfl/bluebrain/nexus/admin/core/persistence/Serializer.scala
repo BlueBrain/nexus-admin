@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.admin.core.persistence
 
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceEvent
-import ch.epfl.bluebrain.nexus.admin.ld.DecomposableIdOps._
+import ch.epfl.bluebrain.nexus.admin.ld.IdOps._
 import ch.epfl.bluebrain.nexus.service.serialization.AkkaCoproductSerializer
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.auto._

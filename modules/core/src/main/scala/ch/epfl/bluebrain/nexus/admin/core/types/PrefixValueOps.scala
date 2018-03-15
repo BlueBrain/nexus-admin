@@ -1,19 +1,19 @@
 package ch.epfl.bluebrain.nexus.admin.core.types
 
 import akka.http.scaladsl.model.Uri
-import ch.epfl.bluebrain.nexus.admin.refined.ld.PrefixValue
+import ch.epfl.bluebrain.nexus.admin.refined.ld.Namespace
 
 object PrefixValueOps {
 
   /**
-    * Interface syntax to expose new functionality into [[PrefixValue]] type
+    * Interface syntax to expose new functionality into [[Namespace]] type
     *
-    * @param prefixVal the instance of [[PrefixValue]]
+    * @param prefixVal the instance of [[Namespace]]
     */
-  implicit class PrefixValueSyntax(prefixVal: PrefixValue) {
+  implicit class PrefixValueSyntax(prefixVal: Namespace) {
 
     /**
-      * Converts [[PrefixValue]] to [[Uri]]
+      * Converts [[Namespace]] to [[Uri]]
       */
     lazy val toUri: Uri = Uri(prefixVal.value)
 

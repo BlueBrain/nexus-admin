@@ -13,7 +13,7 @@ class PrefixNameSpec extends WordSpecLike with Matchers with Inspectors with Ran
     "be constructed correctly" in {
       val list = List.fill(100)(genString(1, startPool) + genString(genInt(5), pool))
       forAll(list) { el =>
-        val name = applyRef[PrefixName](el)
+        val name = applyRef[Prefix](el)
         name.right.value.value shouldEqual el
       }
     }
@@ -21,7 +21,7 @@ class PrefixNameSpec extends WordSpecLike with Matchers with Inspectors with Ran
     "fail to construct" in {
       val incorrect = List("", "0ab", "-ab", ".a", "aksjd*&^%")
       forAll(incorrect) { el =>
-        val name = applyRef[PrefixName](el)
+        val name = applyRef[Prefix](el)
         name.left.value
       }
     }

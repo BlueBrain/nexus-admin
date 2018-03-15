@@ -4,7 +4,7 @@ import java.io.ByteArrayInputStream
 
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.admin.ld.Const._
-import ch.epfl.bluebrain.nexus.admin.ld.DecomposableIdOps._
+import ch.epfl.bluebrain.nexus.admin.ld.IdOps._
 import ch.epfl.bluebrain.nexus.admin.ld.JsonLD.{IdType, IdTypeBlank, IdTypeUri}
 import ch.epfl.bluebrain.nexus.admin.refined.ld._
 import eu.timepit.refined.api.RefType.applyRef
@@ -50,7 +50,7 @@ private[ld] final case class JenaJsonLD(json: Json) extends JsonLD {
     node.toId.map(_ == nxv.self).getOrElse(false)
 
   override lazy val id: Option[IdType] = idNode.flatMap {
-    case node: Node_URI   => applyRef[DecomposableId](node.getURI).map(IdTypeUri).toOption
+    case node: Node_URI   => applyRef[Id](node.getURI).map(IdTypeUri).toOption
     case node: Node_Blank => Some(IdTypeBlank(node.getBlankNodeId.getLabelString))
     case _                => None
   }
@@ -75,11 +75,11 @@ private[ld] final case class JenaJsonLD(json: Json) extends JsonLD {
     }
   }
 
-  override def prefixValueOf(prefixName: PrefixName): Option[PrefixValue] =
-    Option(graph.getPrefixMapping.getNsPrefixURI(prefixName.value)).flatMap(uri => applyRef[PrefixValue](uri).toOption)
+  override def prefixValueOf(prefixName: Prefix): Option[Namespace] =
+    Option(graph.getPrefixMapping.getNsPrefixURI(prefixName.value)).flatMap(uri => applyRef[Namespace](uri).toOption)
 
-  override def prefixNameOf(prefixValue: PrefixValue): Option[PrefixName] =
-    Option(graph.getPrefixMapping.getNsURIPrefix(prefixValue.value)).flatMap(str => applyRef[PrefixName](str).toOption)
+  override def prefixNameOf(prefixValue: Namespace): Option[Prefix] =
+    Option(graph.getPrefixMapping.getNsURIPrefix(prefixValue.value)).flatMap(str => applyRef[Prefix](str).toOption)
 
   private implicit def idRefToNode(idRef: IdRef): Node = NodeFactory.createURI(idRef.id.toString())
 
@@ -90,17 +90,17 @@ private[ld] final case class JenaJsonLD(json: Json) extends JsonLD {
       if (node.isURI) {
         val uri   = node.getURI
         val short = graph.getPrefixMapping.shortForm(uri)
-        if (short == uri) applyRef[DecomposableId](uri).map(_.toId)
+        if (short == uri) applyRef[Id](uri).map(_.toId)
         else
           short.split(":", 2).toList match {
             case prefix :: reference :: Nil =>
               IdRef.build(prefix, uri.replaceFirst(reference, ""), reference)
             case _ =>
-              applyRef[DecomposableId](uri).map(_.toId)
+              applyRef[Id](uri).map(_.toId)
           }
       } else Left("The current node is not a URI")
   }
 
-  override def expand(value: String): Option[DecomposableId] =
-    applyRef[DecomposableId](model.expandPrefix(value)).toOption
+  override def expand(value: String): Option[Id] =
+    applyRef[Id](model.expandPrefix(value)).toOption
 }

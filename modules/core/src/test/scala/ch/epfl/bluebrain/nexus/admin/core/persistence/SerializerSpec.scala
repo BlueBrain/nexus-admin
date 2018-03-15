@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.admin.core.persistence.SerializerSpec.DataAndJson
 import ch.epfl.bluebrain.nexus.admin.core.projects.Project.{Config, Value}
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceEvent
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceEvent._
-import ch.epfl.bluebrain.nexus.admin.refined.ld.DecomposableId
+import ch.epfl.bluebrain.nexus.admin.refined.ld.Id
 import ch.epfl.bluebrain.nexus.commons.iam.acls.Meta
 import ch.epfl.bluebrain.nexus.commons.iam.identity.Identity.UserRef
 import eu.timepit.refined.auto._
@@ -29,7 +29,7 @@ class SerializerSpec extends WordSpecLike with Matchers with Inspectors with Sca
 
   "A Serializer" when {
 
-    val projectId: DecomposableId = "https://bbp.epfl.ch/nexus/projects/projectid"
+    val projectId: Id = "https://bbp.epfl.ch/nexus/projects/projectid"
     val meta                      = Meta(UserRef("realm", "sub:1234"), Clock.systemUTC.instant())
     val tags                      = Set("project")
 

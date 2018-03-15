@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.admin.core.config
 import akka.actor.{ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.admin.core.config.AppConfig._
-import ch.epfl.bluebrain.nexus.admin.refined.ld.DecomposableId
+import ch.epfl.bluebrain.nexus.admin.refined.ld.Id
 import ch.epfl.bluebrain.nexus.commons.http.ContextUri
 import com.typesafe.config.Config
 import eu.timepit.refined.pureconfig._
@@ -26,7 +26,7 @@ class Settings(config: Config) extends Extension {
 
   private implicit val contextUriConverter: ConfigConvert[ContextUri] =
     ConfigConvert.viaString[ContextUri](s =>
-                                          applyRef[DecomposableId](s)
+                                          applyRef[Id](s)
                                             .map(id => ContextUri(id.value))
                                             .left
                                             .map[FailureReason](err => CannotConvert(s, "ContextUri", err)),

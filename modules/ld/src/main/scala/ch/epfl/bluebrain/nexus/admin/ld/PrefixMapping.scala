@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.admin.ld
 
-import ch.epfl.bluebrain.nexus.admin.refined.ld.{PrefixName, PrefixValue}
+import ch.epfl.bluebrain.nexus.admin.refined.ld.{Prefix, Namespace}
 import ch.epfl.bluebrain.nexus.commons.test.Randomness._
 import eu.timepit.refined.api.RefType.refinedRefType
 import eu.timepit.refined.api.Refined
@@ -11,20 +11,20 @@ import eu.timepit.refined.auto._
 /**
   * A single name to uri mapping (an entry of a prefix mapping).
   *
-  * @param name  the prefix name
-  * @param value the value to which the name expands
+  * @param prefix    the prefix name
+  * @param namespace the value to which the name expands
   */
-final case class Prefix(name: PrefixName, value: PrefixValue)
-object Prefix {
+final case class PrefixMapping(prefix: Prefix, namespace: Namespace)
+object PrefixMapping {
   private val startPool = Vector.range('a', 'z') ++ Vector.range('A', 'Z') ++ Vector('_')
   private val pool      = Vector.range('a', 'z') ++ Vector.range('A', 'Z') ++ Vector.range('0', '9') :+ '_' :+ '-' :+ '.'
 
   /**
-    * Creates a random [[PrefixName]].
+    * Creates a random [[Prefix]].
     *
     * @param length the length of the prefix name to be created
     */
-  def randomPrefixName(length: Int Refined Greater[W.`1`.T] = 5): PrefixName =
+  def randomPrefixName(length: Int Refined Greater[W.`1`.T] = 5): Prefix =
     refinedRefType.unsafeWrap(genString(1, startPool) + genString(genInt(length - 1), pool))
 
 }
