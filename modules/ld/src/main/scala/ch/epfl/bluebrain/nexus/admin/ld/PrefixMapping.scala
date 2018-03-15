@@ -11,8 +11,9 @@ import eu.timepit.refined.auto._
 /**
   * A single name to uri mapping (an entry of a prefix mapping).
   *
-  * @param prefix    the prefix name
-  * @param namespace the value to which the name expands
+  * @param prefix    the prefix (left side of a PrefixMapping)
+  * @param namespace the namespace (right side of a PrefixMapping).
+  *                  Is the value to which the name expands, as well as the prefix component of the curie.
   */
 final case class PrefixMapping(prefix: Prefix, namespace: Namespace)
 object PrefixMapping {
@@ -22,9 +23,9 @@ object PrefixMapping {
   /**
     * Creates a random [[Prefix]].
     *
-    * @param length the length of the prefix name to be created
+    * @param length the length of the prefix (left side of a PrefixMapping) to be created
     */
-  def randomPrefixName(length: Int Refined Greater[W.`1`.T] = 5): Prefix =
+  def randomPrefix(length: Int Refined Greater[W.`1`.T] = 5): Prefix =
     refinedRefType.unsafeWrap(genString(1, startPool) + genString(genInt(length - 1), pool))
 
 }

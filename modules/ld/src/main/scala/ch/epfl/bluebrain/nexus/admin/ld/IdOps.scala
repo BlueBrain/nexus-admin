@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.admin.ld
 
 import ch.epfl.bluebrain.nexus.admin.refined.ld.Id
-import ch.epfl.bluebrain.nexus.admin.ld.PrefixMapping.randomPrefixName
+import ch.epfl.bluebrain.nexus.admin.ld.PrefixMapping.randomPrefix
 import eu.timepit.refined.api.RefType.applyRef
 import io.circe.{Decoder, Encoder}
 
@@ -13,11 +13,11 @@ object IdOps {
   implicit class IdSyntax(value: Id) {
 
     /**
-      * Converts a [[Id]] to an [[IdRef]] with a random ''prefixName''
+      * Converts a [[Id]] to an [[IdRef]] with a random ''prefix''
       */
     def toId: IdRef = {
-      val (prefixValue, reference) = value.decompose
-      IdRef(randomPrefixName(), prefixValue, reference)
+      val (namespace, reference) = value.decompose
+      IdRef(randomPrefix(), namespace, reference)
     }
 
   }

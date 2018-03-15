@@ -57,24 +57,24 @@ class JsonLDSpec extends WordSpecLike with Matchers with Resources with OptionVa
       mergedJsonLD.json shouldEqual mergedJson
     }
 
-    "return the prefix value given a prefix name" in {
-      jsonLD.prefixValueOf("xsd").value shouldEqual ("http://www.w3.org/2001/XMLSchema#": Namespace)
+    "return the namespace given a prefix" in {
+      jsonLD.namespaceOf("xsd").value shouldEqual ("http://www.w3.org/2001/XMLSchema#": Namespace)
     }
 
-    "return None attempting to fetch a prefix value when the prefix value in the json @context is wrong" in {
-      jsonLD.prefixValueOf("invalidPrefixValue") shouldEqual None
+    "return None attempting to fetch a namespace when the namespace in the json @context is wrong" in {
+      jsonLD.namespaceOf("invalidNamespace") shouldEqual None
     }
 
-    "return None attempting to fetch a prefix value when the prefix name does not exist in the json @context" in {
-      jsonLD.prefixValueOf("nonExisting") shouldEqual None
+    "return None attempting to fetch a namespace when the prefix does not exist in the json @context" in {
+      jsonLD.namespaceOf("nonExisting") shouldEqual None
     }
 
-    "return the prefix name given a prefix value" in {
-      jsonLD.prefixNameOf("http://www.w3.org/2001/XMLSchema#").value shouldEqual ("xsd": Prefix)
+    "return the prefix given a namespace" in {
+      jsonLD.prefixOf("http://www.w3.org/2001/XMLSchema#").value shouldEqual ("xsd": Prefix)
     }
 
-    "return None attempting to fetch a prefix name when the prefix value does not exist in the json @context" in {
-      jsonLD.prefixNameOf("http://non-existinf.com/something/") shouldEqual None
+    "return None attempting to fetch a prefix when the namespace does not exist in the json @context" in {
+      jsonLD.prefixOf("http://non-existinf.com/something/") shouldEqual None
     }
 
     "expand a value" in {

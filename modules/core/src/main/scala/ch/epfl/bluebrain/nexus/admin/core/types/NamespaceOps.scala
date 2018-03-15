@@ -3,19 +3,19 @@ package ch.epfl.bluebrain.nexus.admin.core.types
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.admin.refined.ld.Namespace
 
-object PrefixValueOps {
+object NamespaceOps {
 
   /**
     * Interface syntax to expose new functionality into [[Namespace]] type
     *
-    * @param prefixVal the instance of [[Namespace]]
+    * @param namespace the instance of [[Namespace]]
     */
-  implicit class PrefixValueSyntax(prefixVal: Namespace) {
+  implicit class NamespaceSyntax(namespace: Namespace) {
 
     /**
       * Converts [[Namespace]] to [[Uri]]
       */
-    lazy val toUri: Uri = Uri(prefixVal.value)
+    lazy val toUri: Uri = Uri(namespace.value)
 
     /**
       * Returns a String representation of the uri's address.

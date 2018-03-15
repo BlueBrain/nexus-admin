@@ -65,24 +65,24 @@ trait JsonLD {
   def deepMerge(otherLD: JsonLD): JsonLD = deepMerge(otherLD.json)
 
   /**
-    * Attempt to fetch the [[Namespace]] for a given ''prefixName''.
-    * It will look up into the JSON-LD @context object whether the ''prefixName'' key exists, and it will return the value associated to it.
+    * Attempt to fetch the [[Namespace]] for a given ''prefix''.
+    * It will look up into the JSON-LD @context object whether the ''prefix'' key exists, and it will return the value associated to it.
     *
-    * @param prefixName the prefix name to look up into the @context object
+    * @param prefix the prefix to look up into the @context object
     */
-  def prefixValueOf(prefixName: Prefix): Option[Namespace]
+  def namespaceOf(prefix: Prefix): Option[Namespace]
 
   /**
-    * Attempt to fetch the [[Prefix]] for a given ''prefixValue''.
-    * It will look up into the JSON-LD @context object whether the ''prefixValue'' value exists, and it will return the key associated to it.
+    * Attempt to fetch the [[Prefix]] for a given ''namespace''.
+    * It will look up into the JSON-LD @context object whether the ''namespace'' value exists, and it will return the key associated to it.
     *
-    * @param prefixValue the prefix value to look up into the @context object
+    * @param namespace the namespace (right side of a PrefixMapping) to look up into the @context object
     */
-  def prefixNameOf(prefixValue: Namespace): Option[Prefix]
+  def prefixOf(namespace: Namespace): Option[Prefix]
 
   /**
     * Attempt to expand the ''value'' using the prefix mappings available if possible.
-    * Example: given a value nxv:rev and a prefix mappings available for the prefixName nxv (with a value of prefixValue), return prefixValue+rev.
+    * Example: given a value nxv:rev and a prefix mappings available for the prefix nxv (with a value of namespace), return namespace+rev.
     * Otherwise return None.
     *
     * @param value the value to expand.

@@ -5,9 +5,9 @@ import ch.epfl.bluebrain.nexus.commons.test.Randomness
 import eu.timepit.refined.api.RefType._
 import org.scalatest.{EitherValues, Inspectors, Matchers, WordSpecLike}
 
-class PrefixValueSpec extends WordSpecLike with Matchers with Inspectors with Randomness with EitherValues {
+class NamespaceSpec extends WordSpecLike with Matchers with Inspectors with Randomness with EitherValues {
 
-  "A PrefixValue" should {
+  "A Namespace" should {
     "be constructed properly" in {
       val pool = Vector.range('a', 'z') ++ Vector.range('A', 'Z') ++ Vector.range('0', '9') ++ Vector('-', '_')
       val list =

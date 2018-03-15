@@ -7,7 +7,7 @@ class RandomPrefixMappingNameSpec extends WordSpecLike with Matchers with Inspec
 
   "A random PrefixName" should {
     "be constructed correctly" in {
-      List.fill(100)(randomPrefixName())
+      List.fill(100)(randomPrefix())
     }
   }
 }

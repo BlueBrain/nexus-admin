@@ -61,7 +61,7 @@ object AppConfig {
 
   final case class OrgConfig(name: String)
 
-  final case class ProjectsConfig(passivationTimeout: Duration, prefixValue: Namespace)
+  final case class ProjectsConfig(passivationTimeout: Duration, namespace: Namespace)
 
   final case class PaginationConfig(from: Long Refined NonNegative,
                                     size: Int Refined Positive,

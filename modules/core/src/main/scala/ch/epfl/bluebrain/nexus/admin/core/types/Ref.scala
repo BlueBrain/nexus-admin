@@ -23,7 +23,7 @@ object Ref {
     * @param config the implicitly available project specific settings
     */
   final implicit def refToResolvable(implicit config: ProjectsConfig): IdResolvable[ProjectReference] =
-    (a: ProjectReference) => IdRef("projects", config.prefixValue, a)
+    (a: ProjectReference) => IdRef("projects", config.namespace, a)
 
   final implicit def aToRef[A: IdResolvable](value: A): Ref[A] = Ref(value)
 }

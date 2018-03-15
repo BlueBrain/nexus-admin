@@ -183,7 +183,7 @@ class Resources[F[_], A: IdResolvable](agg: Agg[F])(implicit
     }
 
   private implicit def toId(id: A): Id =
-    (id.namespace, id.reference).Id
+    (id.namespace, id.reference).id
 }
 
 object Resources {

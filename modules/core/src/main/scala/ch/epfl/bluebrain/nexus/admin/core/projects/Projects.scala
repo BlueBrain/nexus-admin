@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.admin.core.projects.Project.Value
 import ch.epfl.bluebrain.nexus.admin.core.projects.Projects._
 import ch.epfl.bluebrain.nexus.admin.core.resources.Resources.Agg
 import ch.epfl.bluebrain.nexus.admin.core.resources.{Resource, Resources}
-import ch.epfl.bluebrain.nexus.admin.core.types.PrefixValueOps._
+import ch.epfl.bluebrain.nexus.admin.core.types.NamespaceOps._
 import ch.epfl.bluebrain.nexus.admin.core.types.Ref._
 import ch.epfl.bluebrain.nexus.admin.core.types.RefVersioned
 import ch.epfl.bluebrain.nexus.admin.ld.{IdRef, IdResolvable}

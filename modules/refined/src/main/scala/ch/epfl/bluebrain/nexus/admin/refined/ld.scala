@@ -71,11 +71,11 @@ object ld {
     implicit class ToIdSyntax(value: (Namespace, Reference)) {
 
       /**
-        * Build a [[Id]] out of an instance of [[Namespace]] and [[Reference]]
+        * Build a [[id]] out of an instance of [[Namespace]] and [[Reference]]
         */
-      def Id: Id = {
-        val (prefixValue, reference) = value
-        refinedRefType.unsafeWrap(s"$prefixValue$reference")
+      def id: Id = {
+        val (namespace, reference) = value
+        refinedRefType.unsafeWrap(s"$namespace$reference")
       }
     }
 

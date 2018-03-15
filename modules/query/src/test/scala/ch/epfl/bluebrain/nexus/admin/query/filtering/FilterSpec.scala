@@ -20,7 +20,7 @@ class FilterSpec extends WordSpecLike with Matchers with Resources with EitherVa
   private val base         = "http://localhost/v0"
   private val replacements = Map(Pattern.quote("{{base}}") -> base)
 
-  val nexusBaseVoc: Uri = nxv.value.value
+  val nexusBaseVoc: Uri = nxv.namespace.value
 
   private val prov     = Uri("http://www.w3.org/ns/prov#")
   private val rdf      = Uri("http://www.w3.org/1999/02/22-rdf-syntax-ns#")
