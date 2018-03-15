@@ -1,36 +1,37 @@
 package ch.epfl.bluebrain.nexus.admin.ld
 
-import ch.epfl.bluebrain.nexus.admin.ld.Prefix.randomPrefixName
+import ch.epfl.bluebrain.nexus.admin.ld.PrefixMapping.randomPrefix
 import ch.epfl.bluebrain.nexus.admin.refined.ld._
 
 /**
   * Helper to build a [[IdRef]]
   *
-  * @param name  the prefix name
-  * @param value the value to which the name expands
+  * @param prefix    the prefix (left side of a PrefixMapping)
+  * @param namespace the namespace (right side of a PrefixMapping). Is the value to which the name expands, as well as the prefix component of the curie.
   */
-class IdRefBuilder(name: PrefixName, val value: PrefixValue) {
+class IdRefBuilder(prefix: Prefix, val namespace: Namespace) {
 
   /**
-    * Change the prefix name of the builder
-    * @param otherName the new prefix name
+    * Change the prefix of the builder
+    *
+    * @param otherPrefix the new prefix
     * @return a new [[IdRefBuilder]]
     */
-  def withPrefix(otherName: PrefixName): IdRefBuilder =
-    IdRefBuilder(otherName, value)
+  def withPrefix(otherPrefix: Prefix): IdRefBuilder =
+    IdRefBuilder(otherPrefix, namespace)
 
   /**
     * Build the [[IdRef]] with the provided ''reference''.
     *
     * @param reference the reference component of the curie
     */
-  def build(reference: Reference): IdRef = IdRef(name, value, reference)
+  def build(reference: Reference): IdRef = IdRef(prefix, namespace, reference)
 
 }
 
 object IdRefBuilder {
-  final def apply(name: PrefixName, value: PrefixValue): IdRefBuilder = new IdRefBuilder(name, value)
-  final def apply(prefix: Prefix): IdRefBuilder                       = apply(prefix.name, prefix.value)
-  final def apply(value: PrefixValue): IdRefBuilder                   = apply(Prefix(randomPrefixName(), value))
+  final def apply(name: Prefix, value: Namespace): IdRefBuilder = new IdRefBuilder(name, value)
+  final def apply(prefix: PrefixMapping): IdRefBuilder          = apply(prefix.prefix, prefix.namespace)
+  final def apply(value: Namespace): IdRefBuilder               = apply(PrefixMapping(randomPrefix(), value))
 
 }

@@ -36,7 +36,7 @@ object Filter {
     * @param context the @context object to apply to the filter
     */
   final def filterDecoder(context: Json): Decoder[Filter] = {
-    val voc        = nxv.value.value
+    val voc        = nxv.namespace.value
     val filterProp = ResourceFactory.createProperty(voc, "filter")
     val pathProp   = ResourceFactory.createProperty(voc, "path")
     val valueProp  = ResourceFactory.createProperty(voc, "value")

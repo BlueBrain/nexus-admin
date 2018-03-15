@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.admin.core.resources
 
 import ch.epfl.bluebrain.nexus.admin.core.types.Versioned
-import ch.epfl.bluebrain.nexus.admin.refined.ld.DecomposableId
+import ch.epfl.bluebrain.nexus.admin.refined.ld.Id
 import ch.epfl.bluebrain.nexus.commons.iam.acls.Meta
 import io.circe.Json
 
@@ -10,7 +10,7 @@ import io.circe.Json
   */
 sealed trait ResourceCommand extends Product with Serializable {
 
-  def id: DecomposableId
+  def id: Id
   def meta: Meta
   def tags: Set[String]
 }
@@ -25,8 +25,7 @@ object ResourceCommand {
     * @param tags  the tags added to the consequent [[ch.epfl.bluebrain.nexus.admin.core.resources.ResourceEvent]] which might be created as a result of this operation
     * @param value the json payload of the resource
     */
-  final case class CreateResource(id: DecomposableId, meta: Meta, tags: Set[String], value: Json)
-      extends ResourceCommand
+  final case class CreateResource(id: Id, meta: Meta, tags: Set[String], value: Json) extends ResourceCommand
 
   /**
     * Command that signals the intent to update a resource payload.
@@ -37,7 +36,7 @@ object ResourceCommand {
     * @param tags  the tags added to the consequent [[ch.epfl.bluebrain.nexus.admin.core.resources.ResourceEvent]] which might be created as a result of this operation
     * @param value the json payload of the resource
     */
-  final case class UpdateResource(id: DecomposableId, rev: Long, meta: Meta, tags: Set[String], value: Json)
+  final case class UpdateResource(id: Id, rev: Long, meta: Meta, tags: Set[String], value: Json)
       extends ResourceCommand
       with Versioned
 
@@ -49,7 +48,7 @@ object ResourceCommand {
     * @param meta  the metadata associated to this command
     * @param tags  the tags added to the consequent [[ch.epfl.bluebrain.nexus.admin.core.resources.ResourceEvent]] which might be created as a result of this operation
     */
-  final case class DeprecateResource(id: DecomposableId, rev: Long, meta: Meta, tags: Set[String])
+  final case class DeprecateResource(id: Id, rev: Long, meta: Meta, tags: Set[String])
       extends ResourceCommand
       with Versioned
 }

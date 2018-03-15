@@ -4,8 +4,8 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Directive, Directive1, MalformedQueryParamRejection}
 import ch.epfl.bluebrain.nexus.admin.core.config.AppConfig.PaginationConfig
 import ch.epfl.bluebrain.nexus.admin.core.directives.StringUnmarshaller._
-import ch.epfl.bluebrain.nexus.admin.ld.{Const, JsonLD}
 import ch.epfl.bluebrain.nexus.admin.ld.JsonLD._
+import ch.epfl.bluebrain.nexus.admin.ld.{Const, JsonLD}
 import ch.epfl.bluebrain.nexus.admin.query.QueryPayload._
 import ch.epfl.bluebrain.nexus.admin.query.filtering.Filter
 import ch.epfl.bluebrain.nexus.admin.query.{Field, JsonLdFormat, QueryPayload}
@@ -13,8 +13,6 @@ import ch.epfl.bluebrain.nexus.commons.types.HttpRejection.WrongOrInvalidJson
 import ch.epfl.bluebrain.nexus.commons.types.search.{Pagination, SortList}
 import io.circe.parser._
 import io.circe.{Decoder, Json}
-
-import scala.util.Try
 
 /**
   * Collection of query specific directives.
@@ -51,7 +49,7 @@ trait QueryDirectives {
     *
     */
   def filtered(implicit D: Decoder[Filter]): Directive1[Filter] =
-    parameter('filter.as[Filter](unmarshaller(toJson)) ? Filter.Empty)
+    parameter('filter.as[Filter](unmarshallJson) ? Filter.Empty)
 
   /**
     * Extracts the ''q'' query param from the request. This param will be used as a full text search
@@ -75,25 +73,20 @@ trait QueryDirectives {
     * Extracts the ''format'' query param from the request.
     */
   def format(implicit D: Decoder[JsonLdFormat]): Directive1[JsonLdFormat] =
-    parameter('format.as[JsonLdFormat](unmarshaller(toJsonString)) ? (JsonLdFormat.Default: JsonLdFormat))
+    parameter('format.as[JsonLdFormat](unmarshallJsonString) ? (JsonLdFormat.Default: JsonLdFormat))
 
   /**
     * Extracts the ''sort'' query param from the request.
     */
   def sort(implicit D: Decoder[SortList]): Directive1[SortList] =
-    parameter('sort.as[SortList](unmarshaller(toJsonArr)) ? SortList.Empty)
+    parameter('sort.as[SortList](unmarshallJsonArr) ? SortList.Empty)
 
   /**
     * Extracts the ''fields'' query param from the request.
     */
   def fields(implicit D: Decoder[Set[Field]]): Directive1[Set[Field]] = {
-    parameter('fields.as[Set[Field]](unmarshaller(toJsonArr)) ? Set.empty[Field])
+    parameter('fields.as[Set[Field]](unmarshallJsonArr) ? Set.empty[Field])
   }
-
-  private def toJsonArr(value: String) =
-    Right(Json.arr(value.split(",").foldLeft(Vector.empty[Json])((acc, c) => acc :+ Json.fromString(c)): _*))
-  private def toJsonString(value: String) = Right(Json.fromString(value))
-  private def toJson(value: String)       = parse(value).left.map(err => WrongOrInvalidJson(Try(err.message).toOption))
 
   /**
     * Extracts the [[QueryPayload]] from the provided query parameters.

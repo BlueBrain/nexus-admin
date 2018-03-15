@@ -1,44 +1,45 @@
 package ch.epfl.bluebrain.nexus.admin.ld
 
-import cats._
-import cats.implicits._
+import cats.Show
+import cats.syntax.all._
+import cats.instances.all._
 import ch.epfl.bluebrain.nexus.admin.refined.ld._
 import eu.timepit.refined.api.RefType._
 
 /**
   * Data type which contains the information needed to build
-  * both a [[Curie]] and a [[Prefix]] as well as to build the expanded [[Id]]
+  * both a [[Curie]] and a [[PrefixMapping]] as well as to build the expanded [[Id]]
   *
-  * @param prefixName  the prefix name
-  * @param prefixValue the value to which the name expands,
-  *                    as well as the prefix component of the curie
-  * @param reference   the reference component of the curie
+  * @param prefix    the prefix (left side of a PrefixMapping)
+  * @param namespace the namespace (right side of a PrefixMapping).
+  *                  Is the value to which the name expands, as well as the prefix component of the curie.
+  * @param reference the reference component of the curie
   */
-final case class IdRef(prefixName: PrefixName, prefixValue: PrefixValue, reference: Reference) {
+final case class IdRef(prefix: Prefix, namespace: Namespace, reference: Reference) {
 
   lazy val curie: Curie =
-    Curie(prefixName, reference)
+    Curie(prefix, reference)
 
-  lazy val prefix: Prefix =
-    Prefix(prefixName, prefixValue)
+  lazy val prefixMapping: PrefixMapping =
+    PrefixMapping(prefix, namespace)
 
-  lazy val id: DecomposableId =
-    refinedRefType.unsafeWrap(s"${prefixValue.value}${reference.value}")
+  lazy val id: Id =
+    refinedRefType.unsafeWrap(s"${namespace.value}${reference.value}")
 }
 
 object IdRef {
 
   /**
-    * Attempts to construct a [[IdRef]] from an untyped ''prefixName'', ''prefixValue'' and ''reference''
+    * Attempts to construct a [[IdRef]] from an untyped ''prefix'', ''namespace'' and ''reference''
     *
-    * @param prefixName  the untyped prefix name
-    * @param prefixValue the untyped value to which the name expands,
-    *                    as well as the prefix component of the curie
-    * @param reference   the untyped reference component of the curie
+    * @param prefix    the untyped prefix (left side of a PrefixMapping)
+    * @param namespace the untyped namespace (right side of a PrefixMapping).
+    *                  Is the value to which the name expands, as well as the prefix component of the curie.
+    * @param reference the untyped reference component of the curie
     */
   // $COVERAGE-OFF$
-  final def build(prefixName: String, prefixValue: String, reference: String): Either[String, IdRef] =
-    (applyRef[PrefixName](prefixName), applyRef[PrefixValue](prefixValue), applyRef[Reference](reference)).mapN {
+  final def build(prefix: String, namespace: String, reference: String): Either[String, IdRef] =
+    (applyRef[Prefix](prefix), applyRef[Namespace](namespace), applyRef[Reference](reference)).mapN {
       case ((p, v, r)) => new IdRef(p, v, r)
     }
   // $COVERAGE-ON$

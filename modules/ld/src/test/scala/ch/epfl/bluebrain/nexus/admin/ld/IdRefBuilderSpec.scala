@@ -15,20 +15,20 @@ class IdRefBuilderSpec extends WordSpecLike with Matchers {
     }
 
     "construct a IdRef from a Prefix" in {
-      IdRefBuilder(Prefix("schema", "http://schema.org/")).build("name") shouldEqual IdRef("schema",
+      IdRefBuilder(PrefixMapping("schema", "http://schema.org/")).build("name") shouldEqual IdRef("schema",
                                                                                            "http://schema.org/",
                                                                                            "name")
     }
 
-    "generate a new builder when changing the prefix name" in {
-      val builder = IdRefBuilder(Prefix("schema", "http://schema.org/"))
+    "generate a new builder when changing the prefix" in {
+      val builder = IdRefBuilder(PrefixMapping("schema", "http://schema.org/"))
       builder.withPrefix("schema2").build("name") shouldEqual IdRef("schema2", "http://schema.org/", "name")
     }
 
-    "construct a IdRef with random prefix name" in {
+    "construct a IdRef with random prefix" in {
       val idRef = IdRefBuilder("http://schema.org/").build("name")
-      idRef.reference shouldEqual ("name": PrefixName)
-      idRef.prefixValue shouldEqual ("http://schema.org/": PrefixValue)
+      idRef.reference shouldEqual ("name": Prefix)
+      idRef.namespace shouldEqual ("http://schema.org/": Namespace)
     }
   }
 

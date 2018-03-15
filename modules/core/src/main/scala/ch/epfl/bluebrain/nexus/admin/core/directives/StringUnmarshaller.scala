@@ -5,30 +5,39 @@ import ch.epfl.bluebrain.nexus.commons.types.HttpRejection.WrongOrInvalidJson
 import io.circe.parser._
 import io.circe.{Decoder, Json}
 
+import scala.util.Try
+
 object StringUnmarshaller {
 
   /**
-    * String => `Json`
+    * String => Json array => `A`
     *
-    * @return unmarshaller for `Json`
-    */
-  implicit val jsonFromStringUnmarshaller: FromStringUnmarshaller[Json] =
-    Unmarshaller.strict[String, Json] {
-      case "" => throw Unmarshaller.NoContentException
-      case value =>
-        parse(value) match {
-          case Left(err)   => throw new WrongOrInvalidJson(Some(err.message))
-          case Right(json) => json
-        }
-    }
-
-  /**
-    * String => `A`
-    *
-    * @param f the function to convert from String => `Json`
     * @return unmarshaller for `A`
     */
-  def unmarshaller[A](f: (String => Either[Throwable, Json]))(implicit dec: Decoder[A]): FromStringUnmarshaller[A] =
+  def unmarshallJsonArr[A: Decoder]: FromStringUnmarshaller[A] = unmarshaller { (value) =>
+    Right(Json.arr(value.split(",").foldLeft(Vector.empty[Json])((acc, c) => acc :+ Json.fromString(c)): _*))
+  }
+
+  /**
+    * String => Json string => `A`
+    *
+    * @return unmarshaller for `A`
+    */
+  def unmarshallJsonString[A: Decoder]: FromStringUnmarshaller[A] = unmarshaller { (value) =>
+    Right(Json.fromString(value))
+  }
+
+  /**
+    * String => Json => `A`
+    *
+    * @return unmarshaller for `A`
+    */
+  def unmarshallJson[A: Decoder]: FromStringUnmarshaller[A] = unmarshaller { (value) =>
+    parse(value).left.map(err => WrongOrInvalidJson(Try(err.message).toOption))
+  }
+
+  private def unmarshaller[A](f: (String => Either[Throwable, Json]))(
+      implicit dec: Decoder[A]): FromStringUnmarshaller[A] =
     Unmarshaller.strict[String, A] {
       case "" => throw Unmarshaller.NoContentException
       case string =>

@@ -4,7 +4,7 @@ import java.time.Clock
 
 import akka.persistence.journal.Tagged
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceEvent._
-import ch.epfl.bluebrain.nexus.admin.refined.ld.DecomposableId
+import ch.epfl.bluebrain.nexus.admin.refined.ld.Id
 import ch.epfl.bluebrain.nexus.commons.iam.acls.Meta
 import ch.epfl.bluebrain.nexus.commons.iam.identity.Identity.UserRef
 import ch.epfl.bluebrain.nexus.commons.test.Randomness
@@ -22,7 +22,7 @@ class TaggingAdapterSpec extends WordSpecLike with Matchers with Inspectors with
 
     val adapter = new TaggingAdapter()
 
-    val id: DecomposableId = "https://bbp.epfl.ch/nexus/projects/projectid"
+    val id: Id = "https://bbp.epfl.ch/nexus/projects/projectid"
     val meta               = Meta(UserRef("realm", "sub:1234"), Clock.systemUTC.instant())
 
     val mapping = Map(
