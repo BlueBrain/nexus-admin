@@ -11,7 +11,9 @@ object Const extends Resources {
   val `@type`    = "@type"
   val `@context` = "@context"
 
-  val defaultContext: JsonLD = jsonContentOf("/default-context.json")
+  val filterContext: JsonLD = jsonContentOf("/filter-context.json")
+
+  val projectContext: JsonLD = jsonContentOf("/project-context.json")
 
   //noinspection TypeAnnotation
   object rdf extends IdRefBuilder("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#") {
@@ -20,7 +22,8 @@ object Const extends Resources {
 
   //noinspection TypeAnnotation
   object schema extends IdRefBuilder("schema", "http://schema.org/") {
-    val name = build("name")
+    val name  = build("name")
+    val label = build("label")
   }
 
   //noinspection TypeAnnotation
@@ -28,12 +31,15 @@ object Const extends Resources {
     val rev               = build("rev")
     val deprecated        = build("deprecated")
     val self              = build("self")
-    val Project           = build("Project")
-    val maxAttachmentSize = build("maxAttachmentSize")
-    val config            = build("config")
     val allFields         = build("all")
     val createdAtTime     = build("createdAtTime")
-
+    val description       = build("description")
+    val Project           = build("Project")
+    val config            = build("config")
+    val maxAttachmentSize = build("maxAttachmentSize")
+    val prefixMappings    = build("prefixMappings")
+    val prefix            = build("prefix")
+    val ns                = build("namespace")
   }
 
 }

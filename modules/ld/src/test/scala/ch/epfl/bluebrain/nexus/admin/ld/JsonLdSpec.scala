@@ -1,12 +1,12 @@
 package ch.epfl.bluebrain.nexus.admin.ld
 
 import akka.http.scaladsl.model.Uri
-import ch.epfl.bluebrain.nexus.admin.ld.JsonLD.{IdTypeBlank, IdTypeUri}
+import ch.epfl.bluebrain.nexus.admin.refined.ld.Uri._
 import ch.epfl.bluebrain.nexus.admin.refined.ld._
 import ch.epfl.bluebrain.nexus.commons.test.Resources
-import org.scalatest.{Inspectors, Matchers, OptionValues, WordSpecLike}
 import eu.timepit.refined.auto._
 import io.circe.Json
+import org.scalatest.{Inspectors, Matchers, OptionValues, WordSpecLike}
 
 class JsonLDSpec extends WordSpecLike with Matchers with Resources with OptionValues with Inspectors {
 
@@ -17,22 +17,41 @@ class JsonLDSpec extends WordSpecLike with Matchers with Resources with OptionVa
     val schemaOrg         = new IdRefBuilder("schema", "http://schema.org/")
 
     "find a string from a given a predicate" in {
-      jsonLD.predicate[String](schemaOrg.build("name")).value shouldEqual "The Empire State Building"
+      jsonLD.value[String](schemaOrg.build("name")).value shouldEqual "The Empire State Building"
     }
 
     "find a uri from a given a predicate" in {
-      jsonLD.predicate[Uri](schemaOrg.build("image")).value shouldEqual Uri(
+      jsonLD.value[Uri](schemaOrg.build("image")).value shouldEqual Uri(
         "http://www.civil.usherbrooke.ca/cours/gci215a/empire-state-building.jpg")
     }
 
-    "find a float from a given a predicate" in {
-      jsonLD.predicate[Float](schemaOrg.build("latitude")).value shouldEqual 40.75f
+    "find a uri from a given a predicate using refined" in {
+      jsonLD.valueR[Id](schemaOrg.build("image")).value shouldEqual ("http://www.civil.usherbrooke.ca/cours/gci215a/empire-state-building.jpg" : Id)
+    }
+
+    "find a float from a given a predicate on a nested field" in {
+      jsonLD.downFirst(schemaOrg.build("geo")).value[Float](schemaOrg.build("latitude")).value shouldEqual 40.75f
+    }
+
+    "find a list of elements from a given a predicate on a nested field" in {
+      jsonLD.down(schemaOrg.build("geo")).foldLeft(List.empty[(Float, Float)]) {
+        case (acc, c) =>
+          val tuple = for {
+            lat  <- c.value[Float](schemaOrg.build("latitude"))
+            long <- c.value[Float](schemaOrg.build("longitude"))
+          } yield (lat -> long)
+          tuple.map(_ :: acc).getOrElse(acc)
+      } should contain theSameElementsAs List(40.75f -> 73.98f, 10.0f -> 12.0f)
+    }
+
+    "failed to get a predicate from an unexisting parent predicate" in {
+      jsonLD.downFirst(schemaOrg.build("nonExisting")).value[Float](schemaOrg.build("latitude")) shouldEqual None
     }
 
     "find the @id" in {
-      jsonLD.id.value shouldBe a[IdTypeBlank]
-      typedJsonLD.id.value shouldEqual IdTypeUri("http://example.org/cars/for-sale#tesla")
-      aliasedTypeJsonLD.id.value shouldEqual IdTypeUri(
+      jsonLD.id shouldBe a[IdTypeBlank]
+      typedJsonLD.id shouldEqual IdTypeUri("http://example.org/cars/for-sale#tesla")
+      aliasedTypeJsonLD.id shouldEqual IdTypeUri(
         "https://bbp-nexus.epfl.ch/dev/v0/contexts/nexus/core/distribution/v0.1.0")
     }
 
@@ -78,17 +97,31 @@ class JsonLDSpec extends WordSpecLike with Matchers with Resources with OptionVa
     }
 
     "expand a value" in {
-      jsonLD.expand("xsd:name").value shouldEqual ("http://www.w3.org/2001/XMLSchema#name" : Id)
+      jsonLD.expand("xsd:name").value shouldEqual ("http://www.w3.org/2001/XMLSchema#name": Id)
     }
 
     "expand a value already expanded returns the original value" in {
-      jsonLD.expand("http://www.w3.org/2001/XMLSchema#name").value shouldEqual ("http://www.w3.org/2001/XMLSchema#name" : Id)
+      jsonLD
+        .expand("http://www.w3.org/2001/XMLSchema#name")
+        .value shouldEqual ("http://www.w3.org/2001/XMLSchema#name": Id)
     }
 
     "fail to expand a value" in {
       forAll(List("", "xsd2:name", "something")) { value =>
         jsonLD.expand(value) shouldEqual None
       }
+    }
+
+    val noIdAddedContext = jsonContentOf("/no_id_added_context.json")
+
+    "append a new context" in {
+      val ctxToAdd = jsonContentOf("/added_context.json")
+      jsonLD.appendContext(ctxToAdd).json shouldEqual noIdAddedContext
+      jsonLD.appendContext(JsonLD(ctxToAdd)).json shouldEqual noIdAddedContext
+    }
+    "append nothing when the passed value does not contain @context" in {
+      val ctxToAdd = Json.obj("one" -> Json.fromString("two"))
+      jsonLD.appendContext(ctxToAdd).json shouldEqual jsonLD.json
     }
   }
 }

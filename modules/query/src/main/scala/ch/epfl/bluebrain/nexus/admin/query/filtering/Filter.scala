@@ -5,7 +5,7 @@ import java.io.ByteArrayInputStream
 import akka.http.scaladsl.model.Uri
 import cats.Eval
 import cats.syntax.either._
-import ch.epfl.bluebrain.nexus.admin.ld.{Const, JsonLD}
+import ch.epfl.bluebrain.nexus.admin.ld.Const
 import ch.epfl.bluebrain.nexus.admin.ld.Const.nxv
 import ch.epfl.bluebrain.nexus.admin.query.filtering.Expr._
 import ch.epfl.bluebrain.nexus.admin.query.filtering.Op._
@@ -16,7 +16,7 @@ import org.apache.jena.graph.{Graph, Node}
 import org.apache.jena.rdf.model._
 import org.apache.jena.riot.{Lang, RDFDataMgr}
 import org.apache.jena.sparql.path.PathParser
-
+import ch.epfl.bluebrain.nexus.admin.ld.JsonLD._
 import scala.collection.JavaConverters._
 import scala.util.Try
 
@@ -242,7 +242,7 @@ object Filter {
     }
 
     Decoder.instance { hcursor =>
-      val cxt   = Json.obj("@context" -> (JsonLD(context).contextValue deepMerge Const.defaultContext.contextValue))
+      val cxt   = context.appendContext(Const.filterContext)
       val json  = Json.obj("filter" -> hcursor.value) deepMerge cxt
       val model = ModelFactory.createDefaultModel()
       RDFDataMgr.read(model, new ByteArrayInputStream(json.noSpaces.getBytes), Lang.JSONLD)

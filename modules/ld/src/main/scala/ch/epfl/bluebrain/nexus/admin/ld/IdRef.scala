@@ -47,4 +47,6 @@ object IdRef {
   final implicit val idRefShow: Show[IdRef] =
     Show.show(id => id.curie.show)
 
+  final implicit def toIdInstance(idRef: IdRef): Id = idRef.id
+
 }

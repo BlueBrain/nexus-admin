@@ -32,7 +32,7 @@ class QueryDirectivesSpec
     with ScalaFutures
     with CancelAfterFailure {
 
-  private val defaultContext = Const.defaultContext.contextValue
+  private val defaultContext = Const.filterContext.contextValue
   private val addedContext   = jsonContentOf("/query/added-context.json")
 
   private case class Response(pagination: Pagination, queryPayload: QueryPayload)
