@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.admin.ld
 
 import akka.http.scaladsl.model.Uri
-import ch.epfl.bluebrain.nexus.admin.refined.ld.Uri._
 import ch.epfl.bluebrain.nexus.admin.refined.ld._
 import ch.epfl.bluebrain.nexus.commons.test.Resources
 import eu.timepit.refined.auto._
@@ -17,7 +16,11 @@ class JsonLDSpec extends WordSpecLike with Matchers with Resources with OptionVa
     val schemaOrg         = new IdRefBuilder("schema", "http://schema.org/")
 
     "find a string from a given a predicate" in {
-      jsonLD.value[String](schemaOrg.build("name")).value shouldEqual "The Empire State Building"
+      jsonLD.value[String](schemaOrg.build("name")).value shouldEqual "empire"
+    }
+
+    "find a prefix from a given a predicate using refined" in {
+      jsonLD.value[Prefix](schemaOrg.build("name")).value shouldEqual ("empire" : Prefix)
     }
 
     "find a uri from a given a predicate" in {
@@ -26,7 +29,11 @@ class JsonLDSpec extends WordSpecLike with Matchers with Resources with OptionVa
     }
 
     "find a uri from a given a predicate using refined" in {
-      jsonLD.valueR[Id](schemaOrg.build("image")).value shouldEqual ("http://www.civil.usherbrooke.ca/cours/gci215a/empire-state-building.jpg" : Id)
+      jsonLD.value[Id](schemaOrg.build("image")).value shouldEqual ("http://www.civil.usherbrooke.ca/cours/gci215a/empire-state-building.jpg" : Id)
+    }
+
+    "find another type of uri from a given a predicate using refined" in {
+      jsonLD.value[AliasOrNamespace](schemaOrg.build("image")).value shouldEqual ("http://www.civil.usherbrooke.ca/cours/gci215a/empire-state-building.jpg" : AliasOrNamespace)
     }
 
     "find a float from a given a predicate on a nested field" in {
@@ -39,7 +46,7 @@ class JsonLDSpec extends WordSpecLike with Matchers with Resources with OptionVa
           val tuple = for {
             lat  <- c.value[Float](schemaOrg.build("latitude"))
             long <- c.value[Float](schemaOrg.build("longitude"))
-          } yield (lat -> long)
+          } yield lat -> long
           tuple.map(_ :: acc).getOrElse(acc)
       } should contain theSameElementsAs List(40.75f -> 73.98f, 10.0f -> 12.0f)
     }

@@ -4,6 +4,9 @@ import ch.epfl.bluebrain.nexus.admin.core.config.AppConfig.ProjectsConfig
 import ch.epfl.bluebrain.nexus.admin.ld.{IdRef, IdResolvable}
 import ch.epfl.bluebrain.nexus.admin.refined.project.{ProjectReference, _}
 import eu.timepit.refined.auto._
+import io.circe.Encoder
+import io.circe.syntax._
+import ch.epfl.bluebrain.nexus.admin.ld.IdOps._
 
 /**
   * A reference of a generic type with an evidence of [[IdResolvable]].
@@ -26,4 +29,7 @@ object Ref {
     (a: ProjectReference) => IdRef("projects", config.namespace, a)
 
   final implicit def aToRef[A: IdResolvable](value: A): Ref[A] = Ref(value)
+
+  final implicit def refEncoder[A: IdResolvable]: Encoder[Ref[A]] =
+    Encoder.encodeJson.contramap(v => v.value.id.asJson)
 }

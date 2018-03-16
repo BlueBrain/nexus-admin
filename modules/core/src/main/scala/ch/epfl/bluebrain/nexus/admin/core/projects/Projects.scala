@@ -7,7 +7,7 @@ import cats.syntax.flatMap._
 import ch.epfl.bluebrain.nexus.admin.core.CallerCtx
 import ch.epfl.bluebrain.nexus.admin.core.Fault.Unexpected
 import ch.epfl.bluebrain.nexus.admin.core.config.AppConfig._
-import ch.epfl.bluebrain.nexus.admin.core.projects.Project.Value
+import ch.epfl.bluebrain.nexus.admin.core.projects.Project.ProjectValue
 import ch.epfl.bluebrain.nexus.admin.core.projects.Projects._
 import ch.epfl.bluebrain.nexus.admin.core.resources.Resources.Agg
 import ch.epfl.bluebrain.nexus.admin.core.resources.{Resource, Resources}
@@ -17,6 +17,7 @@ import ch.epfl.bluebrain.nexus.admin.core.types.RefVersioned
 import ch.epfl.bluebrain.nexus.admin.ld.{IdRef, IdResolvable}
 import ch.epfl.bluebrain.nexus.admin.refined.permissions._
 import ch.epfl.bluebrain.nexus.admin.refined.project._
+import io.circe.Json
 import io.circe.syntax._
 import journal.Logger
 
@@ -28,7 +29,8 @@ import journal.Logger
   * @tparam F the monadic effect type
   */
 class Projects[F[_]](resources: Resources[F, ProjectReference])(implicit F: MonadError[F, Throwable],
-                                                                idRes: IdResolvable[ProjectReference]) {
+                                                                idRes: IdResolvable[ProjectReference],
+                                                                config: ProjectsConfig) {
 
   private val tags = Set("project")
 
@@ -36,24 +38,24 @@ class Projects[F[_]](resources: Resources[F, ProjectReference])(implicit F: Mona
     * Attempts to create a new project instance.
     *
     * @param reference the name of the project
-    * @param value     the metadata of the project
+    * @param value     the payload of the project
     * @return a [[RefVersioned]] instance wrapped in the abstract ''F[_]'' type
     *         if successful, or a [[ch.epfl.bluebrain.nexus.admin.core.Fault]] wrapped within ''F[_]'' otherwise
     */
-  def create(reference: ProjectReference, value: Value)(implicit ctx: CallerCtx,
-                                                        perms: HasOwnProjects): F[RefVersioned[ProjectReference]] =
-    resources.create(reference, value.asJson)(tags, reference.toPersId)
+  def create(reference: ProjectReference, value: Json)(implicit ctx: CallerCtx,
+                                                       perms: HasOwnProjects): F[RefVersioned[ProjectReference]] =
+    resources.create(reference, value)(tags, reference.toPersId)
 
   /**
     * Attempts to update an existing project instance with a new json payload.
     *
     * @param reference the name of the project
     * @param rev       the last known revision of the project instance
-    * @param value     the metadata of the project
+    * @param value     the payload of the project
     * @return a [[RefVersioned]] instance wrapped in the abstract ''F[_]'' type
     *         if successful, or a [[ch.epfl.bluebrain.nexus.admin.core.Fault]] wrapped within ''F[_]'' otherwise
     */
-  def update(reference: ProjectReference, rev: Long, value: Value)(
+  def update(reference: ProjectReference, rev: Long, value: Json)(
       implicit ctx: CallerCtx,
       perms: HasWriteProjects): F[RefVersioned[ProjectReference]] =
     resources.update(reference, rev, value.asJson)(tags, reference.toPersId)
@@ -115,8 +117,8 @@ class Projects[F[_]](resources: Resources[F, ProjectReference])(implicit F: Mona
   private implicit def toProject(resource: F[Option[Resource[ProjectReference]]]): F[Option[Project]] =
     resource.flatMap {
       case Some(Resource(id, rev, value, deprecated)) =>
-        value.as[Value] match {
-          case Right(v)  => F.pure(Some(Project(id, rev, v, deprecated)))
+        value.as[ProjectValue] match {
+          case Right(v)  => F.pure(Some(Project(id, rev, v, value, deprecated)))
           case Left(err) =>
             // $COVERAGE-OFF$
             logger.error(s"Could not convert json value '$value' to Value", err)

@@ -21,7 +21,8 @@
       "@id": "nxv:config"
     },
     "maxAttachmentSize": {
-      "@id": "nxv:maxAttachmentSize"
+      "@id": "nxv:maxAttachmentSize",
+      "@type": "xsd:long"
     },
     "description": {
       "@id": "nxv:description"

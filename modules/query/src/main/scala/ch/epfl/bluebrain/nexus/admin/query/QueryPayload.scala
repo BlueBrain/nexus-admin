@@ -32,7 +32,7 @@ object QueryPayload {
 
   final def queryPayloadDecoders(
       customerContext: JsonLD): (Decoder[Filter], Decoder[Field], Decoder[SortList], Decoder[QueryPayload]) = {
-    val ctx: JsonLD = customerContext.appendContext(Const.filterContext)
+    val ctx: JsonLD        = customerContext.appendContext(Const.filterContext)
     implicit val filterDec = Filter.filterDecoder(ctx)
 
     implicit val fieldDecoder: Decoder[Field] =
