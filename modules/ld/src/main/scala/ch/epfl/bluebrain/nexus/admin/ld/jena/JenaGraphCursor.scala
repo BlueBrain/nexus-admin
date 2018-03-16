@@ -34,23 +34,29 @@ private[ld] final case class JenaGraphCursor(idF: () => IdType, private val grap
 
   override def value[T](predicate: Id)(implicit T: Typeable[T]): Option[T] =
     id.optNode.flatMap { node =>
-      graph.find(node, predicate.node, Node.ANY).asScala.map(_.getObject).find(node => node.isLiteral || node.isURI).flatMap {
-        case node: Node_URI     => T.cast(node.getURI) orElse T.cast(Uri(node.getURI))
-        case node: Node_Literal => T.cast(node.getLiteral.getValue)
-        // $COVERAGE-OFF$
-        case _ => None
-        // $COVERAGE-ON$
-      }
+      graph
+        .find(node, predicate.node, Node.ANY)
+        .asScala
+        .map(_.getObject)
+        .find(node => node.isLiteral || node.isURI)
+        .flatMap {
+          case node: Node_URI     => T.cast(node.getURI) orElse T.cast(Uri(node.getURI))
+          case node: Node_Literal => T.cast(node.getLiteral.getValue)
+          // $COVERAGE-OFF$
+          case _ => None
+          // $COVERAGE-ON$
+        }
     }
 
   override def down(predicate: Id): List[GraphCursor] =
     id.optNode
       .map { node =>
-        graph.find(node, predicate.node, Node.ANY).asScala.map(_.getObject).foldLeft(List.empty[GraphCursor]) { (acc, node) =>
-          node.toIdType match {
-            case Empty  => acc
-            case downId => JenaGraphCursor(() => downId, graphF) :: acc
-          }
+        graph.find(node, predicate.node, Node.ANY).asScala.map(_.getObject).foldLeft(List.empty[GraphCursor]) {
+          (acc, node) =>
+            node.toIdType match {
+              case Empty  => acc
+              case downId => JenaGraphCursor(() => downId, graphF) :: acc
+            }
         }
       }
       .getOrElse(List.empty)

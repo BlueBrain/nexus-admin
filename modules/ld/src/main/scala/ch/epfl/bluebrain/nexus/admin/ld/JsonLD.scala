@@ -1,11 +1,8 @@
 package ch.epfl.bluebrain.nexus.admin.ld
 
-import ch.epfl.bluebrain.nexus.admin.ld.JsonLD.GraphTraversal.PartiallyAppliedPredicate
 import ch.epfl.bluebrain.nexus.admin.ld.JsonLD._
 import ch.epfl.bluebrain.nexus.admin.ld.jena.JenaJsonLD
 import ch.epfl.bluebrain.nexus.admin.refined.ld._
-import eu.timepit.refined.api.RefType.applyRef
-import eu.timepit.refined.api.{RefType, Validate}
 import io.circe.Json
 import shapeless.Typeable
 
@@ -87,15 +84,6 @@ object JsonLD {
     def value[T: Typeable](predicate: Id): Option[T]
 
     /**
-      * Construct the ''PartiallyAppliedPredicate'' for the passed ''FTP'' type
-      * which then can bind to it's ''apply()'' method.
-      *
-      * @tparam FTP the generic type of the desired object
-      */
-    def valueR[FTP]: PartiallyAppliedPredicate[FTP] =
-      new PartiallyAppliedPredicate(this)
-
-    /**
       * Navigates down the graph to the objects available from the given predicate.
       *
       * @param predicate the given predicate
@@ -114,37 +102,6 @@ object JsonLD {
       case _           => EmptyCursor
     }
 
-  }
-
-  private[ld] object GraphTraversal {
-    /**
-      * Class used in order to bind the ''apply'' method to it, without the need of specifying the types
-      * ''T'' and ''T'', but only the type ''FTP''.
-      *
-      * @param cursor the graph cursor
-      * @tparam FTP the generic type of the resulting object
-      */
-    class PartiallyAppliedPredicate[FTP](private val cursor: GraphTraversal) {
-
-      /**
-        * Attempt to fetch the object from the given predicate and the current cursor's subject.
-        *
-        * @param predicate the given predicate
-        * @tparam F the type constructor takes two type parameters
-        * @tparam T the primary type of the ''Validate''
-        * @tparam P the refined type of the ''Validate''
-        */
-      def apply[F[_, _], T, P](
-        predicate: Id)(implicit V: Validate[T, P], ev: F[T, P] =:= FTP, T: Typeable[T], rt: RefType[F]): Option[FTP] = {
-        implicit val tp = new Typeable[FTP] {
-          override def cast(t: Any): Option[FTP] =
-            T.cast(t).flatMap(v => applyRef[FTP](v).toOption)
-
-          override def describe: String = s"Refined[${T.describe}, _]"
-        }
-        cursor.value[FTP](predicate)
-      }
-    }
   }
 
   private[ld] trait Keywords {

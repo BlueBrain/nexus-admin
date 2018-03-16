@@ -28,18 +28,18 @@ object Const extends Resources {
 
   //noinspection TypeAnnotation
   object nxv extends IdRefBuilder("nxv", "https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/") {
-    val rev               = build("rev")
-    val deprecated        = build("deprecated")
-    val self              = build("self")
-    val allFields         = build("all")
-    val createdAtTime     = build("createdAtTime")
-    val description       = build("description")
-    val Project           = build("Project")
-    val config            = build("config")
-    val maxAttachmentSize = build("maxAttachmentSize")
-    val prefixMappings    = build("prefixMappings")
-    val prefix            = build("prefix")
-    val ns                = build("namespace")
+    val rev            = build("rev")
+    val deprecated     = build("deprecated")
+    val self           = build("self")
+    val allFields      = build("all")
+    val createdAtTime  = build("createdAtTime")
+    val description    = build("description")
+    val Project        = build("Project")
+    val config         = build("config")
+    val attSize        = build("maxAttachmentSize")
+    val prefixMappings = build("prefixMappings")
+    val prefix         = build("prefix")
+    val namespace      = build("namespace")
   }
 
 }

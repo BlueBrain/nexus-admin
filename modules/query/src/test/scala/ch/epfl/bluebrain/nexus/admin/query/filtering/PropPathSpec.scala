@@ -17,8 +17,8 @@ class PropPathSpec extends WordSpecLike with Matchers with Inspectors with TryVa
   "A PropPath" should {
     val context = Json.obj(
       "@context" -> Json.obj(
-        "nx"  -> Json.fromString(nxv.namespace toString()),
-        "rdf" -> Json.fromString(rdf.namespace toString())
+        "nx"  -> Json.fromString(nxv.namespaceBuilder toString()),
+        "rdf" -> Json.fromString(rdf.namespaceBuilder toString())
       ))
     val str   = context.noSpaces
     val model = ModelFactory.createDefaultModel()
@@ -31,43 +31,43 @@ class PropPathSpec extends WordSpecLike with Matchers with Inspectors with TryVa
       val path       = "nx:schema"
       val parsedPath = PathParser.parse(path, prefixMapping)
       val result     = fromJena(parsedPath).toTry.success.value
-      result shouldEqual UriPath(s"${nxv.namespace}schema")
-      result.show shouldEqual s"<${nxv.namespace}schema>"
+      result shouldEqual UriPath(s"${nxv.namespaceBuilder}schema")
+      result.show shouldEqual s"<${nxv.namespaceBuilder}schema>"
     }
 
     "build a PathProp from a path with only one uri and no hoops" in {
-      val path       = s"<${nxv.namespace}schema>"
+      val path       = s"<${nxv.namespaceBuilder}schema>"
       val parsedPath = PathParser.parse(path, prefixMapping)
       val result     = fromJena(parsedPath).toTry.success.value
-      result shouldEqual UriPath(s"${nxv.namespace}schema")
-      result.show shouldEqual s"<${nxv.namespace}schema>"
+      result shouldEqual UriPath(s"${nxv.namespaceBuilder}schema")
+      result.show shouldEqual s"<${nxv.namespaceBuilder}schema>"
     }
 
     "build a PathProp from a follow sequence of paths (3 hoops) with prefixes" in {
       val path       = "nx:schema / nx:schemaGroup ? / nx:name"
       val parsedPath = PathParser.parse(path, prefixMapping)
       val result     = fromJena(parsedPath).toTry.success.value
-      result shouldEqual SeqPath(SeqPath(UriPath(s"${nxv.namespace}schema"), PathZeroOrOne(s"${nxv.namespace}schemaGroup")),
-        UriPath(s"${nxv.namespace}name"))
-      result.show shouldEqual s"<${nxv.namespace}schema>/(<${nxv.namespace}schemaGroup>)?/<${nxv.namespace}name>"
+      result shouldEqual SeqPath(SeqPath(UriPath(s"${nxv.namespaceBuilder}schema"), PathZeroOrOne(s"${nxv.namespaceBuilder}schemaGroup")),
+        UriPath(s"${nxv.namespaceBuilder}name"))
+      result.show shouldEqual s"<${nxv.namespaceBuilder}schema>/(<${nxv.namespaceBuilder}schemaGroup>)?/<${nxv.namespaceBuilder}name>"
     }
 
     "build a PathProp from a follow sequence of paths (3 hoops)" in {
-      val path       = s"<${nxv.namespace}schema> / <${nxv.namespace}schemaGroup> ? / <${nxv.namespace}name>*"
+      val path       = s"<${nxv.namespaceBuilder}schema> / <${nxv.namespaceBuilder}schemaGroup> ? / <${nxv.namespaceBuilder}name>*"
       val parsedPath = PathParser.parse(path, prefixMapping)
       val result     = fromJena(parsedPath).toTry.success.value
-      result shouldEqual SeqPath(SeqPath(UriPath(s"${nxv.namespace}schema"), PathZeroOrOne(s"${nxv.namespace}schemaGroup")),
-        PathZeroOrMore(s"${nxv.namespace}name"))
-      result.show shouldEqual s"<${nxv.namespace}schema>/(<${nxv.namespace}schemaGroup>)?/(<${nxv.namespace}name>)*"
+      result shouldEqual SeqPath(SeqPath(UriPath(s"${nxv.namespaceBuilder}schema"), PathZeroOrOne(s"${nxv.namespaceBuilder}schemaGroup")),
+        PathZeroOrMore(s"${nxv.namespaceBuilder}name"))
+      result.show shouldEqual s"<${nxv.namespaceBuilder}schema>/(<${nxv.namespaceBuilder}schemaGroup>)?/(<${nxv.namespaceBuilder}name>)*"
     }
 
     "build a PathProp from an arbitrary length path" in {
-      val path       = s"<${nxv.namespace}schema>+ / <${nxv.namespace}schemaGroup> ? / <${nxv.namespace}name>"
+      val path       = s"<${nxv.namespaceBuilder}schema>+ / <${nxv.namespaceBuilder}schemaGroup> ? / <${nxv.namespaceBuilder}name>"
       val parsedPath = PathParser.parse(path, prefixMapping)
       val result     = fromJena(parsedPath).toTry.success.value
-      result shouldEqual SeqPath(SeqPath(PathOneOrMore(s"${nxv.namespace}schema"), PathZeroOrOne(s"${nxv.namespace}schemaGroup")),
-        UriPath(s"${nxv.namespace}name"))
-      result.show shouldEqual s"(<${nxv.namespace}schema>)+/(<${nxv.namespace}schemaGroup>)?/<${nxv.namespace}name>"
+      result shouldEqual SeqPath(SeqPath(PathOneOrMore(s"${nxv.namespaceBuilder}schema"), PathZeroOrOne(s"${nxv.namespaceBuilder}schemaGroup")),
+        UriPath(s"${nxv.namespaceBuilder}name"))
+      result.show shouldEqual s"(<${nxv.namespaceBuilder}schema>)+/(<${nxv.namespaceBuilder}schemaGroup>)?/<${nxv.namespaceBuilder}name>"
     }
 
     "build a PathProp which find nodes connected but not by rdf:type (either way round)" in {
@@ -75,17 +75,17 @@ class PropPathSpec extends WordSpecLike with Matchers with Inspectors with TryVa
       val parsedPath = PathParser.parse(path, prefixMapping)
       val result     = fromJena(parsedPath).toTry.success.value
       result shouldEqual NegatedSeqPath(
-        List(UriPath(s"${rdf.namespace}type"), InversePath(s"${rdf.namespace}type"), UriPath(s"${nxv.namespace}schemaGroup")))
-      result.show shouldEqual s"!(<${rdf.namespace}type>|^<${rdf.namespace}type>|<${nxv.namespace}schemaGroup>)"
+        List(UriPath(s"${rdf.namespaceBuilder}type"), InversePath(s"${rdf.namespaceBuilder}type"), UriPath(s"${nxv.namespaceBuilder}schemaGroup")))
+      result.show shouldEqual s"!(<${rdf.namespaceBuilder}type>|^<${rdf.namespaceBuilder}type>|<${nxv.namespaceBuilder}schemaGroup>)"
     }
 
     "build a PathProp from a alternate sequence of paths (3 hoops) with prefixes" in {
       val path       = "nx:schema / nx:schemaGroup ? | nx:name"
       val parsedPath = PathParser.parse(path, prefixMapping)
       val result     = fromJena(parsedPath).toTry.success.value
-      result shouldEqual AlternativeSeqPath(SeqPath(UriPath(s"${nxv.namespace}schema"), PathZeroOrOne(s"${nxv.namespace}schemaGroup")),
-        UriPath(s"${nxv.namespace}name"))
-      result.show shouldEqual s"<${nxv.namespace}schema>/(<${nxv.namespace}schemaGroup>)?|<${nxv.namespace}name>"
+      result shouldEqual AlternativeSeqPath(SeqPath(UriPath(s"${nxv.namespaceBuilder}schema"), PathZeroOrOne(s"${nxv.namespaceBuilder}schemaGroup")),
+        UriPath(s"${nxv.namespaceBuilder}name"))
+      result.show shouldEqual s"<${nxv.namespaceBuilder}schema>/(<${nxv.namespaceBuilder}schemaGroup>)?|<${nxv.namespaceBuilder}name>"
 
     }
 

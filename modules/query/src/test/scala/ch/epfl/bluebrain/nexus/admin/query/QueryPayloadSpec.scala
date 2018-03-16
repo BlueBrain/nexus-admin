@@ -31,7 +31,7 @@ class QueryPayloadSpec extends WordSpecLike with Matchers with Resources with In
         published = Some(false),
         format = JsonLdFormat.Expanded,
         fields = Set(Field(nxv.allFields.id)),
-        sort = SortList(List(Sort(s"-${nxv.namespace}createdAtTime")))
+        sort = SortList(List(Sort(s"-${nxv.namespaceBuilder}createdAtTime")))
       ),
       queryFilterJson -> QueryPayload(
         `@context` = Json.obj("some" -> Json.fromString("http://example.com/prov#")),

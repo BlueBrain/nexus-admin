@@ -18,7 +18,7 @@
     "xsd": "http://www.w3.org/2001/XMLSchema#",
     "invalidPrefixValue": "http://www.example.com/some"
   },
-  "name": "The Empire State Building",
+  "name": "empire",
   "description": "The Empire State Building is a 102-story landmark in New York City.",
   "image": "http://www.civil.usherbrooke.ca/cours/gci215a/empire-state-building.jpg",
   "geo": [

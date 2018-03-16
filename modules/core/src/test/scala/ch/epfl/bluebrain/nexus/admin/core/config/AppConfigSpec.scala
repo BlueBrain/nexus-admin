@@ -33,8 +33,9 @@ class AppConfigSpec extends WordSpecLike with Matchers with ScalatestRouteTest {
                                                           "cassandra-snapshot-store",
                                                           "cassandra-query-journal")
 
-      appConfig.projects shouldEqual ProjectsConfig(10 minutes, "http://127.0.0.1:8080/v1/projects/")
-      implicitly[ProjectsConfig] shouldEqual ProjectsConfig(10 minutes, "http://127.0.0.1:8080/v1/projects/")
+      val projectConfig = ProjectsConfig(10 minutes, "http://127.0.0.1:8080/v1/projects/", 100000L)
+      appConfig.projects shouldEqual projectConfig
+      implicitly[ProjectsConfig] shouldEqual projectConfig
 
       appConfig.pagination shouldEqual PaginationConfig(0L, 50, 300)
 
