@@ -51,9 +51,12 @@ class ProjectsSpec extends WordSpecLike with Matchers with TryValues with Random
   }
 
   "A Project bundle" should {
-    implicit val hasWrite = applyRef[HasWriteProjects](Permissions(Read, Permission("projects/write"))).toPermTry.success.value
-    implicit val hasOwn   = applyRef[HasOwnProjects](Permissions(Read, Permission("projects/own"))).toPermTry.success.value
-    implicit val hasRead  = applyRef[HasReadProjects](Permissions(Read, Permission("projects/read"))).toPermTry.success.value
+    implicit val hasWrite =
+      applyRef[HasWriteProjects](Permissions(Read, Permission("projects/write"))).toPermTry.success.value
+    implicit val hasOwn =
+      applyRef[HasOwnProjects](Permissions(Read, Permission("projects/own"))).toPermTry.success.value
+    implicit val hasRead =
+      applyRef[HasReadProjects](Permissions(Read, Permission("projects/read"))).toPermTry.success.value
 
     "create a new project" in new Context {
       projects.create(id, value).success.value shouldEqual RefVersioned(id, 1L)

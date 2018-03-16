@@ -3,15 +3,17 @@ package ch.epfl.bluebrain.nexus.admin.refined
 import akka.http.scaladsl.model.Uri.Path.Segment
 import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model.{Uri => AkkaUri}
+import ch.epfl.bluebrain.nexus.admin.refined.ld.{AliasOrNamespacePredicate, Uri}
 import eu.timepit.refined._
+import eu.timepit.refined.api.Inference.==>
 import eu.timepit.refined.api.RefType._
-import eu.timepit.refined.api.{Refined, Validate}
+import eu.timepit.refined.api.{Inference, Refined, Validate}
 import eu.timepit.refined.string.MatchesRegex
 
 import scala.util.Try
 
 @SuppressWarnings(Array("EmptyCaseClass"))
-object ld {
+object ld extends LdInferences {
 
   /**
     * Refined type for prefix (left side on a PrefixMapping).
@@ -27,6 +29,11 @@ object ld {
     * Refined type for curie references.
     */
   type Reference = String Refined IRelativeRef
+
+  /**
+    * Refined type for absolute uri.
+    */
+  type AliasOrNamespace = String Refined AliasOrNamespacePredicate
 
   /**
     * Refined type for RDF ids that can be decomposed into a [[Namespace]] and a [[Reference]].
@@ -120,6 +127,18 @@ object ld {
     }
   }
 
+  final case class AliasOrNamespacePredicate()
+
+  object AliasOrNamespacePredicate {
+    final implicit def absoluteUriValidate(
+        implicit VA: Validate.Plain[String, Uri],
+        VB: Validate.Plain[String, PrefixUri]): Validate.Plain[String, AliasOrNamespacePredicate] = {
+      Validate.fromPredicate(s => VA.isValid(s) || VB.isValid(s),
+                             s => s"ValidAbsoluteUri($s)",
+                             AliasOrNamespacePredicate())
+    }
+  }
+
   final case class IRelativeRef()
 
   object IRelativeRef {
@@ -133,4 +152,10 @@ object ld {
   }
 
   private[ld] def akkaUri(s: String): Try[AkkaUri] = Try(AkkaUri(s)).filter(_.isAbsolute)
+}
+
+trait LdInferences {
+
+  final implicit val idInference: Uri ==> AliasOrNamespacePredicate =
+    Inference.alwaysValid("A Id is always valid AbsoluteUri")
 }

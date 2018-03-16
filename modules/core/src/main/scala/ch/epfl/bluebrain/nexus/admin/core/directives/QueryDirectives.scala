@@ -35,7 +35,7 @@ trait QueryDirectives {
   def context: Directive1[Json] =
     parameter('context.as[String] ? Json.obj().noSpaces).flatMap { contextParam =>
       parse(contextParam) match {
-        case Right(ctxJson) => provide(Json.obj("@context" -> (ctxJson deepMerge Const.defaultContext.contextValue)))
+        case Right(ctxJson) => provide(Json.obj("@context" -> ctxJson).appendContext(Const.filterContext))
         case Left(_) =>
           reject(
             MalformedQueryParamRejection("context",
