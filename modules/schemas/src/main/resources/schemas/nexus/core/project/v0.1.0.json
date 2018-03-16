@@ -1,0 +1,97 @@
+{
+  "@context": [
+    "{{base}}/contexts/nexus/core/schema/v0.2.0",
+    {
+      "this": "{{base}}/schemas/nexus/core/project/v0.1.0/shapes/"
+    }
+  ],
+  "imports": [
+    "{{base}}/schemas/nexus/core/resource/v0.1.0"
+  ],
+  "@type": "nxv:Schema",
+  "shapes": [
+    {
+      "@id": "this:ProjectShape",
+      "@type": "sh:NodeShape",
+      "nodeKind": "sh:BlankNodeOrIRI",
+      "targetClass": "nxv:Project",
+      "and": [
+        {
+          "node": "{{base}}/schemas/nexus/core/resource/v0.1.0/shapes/ResourceShape"
+        },
+        {
+          "property": [
+            {
+              "path": "schema:name",
+              "name": "Name",
+              "description": "The project name.",
+              "datatype": "xsd:string",
+              "maxCount": 1,
+              "minCount": 1
+            },
+            {
+              "path": "schema:description",
+              "name": "Description",
+              "description": "The project description shape.",
+              "datatype": "xsd:string",
+              "maxCount": 1
+            },
+            {
+              "path": "nxv:prefixMappings",
+              "name": "Prefix mappings",
+              "description": "Prefix mappings.",
+              "node": "this:PrefixMappingShape"
+            },
+            {
+              "path": "nxv:config",
+              "name": "Project configuration",
+              "description": "Prefix mappings.",
+              "node": "this:ProjectConfigShape"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "@id": "this:PrefixMappingShape",
+      "@type": "sh:NodeShape",
+      "nodeKind": "sh:BlankNode",
+      "property": [
+        {
+          "path": "nxv:prefix",
+          "name": "Prefix name",
+          "description": "Prefix name shape. A prefix name should be a string of length at least 3 and at most 32.",
+          "datatype": "xsd:string",
+          "pattern":"[a-z]+",
+          "minLength":3,
+          "maxLength":32,
+          "maxCount": 1,
+          "minCount": 1
+        },
+        {
+          "path": "nxv:namespace",
+          "name": "Namespace",
+          "description": "A namespace shape. A namespace should an IRI.",
+          "nodeKind": "sh:IRI",
+          "maxCount": 1,
+          "minCount": 1
+        }
+      ]
+    },
+    {
+      "@id": "this:ProjectConfigShape",
+      "@type": "sh:NodeShape",
+      "nodeKind": "sh:BlankNode",
+      "property": [
+        {
+          "path": "nxv:maxAttachmentSize",
+          "name": "Max attachment size",
+          "description": "Maximum attachment size in bytes. The minimum allowed value is zero.",
+          "datatype": "xsd:long",
+          "minInclusive":0,
+          "maxCount":1
+        }
+      ]
+    }
+  ]
+}

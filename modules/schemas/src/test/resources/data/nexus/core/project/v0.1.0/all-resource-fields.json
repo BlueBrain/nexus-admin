@@ -1,0 +1,18 @@
+{
+  "@context":"{{base}}/contexts/nexus/core/resource/v0.1.0",
+  "@id": "https://example.nexus.com/api/projects/name",
+  "@type":"nxv:Project",
+  "nxv:rev": 1,
+  "nxv:deprecated": false,
+  "links": [
+    {
+      "@context":
+        {
+          "self": {
+            "@id": "nxv:self"
+          }
+        },
+      "self": "https://example.nexus.com/api/projects/name?rev=1"
+    }
+  ]
+}
