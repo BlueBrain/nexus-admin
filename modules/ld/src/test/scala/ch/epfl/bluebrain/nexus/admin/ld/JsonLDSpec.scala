@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.admin.ld
 
 import akka.http.scaladsl.model.Uri
+import ch.epfl.bluebrain.nexus.admin.ld.JsonLD.{EmptyCursor, GraphCursor}
 import ch.epfl.bluebrain.nexus.admin.refined.ld._
 import ch.epfl.bluebrain.nexus.commons.test.Resources
 import eu.timepit.refined.auto._
@@ -51,8 +52,20 @@ class JsonLDSpec extends WordSpecLike with Matchers with Resources with OptionVa
       } should contain theSameElementsAs List(40.75f -> 73.98f, 10.0f -> 12.0f)
     }
 
-    "failed to get a predicate from an unexisting parent predicate" in {
+    "return None when attempting to fetch the value from a predicate on an unexisting parent" in {
       jsonLD.downFirst(schemaOrg.build("nonExisting")).value[Float](schemaOrg.build("latitude")) shouldEqual None
+    }
+
+    "return empty list of cursors when attempting to navigate down an unexisting parent" in {
+      jsonLD.down(schemaOrg.build("nonExisting")) shouldEqual List.empty[GraphCursor]
+    }
+
+    "return empty cursor when attempting to navigate down the first unexisting parent" in {
+      jsonLD.downFirst(schemaOrg.build("nonExisting")) shouldEqual EmptyCursor
+    }
+
+    "return None  when attempting to fetch the type of a down navigation on an unexisting parent" in {
+      jsonLD.downFirst(schemaOrg.build("nonExisting")).tpe shouldEqual None
     }
 
     "find the @id" in {
