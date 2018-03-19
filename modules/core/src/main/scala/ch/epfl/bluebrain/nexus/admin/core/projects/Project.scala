@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.admin.refined.ld._
 import ch.epfl.bluebrain.nexus.admin.refined.project._
 import io.circe.generic.semiauto.deriveEncoder
 import io.circe.{Decoder, Encoder, Json}
-
+import io.circe.refined._
 /**
   * Data type representing the state of a project.
   *
