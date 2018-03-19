@@ -29,10 +29,10 @@ val akkaVersion                     = "2.5.11"
 val akkaHttpVersion                 = "10.0.11"
 val akkaPersistenceInMemVersion     = "2.5.1.1"
 val akkaPersistenceCassandraVersion = "0.83"
-val catsVersion                     = "1.0.1"
-val circeVersion                    = "0.9.1"
+val catsVersion                     = "1.1.0"
+val circeVersion                    = "0.9.2"
 val jenaVersion                     = "3.6.0"
-val mockitoVersion                  = "2.15.0"
+val mockitoVersion                  = "2.16.0"
 val pureconfigVersion               = "0.9.0"
 val refinedVersion                  = "0.8.7"
 val scalaTestVersion                = "3.0.5"
@@ -41,7 +41,7 @@ val sourcingVersion                 = "0.10.3"
 
 // Nexus dependency versions
 val serviceVersion = "0.10.4"
-val commonsVersion = "0.10.4"
+val commonsVersion = "0.10.8"
 
 // Dependency modules
 lazy val akkaDistributed      = "com.typesafe.akka"     %% "akka-distributed-data"     % akkaVersion
@@ -52,6 +52,7 @@ lazy val akkaTestKit          = "com.typesafe.akka"     %% "akka-testkit"       
 lazy val catsCore             = "org.typelevel"         %% "cats-core"                 % catsVersion
 lazy val circeCore            = "io.circe"              %% "circe-core"                % circeVersion
 lazy val circeJava8           = "io.circe"              %% "circe-java8"               % circeVersion
+lazy val circeRefined         = "io.circe"              %% "circe-refined"             % circeVersion
 lazy val jenaArq              = "org.apache.jena"       % "jena-arq"                   % jenaVersion
 lazy val mockitoCore          = "org.mockito"           % "mockito-core"               % mockitoVersion
 lazy val pureconfig           = "com.github.pureconfig" %% "pureconfig"                % pureconfigVersion
@@ -122,6 +123,7 @@ lazy val core = project
     moduleName := "admin-core",
     libraryDependencies ++= Seq(
       circeJava8,
+      circeRefined,
       commonsQueryTypes,
       pureconfig,
       refinedPureConfig,

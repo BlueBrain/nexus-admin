@@ -13,7 +13,7 @@ import eu.timepit.refined.string.MatchesRegex
 import scala.util.Try
 
 @SuppressWarnings(Array("EmptyCaseClass"))
-object ld extends LdInferences with TypeableInstances with CirceInstances {
+object ld extends LdInferences with TypeableInstances {
 
   /**
     * Refined type for prefix (left side on a PrefixMapping).
