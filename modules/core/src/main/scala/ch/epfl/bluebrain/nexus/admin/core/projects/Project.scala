@@ -34,8 +34,8 @@ object Project {
         json deepMerge Json.obj(
           `@id`                     -> id.asJson,
           `@type`                   -> Json.fromString(nxv.Project.show),
-          nxv.rev.curie.show        -> Json.fromLong(rev),
-          nxv.deprecated.curie.show -> Json.fromBoolean(deprecated)
+          nxv.rev.show        -> Json.fromLong(rev),
+          nxv.deprecated.show -> Json.fromBoolean(deprecated)
         )
 
     }

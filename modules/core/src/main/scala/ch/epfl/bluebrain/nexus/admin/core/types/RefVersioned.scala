@@ -19,6 +19,6 @@ object RefVersioned {
 
   final implicit def refRevisionEncoder[A: IdResolvable]: Encoder[RefVersioned[A]] =
     Encoder.encodeJson.contramap {
-      case RefVersioned(id, rev) => Json.obj(`@id` -> id.asJson, nxv.rev.curie.show -> Json.fromLong(rev))
+      case RefVersioned(id, rev) => Json.obj(`@id` -> id.asJson, nxv.rev.show -> Json.fromLong(rev))
     }
 }
