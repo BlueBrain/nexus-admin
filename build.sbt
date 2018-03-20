@@ -46,6 +46,7 @@ val commonsVersion = "0.10.8"
 // Dependency modules
 lazy val akkaDistributed      = "com.typesafe.akka"     %% "akka-distributed-data"     % akkaVersion
 lazy val akkaHttpCore         = "com.typesafe.akka"     %% "akka-http-core"            % akkaHttpVersion
+lazy val akkaPersistence      = "com.typesafe.akka"     %% "akka-persistence"          % akkaVersion
 lazy val akkaPersistenceInMem = "com.github.dnvriend"   %% "akka-persistence-inmemory" % akkaPersistenceInMemVersion
 lazy val akkaHttpTestKit      = "com.typesafe.akka"     %% "akka-http-testkit"         % akkaHttpVersion
 lazy val akkaTestKit          = "com.typesafe.akka"     %% "akka-testkit"              % akkaVersion
@@ -70,8 +71,8 @@ lazy val commonsTest       = "ch.epfl.bluebrain.nexus" %% "commons-test"        
 lazy val serialization     = "ch.epfl.bluebrain.nexus" %% "service-serialization" % serviceVersion
 lazy val serviceHttp       = "ch.epfl.bluebrain.nexus" %% "service-http"          % serviceVersion
 lazy val serviceKamon      = "ch.epfl.bluebrain.nexus" %% "service-kamon"         % serviceVersion
+lazy val sourcingAkka      = "ch.epfl.bluebrain.nexus" %% "sourcing-akka"         % sourcingVersion
 lazy val sourcingCore      = "ch.epfl.bluebrain.nexus" %% "sourcing-core"         % sourcingVersion
-lazy val sourcingCache     = "ch.epfl.bluebrain.nexus" %% "sourcing-akka-cache"   % sourcingVersion
 lazy val sourcingMem       = "ch.epfl.bluebrain.nexus" %% "sourcing-mem"          % sourcingVersion
 
 // Projects
@@ -129,13 +130,13 @@ lazy val core = project
     name       := "admin-core",
     moduleName := "admin-core",
     libraryDependencies ++= Seq(
+      akkaPersistence,
       circeJava8,
       circeRefined,
       commonsQueryTypes,
       pureconfig,
       refinedPureConfig,
       serialization,
-      sourcingCache,
       sourcingCore,
       akkaDistributed      % Test,
       akkaHttpTestKit      % Test,
@@ -160,6 +161,7 @@ lazy val service = project
     libraryDependencies ++= Seq(
       serviceHttp,
       serviceKamon,
+      sourcingAkka,
       akkaTestKit % Test,
       mockitoCore % Test
     ),

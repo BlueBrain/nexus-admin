@@ -43,7 +43,7 @@ object AppConfig {
 
   final case class DescriptionConfig(name: String, environment: String) {
     val version: String = BuildInfo.version
-    val ActorSystemName = s"$name-${version.replaceAll("\\.", "-")}-$environment"
+    val actorSystemName = s"$name-${version.replaceAll("\\.", "-")}-$environment"
   }
 
   final case class InstanceConfig(interface: String)
@@ -61,7 +61,7 @@ object AppConfig {
 
   final case class OrgConfig(name: String)
 
-  final case class ProjectsConfig(passivationTimeout: Duration, namespace: Namespace, attachmentSize: Long)
+  final case class ProjectsConfig(passivationTimeout: FiniteDuration, namespace: Namespace, attachmentSize: Long)
 
   final case class PaginationConfig(from: Long Refined NonNegative,
                                     size: Int Refined Positive,
