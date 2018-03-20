@@ -41,7 +41,7 @@ val shapelessVersion                = "2.3.3"
 val sourcingVersion                 = "0.10.3"
 
 // Nexus dependency versions
-val serviceVersion = "0.10.5"
+val serviceVersion = "0.10.6"
 val commonsVersion = "0.10.8"
 
 // Dependency modules
@@ -153,7 +153,7 @@ lazy val core = project
 
 lazy val service = project
   .in(file("modules/service"))
-  .enablePlugins(BuildInfoPlugin)
+  .enablePlugins(BuildInfoPlugin, ServicePackagingPlugin)
   .dependsOn(core % testAndCompile)
   .settings(
     buildInfoSettings,
