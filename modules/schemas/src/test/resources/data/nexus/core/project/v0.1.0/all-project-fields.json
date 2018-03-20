@@ -1,9 +1,8 @@
 {
   "@context": {
     "nxv": "https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/",
-    "schema": "http://schema.org/",
     "name": {
-      "@id": "schema:name"
+      "@id": "nxv:name"
     },
     "prefixMappings": {
       "@id": "nxv:prefixMappings"
@@ -26,9 +25,9 @@
     }
   },
   "@id": "https://example.nexus.com/api/projects/name",
-  "@type":"nxv:Project",
-  "name": "{name}",
-  "description": "{desc}",
+  "@type": "nxv:Project",
+  "name": "name",
+  "description": "desc",
   "prefixMappings": [
     {
       "prefix": "nxv",

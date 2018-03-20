@@ -55,7 +55,6 @@
           "path": "nxv:self",
           "name": "self",
           "description": "The shape of this specific resource representation identifier.",
-          "nodeKind": "sh:IRI",
           "minCount": 1,
           "maxCount": 1
         }

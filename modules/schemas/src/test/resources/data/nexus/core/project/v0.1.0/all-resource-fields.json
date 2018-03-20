@@ -2,6 +2,7 @@
   "@context":"{{base}}/contexts/nexus/core/resource/v0.1.0",
   "@id": "https://example.nexus.com/api/projects/name",
   "@type":"nxv:Project",
+  "nxv:name": "name",
   "nxv:rev": 1,
   "nxv:deprecated": false,
   "links": [

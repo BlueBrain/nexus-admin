@@ -34,7 +34,7 @@
       "namespace": "https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/"
     },
     {
-      "prefix": "personspersonspersonspersonspersonspersonspersonspersonspersonspersonspersons",
+      "prefix": "personspersonspersonspersonspersonspersons",
       "namespace": "https://shapes-registry.org/commons/person"
     }
   ],

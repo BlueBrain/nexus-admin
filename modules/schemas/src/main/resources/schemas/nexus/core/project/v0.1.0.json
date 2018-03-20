@@ -22,7 +22,7 @@
         {
           "property": [
             {
-              "path": "schema:name",
+              "path": "nxv:name",
               "name": "Name",
               "description": "The project name.",
               "datatype": "xsd:string",
@@ -30,7 +30,7 @@
               "minCount": 1
             },
             {
-              "path": "schema:description",
+              "path": "nxv:description",
               "name": "Description",
               "description": "The project description shape.",
               "datatype": "xsd:string",
@@ -63,8 +63,8 @@
           "description": "Prefix name shape. A prefix name should be a string of length at least 3 and at most 32.",
           "datatype": "xsd:string",
           "pattern":"[a-z]+",
-          "minLength":3,
-          "maxLength":32,
+          "sh:minLength":3,
+          "sh:maxLength":32,
           "maxCount": 1,
           "minCount": 1
         },

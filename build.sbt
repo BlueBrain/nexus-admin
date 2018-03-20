@@ -115,6 +115,7 @@ lazy val schemas = project
   .settings(
     name       := "admin-schemas",
     moduleName := "admin-schemas",
+    resolvers  += Resolver.bintrayRepo("bogdanromanx", "maven"),
     libraryDependencies ++= Seq(
       commonsSchemas
     )

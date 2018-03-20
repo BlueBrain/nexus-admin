@@ -26,7 +26,7 @@
   },
   "@id": "https://example.nexus.com/api/projects/name",
   "@type": "nxv:Project",
-  "name": "{name}",
+  "name": "name",
   "description": "{desc}",
   "prefixMappings": [
     {
