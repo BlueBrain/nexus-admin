@@ -23,8 +23,8 @@ class IdSpec extends WordSpecLike with Matchers with Inspectors with Randomness 
     }
 
     "convert Id to IdRef" in {
-      val id: Id = "https://example.com/some/path"
-      val idRef: IdRef                = id.toId
+      val id: Id       = "https://example.com/some/path"
+      val idRef: IdRef = id.toId
       idRef.namespace shouldEqual ("https://example.com/some/": Namespace)
       idRef.reference shouldEqual ("path": Reference)
     }

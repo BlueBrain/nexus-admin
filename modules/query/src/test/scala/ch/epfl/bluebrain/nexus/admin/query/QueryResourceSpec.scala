@@ -11,8 +11,9 @@ class QueryResourceSpec extends WordSpecLike with Matchers with Inspectors {
   "A QueryResource" should {
 
     "be decoded properly from json" in {
-      forAll(List("projects" -> Projects, "instances" -> Instances, "schemas" -> Schemas, "contexts" -> Contexts)) { case (str, v) =>
-        decode[QueryResource](s""""$str"""") shouldEqual Right(v)
+      forAll(List("projects" -> Projects, "instances" -> Instances, "schemas" -> Schemas, "contexts" -> Contexts)) {
+        case (str, v) =>
+          decode[QueryResource](s""""$str"""") shouldEqual Right(v)
 
       }
     }

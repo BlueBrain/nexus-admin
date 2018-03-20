@@ -136,8 +136,8 @@ class QueryDirectivesSpec
       Get(s"/?context=${URLEncoder.encode("""{"a": b}]""", "UTF-8")}") ~> route() ~> check {
         status shouldEqual StatusCodes.BadRequest
         responseAs[Error] shouldEqual Error("WrongOrInvalidJson",
-          None,
-          "http://localhost/v0/contexts/nexus/core/error/v0.1.0")
+                                            None,
+                                            "http://localhost/v0/contexts/nexus/core/error/v0.1.0")
       }
     }
 

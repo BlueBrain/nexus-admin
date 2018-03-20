@@ -9,7 +9,7 @@ class QueryNameSpec extends WordSpecLike with Matchers with Randomness with Insp
 
   "A QueryName" should {
     "be constructed properly" in {
-      forAll((0 until 100)){_ =>
+      forAll((0 until 100)) { _ =>
         val q: QueryName = randomQueryName()
         q.value should not be empty
       }

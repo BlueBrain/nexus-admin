@@ -16,8 +16,8 @@ class IdRefBuilderSpec extends WordSpecLike with Matchers {
 
     "construct a IdRef from a Prefix" in {
       IdRefBuilder(PrefixMapping("schema", "http://schema.org/")).build("name") shouldEqual IdRef("schema",
-                                                                                           "http://schema.org/",
-                                                                                           "name")
+                                                                                                  "http://schema.org/",
+                                                                                                  "name")
     }
 
     "generate a new builder when changing the prefix" in {

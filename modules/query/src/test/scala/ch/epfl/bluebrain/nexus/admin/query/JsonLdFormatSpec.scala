@@ -12,14 +12,22 @@ class JsonLdFormatSpec extends WordSpecLike with Matchers with Inspectors with O
   "A JsonLdFormat" should {
 
     "be constructed properly" in {
-      forAll(List[(String, JsonLdFormat)]("compacted" -> Compacted, "expanded" -> Expanded, "flattened" -> Flattened, "default" -> Default)) {
+      forAll(
+        List[(String, JsonLdFormat)]("compacted" -> Compacted,
+                                     "expanded"  -> Expanded,
+                                     "flattened" -> Flattened,
+                                     "default"   -> Default)) {
         case (name, v) =>
           JsonLdFormat.fromString(name).value shouldEqual v
 
       }
     }
     "be encoded properly into json" in {
-      forAll(List[(String, JsonLdFormat)]("compacted" -> Compacted, "expanded" -> Expanded, "flattened" -> Flattened, "default" -> Default)) {
+      forAll(
+        List[(String, JsonLdFormat)]("compacted" -> Compacted,
+                                     "expanded"  -> Expanded,
+                                     "flattened" -> Flattened,
+                                     "default"   -> Default)) {
         case (name, v) =>
           v.asJson.noSpaces shouldEqual s""""$name""""
 
@@ -27,7 +35,11 @@ class JsonLdFormatSpec extends WordSpecLike with Matchers with Inspectors with O
     }
 
     "be decoded properly from json" in {
-      forAll(List[(String, JsonLdFormat)]("compacted" -> Compacted, "expanded" -> Expanded, "flattened" -> Flattened, "default" -> Default)) {
+      forAll(
+        List[(String, JsonLdFormat)]("compacted" -> Compacted,
+                                     "expanded"  -> Expanded,
+                                     "flattened" -> Flattened,
+                                     "default"   -> Default)) {
         case (name, v) =>
           decode[JsonLdFormat](s""""${name}"""") shouldEqual Right(v)
       }

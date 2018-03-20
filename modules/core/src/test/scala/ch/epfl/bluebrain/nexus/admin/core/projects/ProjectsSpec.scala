@@ -33,15 +33,16 @@ class ProjectsSpec extends WordSpecLike with Matchers with TryValues with TestHe
 
   private implicit val caller: AnonymousCaller = AnonymousCaller(Anonymous())
   private implicit val clock: Clock            = Clock.systemUTC
-  private implicit val config: ProjectsConfig  = ProjectsConfig(3 seconds, "https://nexus.example.ch/v1/projects/", 100000L)
-  private val aggProject                       = MemoryAggregate("projects")(Initial, next, eval).toF[Try]
-  private val projects                         = Projects(aggProject)
+  private implicit val config: ProjectsConfig =
+    ProjectsConfig(3 seconds, "https://nexus.example.ch/v1/projects/", 100000L)
+  private val aggProject = MemoryAggregate("projects")(Initial, next, eval).toF[Try]
+  private val projects   = Projects(aggProject)
 
   def genJson(): Json = Json.obj("key" -> Json.fromString(genString()))
 
   trait Context {
     val id: ProjectReference = genReference()
-    val value: ProjectValue = genProjectValue()
+    val value: ProjectValue  = genProjectValue()
   }
 
   "A Project bundle" should {

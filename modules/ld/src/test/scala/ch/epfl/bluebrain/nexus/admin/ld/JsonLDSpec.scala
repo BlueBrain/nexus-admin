@@ -21,7 +21,7 @@ class JsonLDSpec extends WordSpecLike with Matchers with Resources with OptionVa
     }
 
     "find a prefix from a given a predicate using refined" in {
-      jsonLD.value[Prefix](schemaOrg.build("name")).value shouldEqual ("empire" : Prefix)
+      jsonLD.value[Prefix](schemaOrg.build("name")).value shouldEqual ("empire": Prefix)
     }
 
     "find a uri from a given a predicate" in {
@@ -30,11 +30,15 @@ class JsonLDSpec extends WordSpecLike with Matchers with Resources with OptionVa
     }
 
     "find a uri from a given a predicate using refined" in {
-      jsonLD.value[Id](schemaOrg.build("image")).value shouldEqual ("http://www.civil.usherbrooke.ca/cours/gci215a/empire-state-building.jpg" : Id)
+      jsonLD
+        .value[Id](schemaOrg.build("image"))
+        .value shouldEqual ("http://www.civil.usherbrooke.ca/cours/gci215a/empire-state-building.jpg": Id)
     }
 
     "find another type of uri from a given a predicate using refined" in {
-      jsonLD.value[AliasOrNamespace](schemaOrg.build("image")).value shouldEqual ("http://www.civil.usherbrooke.ca/cours/gci215a/empire-state-building.jpg" : AliasOrNamespace)
+      jsonLD
+        .value[AliasOrNamespace](schemaOrg.build("image"))
+        .value shouldEqual ("http://www.civil.usherbrooke.ca/cours/gci215a/empire-state-building.jpg": AliasOrNamespace)
     }
 
     "find a float from a given a predicate on a nested field" in {

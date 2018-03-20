@@ -39,14 +39,16 @@ class RefinedDirectivesSpec
   "A RefinedDirectives" should {
 
     "reject route when refined type cannot is not a correct segment" in {
-      Get("/ABC;-") ~> handler((segment(ofType[ProjectReference]) & pathEndOrSingleSlash & get)(_ => complete("Success"))) ~> check {
+      Get("/ABC;-") ~> handler(
+        (segment(ofType[ProjectReference]) & pathEndOrSingleSlash & get)(_ => complete("Success"))) ~> check {
         status shouldEqual StatusCodes.BadRequest
         responseAs[Error].code shouldEqual classNameOf[IllegalParam.type]
       }
     }
 
     "return properly when refined type is a correct segment" in {
-      Get("/abc") ~> handler((segment(ofType[ProjectReference]) & pathEndOrSingleSlash & get)(ref => complete(ref.value))) ~> check {
+      Get("/abc") ~> handler(
+        (segment(ofType[ProjectReference]) & pathEndOrSingleSlash & get)(ref => complete(ref.value))) ~> check {
         status shouldEqual StatusCodes.OK
         println(responseAs[Json])
       }
