@@ -27,6 +27,7 @@ scalafmt: {
 // Dependency versions
 val akkaVersion                     = "2.5.11"
 val akkaHttpVersion                 = "10.0.11"
+val akkaHttpCorsVersion             = "0.2.2"
 val akkaPersistenceInMemVersion     = "2.5.1.1"
 val akkaPersistenceCassandraVersion = "0.83"
 val catsVersion                     = "1.1.0"
@@ -74,6 +75,7 @@ lazy val serviceKamon      = "ch.epfl.bluebrain.nexus" %% "service-kamon"       
 lazy val sourcingAkka      = "ch.epfl.bluebrain.nexus" %% "sourcing-akka"         % sourcingVersion
 lazy val sourcingCore      = "ch.epfl.bluebrain.nexus" %% "sourcing-core"         % sourcingVersion
 lazy val sourcingMem       = "ch.epfl.bluebrain.nexus" %% "sourcing-mem"          % sourcingVersion
+lazy val akkaHttpCors      = "ch.megard"               %% "akka-http-cors"        % akkaHttpCorsVersion
 
 // Projects
 lazy val refinements = project
@@ -159,6 +161,7 @@ lazy val service = project
     moduleName            := "admin-service",
     coverageFailOnMinimum := false,
     libraryDependencies ++= Seq(
+      akkaHttpCors,
       serviceHttp,
       serviceKamon,
       sourcingAkka,
@@ -211,4 +214,4 @@ inThisBuild(
     releaseEarlyEnableSyncToMaven := false,
   ))
 
-addCommandAlias("review", ";clean;scalafmtSbtCheck;coverage;scapegoat;test;coverageReport;coverageAggregate")
+addCommandAlias("review", ";clean;scalafmtCheck;scalafmtSbtCheck;test:scalafmtCheck;coverage;scapegoat;test;coverageReport;coverageAggregate")

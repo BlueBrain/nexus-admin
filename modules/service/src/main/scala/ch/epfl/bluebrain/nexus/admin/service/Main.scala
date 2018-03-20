@@ -4,7 +4,11 @@ import akka.actor.{ActorSystem, AddressFromURIString}
 import akka.cluster.Cluster
 import akka.event.Logging
 import akka.http.scaladsl.Http
+import akka.http.scaladsl.model.HttpMethods._
 import akka.http.scaladsl.model.Uri
+import akka.http.scaladsl.model.headers.Location
+import akka.http.scaladsl.server.Directives.handleRejections
+import akka.http.scaladsl.server.Route
 import akka.stream.{ActorMaterializer, Materializer}
 import cats.instances.future._
 import ch.epfl.bluebrain.nexus.admin.core.config.AppConfig._
@@ -19,7 +23,10 @@ import ch.epfl.bluebrain.nexus.commons.iam.acls.FullAccessControlList
 import ch.epfl.bluebrain.nexus.commons.iam.auth.User
 import ch.epfl.bluebrain.nexus.commons.iam.io.serialization.JsonLdSerialization
 import ch.epfl.bluebrain.nexus.commons.iam.{IamClient, IamUri}
+import ch.epfl.bluebrain.nexus.service.http.directives.PrefixDirectives._
 import ch.epfl.bluebrain.nexus.sourcing.akka.{ShardingAggregate, SourcingAkkaSettings}
+import ch.megard.akka.http.cors.scaladsl.CorsDirectives.{cors, corsRejectionHandler}
+import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 import com.github.jsonldjava.core.DocumentLoader
 import com.typesafe.config.ConfigFactory
 import io.circe.generic.extras.Configuration
@@ -53,13 +60,20 @@ object Main {
 
     System.setProperty(DocumentLoader.DISALLOW_REMOTE_CONTEXT_LOADING, "true")
 
+    val baseUri = appConfig.http.publicUri
+    val apiUri  = baseUri.copy(path = baseUri.path / appConfig.http.prefix)
     val cluster = Cluster(as)
     cluster.registerOnMemberUp {
 
       val timeout  = appConfig.projects.passivationTimeout
       val agg      = ShardingAggregate("project", sourcingSettings.copy(passivationTimeout = timeout))(Initial, next, eval)
       val projects = Projects(agg)
-      val routes   = ProjectRoutes(projects).routes
+      val api      = uriPrefix(apiUri)(ProjectRoutes(projects).routes)
+
+      val corsSettings = CorsSettings.defaultSettings
+        .copy(allowedMethods = List(GET, PUT, POST, DELETE, OPTIONS, HEAD), exposedHeaders = List(Location.name))
+
+      val routes: Route = handleRejections(corsRejectionHandler)(cors(corsSettings)(api))
 
       logger.info("==== Cluster is Live ====")
 
@@ -85,11 +99,11 @@ object Main {
     as.registerOnTermination {
       cluster.leave(cluster.selfAddress)
       Kamon.stopAllReporters()
-      SystemMetrics.startCollecting()
+      SystemMetrics.stopCollecting()
     }
     // attempt to leave the cluster before shutting down
     val _ = sys.addShutdownHook {
-      val _ = Await.result(as.terminate(), 5.seconds)
+      val _ = Await.result(as.terminate(), 15.seconds)
     }
   }
 

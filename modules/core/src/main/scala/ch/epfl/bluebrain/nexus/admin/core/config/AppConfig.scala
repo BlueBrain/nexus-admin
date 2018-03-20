@@ -41,9 +41,9 @@ object AppConfig {
 
   implicit val clock: Clock = Clock.systemUTC
 
-  final case class DescriptionConfig(name: String, environment: String) {
+  final case class DescriptionConfig(name: String) {
     val version: String = BuildInfo.version
-    val actorSystemName = s"$name-${version.replaceAll("\\.", "-")}-$environment"
+    val actorSystemName = s"$name-${version.replaceAll("\\.", "-")}"
   }
 
   final case class InstanceConfig(interface: String)
