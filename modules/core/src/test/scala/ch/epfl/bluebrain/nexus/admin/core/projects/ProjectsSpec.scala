@@ -4,34 +4,32 @@ import java.time.Clock
 
 import cats.instances.try_._
 import ch.epfl.bluebrain.nexus.admin.core.CallerCtx._
-import ch.epfl.bluebrain.nexus.admin.core.Fault.{CommandRejected, Unexpected}
+import ch.epfl.bluebrain.nexus.admin.core.Fault.CommandRejected
+import ch.epfl.bluebrain.nexus.admin.core.TestHepler
 import ch.epfl.bluebrain.nexus.admin.core.config.AppConfig.ProjectsConfig
-import ch.epfl.bluebrain.nexus.admin.core.projects.Project.{Config, LoosePrefixMapping, ProjectValue}
+import ch.epfl.bluebrain.nexus.admin.core.projects.Project.ProjectValue
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceRejection._
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceState._
 import ch.epfl.bluebrain.nexus.admin.core.types.Ref._
 import ch.epfl.bluebrain.nexus.admin.core.types.RefVersioned
-import ch.epfl.bluebrain.nexus.admin.ld.Const.{nxv, rdf}
 import ch.epfl.bluebrain.nexus.admin.refined.permissions._
 import ch.epfl.bluebrain.nexus.admin.refined.project._
 import ch.epfl.bluebrain.nexus.commons.iam.acls.Permission._
 import ch.epfl.bluebrain.nexus.commons.iam.acls.{Permission, Permissions}
 import ch.epfl.bluebrain.nexus.commons.iam.identity.Caller.AnonymousCaller
 import ch.epfl.bluebrain.nexus.commons.iam.identity.Identity.Anonymous
-import ch.epfl.bluebrain.nexus.commons.test.Randomness
 import ch.epfl.bluebrain.nexus.sourcing.mem.MemoryAggregate
 import ch.epfl.bluebrain.nexus.sourcing.mem.MemoryAggregate._
 import eu.timepit.refined.api.RefType.{applyRef, refinedRefType}
 import eu.timepit.refined.auto._
 import io.circe.Json
-import org.scalatest.{Matchers, TryValues, WordSpecLike}
-import ch.epfl.bluebrain.nexus.admin.ld.PrefixMapping._
 import io.circe.syntax._
+import org.scalatest.{Matchers, TryValues, WordSpecLike}
 
-import scala.util.{Failure, Success, Try}
 import scala.concurrent.duration._
+import scala.util.Try
 
-class ProjectsSpec extends WordSpecLike with Matchers with TryValues with Randomness {
+class ProjectsSpec extends WordSpecLike with Matchers with TryValues with TestHepler {
 
   private implicit val caller: AnonymousCaller = AnonymousCaller(Anonymous())
   private implicit val clock: Clock            = Clock.systemUTC
@@ -41,28 +39,9 @@ class ProjectsSpec extends WordSpecLike with Matchers with TryValues with Random
 
   def genJson(): Json = Json.obj("key" -> Json.fromString(genString()))
 
-  def genReference(length: Int = 9): ProjectReference =
-    refinedRefType.unsafeWrap(genString(length = length, Vector.range('a', 'z') ++ Vector.range('0', '9')))
-
-  def genProjectValue(): ProjectValue = {
-    val prefixMappings = List(
-      LoosePrefixMapping(randomPrefix(), refinedRefType.unsafeRewrap(nxv.namespaceBuilder)),
-      LoosePrefixMapping(randomPrefix(), refinedRefType.unsafeRewrap(rdf.namespaceBuilder))
-    )
-    ProjectValue(Some(genString()), None, prefixMappings, Config(genInt().toLong))
-  }
   trait Context {
     val id: ProjectReference = genReference()
-    val prefixMappings = List(
-      LoosePrefixMapping(randomPrefix(), refinedRefType.unsafeRewrap(nxv.namespaceBuilder)),
-      LoosePrefixMapping(randomPrefix(), refinedRefType.unsafeRewrap(rdf.namespaceBuilder))
-    )
     val value: ProjectValue = genProjectValue()
-  }
-
-  private implicit class EitherSyntax[A](either: Either[String, A]) {
-    def toPermTry: Try[A] =
-      either.fold(str => Failure(Unexpected(str)), Success(_))
   }
 
   "A Project bundle" should {

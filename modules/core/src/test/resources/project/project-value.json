@@ -1,6 +1,6 @@
 {
-  "label": "label",
-  "description": "description",
+  "label": "{{label}}",
+  "description": "{{description}}",
   "prefixMappings": [
     {
       "prefix": "nxv",
@@ -12,6 +12,6 @@
     }
   ],
   "config": {
-    "maxAttachmentSize": 200
+    "maxAttachmentSize": "{{size}}"
   }
 }

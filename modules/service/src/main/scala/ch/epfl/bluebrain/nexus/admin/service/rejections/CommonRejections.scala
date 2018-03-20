@@ -1,7 +1,6 @@
-package ch.epfl.bluebrain.nexus.admin.core.rejections
+package ch.epfl.bluebrain.nexus.admin.service.rejections
 
-import ch.epfl.bluebrain.nexus.commons.types.Err
-import ch.epfl.bluebrain.nexus.commons.types.Rejection
+import ch.epfl.bluebrain.nexus.commons.types.{Err, Rejection}
 
 /**
   * Enumeration type for rejections returned when a generic rejection occurs.

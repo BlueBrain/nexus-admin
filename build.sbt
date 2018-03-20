@@ -40,7 +40,7 @@ val shapelessVersion                = "2.3.3"
 val sourcingVersion                 = "0.10.3"
 
 // Nexus dependency versions
-val serviceVersion = "0.10.4"
+val serviceVersion = "0.10.5"
 val commonsVersion = "0.10.8"
 
 // Dependency modules
@@ -69,6 +69,7 @@ lazy val commonsQueryTypes = "ch.epfl.bluebrain.nexus" %% "commons-query-types" 
 lazy val commonsTest       = "ch.epfl.bluebrain.nexus" %% "commons-test"          % commonsVersion
 lazy val serialization     = "ch.epfl.bluebrain.nexus" %% "service-serialization" % serviceVersion
 lazy val serviceHttp       = "ch.epfl.bluebrain.nexus" %% "service-http"          % serviceVersion
+lazy val serviceKamon      = "ch.epfl.bluebrain.nexus" %% "service-kamon"         % serviceVersion
 lazy val sourcingCore      = "ch.epfl.bluebrain.nexus" %% "sourcing-core"         % sourcingVersion
 lazy val sourcingCache     = "ch.epfl.bluebrain.nexus" %% "sourcing-akka-cache"   % sourcingVersion
 lazy val sourcingMem       = "ch.epfl.bluebrain.nexus" %% "sourcing-mem"          % sourcingVersion
@@ -127,15 +128,12 @@ lazy val core = project
       commonsQueryTypes,
       pureconfig,
       refinedPureConfig,
-      sourcingCore,
-      sourcingCache,
       serialization,
-      serviceHttp,
+      sourcingCache,
+      sourcingCore,
       akkaDistributed      % Test,
-      akkaPersistenceInMem % Test,
       akkaHttpTestKit      % Test,
-      akkaTestKit          % Test,
-      mockitoCore          % Test,
+      akkaPersistenceInMem % Test,
       scalaTest            % Test,
       sourcingMem          % Test,
       slf4j                % Test
@@ -145,21 +143,17 @@ lazy val core = project
 lazy val service = project
   .in(file("modules/service"))
   .enablePlugins(BuildInfoPlugin)
-  .dependsOn(core)
+  .dependsOn(core % testAndCompile)
   .settings(
     buildInfoSettings,
     name                  := "admin-service",
     moduleName            := "admin-service",
     coverageFailOnMinimum := false,
     libraryDependencies ++= Seq(
-      akkaDistributed      % Test,
-      akkaPersistenceInMem % Test,
-      akkaHttpTestKit      % Test,
-      akkaTestKit          % Test,
-      mockitoCore          % Test,
-      scalaTest            % Test,
-      sourcingMem          % Test,
-      slf4j                % Test
+      serviceHttp,
+      serviceKamon,
+      akkaTestKit % Test,
+      mockitoCore % Test
     )
   )
 
@@ -182,6 +176,8 @@ lazy val noPublish = Seq(
   publish         := {},
   publishArtifact := false,
 )
+
+lazy val testAndCompile = "test->test;compile->compile"
 
 lazy val buildInfoSettings =
   Seq(buildInfoKeys := Seq[BuildInfoKey](version), buildInfoPackage := "ch.epfl.bluebrain.nexus.admin.core.config")

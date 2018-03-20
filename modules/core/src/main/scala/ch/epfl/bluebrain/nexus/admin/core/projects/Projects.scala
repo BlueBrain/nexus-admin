@@ -7,7 +7,7 @@ import cats.syntax.flatMap._
 import ch.epfl.bluebrain.nexus.admin.core.CallerCtx
 import ch.epfl.bluebrain.nexus.admin.core.Fault.Unexpected
 import ch.epfl.bluebrain.nexus.admin.core.config.AppConfig._
-import ch.epfl.bluebrain.nexus.admin.core.projects.Project.ProjectValue
+import ch.epfl.bluebrain.nexus.admin.core.projects.Project._
 import ch.epfl.bluebrain.nexus.admin.core.projects.Projects._
 import ch.epfl.bluebrain.nexus.admin.core.resources.Resources.Agg
 import ch.epfl.bluebrain.nexus.admin.core.resources.{Resource, Resources}
@@ -145,6 +145,6 @@ object Projects {
     */
   final def apply[F[_]](
       agg: Agg[F])(implicit F: MonadError[F, Throwable], clock: Clock, config: ProjectsConfig): Projects[F] =
-    new Projects(new Resources[F, ProjectReference](agg))
+    new Projects(new Resources[F, ProjectReference](agg) {})
 
 }

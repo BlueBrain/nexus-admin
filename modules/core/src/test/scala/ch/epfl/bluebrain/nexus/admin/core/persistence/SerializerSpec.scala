@@ -5,12 +5,11 @@ import java.time.Clock
 
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.serialization.{SerializationExtension, SerializerWithStringManifest}
+import ch.epfl.bluebrain.nexus.admin.core.TestHepler
 import ch.epfl.bluebrain.nexus.admin.core.persistence.Serializer.EventSerializer
 import ch.epfl.bluebrain.nexus.admin.core.persistence.SerializerSpec.DataAndJson
-import ch.epfl.bluebrain.nexus.admin.core.projects.Project.{Config, LoosePrefixMapping, ProjectValue}
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceEvent
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceEvent._
-import ch.epfl.bluebrain.nexus.admin.ld.Const._
 import ch.epfl.bluebrain.nexus.admin.refined.ld.Id
 import ch.epfl.bluebrain.nexus.commons.iam.acls.Meta
 import ch.epfl.bluebrain.nexus.commons.iam.identity.Identity.UserRef
@@ -20,7 +19,7 @@ import io.circe.syntax._
 import org.scalatest.{Inspectors, Matchers, WordSpecLike}
 import shapeless.Typeable
 
-class SerializerSpec extends WordSpecLike with Matchers with Inspectors with ScalatestRouteTest {
+class SerializerSpec extends WordSpecLike with Matchers with Inspectors with ScalatestRouteTest with TestHepler {
 
   private final val UTF8: Charset = Charset.forName("UTF-8")
   private final val serialization = SerializationExtension(system)
@@ -34,20 +33,17 @@ class SerializerSpec extends WordSpecLike with Matchers with Inspectors with Sca
     val meta          = Meta(UserRef("realm", "sub:1234"), Clock.systemUTC.instant())
     val tags          = Set("project")
 
-    val prefixMappings = List(
-      LoosePrefixMapping(nxv.prefixBuilder, refinedRefType.unsafeRewrap(nxv.namespaceBuilder)),
-      LoosePrefixMapping(rdf.prefixBuilder, refinedRefType.unsafeRewrap(rdf.namespaceBuilder))
-    )
-
     "using EventSerializer" should {
+      val value  = genProjectValue()
+      val value2 = genProjectValue()
       val results = List(
         DataAndJson(
-          ResourceCreated(projectId, 1L, meta, tags, ProjectValue(Some("label"), Some("desc"), prefixMappings, Config(10L)).asJson),
-          s"""{"id":"https://bbp.epfl.ch/nexus/projects/projectid","rev":1,"meta":{"author":{"id":"realms/realm/users/sub:1234","type":"UserRef"},"instant":"${meta.instant}"},"tags":["project"],"value":{"label":"label","description":"desc","prefixMappings":[{"prefix":"nxv","namespace":"https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/"},{"prefix":"rdf","namespace":"http://www.w3.org/1999/02/22-rdf-syntax-ns#"}],"config":{"maxAttachmentSize":10}},"type":"ResourceCreated"}"""
+          ResourceCreated(projectId, 1L, meta, tags, value.asJson),
+          s"""{"id":"https://bbp.epfl.ch/nexus/projects/projectid","rev":1,"meta":{"author":{"id":"realms/realm/users/sub:1234","type":"UserRef"},"instant":"${meta.instant}"},"tags":["project"],"value":{"label":"${value.label.get}","description":"${value.description.get}","prefixMappings":[{"prefix":"nxv","namespace":"https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/"},{"prefix":"rdf","namespace":"http://www.w3.org/1999/02/22-rdf-syntax-ns#type"}],"config":{"maxAttachmentSize":${value.config.maxAttachmentSize}}},"type":"ResourceCreated"}"""
         ),
         DataAndJson(
-          ResourceUpdated(projectId, 1L, meta, tags, ProjectValue(Some("label2"), Some("desc2"), prefixMappings, Config(20L)).asJson),
-          s"""{"id":"https://bbp.epfl.ch/nexus/projects/projectid","rev":1,"meta":{"author":{"id":"realms/realm/users/sub:1234","type":"UserRef"},"instant":"${meta.instant}"},"tags":["project"],"value":{"label":"label2","description":"desc2","prefixMappings":[{"prefix":"nxv","namespace":"https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/"},{"prefix":"rdf","namespace":"http://www.w3.org/1999/02/22-rdf-syntax-ns#"}],"config":{"maxAttachmentSize":20}},"type":"ResourceUpdated"}"""
+          ResourceUpdated(projectId, 1L, meta, tags, value2.asJson),
+          s"""{"id":"https://bbp.epfl.ch/nexus/projects/projectid","rev":1,"meta":{"author":{"id":"realms/realm/users/sub:1234","type":"UserRef"},"instant":"${meta.instant}"},"tags":["project"],"value":{"label":"${value2.label.get}","description":"${value2.description.get}","prefixMappings":[{"prefix":"nxv","namespace":"https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/"},{"prefix":"rdf","namespace":"http://www.w3.org/1999/02/22-rdf-syntax-ns#type"}],"config":{"maxAttachmentSize":${value2.config.maxAttachmentSize}}},"type":"ResourceUpdated"}"""
         ),
         DataAndJson(
           ResourceDeprecated(projectId, 1L, meta, tags),

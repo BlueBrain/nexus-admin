@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.admin.core.directives
+package ch.epfl.bluebrain.nexus.admin.service.directives
 
 import java.net.URLEncoder
 
@@ -7,11 +7,12 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import ch.epfl.bluebrain.nexus.admin.core.Error
 import ch.epfl.bluebrain.nexus.admin.core.config.AppConfig.PaginationConfig
-import ch.epfl.bluebrain.nexus.admin.core.directives.QueryDirectives._
-import ch.epfl.bluebrain.nexus.admin.core.routes._
 import ch.epfl.bluebrain.nexus.admin.ld.Const._
+import ch.epfl.bluebrain.nexus.admin.ld.JsonLD._
 import ch.epfl.bluebrain.nexus.admin.ld.{Const, JsonLD}
 import ch.epfl.bluebrain.nexus.admin.query._
+import ch.epfl.bluebrain.nexus.admin.service.directives.QueryDirectives._
+import ch.epfl.bluebrain.nexus.admin.service.handlers.{ExceptionHandling, RejectionHandling}
 import ch.epfl.bluebrain.nexus.commons.http.ContextUri
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport._
 import ch.epfl.bluebrain.nexus.commons.test.Resources
@@ -22,7 +23,6 @@ import io.circe.Json
 import io.circe.generic.auto._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{CancelAfterFailure, Matchers, WordSpecLike}
-import ch.epfl.bluebrain.nexus.admin.ld.JsonLD._
 
 class QueryDirectivesSpec
     extends WordSpecLike

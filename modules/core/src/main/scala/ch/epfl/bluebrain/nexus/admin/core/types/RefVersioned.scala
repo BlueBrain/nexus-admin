@@ -1,5 +1,9 @@
 package ch.epfl.bluebrain.nexus.admin.core.types
 
+import ch.epfl.bluebrain.nexus.admin.ld.{Const, IdResolvable}
+import io.circe.syntax._
+import io.circe.{Encoder, Json}
+
 /**
   * A versioned reference of a ''resource''
   *
@@ -8,3 +12,11 @@ package ch.epfl.bluebrain.nexus.admin.core.types
   * @tparam A the generic type of the id's ''reference''
   */
 final case class RefVersioned[A](id: Ref[A], rev: Long) extends Versioned
+
+object RefVersioned {
+
+  final implicit def refRevisionEncoder[A: IdResolvable]: Encoder[RefVersioned[A]] =
+    Encoder.encodeJson.contramap {
+      case RefVersioned(id, rev) => Json.obj(Const.`@id` -> id.asJson, "rev" -> Json.fromLong(rev))
+    }
+}

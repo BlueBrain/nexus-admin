@@ -1,12 +1,12 @@
-package ch.epfl.bluebrain.nexus.admin.core.routes
+package ch.epfl.bluebrain.nexus.admin.service.handlers
 
 import akka.http.javadsl.server.AuthorizationFailedRejection
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server.Directives.complete
 import akka.http.scaladsl.server._
-import ch.epfl.bluebrain.nexus.admin.core.directives.AuthDirectives.CustomAuthRejection
-import ch.epfl.bluebrain.nexus.admin.core.rejections.CommonRejections
-import ch.epfl.bluebrain.nexus.admin.core.rejections.CommonRejections._
+import ch.epfl.bluebrain.nexus.admin.service.directives.AuthDirectives.CustomAuthRejection
+import ch.epfl.bluebrain.nexus.admin.service.rejections.CommonRejections
+import ch.epfl.bluebrain.nexus.admin.service.rejections.CommonRejections._
 import ch.epfl.bluebrain.nexus.commons.http.ContextUri
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport.marshallerHttp
 import ch.epfl.bluebrain.nexus.commons.types.HttpRejection
@@ -33,6 +33,8 @@ object RejectionHandling {
         case MalformedQueryParamRejection(_, _, Some(e: WrongOrInvalidJson)) =>
           complete(BadRequest -> (e: HttpRejection))
         case MalformedQueryParamRejection(_, _, Some(err)) =>
+          complete(BadRequest -> (IllegalParam(err.getMessage): CommonRejections))
+        case ValidationRejection(_, Some(err: IllegalParam)) =>
           complete(BadRequest -> (IllegalParam(err.getMessage): CommonRejections))
         case ValidationRejection(_, Some(e: IllegalPayload)) =>
           complete(BadRequest -> (e: CommonRejections))
