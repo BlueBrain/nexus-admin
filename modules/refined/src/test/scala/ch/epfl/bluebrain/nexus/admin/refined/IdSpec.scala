@@ -41,8 +41,8 @@ class IdSpec extends WordSpecLike with Matchers with Randomness with Inspectors 
 
     "be constructed with inference" in {
       val namespace: Namespace = "http://example.com/one/two/"
-      val reference: Reference     = "three"
-      val id: Id       = (namespace, reference).id
+      val reference: Reference = "three"
+      val id: Id               = (namespace, reference).id
       id shouldEqual ("http://example.com/one/two/three": Id)
       id shouldEqual ("http://example.com/one/two/three": AliasOrNamespace)
 

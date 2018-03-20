@@ -1,3 +1,5 @@
+def version = env.BRANCH_NAME
+
 pipeline {
     agent none
 
@@ -11,7 +13,7 @@ pipeline {
                     steps {
                         node("slave-sbt") {
                             checkout scm
-                            sh 'sbt clean scalafmtSbtCheck scapegoat'
+                            sh 'sbt clean scalafmtCheck scalafmtSbtCheck test:scalafmtCheck scapegoat'
                         }
                     }
                 }
@@ -32,7 +34,21 @@ pipeline {
             steps {
                 node("slave-sbt") {
                     checkout scm
-                    sh 'sbt releaseEarly'
+                    sh 'sbt releaseEarly universal:packageZipTarball'
+                    stash name: "service", includes: "modules/service/target/universal/admin-service-*.tgz"
+                }
+            }
+        }
+        stage("Build Image") {
+            when {
+                expression { version ==~ /v\d+\.\d+\.\d+.*/ }
+            }
+            steps {
+                node("slave-sbt") {
+                    unstash name: "service"
+                    sh "mv modules/service/target/universal/admin-service-*.tgz ./admin-service.tgz"
+                    sh "oc start-build admin-build --from-file=admin-service.tgz --follow"
+                    openshiftTag srcStream: 'admin', srcTag: 'latest', destStream: 'admin', destTag: version.substring(1), verbose: 'false'
                 }
             }
         }

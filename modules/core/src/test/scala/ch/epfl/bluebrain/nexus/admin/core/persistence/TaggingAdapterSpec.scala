@@ -23,7 +23,7 @@ class TaggingAdapterSpec extends WordSpecLike with Matchers with Inspectors with
     val adapter = new TaggingAdapter()
 
     val id: Id = "https://bbp.epfl.ch/nexus/projects/projectid"
-    val meta               = Meta(UserRef("realm", "sub:1234"), Clock.systemUTC.instant())
+    val meta   = Meta(UserRef("realm", "sub:1234"), Clock.systemUTC.instant())
 
     val mapping = Map(
       ResourceCreated(id, 1L, meta, Set("project", "other"), genJson()) -> Set("project", "other"),

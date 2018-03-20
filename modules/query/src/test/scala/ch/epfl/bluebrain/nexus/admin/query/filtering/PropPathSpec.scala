@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.admin.query.filtering
 
-
 import java.io.ByteArrayInputStream
 
 import cats.syntax.show._
@@ -17,8 +16,8 @@ class PropPathSpec extends WordSpecLike with Matchers with Inspectors with TryVa
   "A PropPath" should {
     val context = Json.obj(
       "@context" -> Json.obj(
-        "nx"  -> Json.fromString(nxv.namespaceBuilder toString()),
-        "rdf" -> Json.fromString(rdf.namespaceBuilder toString())
+        "nx"  -> Json.fromString(nxv.namespaceBuilder toString ()),
+        "rdf" -> Json.fromString(rdf.namespaceBuilder toString ())
       ))
     val str   = context.noSpaces
     val model = ModelFactory.createDefaultModel()
@@ -47,26 +46,32 @@ class PropPathSpec extends WordSpecLike with Matchers with Inspectors with TryVa
       val path       = "nx:schema / nx:schemaGroup ? / nx:name"
       val parsedPath = PathParser.parse(path, prefixMapping)
       val result     = fromJena(parsedPath).toTry.success.value
-      result shouldEqual SeqPath(SeqPath(UriPath(s"${nxv.namespaceBuilder}schema"), PathZeroOrOne(s"${nxv.namespaceBuilder}schemaGroup")),
-        UriPath(s"${nxv.namespaceBuilder}name"))
+      result shouldEqual SeqPath(SeqPath(UriPath(s"${nxv.namespaceBuilder}schema"),
+                                         PathZeroOrOne(s"${nxv.namespaceBuilder}schemaGroup")),
+                                 UriPath(s"${nxv.namespaceBuilder}name"))
       result.show shouldEqual s"<${nxv.namespaceBuilder}schema>/(<${nxv.namespaceBuilder}schemaGroup>)?/<${nxv.namespaceBuilder}name>"
     }
 
     "build a PathProp from a follow sequence of paths (3 hoops)" in {
-      val path       = s"<${nxv.namespaceBuilder}schema> / <${nxv.namespaceBuilder}schemaGroup> ? / <${nxv.namespaceBuilder}name>*"
+      val path =
+        s"<${nxv.namespaceBuilder}schema> / <${nxv.namespaceBuilder}schemaGroup> ? / <${nxv.namespaceBuilder}name>*"
       val parsedPath = PathParser.parse(path, prefixMapping)
       val result     = fromJena(parsedPath).toTry.success.value
-      result shouldEqual SeqPath(SeqPath(UriPath(s"${nxv.namespaceBuilder}schema"), PathZeroOrOne(s"${nxv.namespaceBuilder}schemaGroup")),
-        PathZeroOrMore(s"${nxv.namespaceBuilder}name"))
+      result shouldEqual SeqPath(
+        SeqPath(UriPath(s"${nxv.namespaceBuilder}schema"), PathZeroOrOne(s"${nxv.namespaceBuilder}schemaGroup")),
+        PathZeroOrMore(s"${nxv.namespaceBuilder}name")
+      )
       result.show shouldEqual s"<${nxv.namespaceBuilder}schema>/(<${nxv.namespaceBuilder}schemaGroup>)?/(<${nxv.namespaceBuilder}name>)*"
     }
 
     "build a PathProp from an arbitrary length path" in {
-      val path       = s"<${nxv.namespaceBuilder}schema>+ / <${nxv.namespaceBuilder}schemaGroup> ? / <${nxv.namespaceBuilder}name>"
+      val path =
+        s"<${nxv.namespaceBuilder}schema>+ / <${nxv.namespaceBuilder}schemaGroup> ? / <${nxv.namespaceBuilder}name>"
       val parsedPath = PathParser.parse(path, prefixMapping)
       val result     = fromJena(parsedPath).toTry.success.value
-      result shouldEqual SeqPath(SeqPath(PathOneOrMore(s"${nxv.namespaceBuilder}schema"), PathZeroOrOne(s"${nxv.namespaceBuilder}schemaGroup")),
-        UriPath(s"${nxv.namespaceBuilder}name"))
+      result shouldEqual SeqPath(SeqPath(PathOneOrMore(s"${nxv.namespaceBuilder}schema"),
+                                         PathZeroOrOne(s"${nxv.namespaceBuilder}schemaGroup")),
+                                 UriPath(s"${nxv.namespaceBuilder}name"))
       result.show shouldEqual s"(<${nxv.namespaceBuilder}schema>)+/(<${nxv.namespaceBuilder}schemaGroup>)?/<${nxv.namespaceBuilder}name>"
     }
 
@@ -75,7 +80,9 @@ class PropPathSpec extends WordSpecLike with Matchers with Inspectors with TryVa
       val parsedPath = PathParser.parse(path, prefixMapping)
       val result     = fromJena(parsedPath).toTry.success.value
       result shouldEqual NegatedSeqPath(
-        List(UriPath(s"${rdf.namespaceBuilder}type"), InversePath(s"${rdf.namespaceBuilder}type"), UriPath(s"${nxv.namespaceBuilder}schemaGroup")))
+        List(UriPath(s"${rdf.namespaceBuilder}type"),
+             InversePath(s"${rdf.namespaceBuilder}type"),
+             UriPath(s"${nxv.namespaceBuilder}schemaGroup")))
       result.show shouldEqual s"!(<${rdf.namespaceBuilder}type>|^<${rdf.namespaceBuilder}type>|<${nxv.namespaceBuilder}schemaGroup>)"
     }
 
@@ -83,8 +90,9 @@ class PropPathSpec extends WordSpecLike with Matchers with Inspectors with TryVa
       val path       = "nx:schema / nx:schemaGroup ? | nx:name"
       val parsedPath = PathParser.parse(path, prefixMapping)
       val result     = fromJena(parsedPath).toTry.success.value
-      result shouldEqual AlternativeSeqPath(SeqPath(UriPath(s"${nxv.namespaceBuilder}schema"), PathZeroOrOne(s"${nxv.namespaceBuilder}schemaGroup")),
-        UriPath(s"${nxv.namespaceBuilder}name"))
+      result shouldEqual AlternativeSeqPath(SeqPath(UriPath(s"${nxv.namespaceBuilder}schema"),
+                                                    PathZeroOrOne(s"${nxv.namespaceBuilder}schemaGroup")),
+                                            UriPath(s"${nxv.namespaceBuilder}name"))
       result.show shouldEqual s"<${nxv.namespaceBuilder}schema>/(<${nxv.namespaceBuilder}schemaGroup>)?|<${nxv.namespaceBuilder}name>"
 
     }
@@ -98,4 +106,3 @@ class PropPathSpec extends WordSpecLike with Matchers with Inspectors with TryVa
   }
 
 }
-

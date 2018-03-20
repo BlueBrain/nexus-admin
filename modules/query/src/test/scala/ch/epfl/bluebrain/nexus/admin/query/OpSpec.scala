@@ -7,8 +7,9 @@ class OpSpec extends WordSpecLike with Matchers with Inspectors with OptionValue
 
   "A LogicalOp" should {
     "be constructed properly" in {
-      forAll(List("and" -> And, "or" -> Or, "not" -> Not, "xor" -> Xor)) { case (str, v) =>
-        LogicalOp.fromString(str).value shouldEqual v
+      forAll(List("and" -> And, "or" -> Or, "not" -> Not, "xor" -> Xor)) {
+        case (str, v) =>
+          LogicalOp.fromString(str).value shouldEqual v
 
       }
     }
@@ -23,8 +24,9 @@ class OpSpec extends WordSpecLike with Matchers with Inspectors with OptionValue
 
   "A ComparisonOp" should {
     "be constructed properly" in {
-      forAll(List("eq" -> Eq, "ne" -> Ne, "lt" -> Lt, "lte" -> Lte, "gte" -> Gte)) { case (str, v) =>
-        ComparisonOp.fromString(str).value shouldEqual v
+      forAll(List("eq" -> Eq, "ne" -> Ne, "lt" -> Lt, "lte" -> Lte, "gte" -> Gte)) {
+        case (str, v) =>
+          ComparisonOp.fromString(str).value shouldEqual v
 
       }
     }
