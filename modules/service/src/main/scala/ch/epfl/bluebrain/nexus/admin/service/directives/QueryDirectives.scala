@@ -1,14 +1,14 @@
-package ch.epfl.bluebrain.nexus.admin.core.directives
+package ch.epfl.bluebrain.nexus.admin.service.directives
 
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Directive, Directive1, MalformedQueryParamRejection}
 import ch.epfl.bluebrain.nexus.admin.core.config.AppConfig.PaginationConfig
-import ch.epfl.bluebrain.nexus.admin.core.directives.StringUnmarshaller._
 import ch.epfl.bluebrain.nexus.admin.ld.JsonLD._
 import ch.epfl.bluebrain.nexus.admin.ld.{Const, JsonLD}
 import ch.epfl.bluebrain.nexus.admin.query.QueryPayload._
 import ch.epfl.bluebrain.nexus.admin.query.filtering.Filter
 import ch.epfl.bluebrain.nexus.admin.query.{Field, JsonLdFormat, QueryPayload}
+import ch.epfl.bluebrain.nexus.admin.service.directives.StringUnmarshaller._
 import ch.epfl.bluebrain.nexus.commons.types.HttpRejection.WrongOrInvalidJson
 import ch.epfl.bluebrain.nexus.commons.types.search.{Pagination, SortList}
 import io.circe.parser._

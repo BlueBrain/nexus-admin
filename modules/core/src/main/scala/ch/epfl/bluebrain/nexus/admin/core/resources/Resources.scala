@@ -81,8 +81,9 @@ class Resources[F[_], A: IdResolvable](agg: Agg[F])(implicit
     * @return a [[RefVersioned]] instance wrapped in the abstract ''F[_]'' type
     *         if successful, or a [[ch.epfl.bluebrain.nexus.admin.core.Fault]] wrapped within ''F[_]'' otherwise
     */
-  def create(id: A, value: Json)(tags: Set[String], persId: String)(implicit ctx: CallerCtx,
-                                                                    @silent perms: HasOwnProjects): F[RefVersioned[A]] =
+  def create(id: A, value: Json)(tags: Set[String], persId: String)(
+      implicit ctx: CallerCtx,
+      @silent perms: HasCreateProjects): F[RefVersioned[A]] =
     for {
       _ <- validateCreate(id, value)
       r <- evaluate(CreateResource(id, ctx.meta, tags + persId, value), persId, s"Create res '$id'")

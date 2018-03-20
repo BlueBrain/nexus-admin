@@ -78,8 +78,12 @@ object AppConfig {
 
   final case class IamConfig(baseUri: Uri)
 
+  implicit def prefixesFromImplicit(implicit appConfig: AppConfig): PrefixesConfig = appConfig.prefixes
+
   implicit def httpFromImplicit(implicit appConfig: AppConfig): HttpConfig = appConfig.http
 
   implicit def projectsConfigFromImplicit(implicit appConfig: AppConfig): ProjectsConfig = appConfig.projects
+
+  implicit def coreContextUri(implicit appConfig: AppConfig): ContextUri = appConfig.prefixes.coreContext
 
 }

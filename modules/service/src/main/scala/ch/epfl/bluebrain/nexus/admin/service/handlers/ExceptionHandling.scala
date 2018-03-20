@@ -1,14 +1,14 @@
-package ch.epfl.bluebrain.nexus.admin.core.routes
+package ch.epfl.bluebrain.nexus.admin.service.handlers
 
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server.Directives.complete
 import akka.http.scaladsl.server.ExceptionHandler
 import ch.epfl.bluebrain.nexus.admin.core.Fault.{CommandRejected, Unexpected}
-import ch.epfl.bluebrain.nexus.admin.core.rejections.CommonRejections
-import ch.epfl.bluebrain.nexus.admin.core.rejections.CommonRejections._
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceRejection
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceRejection._
-import ch.epfl.bluebrain.nexus.admin.core.routes.ExceptionHandling.InternalError
+import ch.epfl.bluebrain.nexus.admin.service.handlers.ExceptionHandling.InternalError
+import ch.epfl.bluebrain.nexus.admin.service.rejections.CommonRejections
+import ch.epfl.bluebrain.nexus.admin.service.rejections.CommonRejections._
 import ch.epfl.bluebrain.nexus.commons.http.ContextUri
 import ch.epfl.bluebrain.nexus.service.http.directives.ErrorDirectives._
 import ch.epfl.bluebrain.nexus.service.http.directives.StatusFrom

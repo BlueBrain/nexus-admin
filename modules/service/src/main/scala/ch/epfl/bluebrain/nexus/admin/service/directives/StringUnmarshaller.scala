@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.admin.core.directives
+package ch.epfl.bluebrain.nexus.admin.service.directives
 
 import akka.http.scaladsl.unmarshalling.{FromStringUnmarshaller, Unmarshaller}
 import ch.epfl.bluebrain.nexus.commons.types.HttpRejection.WrongOrInvalidJson

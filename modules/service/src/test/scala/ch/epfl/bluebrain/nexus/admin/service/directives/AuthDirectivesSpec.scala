@@ -1,15 +1,16 @@
-package ch.epfl.bluebrain.nexus.admin.core.directives
+package ch.epfl.bluebrain.nexus.admin.service.directives
 
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.model.{StatusCodes, Uri}
+import akka.http.scaladsl.server
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import ch.epfl.bluebrain.nexus.admin.core.Error
 import ch.epfl.bluebrain.nexus.admin.core.Error._
-import ch.epfl.bluebrain.nexus.admin.core.directives.AuthDirectives._
-import ch.epfl.bluebrain.nexus.admin.core.rejections.CommonRejections.DownstreamServiceError
-import ch.epfl.bluebrain.nexus.admin.core.routes.{ExceptionHandling, RejectionHandling}
-import ch.epfl.bluebrain.nexus.admin.refined.permissions.{ManageProjects, OwnProjects, ReadProjects, WriteProjects}
+import ch.epfl.bluebrain.nexus.admin.service.rejections.CommonRejections.DownstreamServiceError
+import ch.epfl.bluebrain.nexus.admin.refined.permissions._
+import ch.epfl.bluebrain.nexus.admin.service.directives.AuthDirectives._
+import ch.epfl.bluebrain.nexus.admin.service.handlers.{ExceptionHandling, RejectionHandling}
 import ch.epfl.bluebrain.nexus.commons.http.ContextUri
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport._
 import ch.epfl.bluebrain.nexus.commons.iam.IamClient
@@ -20,7 +21,6 @@ import ch.epfl.bluebrain.nexus.commons.iam.identity.Identity.{Anonymous, GroupRe
 import ch.epfl.bluebrain.nexus.commons.iam.identity.{Caller, IdentityId}
 import ch.epfl.bluebrain.nexus.commons.test.Randomness
 import ch.epfl.bluebrain.nexus.commons.types.HttpRejection.UnauthorizedAccess
-import eu.timepit.refined.api.Validate
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.auto._
 import io.circe.syntax._
@@ -62,13 +62,9 @@ class AuthDirectivesSpec
 
   private implicit val cl: IamClient[Future] = mock[IamClient[Future]]
 
-  private def routeAuthorize[A](resource: Path)(implicit cred: Option[OAuth2BearerToken], V: Validate[Permissions, A]) =
+  private def handler(route: => server.Route) =
     (handleExceptions(ExceptionHandling.exceptionHandler(ErrorContext)) & handleRejections(
-      RejectionHandling.rejectionHandler(ErrorContext))) {
-      (get & authorizePath[A](resource.toString())) { implicit p =>
-        complete("Success")
-      }
-    }
+      RejectionHandling.rejectionHandler(ErrorContext)))(route)
 
   before {
     Mockito.reset(cl)
@@ -131,7 +127,7 @@ class AuthDirectivesSpec
       val path                                     = "projects/proj/config"
       when(cl.getAcls(Path(path), parents = true, self = true)).thenReturn(Future.successful(FullAccessControlList()))
 
-      Get(path) ~> routeAuthorize[ReadProjects](Path(path)) ~> check {
+      Get(path) ~> handler((get & authorizeOn[HasReadProjects](Path(path)))(_ => complete("Success"))) ~> check {
         status shouldEqual StatusCodes.Unauthorized
         responseAs[Error].code shouldEqual classNameOf[UnauthorizedAccess.type]
       }
@@ -142,7 +138,7 @@ class AuthDirectivesSpec
       val path                                     = "projects/proj"
       when(cl.getAcls(Path(path), parents = true, self = true)).thenReturn(Future.failed(UnauthorizedAccess))
 
-      Get(path) ~> routeAuthorize[ReadProjects](Path(path)) ~> check {
+      Get(path) ~> handler((get & authorizeOn[HasReadProjects](Path(path)))(_ => complete("Success"))) ~> check {
         status shouldEqual StatusCodes.Unauthorized
         responseAs[Error].code shouldEqual classNameOf[UnauthorizedAccess.type]
       }
@@ -153,7 +149,7 @@ class AuthDirectivesSpec
       val path                                     = "projects/proj"
       when(cl.getAcls(Path(path), parents = true, self = true)).thenReturn(Future.successful(acl))
 
-      Get(path) ~> routeAuthorize[ReadProjects](Path(path)) ~> check {
+      Get(path) ~> handler((get & authorizeOn[HasReadProjects](Path(path)))(_ => complete("Success"))) ~> check {
         status shouldEqual StatusCodes.OK
         responseAs[String] shouldEqual "Success"
       }
@@ -167,10 +163,10 @@ class AuthDirectivesSpec
       when(cl.getAcls(Path(path), parents = true, self = true)).thenReturn(Future.successful(acl))
       forAll(
         List(
-          routeAuthorize[ReadProjects](Path(path)),
-          routeAuthorize[WriteProjects](Path(path)),
-          routeAuthorize[OwnProjects](Path(path)),
-          routeAuthorize[ManageProjects](Path(path))
+          handler((get & authorizeOn[HasReadProjects](Path(path)))(_ => complete("Success"))),
+          handler((get & authorizeOn[HasWriteProjects](Path(path)))(_ => complete("Success"))),
+          handler((get & authorizeOn[HasCreateProjects](Path(path)))(_ => complete("Success"))),
+          handler((get & authorizeOn[HasManageProjects](Path(path)))(_ => complete("Success")))
         )) { r =>
         Get(path) ~> r ~> check {
           status shouldEqual StatusCodes.OK
@@ -185,7 +181,7 @@ class AuthDirectivesSpec
       when(cl.getAcls(Path(path), parents = true, self = true))
         .thenReturn(Future.failed(new RuntimeException("downstream error")))
 
-      Get(path) ~> routeAuthorize[ReadProjects](Path(path)) ~> check {
+      Get(path) ~> handler((get & authorizeOn[HasReadProjects](Path(path)))(_ => complete("Success"))) ~> check {
         status shouldEqual StatusCodes.InternalServerError
         responseAs[Error].code shouldEqual classNameOf[DownstreamServiceError.type]
       }

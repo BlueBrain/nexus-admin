@@ -1,6 +1,6 @@
 {
-  "label": "label",
-  "description": "description",
+  "label": "{{label}}",
+  "description": "{{description}}",
   "prefixMappings": [
     {
       "prefix": "nxv",

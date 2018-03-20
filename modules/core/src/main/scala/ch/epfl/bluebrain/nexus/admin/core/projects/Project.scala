@@ -1,8 +1,10 @@
 package ch.epfl.bluebrain.nexus.admin.core.projects
 
+import cats.syntax.show._
 import ch.epfl.bluebrain.nexus.admin.core.config.AppConfig.ProjectsConfig
 import ch.epfl.bluebrain.nexus.admin.core.projects.Project.ProjectValue
 import ch.epfl.bluebrain.nexus.admin.core.types.{Ref, Versioned}
+import ch.epfl.bluebrain.nexus.admin.core.types.Ref._
 import ch.epfl.bluebrain.nexus.admin.ld.Const._
 import ch.epfl.bluebrain.nexus.admin.ld.JsonLD._
 import ch.epfl.bluebrain.nexus.admin.refined.ld._
@@ -10,6 +12,8 @@ import ch.epfl.bluebrain.nexus.admin.refined.project._
 import io.circe.generic.semiauto.deriveEncoder
 import io.circe.{Decoder, Encoder, Json}
 import io.circe.refined._
+import io.circe.syntax._
+
 /**
   * Data type representing the state of a project.
   *
@@ -23,6 +27,18 @@ final case class Project(id: Ref[ProjectReference], rev: Long, value: ProjectVal
     extends Versioned
 
 object Project {
+
+  implicit def projectEncoder(implicit config: ProjectsConfig): Encoder[Project] =
+    Encoder.encodeJson.contramap {
+      case Project(id, rev, _, json, deprecated) =>
+        json deepMerge Json.obj(
+          `@id`                     -> id.asJson,
+          `@type`                   -> Json.fromString(nxv.Project.show),
+          nxv.rev.show        -> Json.fromLong(rev),
+          nxv.deprecated.show -> Json.fromBoolean(deprecated)
+        )
+
+    }
 
   /**
     * Data type representing the payload value of the project
