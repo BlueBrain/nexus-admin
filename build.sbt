@@ -78,10 +78,12 @@ lazy val sourcingMem       = "ch.epfl.bluebrain.nexus" %% "sourcing-mem"        
 lazy val refinements = project
   .in(file("modules/refined"))
   .settings(
-    name                := "admin-refined",
-    moduleName          := "admin-refined",
-    coverageEnabled     := false,
-    libraryDependencies ++= Seq(akkaHttpCore, commonsIam, refined, scalaTest % Test)
+    name                     := "admin-refined",
+    moduleName               := "admin-refined",
+    coverageEnabled          := false,
+    libraryDependencies      ++= Seq(akkaHttpCore, commonsIam, refined, scalaTest % Test),
+    Test / fork              := true,
+    Test / parallelExecution := false // workaround for jena initialization
   )
 lazy val ld = project
   .dependsOn(refinements)
@@ -96,7 +98,9 @@ lazy val ld = project
       jenaArq,
       shapeless,
       scalaTest % Test
-    )
+    ),
+    Test / fork              := true,
+    Test / parallelExecution := false // workaround for jena initialization
   )
 
 lazy val query = project
@@ -111,7 +115,9 @@ lazy val query = project
       commonsIam,
       commonsQueryTypes,
       scalaTest % Test,
-    )
+    ),
+    Test / fork              := true,
+    Test / parallelExecution := false // workaround for jena initialization
   )
 
 lazy val core = project
@@ -137,7 +143,9 @@ lazy val core = project
       scalaTest            % Test,
       sourcingMem          % Test,
       slf4j                % Test
-    )
+    ),
+    Test / fork              := true,
+    Test / parallelExecution := false // workaround for jena initialization
   )
 
 lazy val service = project
@@ -154,7 +162,9 @@ lazy val service = project
       serviceKamon,
       akkaTestKit % Test,
       mockitoCore % Test
-    )
+    ),
+    Test / fork              := true,
+    Test / parallelExecution := false // workaround for jena initialization
   )
 
 lazy val root = project
