@@ -1,6 +1,8 @@
 package ch.epfl.bluebrain.nexus.admin.core.types
 
-import ch.epfl.bluebrain.nexus.admin.ld.{Const, IdResolvable}
+import cats.syntax.show._
+import ch.epfl.bluebrain.nexus.admin.ld.Const._
+import ch.epfl.bluebrain.nexus.admin.ld.IdResolvable
 import io.circe.syntax._
 import io.circe.{Encoder, Json}
 
@@ -17,6 +19,6 @@ object RefVersioned {
 
   final implicit def refRevisionEncoder[A: IdResolvable]: Encoder[RefVersioned[A]] =
     Encoder.encodeJson.contramap {
-      case RefVersioned(id, rev) => Json.obj(Const.`@id` -> id.asJson, "rev" -> Json.fromLong(rev))
+      case RefVersioned(id, rev) => Json.obj(`@id` -> id.asJson, nxv.rev.curie.show -> Json.fromLong(rev))
     }
 }

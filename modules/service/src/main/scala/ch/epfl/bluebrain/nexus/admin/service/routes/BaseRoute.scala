@@ -16,13 +16,6 @@ import ch.epfl.bluebrain.nexus.admin.service.handlers.{ExceptionHandling, Reject
   */
 abstract class BaseRoute(implicit prefixes: PrefixesConfig) {
 
-//  implicit val config: Configuration = Configuration.default.copy(
-//    transformMemberNames = {
-//      case "id"   => Const.`@id`
-//      case "type" => Const.`@type`
-//    }
-//  )
-
   protected def readRoutes(implicit credentials: Option[OAuth2BearerToken]): Route
 
   protected def writeRoutes(implicit credentials: Option[OAuth2BearerToken]): Route

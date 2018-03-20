@@ -43,7 +43,7 @@ class Projects[F[_]](resources: Resources[F, ProjectReference])(implicit F: Mona
     *         if successful, or a [[ch.epfl.bluebrain.nexus.admin.core.Fault]] wrapped within ''F[_]'' otherwise
     */
   def create(reference: ProjectReference, value: Json)(implicit ctx: CallerCtx,
-                                                       perms: HasOwnProjects): F[RefVersioned[ProjectReference]] =
+                                                       perms: HasCreateProjects): F[RefVersioned[ProjectReference]] =
     resources.create(reference, value)(tags, reference.toPersId)
 
   /**

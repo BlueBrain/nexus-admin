@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.admin.core.config.AppConfig._
 import ch.epfl.bluebrain.nexus.admin.core.projects.Projects
 import ch.epfl.bluebrain.nexus.admin.core.types.Ref._
 import ch.epfl.bluebrain.nexus.admin.core.types.RefVersioned._
-import ch.epfl.bluebrain.nexus.admin.refined.permissions.{HasOwnProjects, HasReadProjects, HasWriteProjects}
+import ch.epfl.bluebrain.nexus.admin.refined.permissions.{HasCreateProjects, HasReadProjects, HasWriteProjects}
 import ch.epfl.bluebrain.nexus.admin.refined.project.ProjectReference
 import ch.epfl.bluebrain.nexus.admin.service.directives.AuthDirectives._
 import ch.epfl.bluebrain.nexus.admin.service.directives.RefinedDirectives._
@@ -66,22 +66,23 @@ final class ProjectRoutes(projects: Projects[Future])(implicit iamClient: IamCli
                 }
               }
             case None =>
-              (trace("createProject") & authorizeOn[HasOwnProjects](name.value)) { implicit perms =>
+              (trace("createProject") & authorizeOn[HasCreateProjects](name.value)) { implicit perms =>
                 onSuccess(projects.create(name, json)) { ref =>
                   complete(StatusCodes.Created -> ref)
                 }
               }
           }
         }
-      } ~ (delete & parameter('rev.as[Long])) { rev =>
-        authCaller.apply { implicit caller =>
-          (trace("deprecateProject") & authorizeOn[HasWriteProjects](name.value)) { implicit perms =>
-            onSuccess(projects.deprecate(name, rev)) { ref =>
-              complete(StatusCodes.OK -> ref)
+      } ~
+        (delete & parameter('rev.as[Long])) { rev =>
+          authCaller.apply { implicit caller =>
+            (trace("deprecateProject") & authorizeOn[HasWriteProjects](name.value)) { implicit perms =>
+              onSuccess(projects.deprecate(name, rev)) { ref =>
+                complete(StatusCodes.OK -> ref)
+              }
             }
           }
         }
-      }
     }
 
   def routes: Route = combinedRoutesFor("projects")

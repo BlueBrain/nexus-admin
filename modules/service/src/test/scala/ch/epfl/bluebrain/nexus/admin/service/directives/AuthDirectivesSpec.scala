@@ -165,7 +165,7 @@ class AuthDirectivesSpec
         List(
           handler((get & authorizeOn[HasReadProjects](Path(path)))(_ => complete("Success"))),
           handler((get & authorizeOn[HasWriteProjects](Path(path)))(_ => complete("Success"))),
-          handler((get & authorizeOn[HasOwnProjects](Path(path)))(_ => complete("Success"))),
+          handler((get & authorizeOn[HasCreateProjects](Path(path)))(_ => complete("Success"))),
           handler((get & authorizeOn[HasManageProjects](Path(path)))(_ => complete("Success")))
         )) { r =>
         Get(path) ~> r ~> check {

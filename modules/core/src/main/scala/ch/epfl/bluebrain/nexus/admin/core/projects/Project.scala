@@ -5,7 +5,6 @@ import ch.epfl.bluebrain.nexus.admin.core.config.AppConfig.ProjectsConfig
 import ch.epfl.bluebrain.nexus.admin.core.projects.Project.ProjectValue
 import ch.epfl.bluebrain.nexus.admin.core.types.{Ref, Versioned}
 import ch.epfl.bluebrain.nexus.admin.core.types.Ref._
-import ch.epfl.bluebrain.nexus.admin.ld.Const
 import ch.epfl.bluebrain.nexus.admin.ld.Const._
 import ch.epfl.bluebrain.nexus.admin.ld.JsonLD._
 import ch.epfl.bluebrain.nexus.admin.refined.ld._
@@ -32,10 +31,12 @@ object Project {
   implicit def projectEncoder(implicit config: ProjectsConfig): Encoder[Project] =
     Encoder.encodeJson.contramap {
       case Project(id, rev, _, json, deprecated) =>
-        json deepMerge Json.obj(Const.`@id`   -> id.asJson,
-                                Const.`@type` -> Json.fromString(nxv.Project.show),
-                                "rev"         -> Json.fromLong(rev),
-                                "deprecated"  -> Json.fromBoolean(deprecated))
+        json deepMerge Json.obj(
+          `@id`                     -> id.asJson,
+          `@type`                   -> Json.fromString(nxv.Project.show),
+          nxv.rev.curie.show        -> Json.fromLong(rev),
+          nxv.deprecated.curie.show -> Json.fromBoolean(deprecated)
+        )
 
     }
 

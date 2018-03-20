@@ -47,8 +47,8 @@ class ProjectsSpec extends WordSpecLike with Matchers with TryValues with TestHe
   "A Project bundle" should {
     implicit val hasWrite: HasWriteProjects =
       applyRef[HasWriteProjects](Permissions(Read, Permission("projects/write"))).toPermTry.success.value
-    implicit val hasOwn: HasOwnProjects =
-      applyRef[HasOwnProjects](Permissions(Read, Permission("projects/own"))).toPermTry.success.value
+    implicit val hasOwn: HasCreateProjects =
+      applyRef[HasCreateProjects](Permissions(Read, Permission("projects/create"))).toPermTry.success.value
     implicit val hasRead: HasReadProjects =
       applyRef[HasReadProjects](Permissions(Read, Permission("projects/read"))).toPermTry.success.value
 

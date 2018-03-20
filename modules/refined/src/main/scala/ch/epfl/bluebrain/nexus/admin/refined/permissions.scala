@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.admin.refined
 
-import ch.epfl.bluebrain.nexus.admin.refined.permissions.{ManageProjects, OwnProjects, ReadProjects, WriteProjects}
+import ch.epfl.bluebrain.nexus.admin.refined.permissions.{ManageProjects, CreateProjects, ReadProjects, WriteProjects}
 import ch.epfl.bluebrain.nexus.commons.iam.acls.{Permission, Permissions}
 import eu.timepit.refined.W
 import eu.timepit.refined.api.Inference.==>
@@ -16,7 +16,7 @@ object permissions extends PermissionInferences {
   private[refined] type ManageProjects = ContainsPermission[W.`"projects/manage"`.T]
   private[refined] type ReadProjects   = ContainsPermission[W.`"projects/read"`.T] Or ManageProjects
   private[refined] type WriteProjects  = ContainsPermission[W.`"projects/write"`.T] Or ManageProjects
-  private[refined] type OwnProjects    = ContainsPermission[W.`"projects/own"`.T] Or ManageProjects
+  private[refined] type CreateProjects = ContainsPermission[W.`"projects/create"`.T] Or ManageProjects
 
   /**
     * Refined type for [[Permissions]] which contain the permission ''projects/manage''
@@ -34,9 +34,9 @@ object permissions extends PermissionInferences {
   type HasWriteProjects = Permissions Refined WriteProjects
 
   /**
-    * Refined type for [[Permissions]] which contain the permission ''projects/own''
+    * Refined type for [[Permissions]] which contain the permission ''projects/create''
     */
-  type HasOwnProjects = Permissions Refined OwnProjects
+  type HasCreateProjects = Permissions Refined CreateProjects
 
   /** Predicate that checks if `Permissions` contains a permission `S`. */
   final private[permissions] case class ContainsPermission[S <: String](perm: S)
@@ -60,7 +60,7 @@ trait PermissionInferences {
   implicit val manageProjectsImpliesWriteProjects: ManageProjects ==> WriteProjects =
     Inference.alwaysValid("manageProjectsImplies(writeProjects)")
 
-  implicit val manageProjectsImpliesOwnProjects: ManageProjects ==> OwnProjects =
+  implicit val manageProjectsImpliesOwnProjects: ManageProjects ==> CreateProjects =
     Inference.alwaysValid("manageProjectsImplies(ownProjects)")
 
 }

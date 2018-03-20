@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceRejection._
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceState.{Initial, eval, next}
 import ch.epfl.bluebrain.nexus.admin.core.types.Ref._
 import ch.epfl.bluebrain.nexus.admin.core.{Error, TestHepler}
-import ch.epfl.bluebrain.nexus.admin.ld.Const
+import ch.epfl.bluebrain.nexus.admin.ld.Const._
 import ch.epfl.bluebrain.nexus.admin.refined.permissions.HasReadProjects
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport._
 import ch.epfl.bluebrain.nexus.commons.http.RdfMediaTypes
@@ -58,7 +58,7 @@ class ProjectRoutesSpec
   private val acl = FullAccessControlList(
     (Anonymous(),
      Path("projects/proj"),
-     Permissions(Permission("projects/read"), Permission("projects/own"), Permission("projects/write"))))
+     Permissions(Permission("projects/read"), Permission("projects/create"), Permission("projects/write"))))
 
   private val aggProject = MemoryAggregate("projects")(Initial, next, eval).toF[Future]
   private val projects   = Projects(aggProject)
@@ -84,9 +84,9 @@ class ProjectRoutesSpec
       Put(s"/projects/${reference.value}", json) ~> addCredentials(cred) ~> route ~> check {
         status shouldEqual StatusCodes.Created
         responseAs[Json] shouldEqual Json.obj(
-          Const.`@context` -> Json.fromString(appConfig.prefixes.coreContext.toString()),
-          Const.`@id`      -> Json.fromString(s"http://127.0.0.1:8080/v1/projects/${reference.value}"),
-          "rev"            -> Json.fromLong(1L)
+          `@context` -> Json.fromString(appConfig.prefixes.coreContext.toString()),
+          `@id`      -> Json.fromString(s"http://127.0.0.1:8080/v1/projects/${reference.value}"),
+          "nxv:rev"  -> Json.fromLong(1L)
         )
       }
       projects.fetch(reference).futureValue shouldEqual Some(
@@ -126,9 +126,9 @@ class ProjectRoutesSpec
       Delete(s"/projects/${reference.value}?rev=1") ~> addCredentials(cred) ~> route ~> check {
         status shouldEqual StatusCodes.OK
         responseAs[Json] shouldEqual Json.obj(
-          Const.`@context` -> Json.fromString(appConfig.prefixes.coreContext.toString()),
-          Const.`@id`      -> Json.fromString(s"http://127.0.0.1:8080/v1/projects/${reference.value}"),
-          "rev"            -> Json.fromLong(2L)
+          `@context` -> Json.fromString(appConfig.prefixes.coreContext.toString()),
+          `@id`      -> Json.fromString(s"http://127.0.0.1:8080/v1/projects/${reference.value}"),
+          "nxv:rev"  -> Json.fromLong(2L)
         )
       }
       projects.fetch(reference).futureValue shouldEqual Some(
@@ -140,11 +140,11 @@ class ProjectRoutesSpec
         status shouldEqual StatusCodes.OK
         contentType shouldEqual RdfMediaTypes.`application/ld+json`.toContentType
         responseAs[Json] shouldEqual (json deepMerge Json.obj(
-          Const.`@context` -> Json.fromString(appConfig.prefixes.coreContext.toString()),
-          Const.`@id`      -> Json.fromString(s"http://127.0.0.1:8080/v1/projects/${reference.value}"),
-          Const.`@type`    -> Json.fromString("nxv:Project"),
-          "rev"            -> Json.fromLong(2L),
-          "deprecated"     -> Json.fromBoolean(true)
+          `@context`       -> Json.fromString(appConfig.prefixes.coreContext.toString()),
+          `@id`            -> Json.fromString(s"http://127.0.0.1:8080/v1/projects/${reference.value}"),
+          `@type`          -> Json.fromString("nxv:Project"),
+          "nxv:rev"        -> Json.fromLong(2L),
+          "nxv:deprecated" -> Json.fromBoolean(true)
         ))
       }
     }
@@ -154,11 +154,11 @@ class ProjectRoutesSpec
         status shouldEqual StatusCodes.OK
         contentType shouldEqual RdfMediaTypes.`application/ld+json`.toContentType
         responseAs[Json] shouldEqual (json deepMerge Json.obj(
-          Const.`@context` -> Json.fromString(appConfig.prefixes.coreContext.toString()),
-          Const.`@id`      -> Json.fromString(s"http://127.0.0.1:8080/v1/projects/${reference.value}"),
-          Const.`@type`    -> Json.fromString("nxv:Project"),
-          "rev"            -> Json.fromLong(1L),
-          "deprecated"     -> Json.fromBoolean(false)
+          `@context`       -> Json.fromString(appConfig.prefixes.coreContext.toString()),
+          `@id`            -> Json.fromString(s"http://127.0.0.1:8080/v1/projects/${reference.value}"),
+          `@type`          -> Json.fromString("nxv:Project"),
+          "nxv:rev"        -> Json.fromLong(1L),
+          "nxv:deprecated" -> Json.fromBoolean(false)
         ))
       }
     }
@@ -199,9 +199,9 @@ class ProjectRoutesSpec
       Put(s"/projects/${refUpdate.value}?rev=1", jsonUpdate) ~> addCredentials(cred) ~> route ~> check {
         status shouldEqual StatusCodes.OK
         responseAs[Json] shouldEqual Json.obj(
-          Const.`@context` -> Json.fromString(appConfig.prefixes.coreContext.toString()),
-          Const.`@id`      -> Json.fromString(s"http://127.0.0.1:8080/v1/projects/${refUpdate.value}"),
-          "rev"            -> Json.fromLong(2L)
+          `@context` -> Json.fromString(appConfig.prefixes.coreContext.toString()),
+          `@id`      -> Json.fromString(s"http://127.0.0.1:8080/v1/projects/${refUpdate.value}"),
+          "nxv:rev"  -> Json.fromLong(2L)
         )
       }
     }
