@@ -60,7 +60,7 @@ trait PermissionInferences {
   implicit val manageProjectsImpliesWriteProjects: ManageProjects ==> WriteProjects =
     Inference.alwaysValid("manageProjectsImplies(writeProjects)")
 
-  implicit val manageProjectsImpliesOwnProjects: ManageProjects ==> CreateProjects =
-    Inference.alwaysValid("manageProjectsImplies(ownProjects)")
+  implicit val manageProjectsImpliesCreateProjects: ManageProjects ==> CreateProjects =
+    Inference.alwaysValid("manageProjectsImplies(createProjects)")
 
 }
