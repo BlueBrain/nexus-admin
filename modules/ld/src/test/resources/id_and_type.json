@@ -1,38 +1,68 @@
 {
   "@context": {
-    "gr": "http://purl.org/goodrelations/v1#",
-    "pto": "http://www.productontology.org/id/",
-    "foaf": "http://xmlns.com/foaf/0.1/",
+    "dcterms": "http://purl.org/dc/terms/",
+    "nxv": "https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/",
+    "owl": "http://www.w3.org/2002/07/owl#",
+    "prov": "http://www.w3.org/ns/prov#",
+    "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "schema": "http://schema.org/",
+    "sh": "http://www.w3.org/ns/shacl#",
+    "shsh": "http://www.w3.org/ns/shacl-shacl#",
+    "skos": "http://www.w3.org/2004/02/skos/core#",
     "xsd": "http://www.w3.org/2001/XMLSchema#",
-    "foaf:page": {
+    "accessURL": {
+      "@id": "schema:accessURL"
+    },
+    "algorithm": {
+      "@id": "schema:algorithm"
+    },
+    "contentSize": {
+      "@id": "schema:contentSize"
+    },
+    "digest": {
+      "@id": "nxv:digest"
+    },
+    "downloadURL": {
+      "@id": "schema:downloadURL",
       "@type": "@id"
     },
-    "gr:acceptedPaymentMethods": {
-      "@type": "@id"
+    "mediaType": {
+      "@id": "schema:mediaType"
     },
-    "gr:hasBusinessFunction": {
-      "@type": "@id"
+    "originalFileName": {
+      "@id": "nxv:originalFileName"
     },
-    "gr:hasCurrencyValue": {
-      "@type": "xsd:float"
+    "storage": {
+      "@id": "nxv:storage"
+    },
+    "unit": {
+      "@id": "schema:unitCode"
+    },
+    "value": {
+      "@id": "schema:storage"
+    },
+    "distribution": {
+      "@id": "http://schema.org/distribution"
+    },
+    "id": "@id",
+    "type": "@type",
+    "links": {
+      "@id": "https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/links"
     }
   },
-  "@id": "http://example.org/cars/for-sale#tesla",
-  "@type": "http://some-example.org/something/Offering",
-  "gr:name": "Used Tesla Roadster",
-  "gr:description": "Need to sell fast and furiously",
-  "gr:hasBusinessFunction": "gr:Sell",
-  "gr:acceptedPaymentMethods": "gr:Cash",
-  "gr:hasPriceSpecification": {
-    "gr:hasCurrencyValue": "85000",
-    "gr:hasCurrency": "USD"
-  },
-  "gr:includes": {
-    "@type": [
-      "gr:Individual",
-      "pto:Vehicle"
-    ],
-    "gr:name": "Tesla Roadster",
-    "foaf:page": "http://www.teslamotors.com/roadster"
+  "id": "https://bbp-nexus.epfl.ch/dev/v0/contexts/nexus/core/distribution/v0.1.0",
+  "type": "http://example.com/Some",
+  "nxv:rev": 1,
+  "nxv:published": false,
+  "nxv:deprecated": false,
+  "links": {
+    "@context": {
+      "self": {
+        "@id": "nxv:self",
+        "@type": "@id"
+      }
+    },
+    "self": "https://bbp-nexus.epfl.ch/dev/v0/contexts/nexus/core/distribution/v0.1.0"
   }
 }

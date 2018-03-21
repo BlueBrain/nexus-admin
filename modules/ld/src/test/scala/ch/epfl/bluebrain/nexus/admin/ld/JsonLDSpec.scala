@@ -12,8 +12,8 @@ class JsonLDSpec extends WordSpecLike with Matchers with Resources with OptionVa
 
   "A JsonLD" should {
     val jsonLD            = JsonLD(jsonContentOf("/no_id.json"))
-    val typedJsonLD       = JsonLD(jsonContentOf("/id_and_type.json"))
-    val aliasedTypeJsonLD = JsonLD(jsonContentOf("/id_and_type_alias.json"))
+    val typedJsonLD       = JsonLD(jsonContentOf("/id_and_types.json"))
+    val aliasedTypeJsonLD = JsonLD(jsonContentOf("/id_and_type.json"))
     val schemaOrg         = new IdRefBuilder("schema", "http://schema.org/")
 
     "find a string from a given a predicate" in {
@@ -69,7 +69,7 @@ class JsonLDSpec extends WordSpecLike with Matchers with Resources with OptionVa
     }
 
     "return None  when attempting to fetch the type of a down navigation on an unexisting parent" in {
-      jsonLD.downFirst(schemaOrg.build("nonExisting")).tpe shouldEqual None
+      jsonLD.downFirst(schemaOrg.build("nonExisting")).tpe shouldEqual Set.empty
     }
 
     "find the @id" in {
@@ -80,13 +80,13 @@ class JsonLDSpec extends WordSpecLike with Matchers with Resources with OptionVa
     }
 
     "find the @type" in {
-      jsonLD.tpe shouldEqual None
-      val idRef = typedJsonLD.tpe.value
-      idRef.reference shouldEqual ("Offering": Reference)
-      idRef.namespace shouldEqual ("http://some-example.org/something/": Namespace)
-      aliasedTypeJsonLD.tpe.value shouldEqual IdRef("nxv",
-                                                    "https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/",
-                                                    "Some")
+      jsonLD.tpe shouldEqual Set.empty
+      typedJsonLD.tpe shouldEqual Set(IdRef("gr", "http://purl.org/goodrelations/v1#", "Offering"),
+                                      IdRef("owl", "http://www.w3.org/2002/07/owl#", "Ontology"))
+      val tpe = aliasedTypeJsonLD.tpe
+      tpe.size shouldEqual 1
+      tpe.head.reference shouldEqual ("Some": Reference)
+      tpe.head.namespace shouldEqual ("http://example.com/": Namespace)
     }
 
     "convert to Json" in {
