@@ -45,22 +45,23 @@ val serviceVersion = "0.10.6"
 val commonsVersion = "0.10.8"
 
 // Dependency modules
-lazy val akkaDistributed      = "com.typesafe.akka"     %% "akka-distributed-data"     % akkaVersion
-lazy val akkaHttpCore         = "com.typesafe.akka"     %% "akka-http-core"            % akkaHttpVersion
-lazy val akkaPersistence      = "com.typesafe.akka"     %% "akka-persistence"          % akkaVersion
-lazy val akkaPersistenceInMem = "com.github.dnvriend"   %% "akka-persistence-inmemory" % akkaPersistenceInMemVersion
-lazy val akkaHttpTestKit      = "com.typesafe.akka"     %% "akka-http-testkit"         % akkaHttpVersion
-lazy val akkaTestKit          = "com.typesafe.akka"     %% "akka-testkit"              % akkaVersion
-lazy val catsCore             = "org.typelevel"         %% "cats-core"                 % catsVersion
-lazy val circeCore            = "io.circe"              %% "circe-core"                % circeVersion
-lazy val circeJava8           = "io.circe"              %% "circe-java8"               % circeVersion
-lazy val circeRefined         = "io.circe"              %% "circe-refined"             % circeVersion
-lazy val jenaArq              = "org.apache.jena"       % "jena-arq"                   % jenaVersion
-lazy val mockitoCore          = "org.mockito"           % "mockito-core"               % mockitoVersion
-lazy val pureconfig           = "com.github.pureconfig" %% "pureconfig"                % pureconfigVersion
-lazy val shapeless            = "com.chuusai"           %% "shapeless"                 % shapelessVersion
-lazy val scalaTest            = "org.scalatest"         %% "scalatest"                 % scalaTestVersion
-lazy val slf4j                = "com.typesafe.akka"     %% "akka-slf4j"                % akkaVersion
+lazy val akkaDistributed          = "com.typesafe.akka"     %% "akka-distributed-data"      % akkaVersion
+lazy val akkaHttpCore             = "com.typesafe.akka"     %% "akka-http-core"             % akkaHttpVersion
+lazy val akkaPersistence          = "com.typesafe.akka"     %% "akka-persistence"           % akkaVersion
+lazy val akkaPersistenceCassandra = "com.typesafe.akka"     %% "akka-persistence-cassandra" % akkaPersistenceCassandraVersion
+lazy val akkaPersistenceInMem     = "com.github.dnvriend"   %% "akka-persistence-inmemory"  % akkaPersistenceInMemVersion
+lazy val akkaHttpTestKit          = "com.typesafe.akka"     %% "akka-http-testkit"          % akkaHttpVersion
+lazy val akkaTestKit              = "com.typesafe.akka"     %% "akka-testkit"               % akkaVersion
+lazy val catsCore                 = "org.typelevel"         %% "cats-core"                  % catsVersion
+lazy val circeCore                = "io.circe"              %% "circe-core"                 % circeVersion
+lazy val circeJava8               = "io.circe"              %% "circe-java8"                % circeVersion
+lazy val circeRefined             = "io.circe"              %% "circe-refined"              % circeVersion
+lazy val jenaArq                  = "org.apache.jena"       % "jena-arq"                    % jenaVersion
+lazy val mockitoCore              = "org.mockito"           % "mockito-core"                % mockitoVersion
+lazy val pureconfig               = "com.github.pureconfig" %% "pureconfig"                 % pureconfigVersion
+lazy val shapeless                = "com.chuusai"           %% "shapeless"                  % shapelessVersion
+lazy val scalaTest                = "org.scalatest"         %% "scalatest"                  % scalaTestVersion
+lazy val slf4j                    = "com.typesafe.akka"     %% "akka-slf4j"                 % akkaVersion
 
 lazy val refined           = "eu.timepit" %% "refined"            % refinedVersion
 lazy val refinedPureConfig = "eu.timepit" %% "refined-pureconfig" % refinedVersion
@@ -160,10 +161,13 @@ lazy val service = project
     name       := "admin-service",
     moduleName := "admin-service",
     libraryDependencies ++= Seq(
+      akkaDistributed,
       akkaHttpCors,
+      akkaPersistenceCassandra,
       serviceHttp,
       serviceKamon,
       sourcingAkka,
+      slf4j,
       akkaTestKit % Test,
       mockitoCore % Test
     ),
