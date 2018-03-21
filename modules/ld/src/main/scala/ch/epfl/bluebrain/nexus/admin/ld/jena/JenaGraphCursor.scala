@@ -19,18 +19,17 @@ import scala.collection.JavaConverters._
   */
 private[ld] final case class JenaGraphCursor(idF: () => IdType, private val graphF: () => Graph) extends GraphCursor {
 
-  override lazy val id: IdType         = idF()
-  override lazy val tpe: Option[IdRef] = tpe(id)
-  lazy val graph: Graph                = graphF()
+  override lazy val id: IdType      = idF()
+  override lazy val tpe: Set[IdRef] = tpe(id)
+  lazy val graph: Graph             = graphF()
 
-  private[jena] def tpe(idType: IdType) =
-    for {
-      node <- idType.optNode
-      obj <- graph.find(node, rdf.tpe.node, Node.ANY).asScala.collectFirst {
-        case t if t.getObject.isURI => t.getObject
-      }
-      idRef <- obj.toId(graph).toOption
-    } yield idRef
+  private[jena] def tpe(idType: IdType): Set[IdRef] =
+    idType.optNode match {
+      case Some(node) =>
+        graph.find(node, rdf.tpe.node, Node.ANY).asScala.flatMap(_.getObject.toId(graph).toOption).toSet
+      case None =>
+        Set.empty[IdRef]
+    }
 
   override def value[T](predicate: Id)(implicit T: Typeable[T]): Option[T] =
     id.optNode.flatMap { node =>

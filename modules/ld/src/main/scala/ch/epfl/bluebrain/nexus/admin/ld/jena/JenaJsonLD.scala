@@ -35,7 +35,7 @@ private[ld] final case class JenaJsonLD(json: Json) extends JsonLD {
     val (subs, objs) = graph
       .find(Node.ANY, Node.ANY, Node.ANY)
       .asScala
-      .filter(triple => triple.getSubject.isBlankOrUri && triple.getObject.isBlankOrUri)
+      .withFilter(triple => triple.getSubject.isBlankOrUri && triple.getObject.isBlankOrUri)
       .foldLeft(Set.empty[Node] -> Set.empty[Node]) {
         case ((s, o), c) if selfPredicate(c.getPredicate) => s                  -> o
         case ((s, o), c)                                  => (s + c.getSubject) -> (o + c.getObject)
@@ -46,9 +46,9 @@ private[ld] final case class JenaJsonLD(json: Json) extends JsonLD {
     }
   }
 
-  override def tpe: Option[IdRef] = cursor.tpe
+  private val cursor = JenaGraphCursor(() => id, () => graph)
 
-  private val cursor = new JenaGraphCursor(() => id, () => graph)
+  override def tpe: Set[IdRef] = cursor.tpe
 
   override def value[T: Typeable](predicate: Id): Option[T] = cursor.value(predicate)
 

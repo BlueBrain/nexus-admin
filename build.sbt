@@ -159,7 +159,6 @@ lazy val service = project
     buildInfoSettings,
     name                  := "admin-service",
     moduleName            := "admin-service",
-    coverageFailOnMinimum := false,
     libraryDependencies ++= Seq(
       akkaHttpCors,
       serviceHttp,

@@ -112,9 +112,9 @@ object JsonLD {
     def id: IdType
 
     /**
-      * The optionally available root ''rdf:type'' of the JSON-LD
+      * The available root ''rdf:type''s of the JSON-LD
       */
-    def tpe: Option[IdRef]
+    def tpe: Set[IdRef]
   }
 
   private[ld] trait GraphCursor extends GraphTraversal with Keywords
@@ -123,7 +123,7 @@ object JsonLD {
 
     override def id: IdType = Empty
 
-    override def tpe: Option[IdRef] = None
+    override def tpe: Set[IdRef] = Set.empty
 
     override def value[T: Typeable](predicate: Id): Option[T] = None
 
