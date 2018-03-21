@@ -157,8 +157,8 @@ lazy val service = project
   .dependsOn(core % testAndCompile)
   .settings(
     buildInfoSettings,
-    name                  := "admin-service",
-    moduleName            := "admin-service",
+    name       := "admin-service",
+    moduleName := "admin-service",
     libraryDependencies ++= Seq(
       akkaHttpCors,
       serviceHttp,
