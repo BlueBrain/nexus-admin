@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.admin.service.routes
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.BasicHttpCredentials
+import akka.http.scaladsl.testkit.ScalatestRouteTest
 import ch.epfl.bluebrain.nexus.admin.core.CommonRejections.{IllegalParam, IllegalPayload, MissingParameter}
 import ch.epfl.bluebrain.nexus.admin.core.Error._
 import ch.epfl.bluebrain.nexus.admin.core.config.AppConfig._
@@ -15,20 +16,32 @@ import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport._
 import ch.epfl.bluebrain.nexus.commons.http.JsonOps._
 import ch.epfl.bluebrain.nexus.commons.http.RdfMediaTypes
 import ch.epfl.bluebrain.nexus.commons.iam.acls.Permission.Read
-import ch.epfl.bluebrain.nexus.commons.iam.acls.{Permission, Permissions}
+import ch.epfl.bluebrain.nexus.commons.iam.acls.{FullAccessControlList, Path, Permission, Permissions}
+import ch.epfl.bluebrain.nexus.commons.iam.identity.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.commons.types.HttpRejection.UnauthorizedAccess
 import eu.timepit.refined.api.RefType.{applyRef, refinedRefType}
 import io.circe.Json
 import io.circe.generic.auto._
 import io.circe.syntax._
+import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{Matchers, WordSpecLike}
 
-class ProjectRoutesSpec extends WordSpecLike with Matchers with TestHepler with ProjectRoutesTestHelper {
+class ProjectRoutesSpec
+    extends WordSpecLike
+    with Matchers
+    with ScalatestRouteTest
+    with ScalaFutures
+    with MockitoSugar
+    with TestHepler
+    with ProjectRoutesTestHelper {
 
   "A ProjectRoutes" should {
 
+    val readAcls =
+      FullAccessControlList((Anonymous(), Path("projects/proj"), Permissions(Read, Permission("projects/read"))))
     implicit val hasRead: HasReadProjects =
-      applyRef[HasReadProjects](Permissions(Read, Permission("projects/read"))).toPermTry.get
+      applyRef[HasReadProjects](readAcls).toPermTry.get
 
     val reference    = genReference()
     val projectValue = genProjectValue()

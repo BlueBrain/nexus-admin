@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.admin.core.CommonRejections
 import ch.epfl.bluebrain.nexus.admin.core.CommonRejections.DownstreamServiceError
 import ch.epfl.bluebrain.nexus.admin.service.directives.AuthDirectives._
 import ch.epfl.bluebrain.nexus.commons.iam.IamClient
-import ch.epfl.bluebrain.nexus.commons.iam.acls.{Path, Permissions}
+import ch.epfl.bluebrain.nexus.commons.iam.acls.{FullAccessControlList, Path}
 import ch.epfl.bluebrain.nexus.commons.iam.identity.Caller
 import ch.epfl.bluebrain.nexus.commons.types.HttpRejection.UnauthorizedAccess
 import eu.timepit.refined.api.{RefType, Validate}
@@ -23,7 +23,7 @@ trait AuthDirectives {
   /**
     * Construct a [[ApplyRefAuthPartiallyApplied]] with a method apply to check if the caller has permissions on a provided ''resource'' constrained by the refined type ''FTP''
     *
-    * @tparam FTP the restricted subset of [[Permissions]]
+    * @tparam FTP the restricted subset of [[FullAccessControlList]]
     */
   def authorizeOn[FTP]: ApplyRefAuthPartiallyApplied[FTP] = new ApplyRefAuthPartiallyApplied
 
@@ -56,15 +56,15 @@ final class ApplyRefAuthPartiallyApplied[FTP] {
     * @tparam P the refined type
     */
   def apply[F[_, _], P](resource: Path)(
-      implicit ev: F[Permissions, P] =:= FTP,
+      implicit ev: F[FullAccessControlList, P] =:= FTP,
       rt: RefType[F],
-      v: Validate[Permissions, P],
+      v: Validate[FullAccessControlList, P],
       client: IamClient[Future],
       cred: Option[OAuth2BearerToken]
   ): Directive1[FTP] =
     onComplete(client.getAcls(resource, self = true, parents = true)).flatMap {
       case Success(acl) =>
-        rt.refine[P](acl.permissions) match {
+        rt.refine[P](acl) match {
           case Right(casted) => provide(ev(casted))
           case Left(_)       => reject(AuthorizationFailedRejection)
         }
@@ -81,9 +81,9 @@ final class ApplyRefAuthPartiallyApplied[FTP] {
     * @tparam P the refined type
     */
   def apply[F[_, _], P](resource: String)(
-      implicit ev: F[Permissions, P] =:= FTP,
+      implicit ev: F[FullAccessControlList, P] =:= FTP,
       rt: RefType[F],
-      v: Validate[Permissions, P],
+      v: Validate[FullAccessControlList, P],
       client: IamClient[Future],
       cred: Option[OAuth2BearerToken]
   ): Directive1[FTP] = apply(Path(resource))

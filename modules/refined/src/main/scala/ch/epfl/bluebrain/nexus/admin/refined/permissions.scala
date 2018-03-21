@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.admin.refined
 
-import ch.epfl.bluebrain.nexus.admin.refined.permissions.{ManageProjects, CreateProjects, ReadProjects, WriteProjects}
-import ch.epfl.bluebrain.nexus.commons.iam.acls.{Permission, Permissions}
+import ch.epfl.bluebrain.nexus.admin.refined.permissions.{CreateProjects, ManageProjects, ReadProjects, WriteProjects}
+import ch.epfl.bluebrain.nexus.commons.iam.acls.{FullAccessControlList, Permission, Permissions}
 import eu.timepit.refined.W
 import eu.timepit.refined.api.Inference.==>
 import eu.timepit.refined.api.{Inference, Refined, Validate}
@@ -19,33 +19,33 @@ object permissions extends PermissionInferences {
   private[refined] type CreateProjects = ContainsPermission[W.`"projects/create"`.T] Or ManageProjects
 
   /**
-    * Refined type for [[Permissions]] which contain the permission ''projects/manage''
+    * Refined type for [[FullAccessControlList]] which contain the permission ''projects/manage''
     */
-  type HasManageProjects = Permissions Refined ManageProjects
+  type HasManageProjects = FullAccessControlList Refined ManageProjects
 
   /**
-    * Refined type for [[Permissions]] which contain the permission ''projects/read''
+    * Refined type for [[FullAccessControlList]] which contain the permission ''projects/read''
     */
-  type HasReadProjects = Permissions Refined ReadProjects
+  type HasReadProjects = FullAccessControlList Refined ReadProjects
 
   /**
-    * Refined type for [[Permissions]] which contain the permission ''projects/write''
+    * Refined type for [[FullAccessControlList]] which contain the permission ''projects/write''
     */
-  type HasWriteProjects = Permissions Refined WriteProjects
+  type HasWriteProjects = FullAccessControlList Refined WriteProjects
 
   /**
-    * Refined type for [[Permissions]] which contain the permission ''projects/create''
+    * Refined type for [[FullAccessControlList]] which contain the permission ''projects/create''
     */
-  type HasCreateProjects = Permissions Refined CreateProjects
+  type HasCreateProjects = FullAccessControlList Refined CreateProjects
 
-  /** Predicate that checks if `Permissions` contains a permission `S`. */
+  /** Predicate that checks if `FullAccessControlList` contains a permission `S`. */
   final private[permissions] case class ContainsPermission[S <: String](perm: S)
 
   object ContainsPermission {
     implicit final def validateContainsPermission[S <: String](
-        implicit ws: Witness.Aux[S]): Validate.Plain[Permissions, ContainsPermission[S]] =
+        implicit ws: Witness.Aux[S]): Validate.Plain[FullAccessControlList, ContainsPermission[S]] =
       Validate.fromPredicate(
-        perms => Try(Permissions(Permission(ws.value))).map(p => perms.containsAny(p)).getOrElse(false),
+        perms => Try(Permissions(Permission(ws.value))).map(p => perms.permissions.containsAny(p)).getOrElse(false),
         t => s""""$t".containsAny("${ws.value}")""",
         ContainsPermission(ws.value)
       )

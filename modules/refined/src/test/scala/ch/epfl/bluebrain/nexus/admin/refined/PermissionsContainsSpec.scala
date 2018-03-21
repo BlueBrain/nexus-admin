@@ -1,14 +1,18 @@
 package ch.epfl.bluebrain.nexus.admin.refined
 
 import ch.epfl.bluebrain.nexus.admin.refined.permissions._
-import ch.epfl.bluebrain.nexus.commons.iam.acls.{Permission, Permissions}
+import ch.epfl.bluebrain.nexus.commons.iam.acls.{FullAccessControlList, Path, Permission, Permissions}
+import ch.epfl.bluebrain.nexus.commons.iam.identity.Identity
 import eu.timepit.refined.api.RefType.applyRef
 import eu.timepit.refined.auto._
 import org.scalatest.{EitherValues, Matchers, WordSpecLike}
 
 class PermissionsContainsSpec extends WordSpecLike with Matchers with EitherValues {
   "A PermissionsContains type" should {
-    val perms = Permissions(Permission("projects/read"), Permission("projects/write"))
+    val perms =
+      FullAccessControlList(
+        (Identity.Anonymous(), Path./, Permissions(Permission("projects/read"), Permission("projects/write")))
+      )
 
     "be constructed" in {
       applyRef[HasReadProjects](perms).right.value
@@ -20,14 +24,20 @@ class PermissionsContainsSpec extends WordSpecLike with Matchers with EitherValu
     }
 
     "be constructed from manage" in {
-      val perms = Permissions(Permission("projects/manage"))
+      val perms =
+        FullAccessControlList(
+          (Identity.Anonymous(), Path./, Permissions(Permission("projects/manage")))
+        )
       applyRef[HasReadProjects](perms).right.value
       applyRef[HasWriteProjects](perms).right.value
       applyRef[HasCreateProjects](perms).right.value
     }
 
     "be constructed with inference" in {
-      val perms = Permissions(Permission("projects/manage"))
+      val perms =
+        FullAccessControlList(
+          (Identity.Anonymous(), Path./, Permissions(Permission("projects/manage")))
+        )
       applyRef[HasManageProjects](perms).right.value: HasReadProjects
       applyRef[HasManageProjects](perms).right.value: HasCreateProjects
       applyRef[HasManageProjects](perms).right.value: HasWriteProjects

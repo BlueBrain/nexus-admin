@@ -1,9 +1,11 @@
 package ch.epfl.bluebrain.nexus.admin.service.routes
 
+import akka.actor.Props
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.testkit.ScalatestRouteTest
+import akka.util.Timeout
 import cats.instances.future._
 import ch.epfl.bluebrain.nexus.admin.core.config.{AppConfig, Settings}
 import ch.epfl.bluebrain.nexus.admin.core.projects.Projects
@@ -14,6 +16,7 @@ import ch.epfl.bluebrain.nexus.commons.iam.acls.{FullAccessControlList, Path, Pe
 import ch.epfl.bluebrain.nexus.commons.iam.identity.Caller.AnonymousCaller
 import ch.epfl.bluebrain.nexus.commons.iam.identity.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.commons.shacl.validator.{ImportResolver, ShaclValidator}
+import ch.epfl.bluebrain.nexus.commons.sparql.client.{InMemorySparqlActor, InMemorySparqlClient}
 import ch.epfl.bluebrain.nexus.sourcing.mem.MemoryAggregate
 import ch.epfl.bluebrain.nexus.sourcing.mem.MemoryAggregate._
 import com.typesafe.config.ConfigFactory
@@ -27,6 +30,7 @@ import scala.concurrent.duration._
 
 trait ProjectRoutesTestHelper extends WordSpecLike with ScalatestRouteTest with MockitoSugar with ScalaFutures {
 
+  implicit val defaultTimeout                          = Timeout(5 seconds)
   override implicit val patienceConfig: PatienceConfig = PatienceConfig(6 seconds, 300 milliseconds)
 
   private def proxy: Proxy =
@@ -47,7 +51,9 @@ trait ProjectRoutesTestHelper extends WordSpecLike with ScalatestRouteTest with 
      Permissions(Permission("projects/read"), Permission("projects/create"), Permission("projects/write"))))
 
   private[routes] val aggProject = MemoryAggregate("projects")(Initial, next, EvalProject().apply).toF[Future]
-  private[routes] val projects   = Projects(aggProject)
+  private val inMemoryActor      = system.actorOf(Props[InMemorySparqlActor]())
+  private val sparqlClient       = InMemorySparqlClient(inMemoryActor)
+  private[routes] val projects   = Projects(aggProject, sparqlClient)
   private[routes] val route      = ProjectRoutes(projects).routes ~ ProjectAclRoutes(projects, proxy).routes
 
   private[routes] def setUpIamCalls(path: String) = {

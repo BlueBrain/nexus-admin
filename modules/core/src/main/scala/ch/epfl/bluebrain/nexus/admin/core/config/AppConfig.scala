@@ -31,6 +31,7 @@ import scala.concurrent.duration.{Duration, FiniteDuration}
   */
 final case class AppConfig(description: DescriptionConfig,
                            instance: InstanceConfig,
+                           sparql: SparqlConfig,
                            http: HttpConfig,
                            runtime: RuntimeConfig,
                            cluster: ClusterConfig,
@@ -62,6 +63,9 @@ object AppConfig {
     lazy val seedAddresses: Set[String] =
       seeds.map(_.split(",").toSet).getOrElse(Set.empty[String])
   }
+
+  final case class SparqlConfig(base: Uri, namespace: String, credentials: Option[SparqlCredentials])
+  final case class SparqlCredentials(username: String, password: String)
 
   final case class PersistenceConfig(journalPlugin: String, snapshotStorePlugin: String, queryJournalPlugin: String)
 

@@ -2,9 +2,8 @@ package ch.epfl.bluebrain.nexus.admin.core.resources
 
 import java.time.Clock
 
-import cats._
-import cats.implicits._
 import cats.MonadError
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.admin.core.CallerCtx
 import ch.epfl.bluebrain.nexus.admin.core.Fault.{CommandRejected, Unexpected}
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceCommand._
@@ -14,9 +13,14 @@ import ch.epfl.bluebrain.nexus.admin.core.resources.Resources.Agg
 import ch.epfl.bluebrain.nexus.admin.core.types.Ref._
 import ch.epfl.bluebrain.nexus.admin.core.types.RefVersioned
 import ch.epfl.bluebrain.nexus.admin.ld.IdResolvable
+import ch.epfl.bluebrain.nexus.admin.query.QueryPayload
+import ch.epfl.bluebrain.nexus.admin.query.QueryResultsOps._
+import ch.epfl.bluebrain.nexus.admin.query.builder.{FilteredQuery, TypeFilterExpr}
 import ch.epfl.bluebrain.nexus.admin.refined.ld.Id
 import ch.epfl.bluebrain.nexus.admin.refined.ld.Uri._
 import ch.epfl.bluebrain.nexus.admin.refined.permissions._
+import ch.epfl.bluebrain.nexus.commons.sparql.client.SparqlClient
+import ch.epfl.bluebrain.nexus.commons.types.search.{Pagination, QueryResults}
 import ch.epfl.bluebrain.nexus.sourcing.Aggregate
 import com.github.ghik.silencer.silent
 import io.circe.Json
@@ -33,10 +37,11 @@ import journal.Logger
   * @tparam A the generic type of the id's ''reference''
   */
 @SuppressWarnings(Array("UnusedMethodParameter"))
-class Resources[F[_], A: IdResolvable](agg: Agg[F])(implicit
-                                                    F: MonadError[F, Throwable],
-                                                    logger: Logger,
-                                                    clock: Clock) {
+class Resources[F[_], A: IdResolvable](agg: Agg[F], sparqlClient: SparqlClient[F])(implicit
+                                                                                   typeExpr: TypeFilterExpr[A],
+                                                                                   F: MonadError[F, Throwable],
+                                                                                   logger: Logger,
+                                                                                   clock: Clock) {
 
   /**
     * Certain validation to take place during creation operations.
@@ -157,6 +162,17 @@ class Resources[F[_], A: IdResolvable](agg: Agg[F])(implicit
       case c: Current if c.rev == rev => Some(Resource(id, c.rev, c.value, c.deprecated))
       case _                          => None
     }
+
+  /**
+    * List resources which meet criteria specified by query and pagination parameters
+    * @param query      query specifying criteria for resources to return
+    * @param pagination pagination
+    * @return  list of resources
+    */
+  def list(query: QueryPayload, pagination: Pagination)(implicit acls: HasReadProjects): F[QueryResults[Id]] = {
+    val sparqlQuery = FilteredQuery[A](query, pagination, acls)
+    rsToQueryResults[F](sparqlClient.query(sparqlQuery))
+  }
 
   private def stateAt(persId: String, rev: Long): F[ResourceState] =
     agg.foldLeft[ResourceState](persId, Initial) {
