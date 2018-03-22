@@ -14,7 +14,8 @@ import cats.instances.future._
 import ch.epfl.bluebrain.nexus.admin.core.config.AppConfig._
 import ch.epfl.bluebrain.nexus.admin.core.config.Settings
 import ch.epfl.bluebrain.nexus.admin.core.projects.Projects
-import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceState.{Initial, eval, next}
+import ch.epfl.bluebrain.nexus.admin.core.projects.Projects.EvalProject
+import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceState.{Initial, next}
 import ch.epfl.bluebrain.nexus.admin.service.routes.ProjectRoutes
 import ch.epfl.bluebrain.nexus.commons.http.HttpClient
 import ch.epfl.bluebrain.nexus.commons.http.HttpClient.UntypedHttpClient
@@ -65,8 +66,10 @@ object Main {
     val cluster = Cluster(as)
     cluster.registerOnMemberUp {
 
-      val timeout  = appConfig.projects.passivationTimeout
-      val agg      = ShardingAggregate("project", sourcingSettings.copy(passivationTimeout = timeout))(Initial, next, eval)
+      val timeout = appConfig.projects.passivationTimeout
+      val agg = ShardingAggregate("project", sourcingSettings.copy(passivationTimeout = timeout))(Initial,
+                                                                                                  next,
+                                                                                                  EvalProject().apply)
       val projects = Projects(agg)
       val api      = uriPrefix(apiUri)(ProjectRoutes(projects).routes)
 

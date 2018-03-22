@@ -62,10 +62,17 @@ class JsonLDSpec extends WordSpecLike with Matchers with Resources with OptionVa
 
     "return empty list of cursors when attempting to navigate down an unexisting parent" in {
       jsonLD.down(schemaOrg.build("nonExisting")) shouldEqual List.empty[GraphCursor]
+      jsonLD.down(schemaOrg.build("nonExisting")) shouldEqual List.empty[GraphCursor]
+
     }
 
     "return empty cursor when attempting to navigate down the first unexisting parent" in {
       jsonLD.downFirst(schemaOrg.build("nonExisting")) shouldEqual EmptyCursor
+      jsonLD.downFirst(schemaOrg.build("nonExisting")).down(schemaOrg.build("nonExisting2")) shouldEqual List
+        .empty[GraphCursor]
+      jsonLD
+        .downFirst(schemaOrg.build("nonExisting"))
+        .downFirst(schemaOrg.build("nonExisting2")) shouldEqual EmptyCursor
     }
 
     "return None  when attempting to fetch the type of a down navigation on an unexisting parent" in {
