@@ -69,6 +69,7 @@ lazy val refinedPureConfig = "eu.timepit" %% "refined-pureconfig" % refinedVersi
 // Nexus dependency modules
 lazy val commonsIam        = "ch.epfl.bluebrain.nexus" %% "iam"                   % commonsVersion
 lazy val commonsQueryTypes = "ch.epfl.bluebrain.nexus" %% "commons-query-types"   % commonsVersion
+lazy val commonsSchemas    = "ch.epfl.bluebrain.nexus" %% "commons-schemas"       % commonsVersion
 lazy val commonsTest       = "ch.epfl.bluebrain.nexus" %% "commons-test"          % commonsVersion
 lazy val serialization     = "ch.epfl.bluebrain.nexus" %% "service-serialization" % serviceVersion
 lazy val serviceHttp       = "ch.epfl.bluebrain.nexus" %% "service-http"          % serviceVersion
@@ -105,6 +106,20 @@ lazy val ld = project
     ),
     Test / fork              := true,
     Test / parallelExecution := false // workaround for jena initialization
+  )
+
+lazy val schemas = project
+  .in(file("modules/schemas"))
+  .enablePlugins(WorkbenchPlugin, BuildInfoPlugin)
+  .disablePlugins(ScapegoatSbtPlugin, DocumentationPlugin)
+  .settings(
+    name                  := "admin-schemas",
+    moduleName            := "admin-schemas",
+    resolvers             += Resolver.bintrayRepo("bogdanromanx", "maven"),
+    coverageFailOnMinimum := false,
+    libraryDependencies ++= Seq(
+      commonsSchemas
+    )
   )
 
 lazy val query = project
@@ -183,7 +198,7 @@ lazy val root = project
     moduleName            := "admin",
     coverageFailOnMinimum := false
   )
-  .aggregate(refinements, ld, query, core, service)
+  .aggregate(refinements, ld, query, core, service, schemas)
 
 /* ********************************************************
  ******************** Grouped Settings ********************
@@ -202,9 +217,10 @@ lazy val buildInfoSettings =
 
 inThisBuild(
   List(
-    homepage := Some(url("https://github.com/BlueBrain/nexus-admin")),
-    licenses := Seq("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt")),
-    scmInfo  := Some(ScmInfo(url("https://github.com/BlueBrain/nexus-admin"), "scm:git:git@github.com:BlueBrain/nexus-admin.git")),
+    workbenchVersion := "0.3.0",
+    homepage         := Some(url("https://github.com/BlueBrain/nexus-admin")),
+    licenses         := Seq("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt")),
+    scmInfo          := Some(ScmInfo(url("https://github.com/BlueBrain/nexus-admin"), "scm:git:git@github.com:BlueBrain/nexus-admin.git")),
     developers := List(
       Developer("bogdanromanx", "Bogdan Roman", "noreply@epfl.ch", url("https://bluebrain.epfl.ch/")),
       Developer("hygt", "Henry Genet", "noreply@epfl.ch", url("https://bluebrain.epfl.ch/")),

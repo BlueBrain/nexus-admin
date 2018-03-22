@@ -1,0 +1,55 @@
+{
+  "@context": {
+    "nxv": "https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/",
+    "name": {
+      "@id": "nxv:name"
+    },
+    "prefixMappings": {
+      "@id": "nxv:prefixMappings"
+    },
+    "config": {
+      "@id": "nxv:config"
+    },
+    "maxAttachmentSize": {
+      "@id": "nxv:maxAttachmentSize"
+    },
+    "description": {
+      "@id": "nxv:description"
+    },
+    "prefix": {
+      "@id": "nxv:prefix"
+    },
+    "namespace": {
+      "@id": "nxv:namespace",
+      "@type": "@id"
+    }
+  },
+  "@id": "https://example.nexus.com/api/projects/name",
+  "@type": "nxv:Project",
+  "description": "{desc}",
+  "prefixMappings": [
+    {
+      "prefix": "nxv",
+      "namespace": "https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/"
+    },
+    {
+      "prefix": "persons",
+      "namespace": "https://shapes-registry.org/commons/person"
+    }
+  ],
+  "config": {
+    "maxAttachmentSize": 10
+  },
+  "nxv:rev": 1,
+  "nxv:deprecated": false,
+  "links": [
+    {
+      "@context": {
+        "self": {
+          "@id": "nxv:self"
+        }
+      },
+      "self": "https://example.nexus.com/api/projects/name?rev=1"
+    }
+  ]
+}
