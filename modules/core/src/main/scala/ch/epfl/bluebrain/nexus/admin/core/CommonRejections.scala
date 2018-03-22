@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.admin.service.rejections
+package ch.epfl.bluebrain.nexus.admin.core
 
 import ch.epfl.bluebrain.nexus.commons.types.{Err, Rejection}
 

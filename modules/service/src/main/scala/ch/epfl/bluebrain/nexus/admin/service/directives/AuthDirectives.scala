@@ -6,9 +6,9 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.directives.FutureDirectives.onComplete
 import akka.http.scaladsl.server.directives.RouteDirectives.reject
 import akka.http.scaladsl.server.{AuthorizationFailedRejection, _}
+import ch.epfl.bluebrain.nexus.admin.core.CommonRejections
+import ch.epfl.bluebrain.nexus.admin.core.CommonRejections.DownstreamServiceError
 import ch.epfl.bluebrain.nexus.admin.service.directives.AuthDirectives._
-import ch.epfl.bluebrain.nexus.admin.service.rejections.CommonRejections
-import ch.epfl.bluebrain.nexus.admin.service.rejections.CommonRejections.DownstreamServiceError
 import ch.epfl.bluebrain.nexus.commons.iam.IamClient
 import ch.epfl.bluebrain.nexus.commons.iam.acls.{Path, Permissions}
 import ch.epfl.bluebrain.nexus.commons.iam.identity.Caller

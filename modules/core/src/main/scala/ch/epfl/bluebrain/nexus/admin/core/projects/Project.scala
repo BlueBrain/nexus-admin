@@ -79,6 +79,26 @@ object Project {
       deriveEncoder[ProjectValue]
   }
 
+  implicit class PrefixMappingsSyntax(values: List[LoosePrefixMapping]) {
+
+    /**
+      * Checks if ''subset'' is a subset of the elements on ''values''.
+      *
+      * @param subset the list of [[LoosePrefixMapping]]
+      * @return true when the ''subset'' is contained on the ''value'' and false otherwise
+      */
+    def containsMappings(subset: List[LoosePrefixMapping]): Boolean =
+      contains(subset.mapped, values.mapped)
+
+    /**
+      * Converts the list of pairs (prefix, namespace) into a Map
+      */
+    def mapped: Map[Prefix, AliasOrNamespace] = values.map { case LoosePrefixMapping(k, v) => k -> v }.toMap
+
+    private def contains[A, B](subset: Map[A, B], map: Map[A, B]): Boolean =
+      map.filterKeys(subset.keySet.contains) == subset
+  }
+
   /**
     * A single name to uri mapping (an entry of a prefix mapping). This contains prefix mappings and aliases
     *

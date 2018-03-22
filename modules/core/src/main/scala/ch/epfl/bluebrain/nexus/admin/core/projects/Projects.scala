@@ -3,14 +3,18 @@ package ch.epfl.bluebrain.nexus.admin.core.projects
 import java.time.Clock
 
 import cats.MonadError
-import cats.syntax.flatMap._
+import cats.syntax.all._
+import cats.instances.all._
 import ch.epfl.bluebrain.nexus.admin.core.CallerCtx
+import ch.epfl.bluebrain.nexus.admin.core.CommonRejections.IllegalPayload
 import ch.epfl.bluebrain.nexus.admin.core.Fault.Unexpected
 import ch.epfl.bluebrain.nexus.admin.core.config.AppConfig._
 import ch.epfl.bluebrain.nexus.admin.core.projects.Project._
 import ch.epfl.bluebrain.nexus.admin.core.projects.Projects._
+import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceRejection.WrappedRejection
+import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceState.Eval
 import ch.epfl.bluebrain.nexus.admin.core.resources.Resources.Agg
-import ch.epfl.bluebrain.nexus.admin.core.resources.{Resource, Resources}
+import ch.epfl.bluebrain.nexus.admin.core.resources._
 import ch.epfl.bluebrain.nexus.admin.core.types.NamespaceOps._
 import ch.epfl.bluebrain.nexus.admin.core.types.Ref._
 import ch.epfl.bluebrain.nexus.admin.core.types.RefVersioned
@@ -147,4 +151,26 @@ object Projects {
       agg: Agg[F])(implicit F: MonadError[F, Throwable], clock: Clock, config: ProjectsConfig): Projects[F] =
     new Projects(new Resources[F, ProjectReference](agg) {})
 
+  private[projects] class EvalProject(implicit config: ProjectsConfig) extends Eval {
+    override def updateResourceAfter(state: ResourceState.Current,
+                                     c: ResourceCommand.UpdateResource): Either[ResourceRejection, ResourceEvent] = {
+      (state.value.as[ProjectValue], c.value.as[ProjectValue])
+        .mapN {
+          case (value, updatedValue) =>
+            if (updatedValue.prefixMappings.containsMappings(value.prefixMappings))
+              super.updateResourceAfter(state, c)
+            else
+              Left(
+                WrappedRejection(
+                  IllegalPayload(
+                    "Invalid 'prefixMappings' object",
+                    Some("The 'prefixMappings' values cannot be overridden but just new values can be appended."))))
+        }
+        .getOrElse(super.updateResourceAfter(state, c))
+    }
+  }
+
+  object EvalProject {
+    final def apply()(implicit config: ProjectsConfig): EvalProject = new EvalProject
+  }
 }

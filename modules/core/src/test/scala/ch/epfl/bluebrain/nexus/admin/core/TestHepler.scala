@@ -3,6 +3,8 @@ package ch.epfl.bluebrain.nexus.admin.core
 import ch.epfl.bluebrain.nexus.admin.core.Fault.Unexpected
 import ch.epfl.bluebrain.nexus.admin.core.projects.Project.{Config, LoosePrefixMapping, ProjectValue}
 import ch.epfl.bluebrain.nexus.admin.ld.Const.{nxv, rdf}
+import ch.epfl.bluebrain.nexus.admin.ld.PrefixMapping.randomPrefix
+import ch.epfl.bluebrain.nexus.admin.refined.ld.Prefix
 import ch.epfl.bluebrain.nexus.admin.refined.project.ProjectReference
 import ch.epfl.bluebrain.nexus.commons.test.Randomness
 import eu.timepit.refined.api.RefType.refinedRefType
@@ -19,13 +21,19 @@ trait TestHepler extends Randomness {
   def genReference(length: Int = 9): ProjectReference =
     refinedRefType.unsafeWrap(genString(length = length, Vector.range('a', 'z') ++ Vector.range('0', '9')))
 
-  def genProjectValue(): ProjectValue = {
-    val prefixMappings = List(
-      LoosePrefixMapping(nxv.prefixBuilder, refinedRefType.unsafeRewrap(nxv.namespaceBuilder)),
-      LoosePrefixMapping(rdf.prefixBuilder, refinedRefType.unsafeRewrap(rdf.tpe.id))
-    )
-    ProjectValue(Some(genString()), Some(genString()), prefixMappings, Config(genInt().toLong))
+  def genPrefixMappings(nxvPrefix: Prefix = nxv.prefixBuilder,
+                        rdfPrefix: Prefix = rdf.prefixBuilder): List[LoosePrefixMapping] =
+    List(LoosePrefixMapping(nxvPrefix, refinedRefType.unsafeRewrap(nxv.namespaceBuilder)),
+         LoosePrefixMapping(rdfPrefix, refinedRefType.unsafeRewrap(rdf.tpe.id)))
+
+  def genProjectValue(nxvPrefix: Prefix = nxv.prefixBuilder, rdfPrefix: Prefix = rdf.prefixBuilder): ProjectValue =
+    ProjectValue(Some(genString()), Some(genString()), genPrefixMappings(nxvPrefix, rdfPrefix), Config(genInt().toLong))
+
+  def genProjectUpdate(): ProjectValue = {
+    val value = genProjectValue()
+    value.copy(prefixMappings = value.prefixMappings ++ genPrefixMappings(randomPrefix(), randomPrefix()))
   }
+
 }
 
 object TestHepler extends TestHepler

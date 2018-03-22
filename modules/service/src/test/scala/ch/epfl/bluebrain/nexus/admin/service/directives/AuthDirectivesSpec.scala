@@ -5,9 +5,9 @@ import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.testkit.ScalatestRouteTest
+import ch.epfl.bluebrain.nexus.admin.core.CommonRejections.DownstreamServiceError
 import ch.epfl.bluebrain.nexus.admin.core.Error
 import ch.epfl.bluebrain.nexus.admin.core.Error._
-import ch.epfl.bluebrain.nexus.admin.service.rejections.CommonRejections.DownstreamServiceError
 import ch.epfl.bluebrain.nexus.admin.refined.permissions._
 import ch.epfl.bluebrain.nexus.admin.service.directives.AuthDirectives._
 import ch.epfl.bluebrain.nexus.admin.service.handlers.{ExceptionHandling, RejectionHandling}

@@ -4,16 +4,18 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import cats.instances.future._
+import ch.epfl.bluebrain.nexus.admin.core.CommonRejections.{IllegalParam, IllegalPayload}
 import ch.epfl.bluebrain.nexus.admin.core.Error._
 import ch.epfl.bluebrain.nexus.admin.core.config.AppConfig._
 import ch.epfl.bluebrain.nexus.admin.core.config.{AppConfig, Settings}
+import ch.epfl.bluebrain.nexus.admin.core.projects.Projects.EvalProject
 import ch.epfl.bluebrain.nexus.admin.core.projects.{Project, Projects}
-import ch.epfl.bluebrain.nexus.admin.service.rejections.CommonRejections.IllegalParam
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceRejection._
-import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceState.{Initial, eval, next}
+import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceState.{Initial, next}
 import ch.epfl.bluebrain.nexus.admin.core.types.Ref._
 import ch.epfl.bluebrain.nexus.admin.core.{Error, TestHepler}
 import ch.epfl.bluebrain.nexus.admin.ld.Const._
+import ch.epfl.bluebrain.nexus.admin.ld.PrefixMapping.randomPrefix
 import ch.epfl.bluebrain.nexus.admin.refined.permissions.HasReadProjects
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport._
 import ch.epfl.bluebrain.nexus.commons.http.RdfMediaTypes
@@ -60,7 +62,7 @@ class ProjectRoutesSpec
      Path("projects/proj"),
      Permissions(Permission("projects/read"), Permission("projects/create"), Permission("projects/write"))))
 
-  private val aggProject = MemoryAggregate("projects")(Initial, next, eval).toF[Future]
+  private val aggProject = MemoryAggregate("projects")(Initial, next, EvalProject().apply).toF[Future]
   private val projects   = Projects(aggProject)
   private val route      = ProjectRoutes(projects).routes
 
@@ -186,7 +188,7 @@ class ProjectRoutesSpec
     }
 
     val refUpdate        = genReference()
-    val projectValUpdate = genProjectValue()
+    val projectValUpdate = genProjectUpdate()
     val jsonUpdate       = projectValUpdate.asJson
 
     "update a project" in {
@@ -203,6 +205,14 @@ class ProjectRoutesSpec
           `@id`      -> Json.fromString(s"http://127.0.0.1:8080/v1/projects/${refUpdate.value}"),
           "nxv:rev"  -> Json.fromLong(2L)
         )
+      }
+    }
+
+    "reject the update of a project which contains the same prefix on the prefixMappings payload as the existing project" in {
+      val invalidUpdate = genProjectValue(randomPrefix(), randomPrefix()).asJson
+      Put(s"/projects/${refUpdate.value}?rev=2", invalidUpdate) ~> addCredentials(cred) ~> route ~> check {
+        status shouldEqual StatusCodes.BadRequest
+        responseAs[Error].code shouldEqual classNameOf[IllegalPayload.type]
       }
     }
 

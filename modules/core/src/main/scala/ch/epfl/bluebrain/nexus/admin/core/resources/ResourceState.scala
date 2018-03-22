@@ -58,40 +58,51 @@ object ResourceState {
     }
   }
 
-  /**
-    * Command evaluation logic for resources; considering a current ''state'' and a command to be evaluated either
-    * reject the command or emit a new event that characterizes the change for an aggregate.
-    *
-    * @param state the current state
-    * @param cmd   the command to be evaluated
-    * @return either a rejection or emit an event
-    */
-  def eval(state: ResourceState, cmd: ResourceCommand): Either[ResourceRejection, ResourceEvent] = {
+  private[core] class Eval {
 
-    def createResource(c: CreateResource): Either[ResourceRejection, ResourceEvent] =
+    def createResource(state: ResourceState, c: CreateResource): Either[ResourceRejection, ResourceEvent] =
       state match {
         case Initial => Right(ResourceCreated(c.id, 1L, c.meta, c.tags, c.value))
         case _       => Left(ResourceAlreadyExists)
       }
 
-    def updateResource(c: UpdateResource): Either[ResourceRejection, ResourceEvent] = state match {
-      case Initial                                  => Left(ResourceDoesNotExists)
-      case Current(_, rev, _, _, _) if rev != c.rev => Left(IncorrectRevisionProvided)
-      case Current(_, _, _, _, true)                => Left(ResourceIsDeprecated)
-      case s: Current                               => Right(ResourceUpdated(s.id, s.rev + 1, c.meta, c.tags, c.value))
-    }
+    def updateResource(state: ResourceState, c: UpdateResource): Either[ResourceRejection, ResourceEvent] =
+      state match {
+        case Initial                                  => Left(ResourceDoesNotExists)
+        case Current(_, rev, _, _, _) if rev != c.rev => Left(IncorrectRevisionProvided)
+        case Current(_, _, _, _, true)                => Left(ResourceIsDeprecated)
+        case s: Current                               => updateResourceAfter(s, c)
+      }
 
-    def deprecateResource(c: DeprecateResource): Either[ResourceRejection, ResourceEvent] = state match {
-      case Initial                                  => Left(ResourceDoesNotExists)
-      case Current(_, rev, _, _, _) if rev != c.rev => Left(IncorrectRevisionProvided)
-      case Current(_, _, _, _, true)                => Left(ResourceIsDeprecated)
-      case s: Current                               => Right(ResourceDeprecated(s.id, s.rev + 1, c.meta, c.tags))
-    }
+    def updateResourceAfter(state: Current, c: UpdateResource): Either[ResourceRejection, ResourceEvent] =
+      Right(ResourceUpdated(state.id, state.rev + 1, c.meta, c.tags, c.value))
 
-    cmd match {
-      case c: CreateResource    => createResource(c)
-      case c: UpdateResource    => updateResource(c)
-      case c: DeprecateResource => deprecateResource(c)
+    def deprecateResource(state: ResourceState, c: DeprecateResource): Either[ResourceRejection, ResourceEvent] =
+      state match {
+        case Initial                                  => Left(ResourceDoesNotExists)
+        case Current(_, rev, _, _, _) if rev != c.rev => Left(IncorrectRevisionProvided)
+        case Current(_, _, _, _, true)                => Left(ResourceIsDeprecated)
+        case s: Current                               => deprecateResourceAfter(s, c)
+      }
+
+    def deprecateResourceAfter(state: Current, c: DeprecateResource): Either[ResourceRejection, ResourceEvent] =
+      Right(ResourceDeprecated(state.id, state.rev + 1, c.meta, c.tags))
+
+    /**
+      * Command evaluation logic for resources; considering a current ''state'' and a command to be evaluated either
+      * reject the command or emit a new event that characterizes the change for an aggregate.
+      *
+      * @param state the current state
+      * @param cmd   the command to be evaluated
+      * @return either a rejection or emit an event
+      */
+    final def apply(state: ResourceState, cmd: ResourceCommand): Either[ResourceRejection, ResourceEvent] = {
+
+      cmd match {
+        case c: CreateResource    => createResource(state, c)
+        case c: UpdateResource    => updateResource(state, c)
+        case c: DeprecateResource => deprecateResource(state, c)
+      }
     }
   }
 }

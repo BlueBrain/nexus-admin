@@ -4,14 +4,17 @@ import java.time.Clock
 
 import cats.instances.try_._
 import ch.epfl.bluebrain.nexus.admin.core.CallerCtx._
+import ch.epfl.bluebrain.nexus.admin.core.CommonRejections.IllegalPayload
 import ch.epfl.bluebrain.nexus.admin.core.Fault.CommandRejected
 import ch.epfl.bluebrain.nexus.admin.core.TestHepler
 import ch.epfl.bluebrain.nexus.admin.core.config.AppConfig.ProjectsConfig
 import ch.epfl.bluebrain.nexus.admin.core.projects.Project.ProjectValue
+import ch.epfl.bluebrain.nexus.admin.core.projects.Projects.EvalProject
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceRejection._
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceState._
 import ch.epfl.bluebrain.nexus.admin.core.types.Ref._
 import ch.epfl.bluebrain.nexus.admin.core.types.RefVersioned
+import ch.epfl.bluebrain.nexus.admin.ld.PrefixMapping.randomPrefix
 import ch.epfl.bluebrain.nexus.admin.refined.permissions._
 import ch.epfl.bluebrain.nexus.admin.refined.project._
 import ch.epfl.bluebrain.nexus.commons.iam.acls.Permission._
@@ -22,23 +25,20 @@ import ch.epfl.bluebrain.nexus.sourcing.mem.MemoryAggregate
 import ch.epfl.bluebrain.nexus.sourcing.mem.MemoryAggregate._
 import eu.timepit.refined.api.RefType.{applyRef, refinedRefType}
 import eu.timepit.refined.auto._
-import io.circe.Json
 import io.circe.syntax._
-import org.scalatest.{Matchers, TryValues, WordSpecLike}
+import org.scalatest.{CancelAfterFailure, Matchers, TryValues, WordSpecLike}
 
 import scala.concurrent.duration._
 import scala.util.Try
 
-class ProjectsSpec extends WordSpecLike with Matchers with TryValues with TestHepler {
+class ProjectsSpec extends WordSpecLike with Matchers with TryValues with TestHepler with CancelAfterFailure {
 
   private implicit val caller: AnonymousCaller = AnonymousCaller(Anonymous())
   private implicit val clock: Clock            = Clock.systemUTC
   private implicit val config: ProjectsConfig =
     ProjectsConfig(3 seconds, "https://nexus.example.ch/v1/projects/", 100000L)
-  private val aggProject = MemoryAggregate("projects")(Initial, next, eval).toF[Try]
+  private val aggProject = MemoryAggregate("projects")(Initial, next, EvalProject().apply).toF[Try]
   private val projects   = Projects(aggProject)
-
-  def genJson(): Json = Json.obj("key" -> Json.fromString(genString()))
 
   trait Context {
     val id: ProjectReference = genReference()
@@ -58,22 +58,30 @@ class ProjectsSpec extends WordSpecLike with Matchers with TryValues with TestHe
       projects.fetch(id).success.value shouldEqual Some(Project(id, 1L, value, value.asJson, deprecated = false))
     }
 
-    "update a resource" in new Context {
-      val updatedValue: ProjectValue = genProjectValue()
+    "prevent updating a project that overrides prefixMappings with other values" in new Context {
+      val updatedValue: ProjectValue = genProjectValue(nxvPrefix = randomPrefix())
+      projects.create(id, value.asJson).success.value shouldEqual RefVersioned(id, 1L)
+      projects.update(id, 1L, updatedValue.asJson).failure.exception shouldEqual CommandRejected(WrappedRejection(
+        IllegalPayload("Invalid 'prefixMappings' object",
+                       Some("The 'prefixMappings' values cannot be overridden but just new values can be appended."))))
+    }
+
+    "update a project" in new Context {
+      val updatedValue: ProjectValue = genProjectUpdate()
       projects.create(id, value.asJson).success.value shouldEqual RefVersioned(id, 1L)
       projects.update(id, 1L, updatedValue.asJson).success.value shouldEqual RefVersioned(id, 2L)
       projects.fetch(id).success.value shouldEqual Some(
         Project(id, 2L, updatedValue, updatedValue.asJson, deprecated = false))
     }
 
-    "deprecate a resource" in new Context {
+    "deprecate a project" in new Context {
       projects.create(id, value.asJson).success.value shouldEqual RefVersioned(id, 1L)
       projects.deprecate(id, 1L).success.value shouldEqual RefVersioned(id, 2L)
       projects.fetch(id).success.value shouldEqual Some(Project(id, 2L, value, value.asJson, deprecated = true))
     }
 
-    "fetch old revision of a resource" in new Context {
-      val updatedValue: ProjectValue = genProjectValue()
+    "fetch old revision of a project" in new Context {
+      val updatedValue: ProjectValue = genProjectUpdate()
       projects.create(id, value.asJson).success.value shouldEqual RefVersioned(id, 1L)
       projects.update(id, 1L, updatedValue.asJson).success.value shouldEqual RefVersioned(id, 2L)
 

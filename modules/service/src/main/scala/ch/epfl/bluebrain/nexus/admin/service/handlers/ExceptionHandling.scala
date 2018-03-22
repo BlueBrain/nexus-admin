@@ -3,17 +3,20 @@ package ch.epfl.bluebrain.nexus.admin.service.handlers
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server.Directives.complete
 import akka.http.scaladsl.server.ExceptionHandler
+import ch.epfl.bluebrain.nexus.admin.core.CommonRejections
+import ch.epfl.bluebrain.nexus.admin.core.CommonRejections._
 import ch.epfl.bluebrain.nexus.admin.core.Fault.{CommandRejected, Unexpected}
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceRejection
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceRejection._
 import ch.epfl.bluebrain.nexus.admin.service.handlers.ExceptionHandling.InternalError
-import ch.epfl.bluebrain.nexus.admin.service.rejections.CommonRejections
-import ch.epfl.bluebrain.nexus.admin.service.rejections.CommonRejections._
 import ch.epfl.bluebrain.nexus.commons.http.ContextUri
 import ch.epfl.bluebrain.nexus.service.http.directives.ErrorDirectives._
 import ch.epfl.bluebrain.nexus.service.http.directives.StatusFrom
+import io.circe.Encoder
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.auto._
+import io.circe.generic.extras.semiauto.deriveEncoder
+import io.circe.syntax._
 import journal.Logger
 
 /**
@@ -39,6 +42,14 @@ class ExceptionHandling(implicit errorContext: ContextUri) {
     // $COVERAGE-ON$
   }
 
+  private implicit val wrappedRejectionEnc: Encoder[ResourceRejection] = {
+    val enc = deriveEncoder[ResourceRejection]
+    Encoder.encodeJson.contramap {
+      case WrappedRejection(rej) => rej.asJson
+      case other                 => enc(other)
+    }
+  }
+
   /**
     * The discriminator is enough to give us a Json representation (the name of the class)
     */
@@ -48,6 +59,7 @@ class ExceptionHandling(implicit errorContext: ContextUri) {
       case ResourceAlreadyExists        => Conflict
       case ResourceDoesNotExists        => NotFound
       case ParentResourceDoesNotExists  => NotFound
+      case _: WrappedRejection          => BadRequest
       case ResourceIsDeprecated         => BadRequest
       case _: ShapeConstraintViolations => BadRequest
     }

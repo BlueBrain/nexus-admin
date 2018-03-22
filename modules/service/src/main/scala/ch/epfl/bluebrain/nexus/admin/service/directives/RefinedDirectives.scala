@@ -2,7 +2,7 @@ package ch.epfl.bluebrain.nexus.admin.service.directives
 
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Directive1, ValidationRejection}
-import ch.epfl.bluebrain.nexus.admin.service.rejections.CommonRejections.IllegalParam
+import ch.epfl.bluebrain.nexus.admin.core.CommonRejections.IllegalParam
 import eu.timepit.refined.api.{RefType, Validate}
 
 /**

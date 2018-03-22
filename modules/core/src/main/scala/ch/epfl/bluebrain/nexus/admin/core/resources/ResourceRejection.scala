@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.admin.core.resources
 
+import ch.epfl.bluebrain.nexus.admin.core.CommonRejections
 import ch.epfl.bluebrain.nexus.commons.types.Rejection
 
 /**
@@ -39,5 +40,12 @@ object ResourceRejection {
     * Signals that a resource update cannot be performed due to an incorrect revision provided.
     */
   final case object IncorrectRevisionProvided extends ResourceRejection
+
+  /**
+    * Signals any other rejection which gets defined out of this scope
+    *
+    * @param rejection the underlying rejections that was triggered
+    */
+  final case class WrappedRejection(rejection: CommonRejections) extends ResourceRejection
 
 }
