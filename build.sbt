@@ -113,9 +113,10 @@ lazy val schemas = project
   .enablePlugins(WorkbenchPlugin, BuildInfoPlugin)
   .disablePlugins(ScapegoatSbtPlugin, DocumentationPlugin)
   .settings(
-    name       := "admin-schemas",
-    moduleName := "admin-schemas",
-    resolvers  += Resolver.bintrayRepo("bogdanromanx", "maven"),
+    name                  := "admin-schemas",
+    moduleName            := "admin-schemas",
+    resolvers             += Resolver.bintrayRepo("bogdanromanx", "maven"),
+    coverageFailOnMinimum := false,
     libraryDependencies ++= Seq(
       commonsSchemas
     )
