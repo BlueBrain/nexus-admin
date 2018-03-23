@@ -3,16 +3,17 @@ package ch.epfl.bluebrain.nexus.admin.core.projects
 import cats.syntax.show._
 import ch.epfl.bluebrain.nexus.admin.core.config.AppConfig.ProjectsConfig
 import ch.epfl.bluebrain.nexus.admin.core.projects.Project.ProjectValue
-import ch.epfl.bluebrain.nexus.admin.core.types.{Ref, Versioned}
 import ch.epfl.bluebrain.nexus.admin.core.types.Ref._
+import ch.epfl.bluebrain.nexus.admin.core.types.{Ref, Versioned}
 import ch.epfl.bluebrain.nexus.admin.ld.Const._
+import ch.epfl.bluebrain.nexus.admin.ld.JsonLD
 import ch.epfl.bluebrain.nexus.admin.ld.JsonLD._
 import ch.epfl.bluebrain.nexus.admin.refined.ld._
 import ch.epfl.bluebrain.nexus.admin.refined.project._
 import io.circe.generic.semiauto.deriveEncoder
-import io.circe.{Decoder, Encoder, Json}
 import io.circe.refined._
 import io.circe.syntax._
+import io.circe.{Decoder, Encoder, Json}
 
 /**
   * Data type representing the state of a project.
@@ -43,25 +44,21 @@ object Project {
   /**
     * Data type representing the payload value of the project
     *
-    * @param label          the optionally available label
+    * @param name           the name of the project
     * @param description    the optionally available description
     * @param prefixMappings the prefix mappings
     * @param config         the configuration of the project
     */
-  final case class ProjectValue(label: Option[String],
+  final case class ProjectValue(name: String,
                                 description: Option[String],
                                 prefixMappings: List[LoosePrefixMapping],
                                 config: Config)
 
   object ProjectValue {
 
-    implicit final def projectValueDecoder(implicit config: ProjectsConfig): Decoder[ProjectValue] =
-      Decoder.decodeJson.map { json =>
-        val jsonLD      = json.appendContext(projectContext)
-        val size        = jsonLD.downFirst(nxv.config).value[Int](nxv.attSize).map(_.toLong).getOrElse(config.attachmentSize)
-        val label       = jsonLD.value[String](schema.label)
-        val description = jsonLD.value[String](nxv.description)
-        val list = jsonLD.down(nxv.prefixMappings).foldLeft(List.empty[LoosePrefixMapping]) { (acc, c) =>
+    implicit final def projectValueDecoder(implicit config: ProjectsConfig): Decoder[ProjectValue] = {
+      def retrieveLinks(jsonLD: JsonLD): List[LoosePrefixMapping] =
+        jsonLD.down(nxv.prefixMappings).foldLeft(List.empty[LoosePrefixMapping]) { (acc, c) =>
           (for {
             prefix <- c.value[Prefix](nxv.prefix)
             ns     <- c.value[AliasOrNamespace](nxv.namespace)
@@ -69,10 +66,18 @@ object Project {
             case Some(v) => v :: acc
             case None    => acc
           }
-
         }
-        ProjectValue(label, description, list.reverse, Config(size))
+      Decoder.decodeJson.emap { json =>
+        val jsonLD = json.appendContext(projectContext)
+        val size   = jsonLD.downFirst(nxv.config).value[Int](nxv.attSize).map(_.toLong).getOrElse(config.attachmentSize)
+        val name   = jsonLD.value[String](nxv.name)
+        val desc   = jsonLD.value[String](nxv.description)
+        val list   = retrieveLinks(jsonLD).reverse
+        name
+          .map(n => ProjectValue(n, desc, list, Config(size)))
+          .toRight(s"The '${nxv.name.show}' field is required.")
       }
+    }
 
     implicit final def projectValueEncoder(implicit EL: Encoder[LoosePrefixMapping] = deriveEncoder[LoosePrefixMapping],
                                            EC: Encoder[Config] = deriveEncoder[Config]): Encoder[ProjectValue] =

@@ -45,23 +45,24 @@ val serviceVersion = "0.10.6"
 val commonsVersion = "0.10.8"
 
 // Dependency modules
-lazy val akkaDistributed          = "com.typesafe.akka"     %% "akka-distributed-data"      % akkaVersion
-lazy val akkaHttpCore             = "com.typesafe.akka"     %% "akka-http-core"             % akkaHttpVersion
-lazy val akkaPersistence          = "com.typesafe.akka"     %% "akka-persistence"           % akkaVersion
-lazy val akkaPersistenceCassandra = "com.typesafe.akka"     %% "akka-persistence-cassandra" % akkaPersistenceCassandraVersion
-lazy val akkaPersistenceInMem     = "com.github.dnvriend"   %% "akka-persistence-inmemory"  % akkaPersistenceInMemVersion
-lazy val akkaHttpTestKit          = "com.typesafe.akka"     %% "akka-http-testkit"          % akkaHttpVersion
-lazy val akkaTestKit              = "com.typesafe.akka"     %% "akka-testkit"               % akkaVersion
-lazy val catsCore                 = "org.typelevel"         %% "cats-core"                  % catsVersion
-lazy val circeCore                = "io.circe"              %% "circe-core"                 % circeVersion
-lazy val circeJava8               = "io.circe"              %% "circe-java8"                % circeVersion
-lazy val circeRefined             = "io.circe"              %% "circe-refined"              % circeVersion
-lazy val jenaArq                  = "org.apache.jena"       % "jena-arq"                    % jenaVersion
-lazy val mockitoCore              = "org.mockito"           % "mockito-core"                % mockitoVersion
-lazy val pureconfig               = "com.github.pureconfig" %% "pureconfig"                 % pureconfigVersion
-lazy val shapeless                = "com.chuusai"           %% "shapeless"                  % shapelessVersion
-lazy val scalaTest                = "org.scalatest"         %% "scalatest"                  % scalaTestVersion
-lazy val slf4j                    = "com.typesafe.akka"     %% "akka-slf4j"                 % akkaVersion
+lazy val akkaDistributed          = "com.typesafe.akka"       %% "akka-distributed-data"      % akkaVersion
+lazy val akkaHttpCore             = "com.typesafe.akka"       %% "akka-http-core"             % akkaHttpVersion
+lazy val akkaPersistence          = "com.typesafe.akka"       %% "akka-persistence"           % akkaVersion
+lazy val akkaPersistenceCassandra = "com.typesafe.akka"       %% "akka-persistence-cassandra" % akkaPersistenceCassandraVersion
+lazy val akkaPersistenceInMem     = "com.github.dnvriend"     %% "akka-persistence-inmemory"  % akkaPersistenceInMemVersion
+lazy val akkaHttpTestKit          = "com.typesafe.akka"       %% "akka-http-testkit"          % akkaHttpVersion
+lazy val akkaTestKit              = "com.typesafe.akka"       %% "akka-testkit"               % akkaVersion
+lazy val catsCore                 = "org.typelevel"           %% "cats-core"                  % catsVersion
+lazy val circeCore                = "io.circe"                %% "circe-core"                 % circeVersion
+lazy val circeJava8               = "io.circe"                %% "circe-java8"                % circeVersion
+lazy val circeRefined             = "io.circe"                %% "circe-refined"              % circeVersion
+lazy val jenaArq                  = "org.apache.jena"         % "jena-arq"                    % jenaVersion
+lazy val mockitoCore              = "org.mockito"             % "mockito-core"                % mockitoVersion
+lazy val pureconfig               = "com.github.pureconfig"   %% "pureconfig"                 % pureconfigVersion
+lazy val shaclValidator           = "ch.epfl.bluebrain.nexus" %% "shacl-validator"            % commonsVersion
+lazy val shapeless                = "com.chuusai"             %% "shapeless"                  % shapelessVersion
+lazy val scalaTest                = "org.scalatest"           %% "scalatest"                  % scalaTestVersion
+lazy val slf4j                    = "com.typesafe.akka"       %% "akka-slf4j"                 % akkaVersion
 
 lazy val refined           = "eu.timepit" %% "refined"            % refinedVersion
 lazy val refinedPureConfig = "eu.timepit" %% "refined-pureconfig" % refinedVersion
@@ -90,8 +91,23 @@ lazy val refinements = project
     Test / fork              := true,
     Test / parallelExecution := false // workaround for jena initialization
   )
+
+lazy val schemas = project
+  .in(file("modules/schemas"))
+  .enablePlugins(WorkbenchPlugin, BuildInfoPlugin)
+  .disablePlugins(ScapegoatSbtPlugin, DocumentationPlugin)
+  .settings(
+    name                  := "admin-schemas",
+    moduleName            := "admin-schemas",
+    resolvers             += Resolver.bintrayRepo("bogdanromanx", "maven"),
+    coverageFailOnMinimum := false,
+    libraryDependencies ++= Seq(
+      commonsSchemas
+    )
+  )
+
 lazy val ld = project
-  .dependsOn(refinements)
+  .dependsOn(refinements, schemas)
   .in(file("modules/ld"))
   .settings(
     name       := "admin-ld",
@@ -106,20 +122,6 @@ lazy val ld = project
     ),
     Test / fork              := true,
     Test / parallelExecution := false // workaround for jena initialization
-  )
-
-lazy val schemas = project
-  .in(file("modules/schemas"))
-  .enablePlugins(WorkbenchPlugin, BuildInfoPlugin)
-  .disablePlugins(ScapegoatSbtPlugin, DocumentationPlugin)
-  .settings(
-    name                  := "admin-schemas",
-    moduleName            := "admin-schemas",
-    resolvers             += Resolver.bintrayRepo("bogdanromanx", "maven"),
-    coverageFailOnMinimum := false,
-    libraryDependencies ++= Seq(
-      commonsSchemas
-    )
   )
 
 lazy val query = project
@@ -144,6 +146,7 @@ lazy val core = project
   .enablePlugins(BuildInfoPlugin)
   .dependsOn(query)
   .settings(
+    common,
     buildInfoSettings,
     name       := "admin-core",
     moduleName := "admin-core",
@@ -155,6 +158,7 @@ lazy val core = project
       pureconfig,
       refinedPureConfig,
       serialization,
+      shaclValidator,
       sourcingCore,
       akkaDistributed      % Test,
       akkaHttpTestKit      % Test,
@@ -172,6 +176,7 @@ lazy val service = project
   .enablePlugins(BuildInfoPlugin, ServicePackagingPlugin)
   .dependsOn(core % testAndCompile)
   .settings(
+    common,
     buildInfoSettings,
     name       := "admin-service",
     moduleName := "admin-service",
@@ -203,6 +208,8 @@ lazy val root = project
 /* ********************************************************
  ******************** Grouped Settings ********************
  **********************************************************/
+
+lazy val common = Seq(resolvers += Resolver.bintrayRepo("bogdanromanx", "maven"))
 
 lazy val noPublish = Seq(
   publishLocal    := {},

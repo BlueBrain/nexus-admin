@@ -23,7 +23,7 @@ class ProjectValueSpec extends WordSpecLike with Matchers with Inspectors with R
     implicit val config: ProjectsConfig = ProjectsConfig(3 seconds, "https://nexus.example.ch/v1/projects/", 100000L)
 
     val replacements = Map(
-      quote("{{label}}")       -> projValue.label.get,
+      quote("{{name}}")        -> projValue.name,
       quote("{{description}}") -> projValue.description.get,
       quote(""""{{size}}"""")  -> projValue.config.maxAttachmentSize.toString
     )

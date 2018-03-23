@@ -1,10 +1,8 @@
 package ch.epfl.bluebrain.nexus.admin.core.projects
 
-import java.time.Clock
-
 import cats.MonadError
-import cats.syntax.all._
 import cats.instances.all._
+import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.admin.core.CallerCtx
 import ch.epfl.bluebrain.nexus.admin.core.CommonRejections.IllegalPayload
 import ch.epfl.bluebrain.nexus.admin.core.Fault.Unexpected
@@ -143,12 +141,10 @@ object Projects {
     *
     * @param agg    the aggregate definition
     * @param F      a MonadError typeclass instance for ''F[_]''
-    * @param clock  the clock used to issue instants
     * @param config the project specific settings
     * @tparam F the monadic effect type
     */
-  final def apply[F[_]](
-      agg: Agg[F])(implicit F: MonadError[F, Throwable], clock: Clock, config: ProjectsConfig): Projects[F] =
+  final def apply[F[_]](agg: Agg[F])(implicit F: MonadError[F, Throwable], config: ProjectsConfig): Projects[F] =
     new Projects(new Resources[F, ProjectReference](agg) {})
 
   private[projects] class EvalProject(implicit config: ProjectsConfig) extends Eval {

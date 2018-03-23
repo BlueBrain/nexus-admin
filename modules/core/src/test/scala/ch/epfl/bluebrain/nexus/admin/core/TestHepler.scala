@@ -27,7 +27,7 @@ trait TestHepler extends Randomness {
          LoosePrefixMapping(rdfPrefix, refinedRefType.unsafeRewrap(rdf.tpe.id)))
 
   def genProjectValue(nxvPrefix: Prefix = nxv.prefixBuilder, rdfPrefix: Prefix = rdf.prefixBuilder): ProjectValue =
-    ProjectValue(Some(genString()), Some(genString()), genPrefixMappings(nxvPrefix, rdfPrefix), Config(genInt().toLong))
+    ProjectValue(genString(), Some(genString()), genPrefixMappings(nxvPrefix, rdfPrefix), Config(genInt().toLong))
 
   def genProjectUpdate(): ProjectValue = {
     val value = genProjectValue()

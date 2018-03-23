@@ -1,5 +1,5 @@
 {
-  "label": "{{label}}",
+  "name": "{{name}}",
   "description": "{{description}}",
   "prefixMappings": [
     {

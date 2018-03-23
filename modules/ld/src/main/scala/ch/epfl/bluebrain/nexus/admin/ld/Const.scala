@@ -1,8 +1,10 @@
 package ch.epfl.bluebrain.nexus.admin.ld
 
+import java.util.regex.Pattern.quote
 import ch.epfl.bluebrain.nexus.commons.test.Resources
 import eu.timepit.refined.auto._
 import eu.timepit.refined.string._
+import io.circe.Json
 
 // $COVERAGE-OFF$
 object Const extends Resources {
@@ -14,6 +16,9 @@ object Const extends Resources {
   val filterContext: JsonLD = jsonContentOf("/filter-context.json")
 
   val projectContext: JsonLD = jsonContentOf("/project-context.json")
+
+  val projectSchema: Json =
+    jsonContentOf("/schemas/nexus/core/project/v0.1.0.json", Map(quote("{{base}}") -> "https://bbp-nexus.epfl.ch"))
 
   //noinspection TypeAnnotation
   object rdf extends IdRefBuilder("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#") {
@@ -28,6 +33,7 @@ object Const extends Resources {
 
   //noinspection TypeAnnotation
   object nxv extends IdRefBuilder("nxv", "https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/") {
+    val name           = build("name")
     val rev            = build("rev")
     val deprecated     = build("deprecated")
     val self           = build("self")
