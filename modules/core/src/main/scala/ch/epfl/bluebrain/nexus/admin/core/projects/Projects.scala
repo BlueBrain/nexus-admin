@@ -5,20 +5,24 @@ import cats.instances.all._
 import cats.syntax.all._
 import ch.epfl.bluebrain.nexus.admin.core.CallerCtx
 import ch.epfl.bluebrain.nexus.admin.core.CommonRejections.IllegalPayload
-import ch.epfl.bluebrain.nexus.admin.core.Fault.Unexpected
+import ch.epfl.bluebrain.nexus.admin.core.Fault.{CommandRejected, Unexpected}
 import ch.epfl.bluebrain.nexus.admin.core.config.AppConfig._
 import ch.epfl.bluebrain.nexus.admin.core.projects.Project._
 import ch.epfl.bluebrain.nexus.admin.core.projects.Projects._
-import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceRejection.WrappedRejection
+import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceRejection._
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceState.Eval
 import ch.epfl.bluebrain.nexus.admin.core.resources.Resources.Agg
 import ch.epfl.bluebrain.nexus.admin.core.resources._
 import ch.epfl.bluebrain.nexus.admin.core.types.NamespaceOps._
 import ch.epfl.bluebrain.nexus.admin.core.types.Ref._
 import ch.epfl.bluebrain.nexus.admin.core.types.RefVersioned
-import ch.epfl.bluebrain.nexus.admin.ld.{IdRef, IdResolvable}
+import ch.epfl.bluebrain.nexus.admin.ld.Const._
+import ch.epfl.bluebrain.nexus.admin.ld.IdOps._
+import ch.epfl.bluebrain.nexus.admin.ld.{IdRef, IdResolvable, JsonLD}
 import ch.epfl.bluebrain.nexus.admin.refined.permissions._
 import ch.epfl.bluebrain.nexus.admin.refined.project._
+import ch.epfl.bluebrain.nexus.commons.shacl.validator.ShaclValidatorErr.{CouldNotFindImports, IllegalImportDefinition}
+import ch.epfl.bluebrain.nexus.commons.shacl.validator.{ShaclSchema, ShaclValidator}
 import io.circe.Json
 import io.circe.syntax._
 import journal.Logger
@@ -144,8 +148,32 @@ object Projects {
     * @param config the project specific settings
     * @tparam F the monadic effect type
     */
-  final def apply[F[_]](agg: Agg[F])(implicit F: MonadError[F, Throwable], config: ProjectsConfig): Projects[F] =
-    new Projects(new Resources[F, ProjectReference](agg) {})
+  final def apply[F[_]](agg: Agg[F])(implicit F: MonadError[F, Throwable],
+                                     config: ProjectsConfig,
+                                     validator: ShaclValidator[F]): Projects[F] =
+    new Projects(new Resources[F, ProjectReference](agg) {
+
+      override def validateCreate(id: ProjectReference, value: Json): F[Unit] = validate(value)
+
+      override def validateUpdate(id: ProjectReference, value: Json): F[Unit] = validate(value)
+
+      private def validate(value: JsonLD): F[Unit] = {
+        //TODO: This assumes that the `@type` field is found on the top of the JSON tree.
+        //Come up with a proper JSON-lD solution for it in following commits.
+        val tpeJson = Json.obj(`@type` -> Json.arr((value.tpe + nxv.Project).map(_.id.asJson).toSeq: _*))
+        val merged  = value.appendContext(projectContext) deepMerge tpeJson
+        validator(ShaclSchema(projectSchema), merged)
+          .flatMap { report =>
+            if (report.conforms) F.pure(())
+            else F.raiseError[Unit](CommandRejected(ShapeConstraintViolations(report.result.map(_.reason))))
+          }
+          .recoverWith {
+            case CouldNotFindImports(missing)     => F.raiseError(CommandRejected(MissingImportsViolation(missing)))
+            case IllegalImportDefinition(missing) => F.raiseError(CommandRejected(IllegalImportsViolation(missing)))
+          }
+      }
+
+    })
 
   private[projects] class EvalProject(implicit config: ProjectsConfig) extends Eval {
     override def updateResourceAfter(state: ResourceState.Current,

@@ -30,7 +30,7 @@
   "description": "{desc}",
   "prefixMappings": [
     {
-      "prefix": "nxv",
+      "prefix": "nxv9",
       "namespace": "https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/"
     },
     {

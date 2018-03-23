@@ -8,21 +8,25 @@ import ch.epfl.bluebrain.nexus.admin.core.TestHepler
 import ch.epfl.bluebrain.nexus.admin.core.config.AppConfig.ProjectsConfig
 import ch.epfl.bluebrain.nexus.admin.core.projects.Project.ProjectValue
 import ch.epfl.bluebrain.nexus.admin.core.projects.Projects.EvalProject
+import ch.epfl.bluebrain.nexus.admin.core.projects.ProjectsSpec._
+import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceRejection
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceRejection._
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceState._
 import ch.epfl.bluebrain.nexus.admin.core.types.Ref._
 import ch.epfl.bluebrain.nexus.admin.core.types.RefVersioned
-import ch.epfl.bluebrain.nexus.admin.ld.PrefixMapping.randomPrefix
 import ch.epfl.bluebrain.nexus.admin.refined.permissions._
 import ch.epfl.bluebrain.nexus.admin.refined.project._
+import ch.epfl.bluebrain.nexus.commons.http.JsonOps._
 import ch.epfl.bluebrain.nexus.commons.iam.acls.Permission._
 import ch.epfl.bluebrain.nexus.commons.iam.acls.{Permission, Permissions}
 import ch.epfl.bluebrain.nexus.commons.iam.identity.Caller.AnonymousCaller
 import ch.epfl.bluebrain.nexus.commons.iam.identity.Identity.Anonymous
+import ch.epfl.bluebrain.nexus.commons.shacl.validator.{ImportResolver, ShaclSchema, ShaclValidator}
 import ch.epfl.bluebrain.nexus.sourcing.mem.MemoryAggregate
 import ch.epfl.bluebrain.nexus.sourcing.mem.MemoryAggregate._
 import eu.timepit.refined.api.RefType.{applyRef, refinedRefType}
 import eu.timepit.refined.auto._
+import io.circe.Json
 import io.circe.syntax._
 import org.scalatest.{CancelAfterFailure, Matchers, TryValues, WordSpecLike}
 
@@ -55,12 +59,27 @@ class ProjectsSpec extends WordSpecLike with Matchers with TryValues with TestHe
       projects.fetch(id).success.value shouldEqual Some(Project(id, 1L, value, value.asJson, deprecated = false))
     }
 
+    "prevent creating a project without a name" in new Context {
+      val rej =
+        projects.create(id, value.asJson.removeKeys("name")).failure.exception.asInstanceOf[CommandRejected].rejection
+      rej shouldBe a[ResourceRejection.ShapeConstraintViolations]
+    }
+
     "prevent updating a project that overrides prefixMappings with other values" in new Context {
-      val updatedValue: ProjectValue = genProjectValue(nxvPrefix = randomPrefix())
+      val updatedValue: ProjectValue = genProjectValue(nxvPrefix = randomProjectPrefix())
       projects.create(id, value.asJson).success.value shouldEqual RefVersioned(id, 1L)
       projects.update(id, 1L, updatedValue.asJson).failure.exception shouldEqual CommandRejected(WrappedRejection(
         IllegalPayload("Invalid 'prefixMappings' object",
                        Some("The 'prefixMappings' values cannot be overridden but just new values can be appended."))))
+    }
+
+    "prevent updating a project with maxAttachmentSize as a string" in new Context {
+      val updatedValue: ProjectValue = genProjectUpdate()
+      val updatedJson = updatedValue.asJson deepMerge Json.obj(
+        "config" -> Json.obj("maxAttachmentSize" -> Json.fromString("one")))
+      projects.create(id, value.asJson).success.value shouldEqual RefVersioned(id, 1L)
+      val rej = projects.update(id, 1L, updatedJson).failure.exception.asInstanceOf[CommandRejected].rejection
+      rej shouldBe a[ResourceRejection.ShapeConstraintViolations]
     }
 
     "update a project" in new Context {
@@ -145,4 +164,9 @@ class ProjectsSpec extends WordSpecLike with Matchers with TryValues with TestHe
       projects.validateUnlocked(id).success.value shouldEqual (())
     }
   }
+}
+
+object ProjectsSpec {
+  private val importResolver: ImportResolver[Try]                    = (schema: ShaclSchema) => Try(Set.empty)
+  private[projects] implicit val shaclValidator: ShaclValidator[Try] = ShaclValidator(importResolver)
 }

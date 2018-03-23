@@ -13,7 +13,6 @@ import ch.epfl.bluebrain.nexus.admin.service.handlers.{ExceptionHandling, Reject
 import ch.epfl.bluebrain.nexus.commons.http.ContextUri
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport._
 import ch.epfl.bluebrain.nexus.commons.test.Randomness
-import io.circe.Json
 import io.circe.generic.auto._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{Inspectors, Matchers, WordSpecLike}
@@ -50,7 +49,6 @@ class RefinedDirectivesSpec
       Get("/abc") ~> handler(
         (segment(ofType[ProjectReference]) & pathEndOrSingleSlash & get)(ref => complete(ref.value))) ~> check {
         status shouldEqual StatusCodes.OK
-        println(responseAs[Json])
       }
     }
   }

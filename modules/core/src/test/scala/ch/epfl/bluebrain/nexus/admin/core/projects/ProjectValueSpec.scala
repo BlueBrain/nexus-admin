@@ -5,9 +5,11 @@ import java.util.regex.Pattern.quote
 import ch.epfl.bluebrain.nexus.admin.core.TestHepler
 import ch.epfl.bluebrain.nexus.admin.core.config.AppConfig.ProjectsConfig
 import ch.epfl.bluebrain.nexus.admin.core.projects.Project.ProjectValue
+import ch.epfl.bluebrain.nexus.commons.http.JsonOps._
 import ch.epfl.bluebrain.nexus.commons.test.Resources
 import eu.timepit.refined.api.RefType.refinedRefType
 import eu.timepit.refined.auto._
+import io.circe.DecodingFailure
 import io.circe.generic.auto._
 import io.circe.parser._
 import io.circe.syntax._
@@ -42,6 +44,12 @@ class ProjectValueSpec extends WordSpecLike with Matchers with Inspectors with R
       forAll(list) {
         case (model, j) => decode[ProjectValue](j.noSpaces) shouldEqual Right(model)
       }
+    }
+
+    "failed to be decoded from json" in {
+      val j = json.removeKeys("name")
+      decode[ProjectValue](j.noSpaces) shouldEqual Left(
+        DecodingFailure(s"The 'nxv:name' field is required.", List.empty))
     }
   }
 }
