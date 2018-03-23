@@ -1,7 +1,5 @@
 package ch.epfl.bluebrain.nexus.admin.core.projects
 
-import java.time.Clock
-
 import cats.instances.try_._
 import ch.epfl.bluebrain.nexus.admin.core.CallerCtx._
 import ch.epfl.bluebrain.nexus.admin.core.CommonRejections.IllegalPayload
@@ -34,7 +32,6 @@ import scala.util.Try
 class ProjectsSpec extends WordSpecLike with Matchers with TryValues with TestHepler with CancelAfterFailure {
 
   private implicit val caller: AnonymousCaller = AnonymousCaller(Anonymous())
-  private implicit val clock: Clock            = Clock.systemUTC
   private implicit val config: ProjectsConfig =
     ProjectsConfig(3 seconds, "https://nexus.example.ch/v1/projects/", 100000L)
   private val aggProject = MemoryAggregate("projects")(Initial, next, EvalProject().apply).toF[Try]

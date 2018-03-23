@@ -39,11 +39,11 @@ class SerializerSpec extends WordSpecLike with Matchers with Inspectors with Sca
       val results = List(
         DataAndJson(
           ResourceCreated(projectId, 1L, meta, tags, value.asJson),
-          s"""{"id":"https://bbp.epfl.ch/nexus/projects/projectid","rev":1,"meta":{"author":{"id":"realms/realm/users/sub:1234","type":"UserRef"},"instant":"${meta.instant}"},"tags":["project"],"value":{"label":"${value.label.get}","description":"${value.description.get}","prefixMappings":[{"prefix":"nxv","namespace":"https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/"},{"prefix":"rdf","namespace":"http://www.w3.org/1999/02/22-rdf-syntax-ns#type"}],"config":{"maxAttachmentSize":${value.config.maxAttachmentSize}}},"type":"ResourceCreated"}"""
+          s"""{"id":"https://bbp.epfl.ch/nexus/projects/projectid","rev":1,"meta":{"author":{"id":"realms/realm/users/sub:1234","type":"UserRef"},"instant":"${meta.instant}"},"tags":["project"],"value":{"name":"${value.name}","description":"${value.description.get}","prefixMappings":[{"prefix":"nxv","namespace":"https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/"},{"prefix":"rdf","namespace":"http://www.w3.org/1999/02/22-rdf-syntax-ns#type"}],"config":{"maxAttachmentSize":${value.config.maxAttachmentSize}}},"type":"ResourceCreated"}"""
         ),
         DataAndJson(
           ResourceUpdated(projectId, 1L, meta, tags, value2.asJson),
-          s"""{"id":"https://bbp.epfl.ch/nexus/projects/projectid","rev":1,"meta":{"author":{"id":"realms/realm/users/sub:1234","type":"UserRef"},"instant":"${meta.instant}"},"tags":["project"],"value":{"label":"${value2.label.get}","description":"${value2.description.get}","prefixMappings":[{"prefix":"nxv","namespace":"https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/"},{"prefix":"rdf","namespace":"http://www.w3.org/1999/02/22-rdf-syntax-ns#type"}],"config":{"maxAttachmentSize":${value2.config.maxAttachmentSize}}},"type":"ResourceUpdated"}"""
+          s"""{"id":"https://bbp.epfl.ch/nexus/projects/projectid","rev":1,"meta":{"author":{"id":"realms/realm/users/sub:1234","type":"UserRef"},"instant":"${meta.instant}"},"tags":["project"],"value":{"name":"${value2.name}","description":"${value2.description.get}","prefixMappings":[{"prefix":"nxv","namespace":"https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/"},{"prefix":"rdf","namespace":"http://www.w3.org/1999/02/22-rdf-syntax-ns#type"}],"config":{"maxAttachmentSize":${value2.config.maxAttachmentSize}}},"type":"ResourceUpdated"}"""
         ),
         DataAndJson(
           ResourceDeprecated(projectId, 1L, meta, tags),
