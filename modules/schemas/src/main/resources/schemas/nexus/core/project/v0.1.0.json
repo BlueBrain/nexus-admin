@@ -289,8 +289,8 @@
           "name": "Prefix name",
           "description": "Prefix name shape. A prefix name should be a string of length at least 3 and at most 32.",
           "datatype": "xsd:string",
-          "pattern": "[a-z]+",
-          "sh:minLength": 3,
+          "pattern": "^[a-z]{1}[a-z0-9-_]*$",
+          "sh:minLength": 1,
           "sh:maxLength": 32,
           "maxCount": 1,
           "minCount": 1

@@ -59,8 +59,10 @@ class ExceptionHandling(implicit errorContext: ContextUri) {
       case ResourceAlreadyExists        => Conflict
       case ResourceDoesNotExists        => NotFound
       case ParentResourceDoesNotExists  => NotFound
-      case _: WrappedRejection          => BadRequest
       case ResourceIsDeprecated         => BadRequest
+      case _: MissingImportsViolation   => BadRequest
+      case _: IllegalImportsViolation   => BadRequest
+      case _: WrappedRejection          => BadRequest
       case _: ShapeConstraintViolations => BadRequest
     }
 

@@ -1,7 +1,8 @@
 package ch.epfl.bluebrain.nexus.admin.service.routes
 
+import akka.actor.ActorSystem
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.model.headers.OAuth2BearerToken
+import akka.http.scaladsl.model.headers.{BasicHttpCredentials, OAuth2BearerToken}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import cats.instances.future._
 import ch.epfl.bluebrain.nexus.admin.core.CommonRejections.{IllegalParam, IllegalPayload}
@@ -15,15 +16,18 @@ import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceState.{Initial, next
 import ch.epfl.bluebrain.nexus.admin.core.types.Ref._
 import ch.epfl.bluebrain.nexus.admin.core.{Error, TestHepler}
 import ch.epfl.bluebrain.nexus.admin.ld.Const._
-import ch.epfl.bluebrain.nexus.admin.ld.PrefixMapping.randomPrefix
 import ch.epfl.bluebrain.nexus.admin.refined.permissions.HasReadProjects
+import ch.epfl.bluebrain.nexus.admin.service.routes.ProjectRoutesSpec._
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport._
+import ch.epfl.bluebrain.nexus.commons.http.JsonOps._
 import ch.epfl.bluebrain.nexus.commons.http.RdfMediaTypes
 import ch.epfl.bluebrain.nexus.commons.iam.IamClient
 import ch.epfl.bluebrain.nexus.commons.iam.acls.Permission.Read
 import ch.epfl.bluebrain.nexus.commons.iam.acls.{FullAccessControlList, Path, Permission, Permissions}
 import ch.epfl.bluebrain.nexus.commons.iam.identity.Caller.AnonymousCaller
 import ch.epfl.bluebrain.nexus.commons.iam.identity.Identity.Anonymous
+import ch.epfl.bluebrain.nexus.commons.shacl.validator.{ImportResolver, ShaclSchema, ShaclValidator}
+import ch.epfl.bluebrain.nexus.commons.types.HttpRejection.UnauthorizedAccess
 import ch.epfl.bluebrain.nexus.sourcing.mem.MemoryAggregate
 import ch.epfl.bluebrain.nexus.sourcing.mem.MemoryAggregate._
 import com.typesafe.config.ConfigFactory
@@ -93,6 +97,15 @@ class ProjectRoutesSpec
       }
       projects.fetch(reference).futureValue shouldEqual Some(
         Project(reference, 1L, projectValue, json, deprecated = false))
+    }
+
+    "reject the creation of a project without name" in {
+      val other = genReference()
+      setUpIamCalls(other.value)
+      Put(s"/projects/${other.value}", genProjectValue().asJson.removeKeys("name")) ~> addCredentials(cred) ~> route ~> check {
+        status shouldEqual StatusCodes.BadRequest
+        responseAs[Error].code shouldEqual classNameOf[ShapeConstraintViolations.type]
+      }
     }
 
     "reject the creation of a project which already exists" in {
@@ -208,8 +221,16 @@ class ProjectRoutesSpec
       }
     }
 
+    "reject the update of a project without name" in {
+      val json = jsonUpdate deepMerge Json.obj("config" -> Json.obj("maxAttachmentSize" -> Json.fromString("one")))
+      Put(s"/projects/${refUpdate.value}?rev=2", json) ~> addCredentials(cred) ~> route ~> check {
+        status shouldEqual StatusCodes.BadRequest
+        responseAs[Error].code shouldEqual classNameOf[ShapeConstraintViolations.type]
+      }
+    }
+
     "reject the update of a project which contains the same prefix on the prefixMappings payload as the existing project" in {
-      val invalidUpdate = genProjectValue(randomPrefix(), randomPrefix()).asJson
+      val invalidUpdate = genProjectValue(randomProjectPrefix(), randomProjectPrefix()).asJson
       Put(s"/projects/${refUpdate.value}?rev=2", invalidUpdate) ~> addCredentials(cred) ~> route ~> check {
         status shouldEqual StatusCodes.BadRequest
         responseAs[Error].code shouldEqual classNameOf[IllegalPayload.type]
@@ -232,5 +253,20 @@ class ProjectRoutesSpec
       }
     }
 
+    "reject the request when credentials are not in the form of Bearer Token" in {
+      Get(s"/projects/") ~> addCredentials(BasicHttpCredentials("something")) ~> route ~> check {
+        println("============")
+        println(responseAs[Json])
+        status shouldEqual StatusCodes.Unauthorized
+        responseAs[Error].code shouldEqual classNameOf[UnauthorizedAccess.type]
+      }
+    }
+  }
+}
+object ProjectRoutesSpec {
+  private[routes] implicit def shaclValidator(implicit system: ActorSystem): ShaclValidator[Future] = {
+    import system.dispatcher
+    val importResolver: ImportResolver[Future] = (schema: ShaclSchema) => Future(Set.empty)
+    ShaclValidator(importResolver)
   }
 }

@@ -24,6 +24,7 @@ import ch.epfl.bluebrain.nexus.commons.iam.acls.FullAccessControlList
 import ch.epfl.bluebrain.nexus.commons.iam.auth.User
 import ch.epfl.bluebrain.nexus.commons.iam.io.serialization.JsonLdSerialization
 import ch.epfl.bluebrain.nexus.commons.iam.{IamClient, IamUri}
+import ch.epfl.bluebrain.nexus.commons.shacl.validator.{ImportResolver, ShaclSchema, ShaclValidator}
 import ch.epfl.bluebrain.nexus.service.http.directives.PrefixDirectives._
 import ch.epfl.bluebrain.nexus.sourcing.akka.{ShardingAggregate, SourcingAkkaSettings}
 import ch.megard.akka.http.cors.scaladsl.CorsDirectives.{cors, corsRejectionHandler}
@@ -54,6 +55,7 @@ object Main {
     implicit val mt: ActorMaterializer         = ActorMaterializer()
     implicit val cl: UntypedHttpClient[Future] = HttpClient.akkaHttpClient
     implicit val iamC: IamClient[Future]       = iamClient(appConfig.iam.baseUri)
+    implicit val validator                     = shaclValidator
 
     val sourcingSettings = SourcingAkkaSettings(journalPluginId = appConfig.persistence.queryJournalPlugin)
 
@@ -110,14 +112,9 @@ object Main {
     }
   }
 
-  /**
-    * Constructs [[IamClient]] from the provided ''baseIamUri'' and the implicitly available instances
-    *
-    * @param baseIamUri the baseUri for IAM service
-    */
-  def iamClient(baseIamUri: Uri)(implicit ec: ExecutionContext,
-                                 mt: Materializer,
-                                 cl: UntypedHttpClient[Future]): IamClient[Future] = {
+  private def iamClient(baseIamUri: Uri)(implicit ec: ExecutionContext,
+                                         mt: Materializer,
+                                         cl: UntypedHttpClient[Future]): IamClient[Future] = {
     import io.circe.generic.extras.auto._
     implicit val identityDecoder = JsonLdSerialization.identityDecoder
     implicit val iamUri          = IamUri(baseIamUri)
@@ -125,6 +122,11 @@ object Main {
     implicit val aclCl           = HttpClient.withAkkaUnmarshaller[FullAccessControlList]
     implicit val userCl          = HttpClient.withAkkaUnmarshaller[User]
     IamClient()
+  }
+
+  private def shaclValidator(implicit ec: ExecutionContext) = {
+    val importResolver: ImportResolver[Future] = (schema: ShaclSchema) => Future(Set.empty)
+    ShaclValidator(importResolver)
   }
 }
 // $COVERAGE-ON$

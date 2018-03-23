@@ -48,4 +48,18 @@ object ResourceRejection {
     */
   final case class WrappedRejection(rejection: CommonRejections) extends ResourceRejection
 
+  /**
+    * Signals the failure to perform a schema modification due to payload missing imports.
+    *
+    * @param imports the collections of imports that are not accepted
+    */
+  final case class MissingImportsViolation(imports: Set[String]) extends ResourceRejection
+
+  /**
+    * Signals the failure to perform a schema modification due to payload illegal imports.
+    *
+    * @param imports the collections of imports that are not accepted
+    */
+  final case class IllegalImportsViolation(imports: Set[String]) extends ResourceRejection
+
 }
