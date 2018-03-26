@@ -17,7 +17,6 @@ import ch.epfl.bluebrain.nexus.admin.core.types.NamespaceOps._
 import ch.epfl.bluebrain.nexus.admin.core.types.Ref._
 import ch.epfl.bluebrain.nexus.admin.core.types.RefVersioned
 import ch.epfl.bluebrain.nexus.admin.ld.Const._
-import ch.epfl.bluebrain.nexus.admin.ld.IdOps._
 import ch.epfl.bluebrain.nexus.admin.ld.{IdRef, IdResolvable, JsonLD}
 import ch.epfl.bluebrain.nexus.admin.refined.permissions._
 import ch.epfl.bluebrain.nexus.admin.refined.project._
@@ -158,21 +157,20 @@ object Projects {
       override def validateUpdate(id: ProjectReference, value: Json): F[Unit] = validate(value)
 
       private def validate(value: JsonLD): F[Unit] = {
-        //TODO: This assumes that the `@type` field is found on the top of the JSON tree.
-        //Come up with a proper JSON-lD solution for it in following commits.
-        val tpeJson = Json.obj(`@type` -> Json.arr((value.tpe + nxv.Project).map(_.id.asJson).toSeq: _*))
-        val merged  = value.appendContext(projectContext) deepMerge tpeJson
-        validator(ShaclSchema(projectSchema), merged)
-          .flatMap { report =>
-            if (report.conforms) F.pure(())
-            else F.raiseError[Unit](CommandRejected(ShapeConstraintViolations(report.result.map(_.reason))))
-          }
-          .recoverWith {
-            case CouldNotFindImports(missing)     => F.raiseError(CommandRejected(MissingImportsViolation(missing)))
-            case IllegalImportDefinition(missing) => F.raiseError(CommandRejected(IllegalImportsViolation(missing)))
-          }
+        value.appendContext(projectContext).add(rdf.tpe, nxv.Project).apply() match {
+          case Some(merged) =>
+            validator(ShaclSchema(projectSchema), merged)
+              .flatMap { report =>
+                if (report.conforms) F.pure(())
+                else F.raiseError[Unit](CommandRejected(ShapeConstraintViolations(report.result.map(_.reason))))
+              }
+              .recoverWith {
+                case CouldNotFindImports(missing)     => F.raiseError(CommandRejected(MissingImportsViolation(missing)))
+                case IllegalImportDefinition(missing) => F.raiseError(CommandRejected(IllegalImportsViolation(missing)))
+              }
+          case None => F.raiseError(Unexpected(s"Could not add @type to the payload '${value.json}'"))
+        }
       }
-
     })
 
   private[projects] class EvalProject(implicit config: ProjectsConfig) extends Eval {

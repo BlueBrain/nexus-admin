@@ -1,15 +1,17 @@
 package ch.epfl.bluebrain.nexus.admin.ld
 
+import ch.epfl.bluebrain.nexus.admin.ld.JsonLD.GraphUpdate.IdOrLiteral
 import ch.epfl.bluebrain.nexus.admin.ld.JsonLD._
 import ch.epfl.bluebrain.nexus.admin.ld.jena.JenaJsonLD
 import ch.epfl.bluebrain.nexus.admin.refined.ld._
 import io.circe.Json
-import shapeless.Typeable
+import shapeless.ops.coproduct.Inject
+import shapeless.{:+:, CNil, Typeable}
 
 /**
   * A data type representing possible JSON-LD values.
   */
-trait JsonLD extends GraphTraversal with Keywords {
+trait JsonLD extends GraphTraversal with Keywords with GraphUpdate {
 
   /**
     * The underlying [[Json]] data type
@@ -73,6 +75,34 @@ object JsonLD {
   implicit final def fromJsonInstance(json: Json): JsonLD = apply(json)
   implicit final def toJsonInstance(value: JsonLD): Json  = value.json
 
+  private[ld] trait GraphUpdate {
+
+    /**
+      * Constructs a ''GraphUpdateBuilder'' that stores the triples to be added to the JSON-LD Graph.
+      * The subject is taken from the ''GraphCursor'' pointer.
+      *
+      * @param p the predicate to be added
+      * @param o the object to be added
+      */
+    def add[A](p: Id, o: A)(implicit inject: Inject[IdOrLiteral, A]): GraphUpdateBuilder
+
+  }
+
+  private[ld] object GraphUpdate {
+    type IdOrLiteral = Id :+: IdRef :+: String :+: Boolean :+: Int :+: Long :+: Double :+: CNil
+  }
+
+  private[ld] trait GraphUpdateBuilder extends GraphUpdate {
+    def apply(): Option[JsonLD]
+  }
+
+  private[ld] case class EmptyEffectBuilder(private val rootJsonLD: JsonLD) extends GraphUpdateBuilder {
+
+    override def add[A](p: Id, o: A)(implicit inject: Inject[IdOrLiteral, A]): GraphUpdateBuilder = this
+
+    override def apply(): Option[JsonLD] = Some(rootJsonLD)
+  }
+
   private[ld] trait GraphTraversal {
 
     /**
@@ -97,10 +127,7 @@ object JsonLD {
       * @param predicate the given predicate
       * @return the first object down the predicate
       */
-    def downFirst(predicate: Id): GraphCursor = down(predicate) match {
-      case cursor :: _ => cursor
-      case _           => EmptyCursor
-    }
+    def downFirst(predicate: Id): GraphCursor
 
   }
 
@@ -117,9 +144,15 @@ object JsonLD {
     def tpe: Set[IdRef]
   }
 
-  private[ld] trait GraphCursor extends GraphTraversal with Keywords
+  private[ld] trait GraphCursor extends GraphTraversal with GraphUpdate with Keywords {
 
-  private[ld] case object EmptyCursor extends GraphCursor {
+    /**
+      * @return the top jsonLD object of this [[GraphCursor]]
+      */
+    def rootJsonLD: JsonLD
+  }
+
+  private[ld] case class EmptyCursor(rootJsonLD: JsonLD) extends GraphCursor {
 
     override def id: IdType = Empty
 
@@ -129,7 +162,11 @@ object JsonLD {
 
     override def down(predicate: Id): List[GraphCursor] = List.empty
 
-    override def downFirst(predicate: Id): GraphCursor = EmptyCursor
+    override def downFirst(predicate: Id): GraphCursor = this
+
+    override def add[A](p: Id, o: A)(implicit inject: Inject[IdOrLiteral, A]): GraphUpdateBuilder =
+      EmptyEffectBuilder(rootJsonLD)
+
   }
 
 }

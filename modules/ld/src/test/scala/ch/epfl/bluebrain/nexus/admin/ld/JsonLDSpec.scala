@@ -1,20 +1,24 @@
 package ch.epfl.bluebrain.nexus.admin.ld
 
 import akka.http.scaladsl.model.Uri
-import ch.epfl.bluebrain.nexus.admin.ld.JsonLD.{EmptyCursor, GraphCursor}
+import ch.epfl.bluebrain.nexus.admin.ld.Const._
+import ch.epfl.bluebrain.nexus.admin.ld.JsonLD.{EmptyCursor, EmptyEffectBuilder, GraphCursor}
 import ch.epfl.bluebrain.nexus.admin.refined.ld._
 import ch.epfl.bluebrain.nexus.commons.test.Resources
 import eu.timepit.refined.auto._
 import io.circe.Json
 import org.scalatest.{Inspectors, Matchers, OptionValues, WordSpecLike}
-
+import ch.epfl.bluebrain.nexus.commons.http.JsonOps._
 class JsonLDSpec extends WordSpecLike with Matchers with Resources with OptionValues with Inspectors {
 
   "A JsonLD" should {
-    val jsonLD            = JsonLD(jsonContentOf("/no_id.json"))
-    val typedJsonLD       = JsonLD(jsonContentOf("/id_and_types.json"))
-    val aliasedTypeJsonLD = JsonLD(jsonContentOf("/id_and_type.json"))
-    val schemaOrg         = new IdRefBuilder("schema", "http://schema.org/")
+    val jsonLD       = JsonLD(jsonContentOf("/no_id.json"))
+    val typedJsonLD  = JsonLD(jsonContentOf("/id_and_types.json"))
+    val typed2JsonLD = JsonLD(jsonContentOf("/id_and_type.json"))
+    val jsonLDSimple = JsonLD(jsonContentOf("/id_simple.json"))
+
+    val schemaOrg = new IdRefBuilder("schema", "http://schema.org/")
+    val gr        = new IdRefBuilder("gr", "http://purl.org/goodrelations/v1#")
 
     "find a string from a given a predicate" in {
       jsonLD.value[String](schemaOrg.build("name")).value shouldEqual "empire"
@@ -67,12 +71,12 @@ class JsonLDSpec extends WordSpecLike with Matchers with Resources with OptionVa
     }
 
     "return empty cursor when attempting to navigate down the first unexisting parent" in {
-      jsonLD.downFirst(schemaOrg.build("nonExisting")) shouldEqual EmptyCursor
+      jsonLD.downFirst(schemaOrg.build("nonExisting")) shouldEqual EmptyCursor(jsonLD)
       jsonLD.downFirst(schemaOrg.build("nonExisting")).down(schemaOrg.build("nonExisting2")) shouldEqual List
         .empty[GraphCursor]
       jsonLD
         .downFirst(schemaOrg.build("nonExisting"))
-        .downFirst(schemaOrg.build("nonExisting2")) shouldEqual EmptyCursor
+        .downFirst(schemaOrg.build("nonExisting2")) shouldEqual EmptyCursor(jsonLD)
     }
 
     "return None  when attempting to fetch the type of a down navigation on an unexisting parent" in {
@@ -82,15 +86,14 @@ class JsonLDSpec extends WordSpecLike with Matchers with Resources with OptionVa
     "find the @id" in {
       jsonLD.id shouldBe a[IdTypeBlank]
       typedJsonLD.id shouldEqual IdTypeUri("http://example.org/cars/for-sale#tesla")
-      aliasedTypeJsonLD.id shouldEqual IdTypeUri(
-        "https://bbp-nexus.epfl.ch/dev/v0/contexts/nexus/core/distribution/v0.1.0")
+      typed2JsonLD.id shouldEqual IdTypeUri("https://bbp-nexus.epfl.ch/dev/v0/contexts/nexus/core/distribution/v0.1.0")
     }
 
     "find the @type" in {
       jsonLD.tpe shouldEqual Set.empty
       typedJsonLD.tpe shouldEqual Set(IdRef("gr", "http://purl.org/goodrelations/v1#", "Offering"),
                                       IdRef("owl", "http://www.w3.org/2002/07/owl#", "Ontology"))
-      val tpe = aliasedTypeJsonLD.tpe
+      val tpe = typed2JsonLD.tpe
       tpe.size shouldEqual 1
       tpe.head.reference shouldEqual ("Some": Reference)
       tpe.head.namespace shouldEqual ("http://example.com/": Namespace)
@@ -153,6 +156,53 @@ class JsonLDSpec extends WordSpecLike with Matchers with Resources with OptionVa
     "append nothing when the passed value does not contain @context" in {
       val ctxToAdd = Json.obj("one" -> Json.fromString("two"))
       jsonLD.appendContext(ctxToAdd).json shouldEqual jsonLD.json
+    }
+
+    "add triples to the jsonLD" in {
+      val expected = jsonLDSimple.json.removeKeys("@context") deepMerge Json.obj(
+        "@type" -> Json.fromString("nxv:Project"))
+      jsonLDSimple.add(rdf.tpe, nxv.Project).apply().value.json.removeKeys("@context") shouldEqual expected
+    }
+
+    "add several triples to the jsonLD" in {
+      val expected = jsonLDSimple.json.removeKeys("@context") deepMerge Json.obj(
+        "@type"   -> Json.fromString("nxv:Project"),
+        "nxv:rev" -> Json.fromInt(2))
+      val json = jsonLDSimple.add(rdf.tpe, nxv.Project).add(nxv.rev, 2).apply().value.json
+      json.removeKeys("@context") shouldEqual expected
+
+      val json2 = jsonLDSimple.add(rdf.tpe, nxv.Project).apply().value.add(nxv.rev, 2).apply().value.json
+      json2.removeKeys("@context") shouldEqual expected
+    }
+
+    "add triple to an empty cursor returns the original json" in {
+      val updateBuilder = typedJsonLD.downFirst(gr.build("non-exists")).add(nxv.deprecated, false)
+      updateBuilder shouldEqual EmptyEffectBuilder(typedJsonLD)
+      updateBuilder.apply().value.json shouldEqual typedJsonLD.json
+    }
+
+    "add several triples to the jsonLD cursor" in {
+      val expected = jsonContentOf("/id_and_types_updated.json")
+
+      typedJsonLD
+        .downFirst(gr.build("includes"))
+        .add(nxv.deprecated, false)
+        .add(nxv.name, "something")
+        .apply()
+        .value
+        .json shouldEqual expected
+
+      typedJsonLD
+        .downFirst(gr.build("includes"))
+        .add(nxv.deprecated, false)
+        .apply()
+        .value
+        .downFirst(gr.build("includes"))
+        .add(nxv.name, "something")
+        .apply()
+        .value
+        .json shouldEqual expected
+
     }
   }
 }

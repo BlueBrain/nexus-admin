@@ -24,10 +24,6 @@
   "gr:description": "Need to sell fast and furiously",
   "gr:hasBusinessFunction": "gr:Sell",
   "gr:acceptedPaymentMethods": "gr:Cash",
-  "gr:hasPriceSpecification": {
-    "gr:hasCurrencyValue": "85000",
-    "gr:hasCurrency": "USD"
-  },
   "gr:includes": {
     "@type": [
       "gr:Individual",
