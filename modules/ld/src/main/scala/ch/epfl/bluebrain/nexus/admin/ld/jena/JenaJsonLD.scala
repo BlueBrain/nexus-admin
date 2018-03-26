@@ -4,15 +4,16 @@ import java.io.ByteArrayInputStream
 
 import ch.epfl.bluebrain.nexus.admin.ld.Const._
 import ch.epfl.bluebrain.nexus.admin.ld.JsonLD.GraphCursor
+import ch.epfl.bluebrain.nexus.admin.ld.JsonLD.GraphUpdate.IdOrLiteral
 import ch.epfl.bluebrain.nexus.admin.ld._
-import ch.epfl.bluebrain.nexus.admin.ld.jena.JenaSyntaxes._
 import ch.epfl.bluebrain.nexus.admin.refined.ld._
 import eu.timepit.refined.api.RefType.applyRef
 import io.circe.Json
 import org.apache.jena.graph._
-import org.apache.jena.rdf.model.ModelFactory
+import org.apache.jena.rdf.model.{Model, ModelFactory}
 import org.apache.jena.riot.{Lang, RDFDataMgr}
 import shapeless.Typeable
+import shapeless.ops.coproduct.Inject
 
 import scala.collection.JavaConverters._
 
@@ -21,15 +22,11 @@ import scala.collection.JavaConverters._
   *
   * @param json the underlying [[Json]] data type
   */
-private[ld] final case class JenaJsonLD(json: Json) extends JsonLD {
+private[ld] final case class JenaJsonLD(json: Json, private[jena] val modelF: () => Model) extends JsonLD {
 
-  private lazy val model = {
-    val m = ModelFactory.createDefaultModel()
-    RDFDataMgr.read(m, new ByteArrayInputStream(json.noSpaces.getBytes), Lang.JSONLD)
-    m
-  }
+  private[jena] lazy val model = modelF()
 
-  private lazy val graph = model.getGraph
+  private[jena] lazy val graph = model.getGraph
 
   override lazy val id: IdType = {
     val (subs, objs) = graph
@@ -46,7 +43,7 @@ private[ld] final case class JenaJsonLD(json: Json) extends JsonLD {
     }
   }
 
-  private val cursor = JenaGraphCursor(() => id, () => graph)
+  private val cursor = JenaGraphCursor(this, () => id)
 
   override def tpe: Set[IdRef] = cursor.tpe
 
@@ -62,6 +59,22 @@ private[ld] final case class JenaJsonLD(json: Json) extends JsonLD {
 
   override def expand(value: String): Option[Id] = applyRef[Id](model.expandPrefix(value)).toOption
 
+  override def downFirst(predicate: Id): GraphCursor = cursor.downFirst(predicate)
+
+  override def add[A](p: Id, o: A)(implicit inject: Inject[IdOrLiteral, A]): JsonLD.GraphUpdateBuilder =
+    cursor.add(p, o)
+
   private def selfPredicate(node: Node): Boolean =
     node.toId(graph).map(_ == nxv.self).getOrElse(false)
+}
+
+private[ld] object JenaJsonLD {
+
+  private def genModel(json: Json): Model = {
+    val m = ModelFactory.createDefaultModel()
+    RDFDataMgr.read(m, new ByteArrayInputStream(json.noSpaces.getBytes), Lang.JSONLD)
+    m
+  }
+
+  final def apply(json: Json): JsonLD = new JenaJsonLD(json, () => genModel(json))
 }

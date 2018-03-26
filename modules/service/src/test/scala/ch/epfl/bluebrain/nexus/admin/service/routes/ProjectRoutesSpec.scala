@@ -255,8 +255,6 @@ class ProjectRoutesSpec
 
     "reject the request when credentials are not in the form of Bearer Token" in {
       Get(s"/projects/") ~> addCredentials(BasicHttpCredentials("something")) ~> route ~> check {
-        println("============")
-        println(responseAs[Json])
         status shouldEqual StatusCodes.Unauthorized
         responseAs[Error].code shouldEqual classNameOf[UnauthorizedAccess.type]
       }

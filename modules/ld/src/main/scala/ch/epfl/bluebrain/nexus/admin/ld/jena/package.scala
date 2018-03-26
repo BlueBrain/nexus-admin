@@ -1,12 +1,11 @@
-package ch.epfl.bluebrain.nexus.admin.ld.jena
+package ch.epfl.bluebrain.nexus.admin.ld
 
 import ch.epfl.bluebrain.nexus.admin.ld.IdOps._
-import ch.epfl.bluebrain.nexus.admin.ld._
 import ch.epfl.bluebrain.nexus.admin.refined.ld.Id
 import eu.timepit.refined.api.RefType.applyRef
 import org.apache.jena.graph._
 
-private[jena] object JenaSyntaxes {
+package object jena {
 
   /**
     * Syntax sugar to expose methods on type [[Node]]
