@@ -21,7 +21,7 @@ import ch.epfl.bluebrain.nexus.commons.iam.acls.Permission._
 import ch.epfl.bluebrain.nexus.commons.iam.acls.{Permission, Permissions}
 import ch.epfl.bluebrain.nexus.commons.iam.identity.Caller.AnonymousCaller
 import ch.epfl.bluebrain.nexus.commons.iam.identity.Identity.Anonymous
-import ch.epfl.bluebrain.nexus.commons.shacl.validator.{ImportResolver, ShaclSchema, ShaclValidator}
+import ch.epfl.bluebrain.nexus.commons.shacl.validator.{ImportResolver, ShaclValidator}
 import ch.epfl.bluebrain.nexus.sourcing.mem.MemoryAggregate
 import ch.epfl.bluebrain.nexus.sourcing.mem.MemoryAggregate._
 import eu.timepit.refined.api.RefType.{applyRef, refinedRefType}
@@ -167,6 +167,5 @@ class ProjectsSpec extends WordSpecLike with Matchers with TryValues with TestHe
 }
 
 object ProjectsSpec {
-  private val importResolver: ImportResolver[Try]                    = (schema: ShaclSchema) => Try(Set.empty)
-  private[projects] implicit val shaclValidator: ShaclValidator[Try] = ShaclValidator(importResolver)
+  private[projects] implicit val shaclValidator: ShaclValidator[Try] = ShaclValidator(ImportResolver.noop[Try])
 }

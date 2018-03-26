@@ -96,7 +96,7 @@ object JsonLD {
     def apply(): Option[JsonLD]
   }
 
-  private[ld] case class EmptyEffectBuilder(private val rootJsonLD: JsonLD) extends GraphUpdateBuilder {
+  final private[ld] case class EmptyEffectBuilder(private val rootJsonLD: JsonLD) extends GraphUpdateBuilder {
 
     override def add[A](p: Id, o: A)(implicit inject: Inject[IdOrLiteral, A]): GraphUpdateBuilder = this
 
@@ -152,7 +152,7 @@ object JsonLD {
     def rootJsonLD: JsonLD
   }
 
-  private[ld] case class EmptyCursor(rootJsonLD: JsonLD) extends GraphCursor {
+  final private[ld] case class EmptyCursor(rootJsonLD: JsonLD) extends GraphCursor {
 
     override def id: IdType = Empty
 

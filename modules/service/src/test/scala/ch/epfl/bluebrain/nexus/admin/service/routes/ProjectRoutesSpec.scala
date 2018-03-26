@@ -26,7 +26,7 @@ import ch.epfl.bluebrain.nexus.commons.iam.acls.Permission.Read
 import ch.epfl.bluebrain.nexus.commons.iam.acls.{FullAccessControlList, Path, Permission, Permissions}
 import ch.epfl.bluebrain.nexus.commons.iam.identity.Caller.AnonymousCaller
 import ch.epfl.bluebrain.nexus.commons.iam.identity.Identity.Anonymous
-import ch.epfl.bluebrain.nexus.commons.shacl.validator.{ImportResolver, ShaclSchema, ShaclValidator}
+import ch.epfl.bluebrain.nexus.commons.shacl.validator.{ImportResolver, ShaclValidator}
 import ch.epfl.bluebrain.nexus.commons.types.HttpRejection.UnauthorizedAccess
 import ch.epfl.bluebrain.nexus.sourcing.mem.MemoryAggregate
 import ch.epfl.bluebrain.nexus.sourcing.mem.MemoryAggregate._
@@ -264,7 +264,6 @@ class ProjectRoutesSpec
 object ProjectRoutesSpec {
   private[routes] implicit def shaclValidator(implicit system: ActorSystem): ShaclValidator[Future] = {
     import system.dispatcher
-    val importResolver: ImportResolver[Future] = (schema: ShaclSchema) => Future(Set.empty)
-    ShaclValidator(importResolver)
+    ShaclValidator(ImportResolver.noop[Future])
   }
 }
