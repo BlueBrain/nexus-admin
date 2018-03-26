@@ -24,7 +24,7 @@ import ch.epfl.bluebrain.nexus.commons.iam.acls.FullAccessControlList
 import ch.epfl.bluebrain.nexus.commons.iam.auth.User
 import ch.epfl.bluebrain.nexus.commons.iam.io.serialization.JsonLdSerialization
 import ch.epfl.bluebrain.nexus.commons.iam.{IamClient, IamUri}
-import ch.epfl.bluebrain.nexus.commons.shacl.validator.{ImportResolver, ShaclSchema, ShaclValidator}
+import ch.epfl.bluebrain.nexus.commons.shacl.validator.{ImportResolver, ShaclValidator}
 import ch.epfl.bluebrain.nexus.service.http.directives.PrefixDirectives._
 import ch.epfl.bluebrain.nexus.sourcing.akka.{ShardingAggregate, SourcingAkkaSettings}
 import ch.megard.akka.http.cors.scaladsl.CorsDirectives.{cors, corsRejectionHandler}
@@ -55,7 +55,7 @@ object Main {
     implicit val mt: ActorMaterializer         = ActorMaterializer()
     implicit val cl: UntypedHttpClient[Future] = HttpClient.akkaHttpClient
     implicit val iamC: IamClient[Future]       = iamClient(appConfig.iam.baseUri)
-    implicit val validator                     = shaclValidator
+    implicit val validator                     = ShaclValidator(ImportResolver.noop[Future])
 
     val sourcingSettings = SourcingAkkaSettings(journalPluginId = appConfig.persistence.queryJournalPlugin)
 
@@ -122,11 +122,6 @@ object Main {
     implicit val aclCl           = HttpClient.withAkkaUnmarshaller[FullAccessControlList]
     implicit val userCl          = HttpClient.withAkkaUnmarshaller[User]
     IamClient()
-  }
-
-  private def shaclValidator(implicit ec: ExecutionContext) = {
-    val importResolver: ImportResolver[Future] = (schema: ShaclSchema) => Future(Set.empty)
-    ShaclValidator(importResolver)
   }
 }
 // $COVERAGE-ON$
