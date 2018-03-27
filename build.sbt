@@ -26,7 +26,7 @@ scalafmt: {
 
 // Dependency versions
 val akkaVersion                     = "2.5.11"
-val akkaHttpVersion                 = "10.0.11"
+val akkaHttpVersion                 = "10.0.13"
 val akkaHttpCorsVersion             = "0.2.2"
 val akkaPersistenceInMemVersion     = "2.5.1.1"
 val akkaPersistenceCassandraVersion = "0.83"
@@ -34,7 +34,7 @@ val catsVersion                     = "1.1.0"
 val circeVersion                    = "0.9.2"
 val jenaVersion                     = "3.6.0"
 val mockitoVersion                  = "2.16.0"
-val pureconfigVersion               = "0.9.0"
+val pureconfigVersion               = "0.9.1"
 val refinedVersion                  = "0.8.7"
 val scalaTestVersion                = "3.0.5"
 val shapelessVersion                = "2.3.3"
@@ -224,7 +224,7 @@ lazy val buildInfoSettings =
 
 inThisBuild(
   List(
-    workbenchVersion := "0.3.0",
+    workbenchVersion := "0.3.2",
     homepage         := Some(url("https://github.com/BlueBrain/nexus-admin")),
     licenses         := Seq("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt")),
     scmInfo          := Some(ScmInfo(url("https://github.com/BlueBrain/nexus-admin"), "scm:git:git@github.com:BlueBrain/nexus-admin.git")),
