@@ -21,7 +21,10 @@ pipeline {
                     steps {
                         node("slave-sbt") {
                             checkout scm
-                            sh 'sbt clean coverage test coverageReport coverageAggregate'
+                            checkout scm
+                            sh "sbt clean coverage test coverageReport coverageAggregate"
+                            sh "curl -s https://codecov.io/bash >> ./coverage.sh"
+                            sh "bash ./coverage.sh -t `oc get secrets codecov-secret --template='{{.data.nexus_admin}}' | base64 -d`"
                         }
                     }
                 }
@@ -49,6 +52,19 @@ pipeline {
                     sh "mv modules/service/target/universal/admin-service-*.tgz ./admin-service.tgz"
                     sh "oc start-build admin-build --from-file=admin-service.tgz --follow"
                     openshiftTag srcStream: 'admin', srcTag: 'latest', destStream: 'admin', destTag: version.substring(1), verbose: 'false'
+                }
+            }
+        }
+        stage("Report Coverage") {
+            when {
+                expression { env.CHANGE_ID == null }
+            }
+            steps {
+                node("slave-sbt") {
+                    checkout scm
+                    sh "sbt clean coverage test coverageReport coverageAggregate"
+                    sh "curl -s https://codecov.io/bash >> ./coverage.sh"
+                    sh "bash ./coverage.sh -t `oc get secrets codecov-secret --template='{{.data.nexus_admin}}' | base64 -d`"
                 }
             }
         }
