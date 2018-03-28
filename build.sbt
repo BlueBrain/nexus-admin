@@ -118,7 +118,8 @@ lazy val ld = project
       commonsTest,
       jenaArq,
       shapeless,
-      scalaTest % Test
+      scalaTest % Test,
+      slf4j     % Test
     ),
     Test / fork              := true,
     Test / parallelExecution := false // workaround for jena initialization
@@ -136,6 +137,7 @@ lazy val query = project
       commonsIam,
       commonsQueryTypes,
       scalaTest % Test,
+      slf4j     % Test
     ),
     Test / fork              := true,
     Test / parallelExecution := false // workaround for jena initialization
