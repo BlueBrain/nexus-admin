@@ -33,7 +33,7 @@ class ExceptionHandling(implicit errorContext: ContextUri) {
 
   private final def exceptionHandler: ExceptionHandler = ExceptionHandler {
     case CommandRejected(r: ResourceRejection) => complete(r)
-    case CommandRejected(r: IllegalParam)      => complete(r: CommonRejections)
+    case CommandRejected(r: CommonRejections)  => complete(r)
 
     // $COVERAGE-OFF$
     case Unexpected(reason) =>
@@ -67,7 +67,10 @@ class ExceptionHandling(implicit errorContext: ContextUri) {
     }
 
   private implicit val commonFrom: StatusFrom[CommonRejections] =
-    StatusFrom(_ => BadRequest)
+    StatusFrom {
+      case _: MissingParameter => Conflict
+      case _                   => BadRequest
+    }
 
   private implicit val internalErrorStatusFrom: StatusFrom[InternalError] =
     StatusFrom(_ => InternalServerError)
