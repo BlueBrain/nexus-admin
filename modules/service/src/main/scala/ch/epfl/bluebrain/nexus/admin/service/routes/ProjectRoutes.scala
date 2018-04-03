@@ -74,11 +74,13 @@ final class ProjectRoutes(projects: Projects[Future])(implicit iamClient: IamCli
           }
         }
       } ~
-        (delete & parameter('rev.as[Long])) { rev =>
-          authCaller.apply { implicit caller =>
-            (trace("deprecateProject") & authorizeOn[HasWriteProjects](name.value)) { implicit perms =>
-              onSuccess(projects.deprecate(name, rev)) { ref =>
-                complete(StatusCodes.OK -> ref)
+        delete {
+          parameter('rev.as[Long]) { rev =>
+            authCaller.apply { implicit caller =>
+              (trace("deprecateProject") & authorizeOn[HasWriteProjects](name.value)) { implicit perms =>
+                onSuccess(projects.deprecate(name, rev)) { ref =>
+                  complete(StatusCodes.OK -> ref)
+                }
               }
             }
           }

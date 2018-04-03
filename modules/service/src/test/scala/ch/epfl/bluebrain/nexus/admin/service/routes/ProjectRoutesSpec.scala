@@ -5,7 +5,7 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.{BasicHttpCredentials, OAuth2BearerToken}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import cats.instances.future._
-import ch.epfl.bluebrain.nexus.admin.core.CommonRejections.{IllegalParam, IllegalPayload}
+import ch.epfl.bluebrain.nexus.admin.core.CommonRejections.{IllegalParam, IllegalPayload, MissingParameter}
 import ch.epfl.bluebrain.nexus.admin.core.Error._
 import ch.epfl.bluebrain.nexus.admin.core.config.AppConfig._
 import ch.epfl.bluebrain.nexus.admin.core.config.{AppConfig, Settings}
@@ -134,6 +134,13 @@ class ProjectRoutesSpec
       Delete(s"/projects/${reference.value}?rev=10", json) ~> addCredentials(cred) ~> route ~> check {
         status shouldEqual StatusCodes.Conflict
         responseAs[Error].code shouldEqual classNameOf[IncorrectRevisionProvided.type]
+      }
+    }
+
+    "reject the deprecation of a project without rev" in {
+      Delete(s"/projects/${reference.value}", json) ~> addCredentials(cred) ~> route ~> check {
+        status shouldEqual StatusCodes.BadRequest
+        responseAs[Error].code shouldEqual classNameOf[MissingParameter.type]
       }
     }
 

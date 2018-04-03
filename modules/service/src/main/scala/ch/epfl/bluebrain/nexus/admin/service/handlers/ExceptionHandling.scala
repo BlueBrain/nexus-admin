@@ -4,7 +4,6 @@ import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server.Directives.complete
 import akka.http.scaladsl.server.ExceptionHandler
 import ch.epfl.bluebrain.nexus.admin.core.CommonRejections
-import ch.epfl.bluebrain.nexus.admin.core.CommonRejections._
 import ch.epfl.bluebrain.nexus.admin.core.Fault.{CommandRejected, Unexpected}
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceRejection
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceRejection._
@@ -33,7 +32,7 @@ class ExceptionHandling(implicit errorContext: ContextUri) {
 
   private final def exceptionHandler: ExceptionHandler = ExceptionHandler {
     case CommandRejected(r: ResourceRejection) => complete(r)
-    case CommandRejected(r: IllegalParam)      => complete(r: CommonRejections)
+    case CommandRejected(r: CommonRejections)  => complete(r)
 
     // $COVERAGE-OFF$
     case Unexpected(reason) =>

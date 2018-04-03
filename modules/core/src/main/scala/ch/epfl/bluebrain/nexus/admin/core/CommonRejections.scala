@@ -31,4 +31,12 @@ object CommonRejections {
   @SuppressWarnings(Array("IncorrectlyNamedExceptions"))
   final case class DownstreamServiceError(override val message: String) extends Err(message) with CommonRejections
 
+  /**
+    * Signals the requirement of a parameter to be present
+    *
+    * @param message a human readable description of the cause
+    */
+  @SuppressWarnings(Array("IncorrectlyNamedExceptions"))
+  final case class MissingParameter(override val message: String) extends Err(message) with CommonRejections
+
 }
