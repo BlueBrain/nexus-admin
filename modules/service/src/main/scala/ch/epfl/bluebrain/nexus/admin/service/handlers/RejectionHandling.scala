@@ -39,7 +39,7 @@ object RejectionHandling {
         case ValidationRejection(_, Some(e: IllegalPayload)) =>
           complete(BadRequest -> (e: CommonRejections))
         case MissingQueryParamRejection(param) =>
-          complete(Conflict -> (MissingParameter(s"'$param' parameter is required"): CommonRejections))
+          complete(BadRequest -> (MissingParameter(s"'$param' parameter is required"): CommonRejections))
         case CustomAuthRejection(e) =>
           complete(InternalServerError -> (e: CommonRejections))
         case _: AuthorizationFailedRejection =>

@@ -139,7 +139,7 @@ class ProjectRoutesSpec
 
     "reject the deprecation of a project without rev" in {
       Delete(s"/projects/${reference.value}", json) ~> addCredentials(cred) ~> route ~> check {
-        status shouldEqual StatusCodes.Conflict
+        status shouldEqual StatusCodes.BadRequest
         responseAs[Error].code shouldEqual classNameOf[MissingParameter.type]
       }
     }

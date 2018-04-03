@@ -67,10 +67,7 @@ class ExceptionHandling(implicit errorContext: ContextUri) {
     }
 
   private implicit val commonFrom: StatusFrom[CommonRejections] =
-    StatusFrom {
-      case _: MissingParameter => Conflict
-      case _                   => BadRequest
-    }
+    StatusFrom(_ => BadRequest)
 
   private implicit val internalErrorStatusFrom: StatusFrom[InternalError] =
     StatusFrom(_ => InternalServerError)
