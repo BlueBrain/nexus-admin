@@ -1,0 +1,18 @@
+{
+  "@graph": [
+    {
+      "@id": "_:b0",
+      "nxv:deprecated": false,
+      "name": "something",
+      "self": "https://bbp-nexus.epfl.ch/dev/v0/contexts/nexus/core/distribution/v0.1.0"
+    },
+    {
+      "@id": "https://bbp-nexus.epfl.ch/dev/v0/contexts/nexus/core/distribution/v0.1.0",
+      "@type": "http://example.com/Some",
+      "nxv:deprecated": false,
+      "links": "_:b0",
+      "nxv:published": false,
+      "nxv:rev": 1
+    }
+  ]
+}

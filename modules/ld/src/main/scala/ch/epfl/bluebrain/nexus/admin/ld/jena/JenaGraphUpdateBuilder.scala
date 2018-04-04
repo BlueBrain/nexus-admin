@@ -9,7 +9,8 @@ import ch.epfl.bluebrain.nexus.admin.ld.{IdRef, IdType, JsonLD}
 import ch.epfl.bluebrain.nexus.admin.refined.ld.Id
 import io.circe.parser.parse
 import org.apache.jena.datatypes.xsd.XSDDatatype
-import org.apache.jena.graph.{Graph, NodeFactory, Triple => JenaTriple}
+import org.apache.jena.graph.{NodeFactory, Triple => JenaTriple}
+import org.apache.jena.rdf.model.{Model, ModelFactory}
 import org.apache.jena.riot.{RDFDataMgr, RDFFormat}
 import shapeless.Poly1
 import shapeless.ops.coproduct.Inject
@@ -29,7 +30,7 @@ private[ld] final case class JenaGraphUpdateBuilder(private val triples: Set[Tri
     extends GraphUpdateBuilder {
 
   private lazy val id: IdType   = idF()
-  private lazy val graph: Graph = rootJsonLD.graph
+  private lazy val model: Model = rootJsonLD.model
 
   override def add[A](p: Id, o: A)(implicit inject: Inject[IdOrLiteral, A]): GraphUpdateBuilder = {
     val triple = Triple(id, p, inject(o))
@@ -47,33 +48,37 @@ private[ld] final case class JenaGraphUpdateBuilder(private val triples: Set[Tri
     implicit def caseDouble  = at[Double](b => NodeFactory.createLiteral(b.toString, XSDDatatype.XSDdouble))
   }
   override def apply(): Option[JsonLD] = {
+    val newModel = model.copy()
     val applied = triples.foldLeft(false) {
       case (result, Triple(s, p, o)) =>
         s.optNode match {
           case None =>
             result
           case Some(sNode) =>
-            graph.add(new JenaTriple(sNode, p.node, o.fold(toNode)))
+            newModel.getGraph.add(new JenaTriple(sNode, p.node, o.fold(toNode)))
             true
         }
     }
-    if (applied) toJsonLD
+    if (applied) toJsonLD(newModel)
     else Some(rootJsonLD)
   }
 
-  private def toJsonLD: Option[JsonLD] = {
+  private def toJsonLD(model: Model): Option[JsonLD] = {
     val str = new StringWriter()
     Try {
-      RDFDataMgr.write(str, rootJsonLD.model, RDFFormat.JSONLD_COMPACT_FLAT)
+      RDFDataMgr.write(str, model, RDFFormat.JSONLD_COMPACT_FLAT)
       parse(str.toString).toTry
     } match {
       case Success(Success(json)) =>
-        val value = JenaJsonLD(json, () => rootJsonLD.model)
-        Some(value)
+        Some(JenaJsonLD(json, () => model))
       case _ =>
         Try(str.close())
         None
     }
+  }
+
+  private implicit class ModelSyntax(model: Model) {
+    def copy(): Model = ModelFactory.createDefaultModel.add(model)
   }
 }
 

@@ -30,8 +30,8 @@ class RefinedDirectivesSpec
   private val ErrorContext = ContextUri(Uri("http://nexus.example.com/contexts/nexus/core/error/v0.1.0"))
 
   private def handler(route: => server.Route) =
-    (handleExceptions(ExceptionHandling.exceptionHandler(ErrorContext)) & handleRejections(
-      RejectionHandling.rejectionHandler(ErrorContext)))(route)
+    (handleExceptions(ExceptionHandling.exceptionHandler(ErrorContext, OrderedKeys())) & handleRejections(
+      RejectionHandling.rejectionHandler(ErrorContext, OrderedKeys())))(route)
 
   override implicit val patienceConfig: PatienceConfig = PatienceConfig(3 seconds, 100 milliseconds)
 

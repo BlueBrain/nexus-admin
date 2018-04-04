@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.admin.core.CommonRejections
 import ch.epfl.bluebrain.nexus.admin.core.CommonRejections._
 import ch.epfl.bluebrain.nexus.admin.service.directives.AuthDirectives.CustomAuthRejection
 import ch.epfl.bluebrain.nexus.commons.http.ContextUri
-import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport.marshallerHttp
+import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport.{OrderedKeys, marshallerHttp}
 import ch.epfl.bluebrain.nexus.commons.types.HttpRejection
 import ch.epfl.bluebrain.nexus.commons.types.HttpRejection.{MethodNotSupported, UnauthorizedAccess, WrongOrInvalidJson}
 import io.circe.generic.extras.Configuration
@@ -26,7 +26,7 @@ object RejectionHandling {
     * in the routes evaluation process, the priority order to handle them is defined
     * by the order of appearance in this method.
     */
-  final def rejectionHandler(implicit errorContext: ContextUri): RejectionHandler =
+  final def rejectionHandler(implicit errorContext: ContextUri, orderedKeys: OrderedKeys): RejectionHandler =
     RejectionHandler
       .newBuilder()
       .handle {

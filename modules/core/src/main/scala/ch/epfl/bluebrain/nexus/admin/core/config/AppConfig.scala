@@ -6,6 +6,7 @@ import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.admin.core.config.AppConfig._
 import ch.epfl.bluebrain.nexus.admin.refined.ld.Namespace
 import ch.epfl.bluebrain.nexus.commons.http.ContextUri
+import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport.OrderedKeys
 import ch.epfl.bluebrain.nexus.commons.types.search.Pagination
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.numeric.{NonNegative, Positive}
@@ -23,8 +24,9 @@ import scala.concurrent.duration.{Duration, FiniteDuration}
   * @param persistence the persistence settings
   * @param projects    the project specific settings
   * @param prefixes    the collection of prefixes used throughout the service
-  * @param iam         IAM connection settings
-  * @param pagination  Routes pagination settings
+  * @param iam         the IAM connection settings
+  * @param pagination  the routes pagination settings
+  * @param order       the ordering of the JSON keys on the response payload
   */
 final case class AppConfig(description: DescriptionConfig,
                            instance: InstanceConfig,
@@ -35,7 +37,8 @@ final case class AppConfig(description: DescriptionConfig,
                            projects: ProjectsConfig,
                            prefixes: PrefixesConfig,
                            iam: IamConfig,
-                           pagination: PaginationConfig)
+                           pagination: PaginationConfig,
+                           order: OrderKeysConfig)
 
 object AppConfig {
 
@@ -78,6 +81,10 @@ object AppConfig {
 
   final case class IamConfig(baseUri: Uri)
 
+  final case class OrderKeysConfig(responseKeys: List[String]) {
+    val keys: OrderedKeys = OrderedKeys(responseKeys)
+  }
+
   implicit def prefixesFromImplicit(implicit appConfig: AppConfig): PrefixesConfig = appConfig.prefixes
 
   implicit def httpFromImplicit(implicit appConfig: AppConfig): HttpConfig = appConfig.http
@@ -85,5 +92,7 @@ object AppConfig {
   implicit def projectsConfigFromImplicit(implicit appConfig: AppConfig): ProjectsConfig = appConfig.projects
 
   implicit def coreContextUri(implicit appConfig: AppConfig): ContextUri = appConfig.prefixes.coreContext
+
+  implicit def orderedKeysFromImplicit(implicit appConfig: AppConfig): OrderedKeys = appConfig.order.keys
 
 }

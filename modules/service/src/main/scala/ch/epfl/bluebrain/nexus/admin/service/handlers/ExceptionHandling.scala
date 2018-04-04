@@ -7,8 +7,8 @@ import ch.epfl.bluebrain.nexus.admin.core.CommonRejections
 import ch.epfl.bluebrain.nexus.admin.core.Fault.{CommandRejected, Unexpected}
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceRejection
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceRejection._
-import ch.epfl.bluebrain.nexus.admin.service.handlers.ExceptionHandling.InternalError
 import ch.epfl.bluebrain.nexus.commons.http.ContextUri
+import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport.OrderedKeys
 import ch.epfl.bluebrain.nexus.service.http.directives.ErrorDirectives._
 import ch.epfl.bluebrain.nexus.service.http.directives.StatusFrom
 import io.circe.Encoder
@@ -24,22 +24,28 @@ import journal.Logger
   * all rejections and unexpected failures are gracefully handled
   * and presented to the caller.
   */
-class ExceptionHandling(implicit errorContext: ContextUri) {
+object ExceptionHandling {
 
-  private val logger = Logger[this.type]
-
+  private val logger                         = Logger[this.type]
   private implicit val config: Configuration = Configuration.default.withDiscriminator("code")
 
-  private final def exceptionHandler: ExceptionHandler = ExceptionHandler {
-    case CommandRejected(r: ResourceRejection) => complete(r)
-    case CommandRejected(r: CommonRejections)  => complete(r)
+  /**
+    * @param errorContext     the context URI to be injected in the JSON-LD error responses
+    * @param errorOrderedKeys the implicitly available JSON keys ordering on response payload
+    * @return an ExceptionHandler for [[ch.epfl.bluebrain.nexus.admin.core.Fault]] subtypes that ensures a descriptive
+    *         message is returned to the caller
+    */
+  final def exceptionHandler(implicit errorContext: ContextUri, errorOrderedKeys: OrderedKeys): ExceptionHandler =
+    ExceptionHandler {
+      case CommandRejected(r: ResourceRejection) => complete(r)
+      case CommandRejected(r: CommonRejections)  => complete(r)
 
-    // $COVERAGE-OFF$
-    case Unexpected(reason) =>
-      logger.warn(s"An unexpected rejection has happened '$reason'")
-      complete(InternalError())
-    // $COVERAGE-ON$
-  }
+      // $COVERAGE-OFF$
+      case Unexpected(reason) =>
+        logger.warn(s"An unexpected rejection has happened '$reason'")
+        complete(InternalError())
+      // $COVERAGE-ON$
+    }
 
   private implicit val wrappedRejectionEnc: Encoder[ResourceRejection] = {
     val enc = deriveEncoder[ResourceRejection]
@@ -70,20 +76,6 @@ class ExceptionHandling(implicit errorContext: ContextUri) {
 
   private implicit val internalErrorStatusFrom: StatusFrom[InternalError] =
     StatusFrom(_ => InternalServerError)
-
-}
-
-object ExceptionHandling {
-
-  /**
-    * @param errorContext the context URI to be injected in the JSON-LD error responses
-    * @return an ExceptionHandler for [[ch.epfl.bluebrain.nexus.admin.core.Fault]] subtypes that ensures a descriptive
-    *         message is returned to the caller
-    */
-  final def exceptionHandler(errorContext: ContextUri): ExceptionHandler = {
-    val handler = new ExceptionHandling()(errorContext)
-    handler.exceptionHandler
-  }
 
   /**
     * An internal error representation that can safely be returned in its json form to the caller.
