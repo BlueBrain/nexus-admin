@@ -45,8 +45,8 @@ class QueryDirectivesSpec
 
   private def route(
       expectedResp: Response = Response(pageConfig.pagination, QueryPayload(`@context` = defaultContext))) =
-    (handleExceptions(ExceptionHandling.exceptionHandler(errorContext)) & handleRejections(
-      RejectionHandling.rejectionHandler(errorContext))) {
+    (handleExceptions(ExceptionHandling.exceptionHandler(errorContext, OrderedKeys())) & handleRejections(
+      RejectionHandling.rejectionHandler(errorContext, OrderedKeys()))) {
       (get & paramsToQuery) { (pagination, query) =>
         Response(pagination, query) shouldEqual expectedResp
         complete(success)

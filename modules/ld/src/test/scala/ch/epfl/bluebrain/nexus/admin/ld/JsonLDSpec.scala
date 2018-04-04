@@ -16,9 +16,7 @@ class JsonLDSpec extends WordSpecLike with Matchers with Resources with OptionVa
     val typedJsonLD  = JsonLD(jsonContentOf("/id_and_types.json"))
     val typed2JsonLD = JsonLD(jsonContentOf("/id_and_type.json"))
     val jsonLDSimple = JsonLD(jsonContentOf("/id_simple.json"))
-
-    val schemaOrg = new IdRefBuilder("schema", "http://schema.org/")
-    val gr        = new IdRefBuilder("gr", "http://purl.org/goodrelations/v1#")
+    val schemaOrg    = new IdRefBuilder("schema", "http://schema.org/")
 
     "find a string from a given a predicate" in {
       jsonLD.value[String](schemaOrg.build("name")).value shouldEqual "empire"
@@ -164,6 +162,18 @@ class JsonLDSpec extends WordSpecLike with Matchers with Resources with OptionVa
       jsonLDSimple.add(rdf.tpe, nxv.Project).apply().value.json.removeKeys("@context") shouldEqual expected
     }
 
+    "add same triples twice the jsonLD" in {
+      val expected = jsonLDSimple.json.removeKeys("@context") deepMerge Json.obj(
+        "@type" -> Json.fromString("nxv:Project"))
+      jsonLDSimple
+        .add(rdf.tpe, nxv.Project)
+        .add(rdf.tpe, nxv.Project)
+        .apply()
+        .value
+        .json
+        .removeKeys("@context") shouldEqual expected
+    }
+
     "add several triples to the jsonLD" in {
       val expected = jsonLDSimple.json.removeKeys("@context") deepMerge Json.obj(
         "@type"   -> Json.fromString("nxv:Project"),
@@ -171,37 +181,50 @@ class JsonLDSpec extends WordSpecLike with Matchers with Resources with OptionVa
       val json = jsonLDSimple.add(rdf.tpe, nxv.Project).add(nxv.rev, 2).apply().value.json
       json.removeKeys("@context") shouldEqual expected
 
-      val json2 = jsonLDSimple.add(rdf.tpe, nxv.Project).apply().value.add(nxv.rev, 2).apply().value.json
+      val json2 = jsonLDSimple.add(rdf.tpe, nxv.Project).apply().value.add(nxv.rev, 2L).apply().value.json
       json2.removeKeys("@context") shouldEqual expected
+
+      val json3 = jsonLDSimple.add(nxv.rev, 2.0).apply().value.json
+      json3.removeKeys("@context") shouldEqual (jsonLDSimple.json.removeKeys("@context") deepMerge Json.obj(
+        "nxv:rev" -> Json.fromDoubleOrNull(2.0)))
+
     }
 
     "add triple to an empty cursor returns the original json" in {
-      val updateBuilder = typedJsonLD.downFirst(gr.build("non-exists")).add(nxv.deprecated, false)
+      val updateBuilder = typedJsonLD.downFirst(nxv.build("non-exists")).add(nxv.deprecated, false)
+      updateBuilder shouldEqual EmptyEffectBuilder(typedJsonLD)
+      updateBuilder.apply().value.json shouldEqual typedJsonLD.json
+    }
+
+    "add nothing " in {
+      val updateBuilder = typedJsonLD.downFirst(nxv.build("non-exists")).add(nxv.deprecated, false)
       updateBuilder shouldEqual EmptyEffectBuilder(typedJsonLD)
       updateBuilder.apply().value.json shouldEqual typedJsonLD.json
     }
 
     "add several triples to the jsonLD cursor" in {
-      val expected = jsonContentOf("/id_and_types_updated.json")
+      val expected = jsonContentOf("/id_and_type_updated.json")
 
-      typedJsonLD
-        .downFirst(gr.build("includes"))
+      typed2JsonLD
+        .downFirst(nxv.build("links"))
         .add(nxv.deprecated, false)
         .add(nxv.name, "something")
         .apply()
         .value
-        .json shouldEqual expected
+        .json
+        .removeKeys("@context") shouldEqual expected
 
-      typedJsonLD
-        .downFirst(gr.build("includes"))
+      typed2JsonLD
+        .downFirst(nxv.build("links"))
         .add(nxv.deprecated, false)
         .apply()
         .value
-        .downFirst(gr.build("includes"))
+        .downFirst(nxv.build("links"))
         .add(nxv.name, "something")
         .apply()
         .value
-        .json shouldEqual expected
+        .json
+        .removeKeys("@context") shouldEqual expected
 
     }
   }

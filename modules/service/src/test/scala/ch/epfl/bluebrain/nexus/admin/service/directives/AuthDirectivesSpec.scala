@@ -53,7 +53,7 @@ class AuthDirectivesSpec
   private val ErrorContext                   = ContextUri(Uri("http://nexus.example.com/contexts/nexus/core/error/v0.1.0"))
 
   private def route()(implicit cred: Option[OAuth2BearerToken]) = {
-    handleRejections(RejectionHandling.rejectionHandler(ErrorContext)) {
+    handleRejections(RejectionHandling.rejectionHandler(ErrorContext, OrderedKeys())) {
       (get & authCaller) { caller =>
         complete(caller.asJson)
       }
@@ -63,8 +63,8 @@ class AuthDirectivesSpec
   private implicit val cl: IamClient[Future] = mock[IamClient[Future]]
 
   private def handler(route: => server.Route) =
-    (handleExceptions(ExceptionHandling.exceptionHandler(ErrorContext)) & handleRejections(
-      RejectionHandling.rejectionHandler(ErrorContext)))(route)
+    (handleExceptions(ExceptionHandling.exceptionHandler(ErrorContext, OrderedKeys())) & handleRejections(
+      RejectionHandling.rejectionHandler(ErrorContext, OrderedKeys())))(route)
 
   before {
     Mockito.reset(cl)

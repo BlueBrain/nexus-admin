@@ -42,7 +42,8 @@ class Settings(config: Config) extends Extension {
     loadConfigOrThrow[ProjectsConfig](config, "app.projects"),
     loadConfigOrThrow[PrefixesConfig](config, "app.prefixes"),
     loadConfigOrThrow[IamConfig](config, "app.iam"),
-    loadConfigOrThrow[PaginationConfig](config, "app.pagination")
+    loadConfigOrThrow[PaginationConfig](config, "app.pagination"),
+    loadConfigOrThrow[OrderKeysConfig](config, "app.order")
   )
 
 }

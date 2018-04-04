@@ -4,6 +4,7 @@ import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import ch.epfl.bluebrain.nexus.admin.core.config.AppConfig._
 import ch.epfl.bluebrain.nexus.commons.http.ContextUri
+import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport.OrderedKeys
 import com.typesafe.config.ConfigFactory
 import eu.timepit.refined.auto._
 import org.scalatest.{Matchers, WordSpecLike}
@@ -50,6 +51,13 @@ class AppConfigSpec extends WordSpecLike with Matchers with ScalatestRouteTest {
       appConfig.prefixes shouldEqual prefixes
       implicitly[PrefixesConfig] shouldEqual prefixes
       implicitly[ContextUri] shouldEqual ContextUri("http://127.0.0.1:8080/v1/contexts/nexus/core/resource/v0.3.0")
+
+      val orderConfig =
+        OrderKeysConfig(List("@context", "@id", "@type", "", "nxv:rev", "nxv:deprecated", "rev", "deprecated", "links"))
+      appConfig.order shouldEqual orderConfig
+      appConfig.order.keys shouldEqual OrderedKeys(orderConfig.responseKeys)
+      implicitly[OrderedKeys] shouldEqual OrderedKeys(orderConfig.responseKeys)
+
     }
   }
 }
