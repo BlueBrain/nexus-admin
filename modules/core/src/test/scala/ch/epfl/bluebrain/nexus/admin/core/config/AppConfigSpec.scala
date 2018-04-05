@@ -25,6 +25,7 @@ class AppConfigSpec extends WordSpecLike with Matchers with ScalatestRouteTest {
 
       appConfig.http shouldEqual HttpConfig("127.0.0.1", 8080, "v1", Uri("http://127.0.0.1:8080"))
       implicitly[HttpConfig] shouldEqual HttpConfig("127.0.0.1", 8080, "v1", Uri("http://127.0.0.1:8080"))
+      appConfig.http.apiUri shouldEqual Uri("http://127.0.0.1:8080/v1")
 
       appConfig.runtime shouldEqual RuntimeConfig(30 seconds)
 

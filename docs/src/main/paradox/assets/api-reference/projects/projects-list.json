@@ -1,0 +1,22 @@
+{
+  "@context": "https://nexus.example.com/v1/contexts/resource",
+  "total": 22,
+  "results": [
+    {
+      "@context": "https://nexus.example.com/v1/contexts/search",
+      "source": {
+        "@id": "https://nexus.example.com/v1/projects/myproject"
+      }
+    },
+    {
+      "source": {
+        "@id": "https://nexus.example.com/v1/projects/anotherproject"
+      }
+    }
+  ],
+  "links": {
+    "@context": "https://nexus.example.com/v1/contexts/links",
+    "self": "https://nexus.example.com/v1/data?from=20&size=20",
+    "previous": "https://nexus.example.com/v1/data?from=0&size=20"
+  }
+}
