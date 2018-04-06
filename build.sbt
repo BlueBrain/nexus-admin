@@ -27,22 +27,22 @@ scalafmt: {
 // Dependency versions
 val akkaVersion                     = "2.5.11"
 val akkaHttpVersion                 = "10.0.13"
-val akkaHttpCorsVersion             = "0.2.2"
+val akkaHttpCorsVersion             = "0.3.0"
 val akkaPersistenceInMemVersion     = "2.5.1.1"
 val akkaPersistenceCassandraVersion = "0.83"
 val catsVersion                     = "1.1.0"
-val circeVersion                    = "0.9.2"
+val circeVersion                    = "0.9.3"
 val jenaVersion                     = "3.6.0"
-val mockitoVersion                  = "2.16.0"
+val mockitoVersion                  = "2.17.0"
 val pureconfigVersion               = "0.9.1"
 val refinedVersion                  = "0.8.7"
 val scalaTestVersion                = "3.0.5"
 val shapelessVersion                = "2.3.3"
-val sourcingVersion                 = "0.10.3"
+val sourcingVersion                 = "0.10.4"
 
 // Nexus dependency versions
 val serviceVersion = "0.10.8"
-val commonsVersion = "0.10.8"
+val commonsVersion = "0.10.9"
 
 // Dependency modules
 lazy val akkaDistributed          = "com.typesafe.akka"       %% "akka-distributed-data"      % akkaVersion
@@ -81,6 +81,24 @@ lazy val sourcingMem       = "ch.epfl.bluebrain.nexus" %% "sourcing-mem"        
 lazy val akkaHttpCors      = "ch.megard"               %% "akka-http-cors"        % akkaHttpCorsVersion
 
 // Projects
+
+lazy val docs = project
+  .in(file("docs"))
+  .enablePlugins(ParadoxPlugin)
+  .settings(common)
+  .settings(
+    name                         := "admin-docs",
+    moduleName                   := "admin-docs",
+    paradoxTheme                 := Some(builtinParadoxTheme("generic")),
+    paradoxProperties in Compile ++= Map("extref.service.base_url" -> "../"),
+    target in (Compile, paradox) := (resourceManaged in Compile).value / "docs",
+    resourceGenerators in Compile += {
+      (paradox in Compile).map { parent =>
+        (parent ** "*").get
+      }.taskValue
+    }
+  )
+
 lazy val refinements = project
   .in(file("modules/refined"))
   .settings(
@@ -176,7 +194,7 @@ lazy val core = project
 lazy val service = project
   .in(file("modules/service"))
   .enablePlugins(BuildInfoPlugin, ServicePackagingPlugin)
-  .dependsOn(core % testAndCompile)
+  .dependsOn(core % testAndCompile, docs)
   .settings(
     common,
     buildInfoSettings,
@@ -205,7 +223,7 @@ lazy val root = project
     moduleName            := "admin",
     coverageFailOnMinimum := false
   )
-  .aggregate(refinements, ld, query, core, service, schemas)
+  .aggregate(docs, refinements, ld, query, core, service, schemas)
 
 /* ********************************************************
  ******************** Grouped Settings ********************
@@ -216,7 +234,7 @@ lazy val common = Seq(resolvers += Resolver.bintrayRepo("bogdanromanx", "maven")
 lazy val noPublish = Seq(
   publishLocal    := {},
   publish         := {},
-  publishArtifact := false,
+  publishArtifact := false
 )
 
 lazy val testAndCompile = "test->test;compile->compile"

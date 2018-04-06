@@ -7,7 +7,7 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.HttpMethods._
 import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.headers.Location
-import akka.http.scaladsl.server.Directives.handleRejections
+import akka.http.scaladsl.server.Directives.{handleRejections, _}
 import akka.http.scaladsl.server.Route
 import akka.stream.{ActorMaterializer, Materializer}
 import cats.instances.future._
@@ -16,7 +16,7 @@ import ch.epfl.bluebrain.nexus.admin.core.config.Settings
 import ch.epfl.bluebrain.nexus.admin.core.projects.Projects
 import ch.epfl.bluebrain.nexus.admin.core.projects.Projects.EvalProject
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceState.{Initial, next}
-import ch.epfl.bluebrain.nexus.admin.service.routes.ProjectRoutes
+import ch.epfl.bluebrain.nexus.admin.service.routes.{ProjectRoutes, StaticRoutes}
 import ch.epfl.bluebrain.nexus.commons.http.HttpClient
 import ch.epfl.bluebrain.nexus.commons.http.HttpClient.UntypedHttpClient
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport._
@@ -63,8 +63,6 @@ object Main {
 
     System.setProperty(DocumentLoader.DISALLOW_REMOTE_CONTEXT_LOADING, "true")
 
-    val baseUri = appConfig.http.publicUri
-    val apiUri  = baseUri.copy(path = baseUri.path / appConfig.http.prefix)
     val cluster = Cluster(as)
     cluster.registerOnMemberUp {
 
@@ -72,13 +70,14 @@ object Main {
       val agg = ShardingAggregate("project", sourcingSettings.copy(passivationTimeout = timeout))(Initial,
                                                                                                   next,
                                                                                                   EvalProject().apply)
-      val projects = Projects(agg)
-      val api      = uriPrefix(apiUri)(ProjectRoutes(projects).routes)
-
+      val projects     = Projects(agg)
+      val api          = uriPrefix(appConfig.http.apiUri)(ProjectRoutes(projects).routes)
+      val staticRoutes = StaticRoutes().routes
       val corsSettings = CorsSettings.defaultSettings
-        .copy(allowedMethods = List(GET, PUT, POST, DELETE, OPTIONS, HEAD), exposedHeaders = List(Location.name))
+        .withAllowedMethods(List(GET, PUT, POST, DELETE, OPTIONS, HEAD))
+        .withExposedHeaders(List(Location.name))
 
-      val routes: Route = handleRejections(corsRejectionHandler)(cors(corsSettings)(api))
+      val routes: Route = handleRejections(corsRejectionHandler)(cors(corsSettings)(staticRoutes ~ api))
 
       logger.info("==== Cluster is Live ====")
 

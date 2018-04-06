@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.admin.core.config.AppConfig._
 import ch.epfl.bluebrain.nexus.admin.refined.ld.Namespace
 import ch.epfl.bluebrain.nexus.commons.http.ContextUri
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport.OrderedKeys
+import ch.epfl.bluebrain.nexus.commons.iam.acls.Path
 import ch.epfl.bluebrain.nexus.commons.types.search.Pagination
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.numeric.{NonNegative, Positive}
@@ -51,7 +52,9 @@ object AppConfig {
 
   final case class InstanceConfig(interface: String)
 
-  final case class HttpConfig(interface: String, port: Int, prefix: String, publicUri: Uri)
+  final case class HttpConfig(interface: String, port: Int, prefix: String, publicUri: Uri) {
+    val apiUri = publicUri.copy(path = (publicUri.path: Path) ++ Path(prefix))
+  }
 
   final case class RuntimeConfig(defaultTimeout: FiniteDuration)
 
@@ -88,6 +91,8 @@ object AppConfig {
   implicit def prefixesFromImplicit(implicit appConfig: AppConfig): PrefixesConfig = appConfig.prefixes
 
   implicit def httpFromImplicit(implicit appConfig: AppConfig): HttpConfig = appConfig.http
+
+  implicit def descriptionFromImplicit(implicit appConfig: AppConfig): DescriptionConfig = appConfig.description
 
   implicit def projectsConfigFromImplicit(implicit appConfig: AppConfig): ProjectsConfig = appConfig.projects
 
