@@ -6,9 +6,9 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import ch.epfl.bluebrain.nexus.admin.core.config.AppConfig.DescriptionConfig
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport._
 import io.circe.Json
-import org.scalatest.{Matchers, WordSpecLike}
+import org.scalatest.{Matchers, OptionValues, WordSpecLike}
 
-class StaticRoutesSpec extends WordSpecLike with Matchers with ScalatestRouteTest {
+class StaticRoutesSpec extends WordSpecLike with Matchers with ScalatestRouteTest with OptionValues {
 
   private implicit val descConfig = DescriptionConfig("admin")
   private val routes              = StaticRoutes().routes
@@ -26,14 +26,14 @@ class StaticRoutesSpec extends WordSpecLike with Matchers with ScalatestRouteTes
     "redirect docs/admin to docs/admin/" in {
       Get("/docs/admin") ~> routes ~> check {
         status shouldEqual StatusCodes.MovedPermanently
-        response.header[Location].get.uri.path.toString shouldEqual "/docs/admin/"
+        response.header[Location].value.uri.path.toString shouldEqual "/docs/admin/"
       }
     }
 
     "return documentation/" in {
       Get("/docs/admin/") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
-        response.header[`Content-Type`].get.contentType shouldEqual ContentTypes.`text/html(UTF-8)`
+        response.header[`Content-Type`].value.contentType shouldEqual ContentTypes.`text/html(UTF-8)`
       }
     }
   }

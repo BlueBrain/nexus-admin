@@ -50,7 +50,7 @@ object Links {
     * @param values the key pairs of ''rel'' and ''href''
     */
   final def apply(values: (String, Uri)*): Links =
-    Links(values.groupBy(_._1).map {
+    Links(values.groupBy { case (key, _) => key }.map {
       case (rel, hrefs) => rel -> hrefs.toList.map(_._2)
     })
 
