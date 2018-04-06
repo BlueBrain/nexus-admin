@@ -51,7 +51,7 @@ object Links {
     */
   final def apply(values: (String, Uri)*): Links =
     Links(values.groupBy { case (key, _) => key }.map {
-      case (rel, hrefs) => rel -> hrefs.toList.map(_._2)
+      case (rel, hrefs) => rel -> hrefs.toList.map { case (_, value) => value }
     })
 
   implicit val linksEncoder: Encoder[Links] =
