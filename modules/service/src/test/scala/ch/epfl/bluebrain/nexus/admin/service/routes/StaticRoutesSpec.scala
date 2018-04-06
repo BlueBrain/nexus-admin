@@ -1,11 +1,9 @@
 package ch.epfl.bluebrain.nexus.admin.service.routes
 
-import java.util.regex.Pattern.quote
 import akka.http.scaladsl.model.headers.{Location, `Content-Type`}
 import akka.http.scaladsl.model.{ContentTypes, StatusCodes, Uri}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import ch.epfl.bluebrain.nexus.admin.core.config.AppConfig.{DescriptionConfig, HttpConfig}
-import ch.epfl.bluebrain.nexus.admin.ld.Const.jsonContentOf
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport._
 import io.circe.Json
 import org.scalatest.{Matchers, WordSpecLike}
@@ -23,15 +21,6 @@ class StaticRoutesSpec extends WordSpecLike with Matchers with ScalatestRouteTes
         status shouldEqual StatusCodes.OK
         responseAs[Json] shouldEqual Json.obj("name"    -> Json.fromString(descConfig.name),
                                               "version" -> Json.fromString(descConfig.version))
-      }
-    }
-
-    "return the discovery resources for projects on well-known endpoint" in {
-      Get(s"/${httpConfig.prefix}/projects/.well-known/resources") ~> routes ~> check {
-        status shouldEqual StatusCodes.OK
-        responseAs[Json] shouldEqual jsonContentOf("/well-known-projects.json",
-                                                   Map(quote("{name}")    -> descConfig.name,
-                                                       quote("{version}") -> descConfig.version))
       }
     }
 

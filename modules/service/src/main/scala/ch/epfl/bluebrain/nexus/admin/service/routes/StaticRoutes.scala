@@ -1,11 +1,10 @@
 package ch.epfl.bluebrain.nexus.admin.service.routes
 
-import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.admin.core.config.AppConfig.{DescriptionConfig, HttpConfig}
-import ch.epfl.bluebrain.nexus.admin.service.types.{Boxed, Links, ServiceDescription}
+import ch.epfl.bluebrain.nexus.admin.service.types.ServiceDescription
 import ch.epfl.bluebrain.nexus.commons.iam.acls.Path
 import ch.epfl.bluebrain.nexus.commons.iam.acls.Path._
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport._
@@ -23,13 +22,6 @@ import kamon.akka.http.KamonTraceDirectives.operationName
   */
 class StaticRoutes(serviceDescription: ServiceDescription, uri: Uri, prefix: String) {
 
-  private val create    = "create project"
-  private val getLatest = "get latest project"
-  private val list      = "list projects"
-  private val getRev    = "get project at specific revision"
-  private val update    = "update project"
-  private val deprecate = "deprecate project"
-
   private implicit val printer = Printer.noSpaces.copy(dropNullValues = true)
 
   private def serviceDescriptionRoute: Route =
@@ -37,36 +29,7 @@ class StaticRoutes(serviceDescription: ServiceDescription, uri: Uri, prefix: Str
       operationName("serviceDescription") {
         complete(serviceDescription)
       }
-    } ~
-      (pathPrefix(prefix) & pathPrefix("projects")) {
-        (pathPrefix(".well-known") & pathPrefix("resources") & get & pathEndOrSingleSlash) {
-          operationName("projects discovery") {
-            complete(
-              Boxed(
-                serviceDescription,
-                Links(
-                  create    -> uri.append("projects" / "_id_"),
-                  update    -> uri.append("projects" / "_id_").withQuery(Query("rev" -> "_currentRev_")),
-                  deprecate -> uri.append("projects" / "_id_").withQuery(Query("rev" -> "_currentRev_")),
-                  getLatest -> uri.append("projects" / "_id_"),
-                  getRev    -> uri.append("projects" / "_id_").withQuery(Query("rev" -> "_rev_")),
-                  list -> uri
-                    .append(Path("projects"))
-                    .withQuery(Query(
-                      "q"          -> "_query_",
-                      "context"    -> "_context_",
-                      "filter"     -> "_filter_",
-                      "fields"     -> "_fields_",
-                      "sort"       -> "_sort_",
-                      "from"       -> "_from_",
-                      "size"       -> "_size_",
-                      "deprecated" -> "_deprecated_"
-                    ))
-                )
-              ))
-          }
-        }
-      }
+    }
 
   private def docsRoute =
     pathPrefix("docs") {

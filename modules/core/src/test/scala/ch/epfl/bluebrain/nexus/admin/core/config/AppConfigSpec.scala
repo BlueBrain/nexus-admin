@@ -20,6 +20,7 @@ class AppConfigSpec extends WordSpecLike with Matchers with ScalatestRouteTest {
       implicit val appConfig = new Settings(valid).appConfig
 
       appConfig.description shouldEqual DescriptionConfig("admin")
+      implicitly[DescriptionConfig] shouldEqual DescriptionConfig("admin")
 
       appConfig.instance shouldEqual InstanceConfig("127.0.0.1")
 

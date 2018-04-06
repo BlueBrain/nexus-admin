@@ -9,6 +9,7 @@
       }
     },
     {
+      "@context": "https://nexus.example.com/v1/contexts/search",
       "source": {
         "@id": "https://nexus.example.com/v1/projects/anotherproject"
       }
