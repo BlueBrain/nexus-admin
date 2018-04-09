@@ -42,7 +42,7 @@ class ProjectAclRoutesSpec extends WordSpecLike with Matchers with ProjectRoutes
       }
     }
 
-    "redirect to iam a GET method on /projects/{id}/acls?self=true" in {
+    "proxy the request to iam (GET method)" in {
       Get(s"/projects/${proj.value}/acls?self=true") ~> addCredentials(cred) ~> route ~> check {
         status shouldEqual StatusCodes.OK
         responseEntity.isKnownEmpty() shouldEqual true
@@ -50,7 +50,7 @@ class ProjectAclRoutesSpec extends WordSpecLike with Matchers with ProjectRoutes
       }
     }
 
-    "redirect to iam a PUT method on /projects/{id}/acls" in {
+    "proxy the request to iam (PUT method)" in {
       Put(s"/projects/${proj.value}/acls", json) ~> addCredentials(cred) ~> route ~> check {
         status shouldEqual StatusCodes.OK
         responseAs[Json] shouldEqual json

@@ -39,7 +39,10 @@ final class ProjectAclRoutes(projects: Projects[Future], proxy: Proxy)(implicit 
         trace(s"${req.method.toString().toLowerCase()}ProjectACL") {
           complete(
             proxy(
-              req.withHeaders().withUri(iamUri.append(Path("acls")).withQuery(Query(params))).withCred(credentials)))
+              req
+                .withHeaders()
+                .withUri(iamUri.append("acls" / name.value).withQuery(Query(params)))
+                .withCred(credentials)))
         }
       }
     }
