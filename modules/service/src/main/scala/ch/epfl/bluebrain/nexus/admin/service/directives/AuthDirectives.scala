@@ -94,7 +94,7 @@ object AuthDirectives extends AuthDirectives {
   /**
     * Signals that the authentication was rejected with an unexpected error.
     *
-    * @param err the [[service.CommonRejections]]
+    * @param err the [[CommonRejections]]
     */
   final case class CustomAuthRejection(err: CommonRejections) extends CustomRejection
 

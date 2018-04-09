@@ -6,7 +6,10 @@ import akka.http.scaladsl.server.Directives.complete
 import akka.http.scaladsl.server._
 import ch.epfl.bluebrain.nexus.admin.core.CommonRejections
 import ch.epfl.bluebrain.nexus.admin.core.CommonRejections._
+import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceRejection
+import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceRejection.ResourceDoesNotExists
 import ch.epfl.bluebrain.nexus.admin.service.directives.AuthDirectives.CustomAuthRejection
+import ch.epfl.bluebrain.nexus.admin.service.routes.ProjectAclRoutes.ProjectNotFound
 import ch.epfl.bluebrain.nexus.commons.http.ContextUri
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport.{OrderedKeys, marshallerHttp}
 import ch.epfl.bluebrain.nexus.commons.types.HttpRejection
@@ -40,6 +43,7 @@ object RejectionHandling {
           complete(BadRequest -> (e: CommonRejections))
         case MissingQueryParamRejection(param) =>
           complete(BadRequest -> (MissingParameter(s"'$param' parameter is required"): CommonRejections))
+        case ProjectNotFound => complete(NotFound -> (ResourceDoesNotExists: ResourceRejection))
         case CustomAuthRejection(e) =>
           complete(InternalServerError -> (e: CommonRejections))
         case _: AuthorizationFailedRejection =>
