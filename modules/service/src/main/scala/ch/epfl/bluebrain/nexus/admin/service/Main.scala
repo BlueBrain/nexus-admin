@@ -16,7 +16,8 @@ import ch.epfl.bluebrain.nexus.admin.core.config.Settings
 import ch.epfl.bluebrain.nexus.admin.core.projects.Projects
 import ch.epfl.bluebrain.nexus.admin.core.projects.Projects.EvalProject
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceState.{Initial, next}
-import ch.epfl.bluebrain.nexus.admin.service.routes.{ProjectRoutes, StaticRoutes}
+import ch.epfl.bluebrain.nexus.admin.service.routes.Proxy.AkkaStream
+import ch.epfl.bluebrain.nexus.admin.service.routes.{ProjectAclRoutes, ProjectRoutes, StaticRoutes}
 import ch.epfl.bluebrain.nexus.commons.http.HttpClient
 import ch.epfl.bluebrain.nexus.commons.http.HttpClient.UntypedHttpClient
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport._
@@ -70,8 +71,9 @@ object Main {
       val agg = ShardingAggregate("project", sourcingSettings.copy(passivationTimeout = timeout))(Initial,
                                                                                                   next,
                                                                                                   EvalProject().apply)
-      val projects     = Projects(agg)
-      val api          = uriPrefix(appConfig.http.apiUri)(ProjectRoutes(projects).routes)
+      val projects = Projects(agg)
+      val api =
+        uriPrefix(appConfig.http.apiUri)(ProjectRoutes(projects).routes ~ ProjectAclRoutes(projects, AkkaStream).routes)
       val staticRoutes = StaticRoutes().routes
       val corsSettings = CorsSettings.defaultSettings
         .withAllowedMethods(List(GET, PUT, POST, DELETE, OPTIONS, HEAD))

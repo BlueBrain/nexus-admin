@@ -30,7 +30,7 @@ import scala.concurrent.Future
 final class ProjectRoutes(projects: Projects[Future])(implicit iamClient: IamClient[Future],
                                                       config: AppConfig,
                                                       tracing: TracingDirectives)
-    extends BaseRoute {
+    extends BaseRouteSplit {
 
   import tracing._
   protected def readRoutes(implicit credentials: Option[OAuth2BearerToken]): Route =
