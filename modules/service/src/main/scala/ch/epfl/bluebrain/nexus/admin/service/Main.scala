@@ -73,7 +73,8 @@ object Main {
                                                                                                   EvalProject().apply)
       val projects = Projects(agg)
       val api =
-        uriPrefix(appConfig.http.apiUri)(ProjectRoutes(projects).routes ~ ProjectAclRoutes(projects, AkkaStream).routes)
+        uriPrefix(appConfig.http.apiUri)(
+          ProjectRoutes(projects).routes ~ ProjectAclRoutes(projects, AkkaStream()).routes)
       val staticRoutes = StaticRoutes().routes
       val corsSettings = CorsSettings.defaultSettings
         .withAllowedMethods(List(GET, PUT, POST, DELETE, OPTIONS, HEAD))

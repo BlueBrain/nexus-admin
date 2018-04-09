@@ -3,9 +3,9 @@ package ch.epfl.bluebrain.nexus.admin.service.routes
 import akka.http.javadsl.server.CustomRejection
 import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
-import akka.http.scaladsl.model.{Uri, HttpRequest => Req}
+import akka.http.scaladsl.model.{HttpRequest, Uri}
 import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.{Directive0, RequestContext, Route, RouteResult}
+import akka.http.scaladsl.server.{Directive0, Route}
 import ch.epfl.bluebrain.nexus.admin.core.config.AppConfig
 import ch.epfl.bluebrain.nexus.admin.core.config.AppConfig._
 import ch.epfl.bluebrain.nexus.admin.core.projects.Projects
@@ -35,13 +35,12 @@ final class ProjectAclRoutes(projects: Projects[Future], proxy: Proxy)(implicit 
 
   protected def combined(implicit credentials: Option[OAuth2BearerToken]): Route =
     (segment(of[ProjectReference]) & pathPrefix("acls") & pathEndOrSingleSlash) { name =>
-      (exists(name) & parameterMap & extractRequestContext & extractActorSystem) { (params, ctx, as) =>
-        implicit val system = as
-        implicit val ec     = system.dispatcher
-        val req = Req(ctx.request.method,
-                      iamUri.append(Path("acls")).withQuery(Query(params)),
-                      entity = ctx.request.entity).withCred(credentials)
-        proxy(req).flatMap(ctx.complete(_))
+      (exists(name) & parameterMap & extractRequest) { (params, req) =>
+        trace(s"${req.method.toString().toLowerCase()}ProjectACL") {
+          complete(
+            proxy(
+              req.withHeaders().withUri(iamUri.append(Path("acls")).withQuery(Query(params))).withCred(credentials)))
+        }
       }
     }
 
@@ -53,20 +52,17 @@ final class ProjectAclRoutes(projects: Projects[Future], proxy: Proxy)(implicit 
   }
 
   private def exists(name: ProjectReference)(implicit credentials: Option[OAuth2BearerToken]): Directive0 =
-    (trace("fetchProject") & authorizeOn[HasReadProjects](name.value)) flatMap { implicit perms =>
+    authorizeOn[HasReadProjects](name.value) flatMap { implicit perms =>
       onSuccess(projects.fetch(name)) flatMap {
         case Some(_) => pass
         case _       => reject(ProjectNotFound)
       }
     }
 
-  private implicit class RequestSyntax(request: Req) {
-    def withCred(implicit credentials: Option[OAuth2BearerToken]): Req =
+  private implicit class RequestSyntax(request: HttpRequest) {
+    def withCred(implicit credentials: Option[OAuth2BearerToken]): HttpRequest =
       credentials.map(request.addCredentials).getOrElse(request)
   }
-
-  private implicit def routeResult2Route(f: Future[RouteResult]): Route =
-    (_: RequestContext) => f
 
 }
 

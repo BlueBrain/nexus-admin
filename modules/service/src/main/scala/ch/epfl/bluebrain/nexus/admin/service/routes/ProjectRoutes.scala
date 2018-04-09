@@ -30,10 +30,10 @@ import scala.concurrent.Future
 final class ProjectRoutes(projects: Projects[Future])(implicit iamClient: IamClient[Future],
                                                       config: AppConfig,
                                                       tracing: TracingDirectives)
-    extends BaseRouteSplit {
+    extends BaseRoute {
 
   import tracing._
-  protected def readRoutes(implicit credentials: Option[OAuth2BearerToken]): Route =
+  private def readRoutes(implicit credentials: Option[OAuth2BearerToken]): Route =
     (segment(of[ProjectReference]) & pathEndOrSingleSlash) { name =>
       (get & authorizeOn[HasReadProjects](name.value)) { implicit perms =>
         parameter('rev.as[Long].?) {
@@ -55,7 +55,7 @@ final class ProjectRoutes(projects: Projects[Future])(implicit iamClient: IamCli
       }
     }
 
-  protected def writeRoutes(implicit credentials: Option[OAuth2BearerToken]): Route =
+  private def writeRoutes(implicit credentials: Option[OAuth2BearerToken]): Route =
     (segment(of[ProjectReference]) & pathEndOrSingleSlash) { name =>
       (put & entity(as[Json])) { json =>
         authCaller.apply { implicit caller =>
@@ -87,6 +87,8 @@ final class ProjectRoutes(projects: Projects[Future])(implicit iamClient: IamCli
           }
         }
     }
+
+  override def combined(implicit cred: Option[OAuth2BearerToken]): Route = readRoutes(cred) ~ writeRoutes(cred)
 
   def routes: Route = combinedRoutesFor("projects")
 

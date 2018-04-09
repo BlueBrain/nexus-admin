@@ -1,8 +1,7 @@
 package ch.epfl.bluebrain.nexus.admin.service.routes
 
-import akka.actor.ActorSystem
-import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
+import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import cats.instances.future._
@@ -17,7 +16,6 @@ import ch.epfl.bluebrain.nexus.commons.iam.identity.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.commons.shacl.validator.{ImportResolver, ShaclValidator}
 import ch.epfl.bluebrain.nexus.sourcing.mem.MemoryAggregate
 import ch.epfl.bluebrain.nexus.sourcing.mem.MemoryAggregate._
-import com.github.ghik.silencer.silent
 import com.typesafe.config.ConfigFactory
 import org.mockito.Mockito.when
 import org.scalatest.WordSpecLike
@@ -31,11 +29,8 @@ trait ProjectRoutesTestHelper extends WordSpecLike with ScalatestRouteTest with 
 
   override implicit val patienceConfig: PatienceConfig = PatienceConfig(6 seconds, 300 milliseconds)
 
-  private def proxy: Proxy = new Proxy {
-    @silent
-    override def apply(req: HttpRequest)(implicit as: ActorSystem): Future[HttpResponse] =
-      Future.successful(HttpResponse(headers = req.headers, entity = req.entity))
-  }
+  private def proxy: Proxy =
+    (req: HttpRequest) => Future.successful(HttpResponse(headers = req.headers, entity = req.entity))
 
   private[routes] val valid                         = ConfigFactory.parseResources("test-app.conf").resolve()
   private[routes] implicit val appConfig: AppConfig = new Settings(valid).appConfig
