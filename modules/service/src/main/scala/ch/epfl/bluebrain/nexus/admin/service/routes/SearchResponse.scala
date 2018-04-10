@@ -4,6 +4,7 @@ import akka.http.scaladsl.model.{StatusCodes, Uri}
 import akka.http.scaladsl.server.Directives.{complete, extract, onSuccess}
 import akka.http.scaladsl.server.Route
 import cats.syntax.functor._
+import ch.epfl.bluebrain.nexus.admin.core.config.AppConfig
 import ch.epfl.bluebrain.nexus.admin.query.Field
 import ch.epfl.bluebrain.nexus.admin.service.types.Links
 import ch.epfl.bluebrain.nexus.admin.service.query.LinksQueryResults
@@ -26,9 +27,9 @@ trait SearchResponse {
                                                                          R: Encoder[UnscoredQueryResult[Id]],
                                                                          S: Encoder[ScoredQueryResult[Id]],
                                                                          L: Encoder[Links],
-                                                                         orderedKeys: OrderedKeys): Route = {
-      implicit val context: ContextUri = ContextUri(
-        "https://bbp-nexus.epfl.ch/staging/v0/contexts/nexus/core/search/v0.1.0")
+                                                                         orderedKeys: OrderedKeys,
+                                                                         config: AppConfig): Route = {
+      implicit val context: ContextUri = config.prefixes.searchContext
 
       extract(_.request.uri) { uri =>
         onSuccess(qr) { result =>
@@ -43,7 +44,7 @@ trait SearchResponse {
       * Decides if either a generic type ''Id'' or ''Entity'' should be used.
       *
       * @param fields     the fields query parameters
-      * @param base       the service public uri + prefix
+      * @param base       the service public uri + prefixch.epfl.bluebrain.nexus.admin.service.encoders.RoutesEncoderSpec
       * @param pagination the pagination values
       */
     @SuppressWarnings(Array("MaxParameters"))
@@ -56,7 +57,8 @@ trait SearchResponse {
         Re: Encoder[UnscoredQueryResult[Entity]],
         Se: Encoder[ScoredQueryResult[Entity]],
         L: Encoder[Links],
-        orderedKeys: OrderedKeys): Route = {
+        orderedKeys: OrderedKeys,
+        config: AppConfig): Route = {
       if (fields.contains(Field.All)) {
         qr.flatMap { q =>
             q.results

@@ -14,11 +14,9 @@ class RoutesEncoderSpec extends WordSpecLike with Matchers with Randomness {
 
   case class TestEntity(id: Id, name: String)
 
-  val coreContext = ContextUri("http://localhost/core-context")
+  implicit val coreContext = ContextUri("http://localhost/core-context")
 
-  implicit val extractId: (TestEntity) => Id = _.id
-
-  val routesEncoder = new RoutesEncoder[TestEntity](coreContext)
+  val routesEncoder = new RoutesEncoder[TestEntity]()
   val id            = applyRef[Id](s"http://instance.com/${genString()}").toOption.get
   val testEntity    = TestEntity(id, genString())
   implicit val entityEncoder: Encoder[TestEntity] = Encoder.encodeJson.contramap { e =>
@@ -37,9 +35,6 @@ class RoutesEncoderSpec extends WordSpecLike with Matchers with Randomness {
         s"""{
           |  "source" : {
           |    "@id" : "${id.value}"
-          |  },
-          |  "links" : {
-          |    "self" : "${id.value}"
           |  }
           |}""".stripMargin
 
@@ -51,9 +46,6 @@ class RoutesEncoderSpec extends WordSpecLike with Matchers with Randomness {
            |  "score" : 1.0,
            |  "source" : {
            |    "@id" : "${id.value}"
-           |  },
-           |  "links" : {
-           |    "self" : "${id.value}"
            |  }
            |}""".stripMargin
 
@@ -69,9 +61,6 @@ class RoutesEncoderSpec extends WordSpecLike with Matchers with Randomness {
            |    ],
            |    "@id" : "${id.value}",
            |    "name" : "${testEntity.name}"
-           |  },
-           |  "links" : {
-           |    "self" : "${id.value}"
            |  }
            |}""".stripMargin
 
@@ -88,9 +77,6 @@ class RoutesEncoderSpec extends WordSpecLike with Matchers with Randomness {
            |    ],
            |    "@id" : "${id.value}",
            |    "name" : "${testEntity.name}"
-           |  },
-           |  "links" : {
-           |    "self" : "${id.value}"
            |  }
            |}""".stripMargin
     }

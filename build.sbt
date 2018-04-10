@@ -187,6 +187,7 @@ lazy val core = project
       akkaDistributed      % Test,
       akkaHttpTestKit      % Test,
       akkaPersistenceInMem % Test,
+      mockitoCore          % Test,
       scalaTest            % Test,
       sourcingMem          % Test,
       slf4j                % Test

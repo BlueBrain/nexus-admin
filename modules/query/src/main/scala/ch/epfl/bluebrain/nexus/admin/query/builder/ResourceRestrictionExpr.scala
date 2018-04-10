@@ -1,10 +1,10 @@
 package ch.epfl.bluebrain.nexus.admin.query.builder
 
-import ch.epfl.bluebrain.nexus.admin.ld.Const.nxv
+import ch.epfl.bluebrain.nexus.admin.ld.IdResolvable
 import ch.epfl.bluebrain.nexus.admin.query.filtering.Expr.{ComparisonExpr, LogicalExpr, NoopExpr}
 import ch.epfl.bluebrain.nexus.admin.query.filtering.Op.Or
-import ch.epfl.bluebrain.nexus.admin.query.filtering.PropPath.UriPath
-import ch.epfl.bluebrain.nexus.admin.query.filtering.Term.LiteralTerm
+import ch.epfl.bluebrain.nexus.admin.query.filtering.PropPath.SubjectPath
+import ch.epfl.bluebrain.nexus.admin.query.filtering.Term.UriTerm
 import ch.epfl.bluebrain.nexus.admin.query.filtering.{Expr, Op}
 import ch.epfl.bluebrain.nexus.admin.refined.project.ProjectReference
 import ch.epfl.bluebrain.nexus.commons.iam.acls.{FullAccessControlList, Path, Permission, Permissions}
@@ -18,12 +18,12 @@ object ResourceRestrictionExpr {
   protected type Ids = Root.type :+: ProjectReference :+: CNil
 
   private implicit def toIds(path: Path): Option[Ids] = path.segments match {
-    case _ :: project :: Nil => applyRef[ProjectReference](project).toOption.map(Coproduct[Ids](_))
-    case _ :: Nil            => Some(Coproduct[Ids](Root))
-    case _                   => None
+    case project :: Nil => applyRef[ProjectReference](project).toOption.map(Coproduct[Ids](_))
+    case Nil            => Some(Coproduct[Ids](Root))
+    case _              => None
   }
 
-  final def apply(acls: FullAccessControlList): Expr = {
+  final def apply(acls: FullAccessControlList)(implicit idResolvable: IdResolvable[ProjectReference]): Expr = {
     acls.toPathMap.collect {
       case (path, perms)
           if perms.containsAny(Permissions(Permission("projects/read"), Permission("projects/manage"))) =>
@@ -39,9 +39,9 @@ object ResourceRestrictionExpr {
   object idsToExpr extends shapeless.Poly1 {
     implicit val atRoot: Case.Aux[Root.type, Expr] = at(_ => NoopExpr)
 
-    implicit val atProject: Case.Aux[ProjectReference, Expr] = at(
-      pr => ComparisonExpr(Op.Eq, UriPath(nxv.name.value), LiteralTerm(pr.value)))
+    implicit def atProject(implicit idResolvable: IdResolvable[ProjectReference]): Case.Aux[ProjectReference, Expr] =
+      at(pr => ComparisonExpr(Op.Eq, SubjectPath, UriTerm(idResolvable(pr).value)))
   }
 
-  def mapToExpr(id: Ids): Expr = id.fold(idsToExpr)
+  def mapToExpr(id: Ids)(implicit idResolvable: IdResolvable[ProjectReference]): Expr = id.fold(idsToExpr)
 }

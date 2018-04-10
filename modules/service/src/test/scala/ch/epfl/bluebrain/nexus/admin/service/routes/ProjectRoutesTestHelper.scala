@@ -38,7 +38,6 @@ trait ProjectRoutesTestHelper extends WordSpecLike with ScalatestRouteTest with 
 
   private[routes] val valid                         = ConfigFactory.parseResources("test-app.conf").resolve()
   private[routes] implicit val appConfig: AppConfig = new Settings(valid).appConfig
-//  private[routes] implicit val ec: ExecutionContext         = system.dispatcher
 
   private[routes] val caller: AnonymousCaller = AnonymousCaller(Anonymous())
   private[routes] val cred: OAuth2BearerToken = OAuth2BearerToken("validToken")

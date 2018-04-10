@@ -9,8 +9,17 @@ import ch.epfl.bluebrain.nexus.commons.iam.acls.Meta
 import ch.epfl.bluebrain.nexus.commons.sparql.client.{PatchStrategy, SparqlClient}
 import io.circe.Json
 
+/**
+  * Indexer which takes a resource event and calls SPARQL client with relevant update
+  * @param client SPARQL client
+  */
 class ResourceSparqlIndexer[F[_]](client: SparqlClient[F]) {
 
+  /**
+    * Index resource event using SPARQL client
+    * @param event event to index
+    * @return successful future if indexing succeeded or a failed one if there was an exception
+    */
   final def index(event: ResourceEvent): F[Unit] = event match {
     case ResourceCreated(id, rev, meta, _, value) =>
       val createdAt = Json.obj(nxv.createdAtTime.value -> meta.instant.jsonLd)

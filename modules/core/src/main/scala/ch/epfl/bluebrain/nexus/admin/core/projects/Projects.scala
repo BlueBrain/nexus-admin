@@ -17,15 +17,15 @@ import ch.epfl.bluebrain.nexus.admin.core.types.NamespaceOps._
 import ch.epfl.bluebrain.nexus.admin.core.types.Ref._
 import ch.epfl.bluebrain.nexus.admin.core.types.RefVersioned
 import ch.epfl.bluebrain.nexus.admin.ld.Const._
-import ch.epfl.bluebrain.nexus.admin.ld.{IdRef, IdResolvable, JsonLD}
+import ch.epfl.bluebrain.nexus.admin.ld.{IdRef, JsonLD}
 import ch.epfl.bluebrain.nexus.admin.query.QueryPayload
 import ch.epfl.bluebrain.nexus.admin.refined.ld.Id
 import ch.epfl.bluebrain.nexus.admin.refined.permissions._
 import ch.epfl.bluebrain.nexus.admin.refined.project._
-import ch.epfl.bluebrain.nexus.commons.sparql.client.SparqlClient
-import ch.epfl.bluebrain.nexus.commons.types.search.{Pagination, QueryResults}
 import ch.epfl.bluebrain.nexus.commons.shacl.validator.ShaclValidatorErr.{CouldNotFindImports, IllegalImportDefinition}
 import ch.epfl.bluebrain.nexus.commons.shacl.validator.{ShaclSchema, ShaclValidator}
+import ch.epfl.bluebrain.nexus.commons.sparql.client.SparqlClient
+import ch.epfl.bluebrain.nexus.commons.types.search.{Pagination, QueryResults}
 import io.circe.Json
 import io.circe.syntax._
 import journal.Logger
@@ -38,7 +38,6 @@ import journal.Logger
   * @tparam F the monadic effect type
   */
 class Projects[F[_]](resources: Resources[F, ProjectReference])(implicit F: MonadError[F, Throwable],
-                                                                idRes: IdResolvable[ProjectReference],
                                                                 config: ProjectsConfig) {
 
   private val tags = Set("project")
@@ -126,8 +125,7 @@ class Projects[F[_]](resources: Resources[F, ProjectReference])(implicit F: Mona
 
   private implicit class IdRefSyntax(reference: ProjectReference) {
     lazy val toPersId: String = {
-      //val idRef: IdRef = refToResolvable.apply(reference)
-      val idRef: IdRef = idRes(reference)
+      val idRef: IdRef = refToResolvable.apply(reference)
       s"${idRef.namespace.host.hashCode.abs.toString.take(5)}-${reference.value}"
     }
   }

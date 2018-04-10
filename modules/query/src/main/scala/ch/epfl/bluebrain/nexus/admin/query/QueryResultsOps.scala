@@ -2,10 +2,10 @@ package ch.epfl.bluebrain.nexus.admin.query
 
 import cats.MonadError
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.admin.ld.Const.SelectTerms
 import ch.epfl.bluebrain.nexus.commons.types.search.QueryResult.{ScoredQueryResult, UnscoredQueryResult}
 import ch.epfl.bluebrain.nexus.commons.types.search.{QueryResult, QueryResults}
 import org.apache.jena.query.{QuerySolution, ResultSet}
-import ch.epfl.bluebrain.nexus.admin.query.builder.SearchVocab.SelectTerms
 import ch.epfl.bluebrain.nexus.admin.refined.ld.Id
 
 import scala.collection.JavaConverters._
@@ -15,9 +15,14 @@ import scala.util.Try
 
 object QueryResultsOps {
 
-  implicit def rsToQueryResults[F[_]](rsF: F[ResultSet])(implicit F: MonadError[F, Throwable]): F[QueryResults[Id]] = {
+  /**
+    * Transforms F[ResultSet] to F[QueryResults]
+    * @param rsF ResultSet to transform
+    * @return F[QueryResult] created from rsF
+    */
+  def rsToQueryResults[F[_]](rsF: F[ResultSet], scored: Boolean)(
+      implicit F: MonadError[F, Throwable]): F[QueryResults[Id]] = {
 
-    val scored = false
     def scoredQueryResult(sol: QuerySolution): (Option[QueryResult[Id]], Option[Long], Option[Float]) = {
       val queryResult = for {
         (subj, score) <- subjectScoreFrom(sol)

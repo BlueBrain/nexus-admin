@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.admin.service.routes
 
 import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model.Uri.Path
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
@@ -46,7 +47,7 @@ final class ProjectRoutes(projects: Projects[Future])(implicit iamClient: IamCli
     idResolvable(p.id.value)
   }
 
-  private implicit val encoders: RoutesEncoder[Project] = new RoutesEncoder[Project](config.prefixes.coreContext)
+  private implicit val encoders: RoutesEncoder[Project] = new RoutesEncoder[Project]()
   import encoders._
   private def readRoutes(implicit credentials: Option[OAuth2BearerToken]): Route =
     (segment(of[ProjectReference]) & pathEndOrSingleSlash) { name =>
@@ -111,7 +112,7 @@ final class ProjectRoutes(projects: Projects[Future])(implicit iamClient: IamCli
   private def searchRoutes(implicit credentials: Option[OAuth2BearerToken]): Route =
     (get & paramsToQuery) { (pagination, query) =>
       trace("searchProjects") {
-        (pathEndOrSingleSlash & authorizeOn[HasReadProjects]("*/*")) { implicit acls =>
+        (pathEndOrSingleSlash & authorizeOn[HasReadProjects](Path.Empty / "*")) { implicit acls =>
           implicit val projectsResolver: Id => Future[Option[Project]] = { id =>
             {
               id.toProjectReference(config.http.apiUri) match {

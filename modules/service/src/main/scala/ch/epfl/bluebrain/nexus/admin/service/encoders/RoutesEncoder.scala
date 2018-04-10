@@ -15,9 +15,8 @@ import ch.epfl.bluebrain.nexus.commons.http.JsonOps._
 /**
   * Constructs implicit encoders used to format HTTP responses.
   * @param coreContext core context to inject into the response
-  * @param extractId   function which extracts Id from Entity
   */
-class RoutesEncoder[Entity](coreContext: ContextUri)(implicit extractId: (Entity) => Id) {
+class RoutesEncoder[Entity]()(implicit coreContext: ContextUri) {
 
   implicit val linksEncoder: Encoder[Links] =
     Encoder.encodeJson.contramap { links =>
@@ -31,7 +30,6 @@ class RoutesEncoder[Entity](coreContext: ContextUri)(implicit extractId: (Entity
     Encoder.encodeJson.contramap { qr =>
       Json.obj(
         nxv.source.reference.value -> qr.source.jsonLd,
-        nxv.links.reference.value  -> linksEncoder(selfLink(qr.source))
       )
     }
 
@@ -40,7 +38,6 @@ class RoutesEncoder[Entity](coreContext: ContextUri)(implicit extractId: (Entity
       Json.obj(
         nxv.score.reference.value  -> Json.fromFloatOrString(qr.score),
         nxv.source.reference.value -> qr.source.jsonLd,
-        nxv.links.reference.value  -> linksEncoder(selfLink(qr.source))
       )
     }
 
@@ -48,7 +45,6 @@ class RoutesEncoder[Entity](coreContext: ContextUri)(implicit extractId: (Entity
     Encoder.encodeJson.contramap { qr =>
       Json.obj(
         nxv.source.reference.value -> E(qr.source).addContext(coreContext),
-        nxv.links.reference.value  -> linksEncoder(selfLink(qr.source))
       )
     }
 
@@ -57,7 +53,6 @@ class RoutesEncoder[Entity](coreContext: ContextUri)(implicit extractId: (Entity
       Json.obj(
         nxv.score.reference.value  -> Json.fromFloatOrString(qr.score),
         nxv.source.reference.value -> E(qr.source).addContext(coreContext),
-        nxv.links.reference.value  -> linksEncoder(selfLink(qr.source))
       )
     }
 

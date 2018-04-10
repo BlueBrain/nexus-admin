@@ -19,6 +19,7 @@ import ch.epfl.bluebrain.nexus.admin.query.builder.{FilteredQuery, TypeFilterExp
 import ch.epfl.bluebrain.nexus.admin.refined.ld.Id
 import ch.epfl.bluebrain.nexus.admin.refined.ld.Uri._
 import ch.epfl.bluebrain.nexus.admin.refined.permissions._
+import ch.epfl.bluebrain.nexus.admin.refined.project.ProjectReference
 import ch.epfl.bluebrain.nexus.commons.sparql.client.SparqlClient
 import ch.epfl.bluebrain.nexus.commons.types.search.{Pagination, QueryResults}
 import ch.epfl.bluebrain.nexus.sourcing.Aggregate
@@ -37,11 +38,11 @@ import journal.Logger
   * @tparam A the generic type of the id's ''reference''
   */
 @SuppressWarnings(Array("UnusedMethodParameter"))
-class Resources[F[_], A: IdResolvable](agg: Agg[F], sparqlClient: SparqlClient[F])(implicit
-                                                                                   typeExpr: TypeFilterExpr[A],
-                                                                                   F: MonadError[F, Throwable],
-                                                                                   logger: Logger,
-                                                                                   clock: Clock) {
+class Resources[F[_], A: IdResolvable: TypeFilterExpr](agg: Agg[F], sparqlClient: SparqlClient[F])(
+    implicit
+    F: MonadError[F, Throwable],
+    logger: Logger,
+    clock: Clock) {
 
   /**
     * Certain validation to take place during creation operations.
@@ -169,9 +170,10 @@ class Resources[F[_], A: IdResolvable](agg: Agg[F], sparqlClient: SparqlClient[F
     * @param pagination pagination
     * @return  list of resources
     */
-  def list(query: QueryPayload, pagination: Pagination)(implicit acls: HasReadProjects): F[QueryResults[Id]] = {
+  def list(query: QueryPayload, pagination: Pagination)(implicit acls: HasReadProjects,
+                                                        idRes: IdResolvable[ProjectReference]): F[QueryResults[Id]] = {
     val sparqlQuery = FilteredQuery[A](query, pagination, acls)
-    rsToQueryResults[F](sparqlClient.query(sparqlQuery))
+    rsToQueryResults[F](sparqlClient.query(sparqlQuery), query.q.isDefined)
   }
 
   private def stateAt(persId: String, rev: Long): F[ResourceState] =

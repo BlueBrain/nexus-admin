@@ -1,7 +1,10 @@
 package ch.epfl.bluebrain.nexus.admin.core.projects
 
-import akka.actor.{ActorSystem, Props}
+import java.util
+
+import akka.actor.ActorSystem
 import akka.testkit.{DefaultTimeout, TestKit}
+import cats.instances.future._
 import ch.epfl.bluebrain.nexus.admin.core.CallerCtx._
 import ch.epfl.bluebrain.nexus.admin.core.CommonRejections.IllegalPayload
 import ch.epfl.bluebrain.nexus.admin.core.Fault.CommandRejected
@@ -14,6 +17,8 @@ import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceRejection._
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceState._
 import ch.epfl.bluebrain.nexus.admin.core.types.Ref._
 import ch.epfl.bluebrain.nexus.admin.core.types.RefVersioned
+import ch.epfl.bluebrain.nexus.admin.query.QueryPayload
+import ch.epfl.bluebrain.nexus.admin.refined.ld.Id
 import ch.epfl.bluebrain.nexus.admin.refined.permissions._
 import ch.epfl.bluebrain.nexus.admin.refined.project._
 import ch.epfl.bluebrain.nexus.commons.http.JsonOps._
@@ -22,16 +27,25 @@ import ch.epfl.bluebrain.nexus.commons.iam.acls.{FullAccessControlList, Path, Pe
 import ch.epfl.bluebrain.nexus.commons.iam.identity.Caller.AnonymousCaller
 import ch.epfl.bluebrain.nexus.commons.iam.identity.Identity
 import ch.epfl.bluebrain.nexus.commons.iam.identity.Identity.Anonymous
-import ch.epfl.bluebrain.nexus.commons.sparql.client.{InMemorySparqlActor, InMemorySparqlClient}
 import ch.epfl.bluebrain.nexus.commons.shacl.validator.{ImportResolver, ShaclValidator}
+import ch.epfl.bluebrain.nexus.commons.sparql.client.SparqlClient
+import ch.epfl.bluebrain.nexus.commons.types.search.QueryResult.ScoredQueryResult
+import ch.epfl.bluebrain.nexus.commons.types.search.QueryResults.ScoredQueryResults
+import ch.epfl.bluebrain.nexus.commons.types.search.{Pagination, QueryResult}
 import ch.epfl.bluebrain.nexus.sourcing.mem.MemoryAggregate
 import ch.epfl.bluebrain.nexus.sourcing.mem.MemoryAggregate._
 import eu.timepit.refined.api.RefType.{applyRef, refinedRefType}
 import eu.timepit.refined.auto._
 import io.circe.Json
 import io.circe.syntax._
-import cats.instances.future._
+import org.apache.jena.datatypes.RDFDatatype
+import org.apache.jena.graph.Node
+import org.apache.jena.query.{QuerySolution, QuerySolutionMap, ResultSet}
+import org.apache.jena.rdf.model._
+import org.apache.jena.sparql.engine.binding.Binding
+import org.mockito.Mockito.when
 import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{CancelAfterFailure, Matchers, TryValues, WordSpecLike}
 
 import scala.concurrent.Future
@@ -45,6 +59,7 @@ class ProjectsSpec
     with TryValues
     with ScalaFutures
     with TestHepler
+    with MockitoSugar
     with CancelAfterFailure {
 
   private implicit val caller: AnonymousCaller = AnonymousCaller(Anonymous())
@@ -52,8 +67,7 @@ class ProjectsSpec
     ProjectsConfig(3 seconds, "https://nexus.example.ch/v1/projects/", 100000L)
   private implicit val ex                             = system.dispatcher
   private val aggProject                              = MemoryAggregate("projects")(Initial, next, EvalProject().apply).toF[Future]
-  val inMemoryActor                                   = system.actorOf(Props[InMemorySparqlActor]())
-  val cl                                              = InMemorySparqlClient(inMemoryActor)
+  private val cl                                      = mock[SparqlClient[Future]]
   implicit val shaclValidator: ShaclValidator[Future] = ShaclValidator(ImportResolver.noop[Future])
   private val projects                                = Projects(aggProject, cl)
 
@@ -186,5 +200,389 @@ class ProjectsSpec
       projects.create(id, value.asJson).futureValue shouldEqual RefVersioned(id, 1L)
       projects.validateUnlocked(id).futureValue shouldEqual (())
     }
+
+    "list all projects for user with read on /" in new Context {
+      val queryPayload  = QueryPayload(q = Some("test"), published = Some(true))
+      val pagination    = Pagination(from = genInt().toLong, size = genInt())
+      val expectedQuery = s"""
+                            |PREFIX bds: <http://www.bigdata.com/rdf/search#>
+                            |SELECT DISTINCT ?total ?s ?maxscore ?score ?rank
+                            |WITH {
+                            |  SELECT DISTINCT ?s  (max(?rsv) AS ?score) (max(?pos) AS ?rank)
+                            |  WHERE {
+                            |?s ?matchedProperty ?matchedValue .
+                            |?matchedValue bds:search "test" .
+                            |?matchedValue bds:relevance ?rsv .
+                            |?matchedValue bds:rank ?pos .
+                            |FILTER ( !isBlank(?s) )
+                            |
+                            |?s <https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/published> ?var_1 .
+                            |?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/Project> .
+                            |FILTER ( ?var_1 = true )
+                            |
+                            |
+                            |  }
+                            |GROUP BY ?s
+                            |} AS %resultSet
+                            |WHERE {
+                            |  {
+                            |    SELECT (COUNT(DISTINCT ?s) AS ?total) (max(?score) AS ?maxscore)
+                            |    WHERE { INCLUDE %resultSet }
+                            |  }
+                            |  UNION
+                            |  {
+                            |    SELECT *
+                            |    WHERE { INCLUDE %resultSet }
+                            |    ORDER BY ?s
+                            |    LIMIT ${pagination.size}
+                            |    OFFSET ${pagination.from}
+                            |  }
+                            |}
+                            |ORDER BY DESC(?score)""".stripMargin
+      val expectedResult = ScoredQueryResults[Id](
+        3,
+        1.0f,
+        List(
+          ScoredQueryResult[Id](
+            1.0f,
+            applyRef[Id](s"https://nexus.example.ch/v1/projects/${genReference().value}").toOption.get),
+          ScoredQueryResult[Id](
+            0.5f,
+            applyRef[Id](s"https://nexus.example.ch/v1/projects/${genReference().value}").toOption.get),
+          ScoredQueryResult[Id](
+            0.25f,
+            applyRef[Id](s"https://nexus.example.ch/v1/projects/${genReference().value}").toOption.get)
+        )
+      )
+      val resultSet: ResultSet = resultSetFromQueryResults(expectedResult)
+      when(cl.query(expectedQuery)).thenReturn(Future.successful(resultSet))
+
+      projects.list(queryPayload, pagination).futureValue shouldEqual expectedResult
+    }
+
+    "list only projects the user has access to" in new Context {
+      val queryPayload = QueryPayload(q = Some("test"), published = Some(true))
+      val pagination   = Pagination(from = genInt().toLong, size = genInt())
+      val projectRef1  = genReference()
+      val projectRef2  = genReference()
+      val projectRef3  = genReference()
+      val expectedQuery =
+        s"""
+           |PREFIX bds: <http://www.bigdata.com/rdf/search#>
+           |SELECT DISTINCT ?total ?s ?maxscore ?score ?rank
+           |WITH {
+           |  SELECT DISTINCT ?s  (max(?rsv) AS ?score) (max(?pos) AS ?rank)
+           |  WHERE {
+           |?s ?matchedProperty ?matchedValue .
+           |?matchedValue bds:search "test" .
+           |?matchedValue bds:relevance ?rsv .
+           |?matchedValue bds:rank ?pos .
+           |FILTER ( !isBlank(?s) )
+           |
+           |?s <https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/published> ?var_1 .
+           |?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/Project> .
+           |FILTER ( ?var_1 = true )
+           |
+           |
+           |FILTER ( ?s = <https://nexus.example.ch/v1/projects/${projectRef1.value}> || ?s = <https://nexus.example.ch/v1/projects/${projectRef2.value}> || ?s = <https://nexus.example.ch/v1/projects/${projectRef3.value}> )
+           |
+           |
+           |  }
+           |GROUP BY ?s
+           |} AS %resultSet
+           |WHERE {
+           |  {
+           |    SELECT (COUNT(DISTINCT ?s) AS ?total) (max(?score) AS ?maxscore)
+           |    WHERE { INCLUDE %resultSet }
+           |  }
+           |  UNION
+           |  {
+           |    SELECT *
+           |    WHERE { INCLUDE %resultSet }
+           |    ORDER BY ?s
+           |    LIMIT ${pagination.size}
+           |    OFFSET ${pagination.from}
+           |  }
+           |}
+           |ORDER BY DESC(?score)""".stripMargin
+      val expectedResult = ScoredQueryResults[Id](
+        3,
+        1.0f,
+        List(
+          ScoredQueryResult[Id](
+            1.0f,
+            applyRef[Id](s"https://nexus.example.ch/v1/projects/${projectRef1.value}").toOption.get),
+          ScoredQueryResult[Id](
+            0.5f,
+            applyRef[Id](s"https://nexus.example.ch/v1/projects/${projectRef2.value}").toOption.get),
+          ScoredQueryResult[Id](0.25f,
+                                applyRef[Id](s"https://nexus.example.ch/v1/projects/${projectRef3.value}").toOption.get)
+        )
+      )
+      val resultSet: ResultSet = resultSetFromQueryResults(expectedResult)
+      when(cl.query(expectedQuery)).thenReturn(Future.successful(resultSet))
+
+      implicit val hasRead: HasReadProjects =
+        applyRef[HasReadProjects](
+          FullAccessControlList(
+            (Identity.Anonymous(), Path./(projectRef1.value), Permissions(Read, Permission("projects/read"))),
+            (Identity.Anonymous(), Path./(projectRef2.value), Permissions(Read, Permission("projects/read"))),
+            (Identity.Anonymous(), Path./(projectRef3.value), Permissions(Read, Permission("projects/read")))
+          )).toPermTry.success.value
+
+      projects.list(queryPayload, pagination).futureValue shouldEqual expectedResult
+    }
+  }
+
+  private def resultSetFromQueryResults(queryResults: ScoredQueryResults[Id]): ResultSet = {
+    def rdfLiteralNode(float: Number): RDFNode = {
+      new RDFNode {
+        override def isAnon: Boolean = false
+
+        override def isLiteral: Boolean = true
+
+        override def isURIResource: Boolean = false
+
+        override def isResource: Boolean = false
+
+        override def as[T <: RDFNode](view: Class[T]): T = ???
+
+        override def canAs[T <: RDFNode](view: Class[T]): Boolean = ???
+
+        override def getModel: Model = ???
+
+        override def inModel(m: Model): RDFNode = ???
+
+        override def visitWith(rv: RDFVisitor): AnyRef = ???
+
+        override def asResource(): Resource = ???
+
+        override def asLiteral(): Literal = new Literal {
+          override def inModel(m: Model): Literal = ???
+
+          override def getValue: AnyRef = ???
+
+          override def getDatatype: RDFDatatype = ???
+
+          override def getDatatypeURI: String = ???
+
+          override def getLexicalForm: String = float.toString
+
+          override def getBoolean: Boolean = ???
+
+          override def getByte: Byte = ???
+
+          override def getShort: Short = ???
+
+          override def getInt: Int = ???
+
+          override def getLong: Long = ???
+
+          override def getChar: Char = ???
+
+          override def getFloat: Float = ???
+
+          override def getDouble: Double = ???
+
+          override def getString: String = ???
+
+          override def getLanguage: String = ???
+
+          override def isWellFormedXML: Boolean = ???
+
+          override def sameValueAs(other: Literal): Boolean = ???
+
+          override def isAnon: Boolean = ???
+
+          override def isLiteral: Boolean = ???
+
+          override def isURIResource: Boolean = ???
+
+          override def isResource: Boolean = ???
+
+          override def as[T <: RDFNode](view: Class[T]): T = ???
+
+          override def canAs[T <: RDFNode](view: Class[T]): Boolean = ???
+
+          override def getModel: Model = ???
+
+          override def visitWith(rv: RDFVisitor): AnyRef = ???
+
+          override def asResource(): Resource = ???
+
+          override def asLiteral(): Literal = ???
+
+          override def asNode(): Node = ???
+        }
+
+        override def asNode(): Node = ???
+      }
+    }
+
+    def rdfResourceNode(uri: String): RDFNode = {
+      new RDFNode {
+        override def isAnon: Boolean = false
+
+        override def isLiteral: Boolean = true
+
+        override def isURIResource: Boolean = false
+
+        override def isResource: Boolean = false
+
+        override def as[T <: RDFNode](view: Class[T]): T = ???
+
+        override def canAs[T <: RDFNode](view: Class[T]): Boolean = ???
+
+        override def getModel: Model = ???
+
+        override def inModel(m: Model): RDFNode = ???
+
+        override def visitWith(rv: RDFVisitor): AnyRef = ???
+
+        override def asResource(): Resource = new Resource {
+          override def getId: AnonId = ???
+
+          override def inModel(m: Model): Resource = ???
+
+          override def hasURI(uri: String): Boolean = ???
+
+          override def getURI: String = uri
+
+          override def getNameSpace: String = ???
+
+          override def getLocalName: String = ???
+
+          override def getRequiredProperty(p: Property): Statement = ???
+
+          override def getRequiredProperty(p: Property, lang: String): Statement = ???
+
+          override def getProperty(p: Property): Statement = ???
+
+          override def getProperty(p: Property, lang: String): Statement = ???
+
+          override def listProperties(p: Property): StmtIterator = ???
+
+          override def listProperties(p: Property, lang: String): StmtIterator = ???
+
+          override def listProperties(): StmtIterator = ???
+
+          override def addLiteral(p: Property, o: Boolean): Resource = ???
+
+          override def addLiteral(p: Property, o: Long): Resource = ???
+
+          override def addLiteral(p: Property, o: Char): Resource = ???
+
+          override def addLiteral(value: Property, d: Double): Resource = ???
+
+          override def addLiteral(value: Property, d: Float): Resource = ???
+
+          override def addLiteral(p: Property, o: scala.Any): Resource = ???
+
+          override def addLiteral(p: Property, o: Literal): Resource = ???
+
+          override def addProperty(p: Property, o: String): Resource = ???
+
+          override def addProperty(p: Property, o: String, l: String): Resource = ???
+
+          override def addProperty(p: Property, lexicalForm: String, datatype: RDFDatatype): Resource = ???
+
+          override def addProperty(p: Property, o: RDFNode): Resource = ???
+
+          override def hasProperty(p: Property): Boolean = ???
+
+          override def hasLiteral(p: Property, o: Boolean): Boolean = ???
+
+          override def hasLiteral(p: Property, o: Long): Boolean = ???
+
+          override def hasLiteral(p: Property, o: Char): Boolean = ???
+
+          override def hasLiteral(p: Property, o: Double): Boolean = ???
+
+          override def hasLiteral(p: Property, o: Float): Boolean = ???
+
+          override def hasLiteral(p: Property, o: scala.Any): Boolean = ???
+
+          override def hasProperty(p: Property, o: String): Boolean = ???
+
+          override def hasProperty(p: Property, o: String, l: String): Boolean = ???
+
+          override def hasProperty(p: Property, o: RDFNode): Boolean = ???
+
+          override def removeProperties(): Resource = ???
+
+          override def removeAll(p: Property): Resource = ???
+
+          override def begin(): Resource = ???
+
+          override def abort(): Resource = ???
+
+          override def commit(): Resource = ???
+
+          override def getPropertyResourceValue(p: Property): Resource = ???
+
+          override def isAnon: Boolean = ???
+
+          override def isLiteral: Boolean = ???
+
+          override def isURIResource: Boolean = ???
+
+          override def isResource: Boolean = ???
+
+          override def as[T <: RDFNode](view: Class[T]): T = ???
+
+          override def canAs[T <: RDFNode](view: Class[T]): Boolean = ???
+
+          override def getModel: Model = ???
+
+          override def visitWith(rv: RDFVisitor): AnyRef = ???
+
+          override def asResource(): Resource = ???
+
+          override def asLiteral(): Literal = ???
+
+          override def asNode(): Node = ???
+        }
+
+        override def asLiteral(): Literal = ???
+
+        override def asNode(): Node = ???
+      }
+    }
+
+    def maxScoreAndTotalQuerySolution(qrs: ScoredQueryResults[Id]): QuerySolution = {
+      val qs = new QuerySolutionMap
+      qs.add("?maxscore", rdfLiteralNode(qrs.maxScore))
+      qs.add("total", rdfLiteralNode(qrs.total))
+      qs
+    }
+
+    def queryResultToSolution(queryResult: QueryResult[Id]): QuerySolution = queryResult match {
+      case ScoredQueryResult(score, source) =>
+        val querySolution = new QuerySolutionMap
+        querySolution.add("?score", rdfLiteralNode(score))
+        querySolution.add("?s", rdfResourceNode(source.value))
+        querySolution
+      case _ => ???
+    }
+
+    val iter: Iterator[QuerySolution] =
+      (maxScoreAndTotalQuerySolution(queryResults) :: queryResults.results.map(queryResultToSolution)).iterator
+
+    new ResultSet {
+      override def hasNext: Boolean = iter.hasNext
+
+      override def next(): QuerySolution = iter.next()
+
+      override def nextSolution(): QuerySolution = iter.next()
+
+      override def nextBinding(): Binding = ???
+
+      override def getRowNumber: Int = ???
+
+      override def getResultVars: util.List[String] = ???
+
+      override def getResourceModel: Model = ???
+    }
+
   }
 }

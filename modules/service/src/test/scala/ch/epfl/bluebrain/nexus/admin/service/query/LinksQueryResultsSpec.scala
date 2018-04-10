@@ -4,17 +4,15 @@ import java.util.UUID
 
 import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.Uri.Query
-import ch.epfl.bluebrain.nexus.admin.refined.ld.Id
 import ch.epfl.bluebrain.nexus.admin.service.encoders.RoutesEncoder
 import ch.epfl.bluebrain.nexus.admin.service.types.Links
 import ch.epfl.bluebrain.nexus.commons.http.ContextUri
 import ch.epfl.bluebrain.nexus.commons.types.search.QueryResult.{ScoredQueryResult, UnscoredQueryResult}
-import ch.epfl.bluebrain.nexus.commons.types.search.{Pagination, QueryResult, QueryResults}
 import ch.epfl.bluebrain.nexus.commons.types.search.QueryResults.{ScoredQueryResults, UnscoredQueryResults}
-import eu.timepit.refined.api.RefType.applyRef
+import ch.epfl.bluebrain.nexus.commons.types.search.{Pagination, QueryResult, QueryResults}
+import io.circe.syntax._
 import io.circe.{Encoder, Json}
 import org.scalatest.{Matchers, WordSpecLike}
-import io.circe.syntax._
 
 class LinksQueryResultsSpec extends WordSpecLike with Matchers {
 
@@ -25,10 +23,8 @@ class LinksQueryResultsSpec extends WordSpecLike with Matchers {
     )
   }
 
-  implicit val idExtractor: (String) => Id = { p =>
-    applyRef[Id](s"http://localhost/v0/$p").toOption.get
-  }
-  val routesEncoder         = new RoutesEncoder[String](ContextUri("http://127.0.0.1/context"))
+  implicit val coreContex   = ContextUri("http://127.0.0.1/context")
+  val routesEncoder         = new RoutesEncoder[String]()
   implicit val linksEncoder = routesEncoder.linksEncoder
   private val uqr: Encoder[UnscoredQueryResult[String]] = Encoder.encodeJson.contramap { res =>
     Json.obj("source" -> Json.fromString(res.source))

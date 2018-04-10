@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.admin.ld
 
-import ch.epfl.bluebrain.nexus.commons.http.ContextUri
 import java.util.regex.Pattern.quote
+
 import ch.epfl.bluebrain.nexus.commons.test.Resources
 import eu.timepit.refined.auto._
 import eu.timepit.refined.string._
@@ -15,12 +15,20 @@ object Const extends Resources {
   val `@context` = "@context"
   val `@value`   = "@value"
 
+  /**
+    * Terms used in the select block in SPARQL queries.
+    */
+  object SelectTerms {
+    val score    = "score"
+    val rank     = "rank"
+    val subject  = "s"
+    val total    = "total"
+    val maxScore = "maxscore"
+  }
+
   val filterContext: JsonLD = jsonContentOf("/filter-context.json")
 
   val projectContext: JsonLD = jsonContentOf("/project-context.json")
-
-  val linksContext: ContextUri  = ContextUri("https://bbp.epfl.ch/nexus/v0/contexts/nexus/core/links/v0.1.0")
-  val searchContext: ContextUri = ContextUri("https://bbp.epfl.ch/nexus/v0/contexts/nexus/core/search/v0.1.0")
 
   val projectSchema: Json =
     jsonContentOf("/schemas/nexus/core/project/v0.1.0.json", Map(quote("{{base}}") -> "https://bbp-nexus.epfl.ch"))
@@ -61,8 +69,14 @@ object Const extends Resources {
     val results        = build("results")
     val links          = build("links")
     val source         = build("source")
-    val resultId       = build("resultId")
     val score          = build("score")
+  }
+
+  //noinspection TypeAnnotation
+  object bds extends IdRefBuilder("bds", "http://www.bigdata.com/rdf/search#") {
+    val search    = build("search")
+    val relevance = build("relevance")
+    val rank      = build("rank")
   }
 
 }

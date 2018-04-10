@@ -5,17 +5,17 @@ import java.util.concurrent.atomic.AtomicInteger
 import akka.http.scaladsl.model.Uri
 import cats.Show
 import cats.syntax.show._
-import ch.epfl.bluebrain.nexus.admin.ld.Const.nxv
+import ch.epfl.bluebrain.nexus.admin.ld.Const.SelectTerms._
+import ch.epfl.bluebrain.nexus.admin.ld.Const.{bds, nxv}
+import ch.epfl.bluebrain.nexus.admin.ld.IdResolvable
 import ch.epfl.bluebrain.nexus.admin.query.QueryPayload
-import ch.epfl.bluebrain.nexus.admin.query.builder.SearchVocab.PrefixMapping._
-import ch.epfl.bluebrain.nexus.admin.query.builder.SearchVocab.PrefixUri._
-import ch.epfl.bluebrain.nexus.admin.query.builder.SearchVocab.SelectTerms._
 import ch.epfl.bluebrain.nexus.admin.query.filtering.Expr.{ComparisonExpr, InExpr, LogicalExpr, NoopExpr}
 import ch.epfl.bluebrain.nexus.admin.query.filtering.Op._
 import ch.epfl.bluebrain.nexus.admin.query.filtering.PropPath.{SubjectPath, UriPath}
 import ch.epfl.bluebrain.nexus.admin.query.filtering.Term.{LiteralTerm, TermCollection, UriTerm}
 import ch.epfl.bluebrain.nexus.admin.query.filtering._
 import ch.epfl.bluebrain.nexus.admin.refined.permissions.HasReadProjects
+import ch.epfl.bluebrain.nexus.admin.refined.project.ProjectReference
 import ch.epfl.bluebrain.nexus.commons.types.search.Sort.OrderType.Desc
 import ch.epfl.bluebrain.nexus.commons.types.search.{Pagination, Sort, SortList}
 
@@ -33,7 +33,8 @@ object FilteredQuery {
     * @return a Blazegraph query based on the provided filter and pagination settings
     */
   def apply[Id](query: QueryPayload, pagination: Pagination, acls: HasReadProjects)(
-      implicit typeExpr: TypeFilterExpr[Id]): String = {
+      implicit typeExpr: TypeFilterExpr[Id],
+      idRes: IdResolvable[ProjectReference]): String = {
     applyWithWhere(
       buildWhereFrom(
         addToFilter(query.filter and ResourceRestrictionExpr(acls.value), query.deprecated, query.published).expr),
@@ -68,7 +69,7 @@ object FilteredQuery {
     val (orderByUnion, orderByTotal)              = buildOrderByFrom(term, sort)
 
     s"""
-       |PREFIX bds: <${bdsUri.toString()}>
+       |PREFIX bds: <${bds.namespaceBuilder.value}>
        |$selectTotal
        |WITH {
        |  $selectWith
@@ -168,9 +169,9 @@ object FilteredQuery {
   private def buildWhereFrom(term: Option[String]): String =
     term.map(term => s"""
                         |?$subject ?matchedProperty ?matchedValue .
-                        |?matchedValue $bdsSearch "$term" .
-                        |?matchedValue $bdsRelevance ?rsv .
-                        |?matchedValue $bdsRank ?pos .
+                        |?matchedValue ${bds.search.curie.show} "$term" .
+                        |?matchedValue ${bds.relevance.curie.show} ?rsv .
+                        |?matchedValue ${bds.rank.curie.show} ?pos .
                         |FILTER ( !isBlank(?s) )
      """.stripMargin.trim).getOrElse("")
 
