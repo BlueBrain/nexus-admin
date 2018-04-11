@@ -110,7 +110,7 @@ final class ProjectRoutes(projects: Projects[Future])(implicit iamClient: IamCli
   def routes: Route = combinedRoutesFor("projects")
 
   private def searchRoutes(implicit credentials: Option[OAuth2BearerToken]): Route =
-    (get & paramsToQuery) { (pagination, query) =>
+    (pathEndOrSingleSlash & get & paramsToQuery) { (pagination, query) =>
       trace("searchProjects") {
         (pathEndOrSingleSlash & authorizeOn[HasReadProjects](Path.Empty / "*")) { implicit acls =>
           implicit val projectsResolver: Id => Future[Option[Project]] = { id =>
