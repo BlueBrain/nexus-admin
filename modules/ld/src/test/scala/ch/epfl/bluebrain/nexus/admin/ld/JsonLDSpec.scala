@@ -176,8 +176,8 @@ class JsonLDSpec extends WordSpecLike with Matchers with Resources with OptionVa
 
     "add several triples to the jsonLD" in {
       val expected = jsonLDSimple.json.removeKeys("@context") deepMerge Json.obj(
-        "@type"   -> Json.fromString("nxv:Project"),
-        "nxv:rev" -> Json.fromInt(2))
+        "@type"    -> Json.fromString("nxv:Project"),
+        "nxv:_rev" -> Json.fromInt(2))
       val json = jsonLDSimple.add(rdf.tpe, nxv.Project).add(nxv.rev, 2).apply().value.json
       json.removeKeys("@context") shouldEqual expected
 
@@ -186,7 +186,7 @@ class JsonLDSpec extends WordSpecLike with Matchers with Resources with OptionVa
 
       val json3 = jsonLDSimple.add(nxv.rev, 2.0).apply().value.json
       json3.removeKeys("@context") shouldEqual (jsonLDSimple.json.removeKeys("@context") deepMerge Json.obj(
-        "nxv:rev" -> Json.fromDoubleOrNull(2.0)))
+        "nxv:_rev" -> Json.fromDoubleOrNull(2.0)))
 
     }
 
@@ -206,7 +206,7 @@ class JsonLDSpec extends WordSpecLike with Matchers with Resources with OptionVa
       val expected = jsonContentOf("/id_and_type_updated.json")
 
       typed2JsonLD
-        .downFirst(nxv.build("links"))
+        .downFirst(nxv.build("_links"))
         .add(nxv.deprecated, false)
         .add(nxv.name, "something")
         .apply()
@@ -215,11 +215,11 @@ class JsonLDSpec extends WordSpecLike with Matchers with Resources with OptionVa
         .removeKeys("@context") shouldEqual expected
 
       typed2JsonLD
-        .downFirst(nxv.build("links"))
+        .downFirst(nxv.build("_links"))
         .add(nxv.deprecated, false)
         .apply()
         .value
-        .downFirst(nxv.build("links"))
+        .downFirst(nxv.build("_links"))
         .add(nxv.name, "something")
         .apply()
         .value

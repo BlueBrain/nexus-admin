@@ -216,7 +216,7 @@ class ProjectsSpec
                             |?matchedValue bds:rank ?pos .
                             |FILTER ( !isBlank(?s) )
                             |
-                            |?s <https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/published> ?var_1 .
+                            |?s <https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/_published> ?var_1 .
                             |?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/Project> .
                             |FILTER ( ?var_1 = true )
                             |
@@ -279,7 +279,7 @@ class ProjectsSpec
            |?matchedValue bds:rank ?pos .
            |FILTER ( !isBlank(?s) )
            |
-           |?s <https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/published> ?var_1 .
+           |?s <https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/_published> ?var_1 .
            |?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/Project> .
            |FILTER ( ?var_1 = true )
            |

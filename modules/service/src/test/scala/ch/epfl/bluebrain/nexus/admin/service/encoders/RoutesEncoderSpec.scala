@@ -16,9 +16,11 @@ class RoutesEncoderSpec extends WordSpecLike with Matchers with Randomness {
 
   implicit val coreContext = ContextUri("http://localhost/core-context")
 
-  val routesEncoder = new RoutesEncoder[TestEntity]()
-  val id            = applyRef[Id](s"http://instance.com/${genString()}").toOption.get
-  val testEntity    = TestEntity(id, genString())
+  implicit val extractId: (TestEntity) => Id = e => e.id
+  val routesEncoder                          = new RoutesEncoder[TestEntity]()
+  val id                                     = applyRef[Id](s"http://instance.com/${genString()}").toOption.get
+
+  val testEntity = TestEntity(id, genString())
   implicit val entityEncoder: Encoder[TestEntity] = Encoder.encodeJson.contramap { e =>
     Json.obj(
       "@context" -> Json.fromString("http://localhost/entity-context"),
@@ -33,18 +35,20 @@ class RoutesEncoderSpec extends WordSpecLike with Matchers with Randomness {
       val result = UnscoredQueryResult(id)
       result.asJson.pretty(Printer.spaces2) shouldEqual
         s"""{
-          |  "source" : {
+          |  "_id" : "${id.value}",
+          |  "_source" : {
           |    "@id" : "${id.value}"
           |  }
           |}""".stripMargin
 
     }
-    "encode scored query results for idss" in {
+    "encode scored query results for ids" in {
       val result = ScoredQueryResult(1.0f, id)
       result.asJson.pretty(Printer.spaces2) shouldEqual
         s"""{
-           |  "score" : 1.0,
-           |  "source" : {
+           |  "_id" : "${id.value}",
+           |  "_score" : 1.0,
+           |  "_source" : {
            |    "@id" : "${id.value}"
            |  }
            |}""".stripMargin
@@ -54,7 +58,8 @@ class RoutesEncoderSpec extends WordSpecLike with Matchers with Randomness {
       val result = UnscoredQueryResult(testEntity)
       result.asJson.pretty(Printer.spaces2) shouldEqual
         s"""{
-           |  "source" : {
+           |  "_id" : "${id.value}",
+           |  "_source" : {
            |    "@context" : [
            |      "http://localhost/entity-context",
            |      "$coreContext"
@@ -69,8 +74,9 @@ class RoutesEncoderSpec extends WordSpecLike with Matchers with Randomness {
       val result = ScoredQueryResult(1.0f, testEntity)
       result.asJson.pretty(Printer.spaces2) shouldEqual
         s"""{
-           |  "score" : 1.0,
-           |  "source" : {
+           |  "_id" : "${id.value}",
+           |  "_score" : 1.0,
+           |  "_source" : {
            |    "@context" : [
            |      "http://localhost/entity-context",
            |      "$coreContext"

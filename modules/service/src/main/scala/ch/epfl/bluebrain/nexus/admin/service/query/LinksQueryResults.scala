@@ -32,7 +32,7 @@ object LinksQueryResults {
     * @return an instance of [[LinksQueryResults]]
     */
   final def apply[A](response: QueryResults[A], pagination: Pagination, uri: Uri): LinksQueryResults[A] = {
-    val self          = Links("self" -> uri)
+    val self          = Links(nxv.self.reference.value -> uri)
     val responseCount = response.results.length
 
     def prevLink: Option[Links] = {
@@ -40,14 +40,14 @@ object LinksQueryResults {
         val size = Math.min(pagination.from, pagination.size.toLong)
         val from = Math.max(0, Math.min(pagination.from - pagination.size, response.total - size))
         val prev = uri.withQuery(addQuery(uri, from, size.toInt))
-        Some(Links("previous" -> prev))
+        Some(Links(nxv.previous.reference.value -> prev))
       } else None
     }
 
     def nextLink: Option[Links] = {
       if (response.total > responseCount && (pagination.from + responseCount) < response.total) {
         val next = uri.withQuery(addQuery(uri, pagination.size + pagination.from, pagination.size))
-        Some(Links("next" -> next))
+        Some(Links(nxv.next.reference.value -> next))
       } else None
     }
 
@@ -66,12 +66,12 @@ object LinksQueryResults {
       )
       response.response match {
         case ScoredQueryResults(_, maxScore, _) =>
-          json deepMerge Json.obj("maxScore" -> Json.fromFloatOrNull(maxScore))
+          json deepMerge Json.obj(nxv.maxScore.reference.value -> Json.fromFloatOrNull(maxScore))
         case _ => json
       }
     }
   }
 
   private def addQuery(uri: Uri, from: Long, size: Int): Query =
-    Query(uri.query().toMap + ("from" -> s"$from", "size" -> s"$size"))
+    Query(uri.query().toMap + (nxv.from.reference.value -> s"$from", nxv.size.reference.value -> s"$size"))
 }

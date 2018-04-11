@@ -47,22 +47,22 @@
     },
     "id": "@id",
     "type": "@type",
-    "links": {
-      "@id": "https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/links"
+    "_links": {
+      "@id": "https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/_links"
     }
   },
   "id": "https://bbp-nexus.epfl.ch/dev/v0/contexts/nexus/core/distribution/v0.1.0",
   "type": "http://example.com/Some",
-  "nxv:rev": 1,
-  "nxv:published": false,
-  "nxv:deprecated": false,
-  "links": {
+  "nxv:_rev": 1,
+  "nxv:_published": false,
+  "nxv:_deprecated": false,
+  "_links": {
     "@context": {
-      "self": {
-        "@id": "nxv:self",
+      "_self": {
+        "@id": "nxv:_self",
         "@type": "@id"
       }
     },
-    "self": "https://bbp-nexus.epfl.ch/dev/v0/contexts/nexus/core/distribution/v0.1.0"
+    "_self": "https://bbp-nexus.epfl.ch/dev/v0/contexts/nexus/core/distribution/v0.1.0"
   }
 }

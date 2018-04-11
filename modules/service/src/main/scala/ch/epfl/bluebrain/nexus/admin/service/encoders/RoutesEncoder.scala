@@ -16,7 +16,7 @@ import ch.epfl.bluebrain.nexus.commons.http.JsonOps._
   * Constructs implicit encoders used to format HTTP responses.
   * @param coreContext core context to inject into the response
   */
-class RoutesEncoder[Entity]()(implicit coreContext: ContextUri) {
+class RoutesEncoder[Entity]()(implicit coreContext: ContextUri, extractId: (Entity) => Id) {
 
   implicit val linksEncoder: Encoder[Links] =
     Encoder.encodeJson.contramap { links =>
@@ -29,13 +29,15 @@ class RoutesEncoder[Entity]()(implicit coreContext: ContextUri) {
   implicit val queryResultEncoder: Encoder[UnscoredQueryResult[Id]] =
     Encoder.encodeJson.contramap { qr =>
       Json.obj(
-        nxv.source.reference.value -> qr.source.jsonLd,
+        nxv.id.reference.value     -> Json.fromString(qr.source.value),
+        nxv.source.reference.value -> qr.source.jsonLd
       )
     }
 
   implicit val scoredQueryResultEncoder: Encoder[ScoredQueryResult[Id]] =
     Encoder.encodeJson.contramap { qr =>
       Json.obj(
+        nxv.id.reference.value     -> Json.fromString(qr.source.value),
         nxv.score.reference.value  -> Json.fromFloatOrString(qr.score),
         nxv.source.reference.value -> qr.source.jsonLd,
       )
@@ -44,15 +46,17 @@ class RoutesEncoder[Entity]()(implicit coreContext: ContextUri) {
   implicit def queryResultEntityEncoder(implicit E: Encoder[Entity]): Encoder[UnscoredQueryResult[Entity]] =
     Encoder.encodeJson.contramap { qr =>
       Json.obj(
-        nxv.source.reference.value -> E(qr.source).addContext(coreContext),
+        nxv.id.reference.value     -> Json.fromString(extractId(qr.source).value),
+        nxv.source.reference.value -> E(qr.source).addContext(coreContext)
       )
     }
 
   implicit def scoredQueryResultEntityEncoder(implicit E: Encoder[Entity]): Encoder[ScoredQueryResult[Entity]] =
     Encoder.encodeJson.contramap { qr =>
       Json.obj(
+        nxv.id.reference.value     -> Json.fromString(extractId(qr.source).value),
         nxv.score.reference.value  -> Json.fromFloatOrString(qr.score),
-        nxv.source.reference.value -> E(qr.source).addContext(coreContext),
+        nxv.source.reference.value -> E(qr.source).addContext(coreContext)
       )
     }
 

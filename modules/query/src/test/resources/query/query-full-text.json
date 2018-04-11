@@ -4,6 +4,6 @@
   "deprecated": false,
   "published": false,
   "format": "expanded",
-  "fields": [ "nxv:all" ],
+  "fields": [ "nxv:_all" ],
   "sort": [ "-nxv:createdAtTime"]
 }

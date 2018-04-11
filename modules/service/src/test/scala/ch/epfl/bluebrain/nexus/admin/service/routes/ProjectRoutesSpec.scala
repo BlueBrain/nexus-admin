@@ -55,7 +55,7 @@ class ProjectRoutesSpec
         responseAs[Json] shouldEqual Json.obj(
           `@context` -> Json.fromString(appConfig.prefixes.coreContext.toString()),
           `@id`      -> Json.fromString(s"http://127.0.0.1:8080/v1/projects/${reference.value}"),
-          "nxv:rev"  -> Json.fromLong(1L)
+          "nxv:_rev" -> Json.fromLong(1L)
         )
       }
       projects.fetch(reference).futureValue shouldEqual Some(
@@ -113,7 +113,7 @@ class ProjectRoutesSpec
         responseAs[Json] shouldEqual Json.obj(
           `@context` -> Json.fromString(appConfig.prefixes.coreContext.toString()),
           `@id`      -> Json.fromString(s"http://127.0.0.1:8080/v1/projects/${reference.value}"),
-          "nxv:rev"  -> Json.fromLong(2L)
+          "nxv:_rev" -> Json.fromLong(2L)
         )
       }
       projects.fetch(reference).futureValue shouldEqual Some(
@@ -125,11 +125,11 @@ class ProjectRoutesSpec
         status shouldEqual StatusCodes.OK
         contentType shouldEqual RdfMediaTypes.`application/ld+json`.toContentType
         responseAs[Json] shouldEqual (json deepMerge Json.obj(
-          `@context`       -> Json.fromString(appConfig.prefixes.coreContext.toString()),
-          `@id`            -> Json.fromString(s"http://127.0.0.1:8080/v1/projects/${reference.value}"),
-          `@type`          -> Json.fromString("nxv:Project"),
-          "nxv:rev"        -> Json.fromLong(2L),
-          "nxv:deprecated" -> Json.fromBoolean(true)
+          `@context`        -> Json.fromString(appConfig.prefixes.coreContext.toString()),
+          `@id`             -> Json.fromString(s"http://127.0.0.1:8080/v1/projects/${reference.value}"),
+          `@type`           -> Json.fromString("nxv:Project"),
+          "nxv:_rev"        -> Json.fromLong(2L),
+          "nxv:_deprecated" -> Json.fromBoolean(true)
         ))
       }
     }
@@ -139,11 +139,11 @@ class ProjectRoutesSpec
         status shouldEqual StatusCodes.OK
         contentType shouldEqual RdfMediaTypes.`application/ld+json`.toContentType
         responseAs[Json] shouldEqual (json deepMerge Json.obj(
-          `@context`       -> Json.fromString(appConfig.prefixes.coreContext.toString()),
-          `@id`            -> Json.fromString(s"http://127.0.0.1:8080/v1/projects/${reference.value}"),
-          `@type`          -> Json.fromString("nxv:Project"),
-          "nxv:rev"        -> Json.fromLong(1L),
-          "nxv:deprecated" -> Json.fromBoolean(false)
+          `@context`        -> Json.fromString(appConfig.prefixes.coreContext.toString()),
+          `@id`             -> Json.fromString(s"http://127.0.0.1:8080/v1/projects/${reference.value}"),
+          `@type`           -> Json.fromString("nxv:Project"),
+          "nxv:_rev"        -> Json.fromLong(1L),
+          "nxv:_deprecated" -> Json.fromBoolean(false)
         ))
       }
     }
@@ -186,7 +186,7 @@ class ProjectRoutesSpec
         responseAs[Json] shouldEqual Json.obj(
           `@context` -> Json.fromString(appConfig.prefixes.coreContext.toString()),
           `@id`      -> Json.fromString(s"http://127.0.0.1:8080/v1/projects/${refUpdate.value}"),
-          "nxv:rev"  -> Json.fromLong(2L)
+          "nxv:_rev" -> Json.fromLong(2L)
         )
       }
     }
