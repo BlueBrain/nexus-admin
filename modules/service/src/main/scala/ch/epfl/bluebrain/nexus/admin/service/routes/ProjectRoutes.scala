@@ -14,8 +14,9 @@ import ch.epfl.bluebrain.nexus.admin.core.types.Ref
 import ch.epfl.bluebrain.nexus.admin.core.types.Ref._
 import ch.epfl.bluebrain.nexus.admin.core.types.RefVersioned._
 import ch.epfl.bluebrain.nexus.admin.refined.ld.Id
+import ch.epfl.bluebrain.nexus.admin.refined.project.ProjectUri._
 import ch.epfl.bluebrain.nexus.admin.refined.permissions.{HasCreateProjects, HasReadProjects, HasWriteProjects}
-import ch.epfl.bluebrain.nexus.admin.refined.project.{ProjectReference, _}
+import ch.epfl.bluebrain.nexus.admin.refined.project.ProjectReference
 import ch.epfl.bluebrain.nexus.admin.service.directives.AuthDirectives._
 import ch.epfl.bluebrain.nexus.admin.service.directives.QueryDirectives._
 import ch.epfl.bluebrain.nexus.admin.service.directives.RefinedDirectives._
@@ -113,11 +114,12 @@ final class ProjectRoutes(projects: Projects[Future])(implicit iamClient: IamCli
     (pathEndOrSingleSlash & get & paramsToQuery) { (pagination, query) =>
       trace("searchProjects") {
         (pathEndOrSingleSlash & authorizeOn[HasReadProjects](Path.Empty / "*")) { implicit acls =>
+          implicit val projectNamespace = config.projects.namespace
           implicit val projectsResolver: Id => Future[Option[Project]] = { id =>
             {
-              id.toProjectReference(config.http.apiUri) match {
-                case Some(reference) => projects.fetch(reference)
-                case None            => Future.successful(None)
+              id.projectReference match {
+                case Some(projId) => projects.fetch(projId)
+                case None         => Future.successful(None)
               }
             }
 
