@@ -11,19 +11,17 @@ import ch.epfl.bluebrain.nexus.admin.query.filtering.Filter
 import ch.epfl.bluebrain.nexus.admin.query.filtering.Op.{Eq, Or}
 import ch.epfl.bluebrain.nexus.admin.query.filtering.PropPath.{SubjectPath, UriPath}
 import ch.epfl.bluebrain.nexus.admin.query.filtering.Term.UriTerm
-import ch.epfl.bluebrain.nexus.admin.refined.ld.{Namespace, Prefix}
 import ch.epfl.bluebrain.nexus.admin.refined.permissions.HasReadProjects
-import ch.epfl.bluebrain.nexus.admin.refined.project.ProjectReference
+import ch.epfl.bluebrain.nexus.admin.refined.project.{ProjectReference, _}
 import ch.epfl.bluebrain.nexus.commons.iam.acls.Permission.Read
 import ch.epfl.bluebrain.nexus.commons.iam.acls.{FullAccessControlList, Path, Permission, Permissions}
 import ch.epfl.bluebrain.nexus.commons.iam.identity.Identity
 import ch.epfl.bluebrain.nexus.commons.test.Resources
 import ch.epfl.bluebrain.nexus.commons.types.search.{Pagination, Sort, SortList}
 import eu.timepit.refined.api.RefType.applyRef
-import io.circe.Json
-import ch.epfl.bluebrain.nexus.admin.refined.project.{ProjectReference, _}
-import org.scalatest.{EitherValues, Matchers, TryValues, WordSpecLike}
 import eu.timepit.refined.auto._
+import io.circe.Json
+import org.scalatest.{EitherValues, Matchers, TryValues, WordSpecLike}
 
 class FilteredQuerySpec extends WordSpecLike with Matchers with Resources with EitherValues with TryValues {
 
@@ -41,7 +39,7 @@ class FilteredQuerySpec extends WordSpecLike with Matchers with Resources with E
     applyRef[HasReadProjects](FullAccessControlList(
       (Identity.Anonymous(), Path./, Permissions(Read, Permission("projects/read"))))).toOption.get
   implicit val idRef: IdResolvable[ProjectReference] = (a: ProjectReference) =>
-    IdRef(applyRef[Prefix]("projects").toOption.get, applyRef[Namespace]("https://localhost/project").toOption.get, a)
+    IdRef("projects", "https://localhost/project/", a)
 
   "A FilteredQuery" should {
     val pagination = Pagination(13, 17)
