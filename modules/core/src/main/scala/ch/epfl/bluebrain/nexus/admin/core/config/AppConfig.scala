@@ -64,7 +64,14 @@ object AppConfig {
       seeds.map(_.split(",").toSet).getOrElse(Set.empty[String])
   }
 
-  final case class SparqlConfig(base: Uri, namespace: String, credentials: Option[SparqlCredentials])
+  final case class SparqlConfig(base: Uri, namespace: String, username: Option[String], password: Option[String]) {
+    def credentials: Option[SparqlCredentials] = {
+      for {
+        user <- username
+        pass <- password
+      } yield SparqlCredentials(user, pass)
+    }
+  }
   final case class SparqlCredentials(username: String, password: String)
 
   final case class PersistenceConfig(journalPlugin: String, snapshotStorePlugin: String, queryJournalPlugin: String)
