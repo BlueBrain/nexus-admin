@@ -35,6 +35,7 @@ class Settings(config: Config) extends Extension {
   val appConfig = AppConfig(
     loadConfigOrThrow[DescriptionConfig](config, "app.description"),
     loadConfigOrThrow[InstanceConfig](config, "app.instance"),
+    loadConfigOrThrow[SparqlConfig](config, "app.sparql"),
     loadConfigOrThrow[HttpConfig](config, "app.http"),
     loadConfigOrThrow[RuntimeConfig](config, "app.runtime"),
     loadConfigOrThrow[ClusterConfig](config, "app.cluster"),

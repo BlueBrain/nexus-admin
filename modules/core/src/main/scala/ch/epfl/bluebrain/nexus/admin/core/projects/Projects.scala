@@ -17,11 +17,15 @@ import ch.epfl.bluebrain.nexus.admin.core.types.NamespaceOps._
 import ch.epfl.bluebrain.nexus.admin.core.types.Ref._
 import ch.epfl.bluebrain.nexus.admin.core.types.RefVersioned
 import ch.epfl.bluebrain.nexus.admin.ld.Const._
-import ch.epfl.bluebrain.nexus.admin.ld.{IdRef, IdResolvable, JsonLD}
+import ch.epfl.bluebrain.nexus.admin.ld.{IdRef, JsonLD}
+import ch.epfl.bluebrain.nexus.admin.query.QueryPayload
+import ch.epfl.bluebrain.nexus.admin.refined.ld.Id
 import ch.epfl.bluebrain.nexus.admin.refined.permissions._
 import ch.epfl.bluebrain.nexus.admin.refined.project._
 import ch.epfl.bluebrain.nexus.commons.shacl.validator.ShaclValidatorErr.{CouldNotFindImports, IllegalImportDefinition}
 import ch.epfl.bluebrain.nexus.commons.shacl.validator.{ShaclSchema, ShaclValidator}
+import ch.epfl.bluebrain.nexus.commons.sparql.client.SparqlClient
+import ch.epfl.bluebrain.nexus.commons.types.search.{Pagination, QueryResults}
 import io.circe.Json
 import io.circe.syntax._
 import journal.Logger
@@ -34,7 +38,6 @@ import journal.Logger
   * @tparam F the monadic effect type
   */
 class Projects[F[_]](resources: Resources[F, ProjectReference])(implicit F: MonadError[F, Throwable],
-                                                                idRes: IdResolvable[ProjectReference],
                                                                 config: ProjectsConfig) {
 
   private val tags = Set("project")
@@ -103,6 +106,15 @@ class Projects[F[_]](resources: Resources[F, ProjectReference])(implicit F: Mona
     resources.fetch(reference, rev)(reference.toPersId)
 
   /**
+    * List projects which meet criteria specified by query and pagination parameters
+    * @param query      query specifying criteria for projects to return
+    * @param pagination pagination
+    * @return  list of projects
+    */
+  def list(query: QueryPayload, pagination: Pagination)(implicit acls: HasReadProjects): F[QueryResults[Id]] =
+    resources.list(query, pagination)
+
+  /**
     * Asserts the project exists and it allows modifications on children resources.
     *
     * @param reference the name of the project
@@ -113,8 +125,7 @@ class Projects[F[_]](resources: Resources[F, ProjectReference])(implicit F: Mona
 
   private implicit class IdRefSyntax(reference: ProjectReference) {
     lazy val toPersId: String = {
-      //val idRef: IdRef = refToResolvable.apply(reference)
-      val idRef: IdRef = idRes(reference)
+      val idRef: IdRef = refToResolvable.apply(reference)
       s"${idRef.namespace.host.hashCode.abs.toString.take(5)}-${reference.value}"
     }
   }
@@ -147,10 +158,10 @@ object Projects {
     * @param config the project specific settings
     * @tparam F the monadic effect type
     */
-  final def apply[F[_]](agg: Agg[F])(implicit F: MonadError[F, Throwable],
-                                     config: ProjectsConfig,
-                                     validator: ShaclValidator[F]): Projects[F] =
-    new Projects(new Resources[F, ProjectReference](agg) {
+  final def apply[F[_]](agg: Agg[F], sparqlClient: SparqlClient[F])(implicit F: MonadError[F, Throwable],
+                                                                    config: ProjectsConfig,
+                                                                    validator: ShaclValidator[F]): Projects[F] =
+    new Projects(new Resources[F, ProjectReference](agg, sparqlClient) {
 
       override def validateCreate(id: ProjectReference, value: Json): F[Unit] = validate(value)
 

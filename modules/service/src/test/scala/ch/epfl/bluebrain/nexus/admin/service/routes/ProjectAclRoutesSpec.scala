@@ -37,7 +37,7 @@ class ProjectAclRoutesSpec extends WordSpecLike with Matchers with ProjectRoutes
         responseAs[Json] shouldEqual Json.obj(
           `@context` -> Json.fromString(appConfig.prefixes.coreContext.toString()),
           `@id`      -> Json.fromString(s"http://127.0.0.1:8080/v1/projects/${proj.value}"),
-          "nxv:rev"  -> Json.fromLong(1L)
+          "_rev"     -> Json.fromLong(1L)
         )
       }
     }

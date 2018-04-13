@@ -53,3 +53,5 @@ Thumbs.db
 bigdata.jnl
 rules.log
 
+# libsigar downloads
+native/

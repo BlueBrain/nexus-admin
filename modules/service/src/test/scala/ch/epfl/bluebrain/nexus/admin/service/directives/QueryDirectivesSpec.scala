@@ -160,7 +160,7 @@ class QueryDirectivesSpec
 
     "extract sort when provided" in {
       val rdfType = rdf.tpe.id.value.replace("#", "%23")
-      Get(s"/?sort=-nxv:createdAtTime,${rdfType},,,") ~> route {
+      Get(s"/?sort=-nxv:_createdAtTime,${rdfType},,,") ~> route {
         val expectedSort =
           SortList(List(Sort(OrderType.Desc, nxv.createdAtTime.id.value), Sort(OrderType.Asc, rdf.tpe.id.value)))
         Response(pageConfig.pagination, QueryPayload(`@context` = defaultContext, sort = expectedSort))

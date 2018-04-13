@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.admin.service.routes
 
 import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model.Uri.Path
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
@@ -8,19 +9,25 @@ import ch.epfl.bluebrain.nexus.admin.core.CallerCtx._
 import ch.epfl.bluebrain.nexus.admin.core.config.AppConfig
 import ch.epfl.bluebrain.nexus.admin.core.config.AppConfig._
 import ch.epfl.bluebrain.nexus.admin.core.projects.Project._
-import ch.epfl.bluebrain.nexus.admin.core.projects.Projects
+import ch.epfl.bluebrain.nexus.admin.core.projects.{Project, Projects}
+import ch.epfl.bluebrain.nexus.admin.core.types.Ref
 import ch.epfl.bluebrain.nexus.admin.core.types.Ref._
 import ch.epfl.bluebrain.nexus.admin.core.types.RefVersioned._
+import ch.epfl.bluebrain.nexus.admin.refined.ld.Id
+import ch.epfl.bluebrain.nexus.admin.refined.project.ProjectUri._
 import ch.epfl.bluebrain.nexus.admin.refined.permissions.{HasCreateProjects, HasReadProjects, HasWriteProjects}
 import ch.epfl.bluebrain.nexus.admin.refined.project.ProjectReference
 import ch.epfl.bluebrain.nexus.admin.service.directives.AuthDirectives._
+import ch.epfl.bluebrain.nexus.admin.service.directives.QueryDirectives._
 import ch.epfl.bluebrain.nexus.admin.service.directives.RefinedDirectives._
-import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport.{marshallerHttp, jsonUnmarshaller}
+import ch.epfl.bluebrain.nexus.admin.service.encoders.RoutesEncoder
+import ch.epfl.bluebrain.nexus.admin.service.routes.SearchResponse._
+import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport.{jsonUnmarshaller, marshallerHttp}
 import ch.epfl.bluebrain.nexus.commons.iam.IamClient
 import ch.epfl.bluebrain.nexus.service.kamon.directives.TracingDirectives
 import io.circe.Json
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 /**
   * Http route definitions for domain specific functionality.
@@ -28,11 +35,21 @@ import scala.concurrent.Future
   * @param projects               the domain operation bundle
   */
 final class ProjectRoutes(projects: Projects[Future])(implicit iamClient: IamClient[Future],
+                                                      ec: ExecutionContext,
                                                       config: AppConfig,
                                                       tracing: TracingDirectives)
     extends BaseRoute {
 
   import tracing._
+  implicit val pc: PaginationConfig = config.pagination
+
+  val idResolvable = Ref.refToResolvable
+  implicit val idExtractor: (Project) => Id = { p =>
+    idResolvable(p.id.value)
+  }
+
+  private implicit val encoders: RoutesEncoder[Project] = new RoutesEncoder[Project]()
+  import encoders._
   private def readRoutes(implicit credentials: Option[OAuth2BearerToken]): Route =
     (segment(of[ProjectReference]) & pathEndOrSingleSlash) { name =>
       (get & authorizeOn[HasReadProjects](name.value)) { implicit perms =>
@@ -88,14 +105,35 @@ final class ProjectRoutes(projects: Projects[Future])(implicit iamClient: IamCli
         }
     }
 
-  override def combined(implicit cred: Option[OAuth2BearerToken]): Route = readRoutes(cred) ~ writeRoutes(cred)
+  override def combined(implicit cred: Option[OAuth2BearerToken]): Route =
+    readRoutes(cred) ~ writeRoutes(cred) ~ searchRoutes(cred)
 
   def routes: Route = combinedRoutesFor("projects")
+
+  private def searchRoutes(implicit credentials: Option[OAuth2BearerToken]): Route =
+    (pathEndOrSingleSlash & get & paramsToQuery) { (pagination, query) =>
+      trace("searchProjects") {
+        (pathEndOrSingleSlash & authorizeOn[HasReadProjects](Path.Empty / "*")) { implicit acls =>
+          implicit val projectNamespace = config.projects.namespace
+          implicit val projectsResolver: Id => Future[Option[Project]] = { id =>
+            {
+              id.projectReference match {
+                case Some(projId) => projects.fetch(projId)
+                case None         => Future.successful(None)
+              }
+            }
+
+          }
+          projects.list(query, pagination).buildResponse[Project](query.fields, config.http.publicUri, pagination)
+        }
+      }
+    }
 
 }
 
 object ProjectRoutes {
   final def apply(projects: Projects[Future])(implicit iamClient: IamClient[Future],
+                                              ec: ExecutionContext,
                                               config: AppConfig): ProjectRoutes = {
     implicit val tracing = new TracingDirectives()
     new ProjectRoutes(projects)

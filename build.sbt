@@ -72,10 +72,12 @@ lazy val commonsIam        = "ch.epfl.bluebrain.nexus" %% "iam"                 
 lazy val commonsQueryTypes = "ch.epfl.bluebrain.nexus" %% "commons-query-types"   % commonsVersion
 lazy val commonsSchemas    = "ch.epfl.bluebrain.nexus" %% "commons-schemas"       % commonsVersion
 lazy val commonsTest       = "ch.epfl.bluebrain.nexus" %% "commons-test"          % commonsVersion
+lazy val sparqlClient      = "ch.epfl.bluebrain.nexus" %% "sparql-client"         % commonsVersion
 lazy val serialization     = "ch.epfl.bluebrain.nexus" %% "service-serialization" % serviceVersion
 lazy val serviceHttp       = "ch.epfl.bluebrain.nexus" %% "service-http"          % serviceVersion
 lazy val serviceKamon      = "ch.epfl.bluebrain.nexus" %% "service-kamon"         % serviceVersion
 lazy val sourcingAkka      = "ch.epfl.bluebrain.nexus" %% "sourcing-akka"         % sourcingVersion
+lazy val serviceIndexing   = "ch.epfl.bluebrain.nexus" %% "service-indexing"      % serviceVersion
 lazy val sourcingCore      = "ch.epfl.bluebrain.nexus" %% "sourcing-core"         % sourcingVersion
 lazy val sourcingMem       = "ch.epfl.bluebrain.nexus" %% "sourcing-mem"          % sourcingVersion
 lazy val akkaHttpCors      = "ch.megard"               %% "akka-http-cors"        % akkaHttpCorsVersion
@@ -154,8 +156,9 @@ lazy val query = project
     libraryDependencies ++= Seq(
       commonsIam,
       commonsQueryTypes,
-      scalaTest % Test,
-      slf4j     % Test
+      scalaTest   % Test,
+      commonsTest % Test,
+      slf4j       % Test
     ),
     Test / fork              := true,
     Test / parallelExecution := false // workaround for jena initialization
@@ -172,6 +175,7 @@ lazy val core = project
     moduleName := "admin-core",
     libraryDependencies ++= Seq(
       akkaPersistence,
+      sparqlClient,
       circeJava8,
       circeRefined,
       commonsQueryTypes,
@@ -183,6 +187,7 @@ lazy val core = project
       akkaDistributed      % Test,
       akkaHttpTestKit      % Test,
       akkaPersistenceInMem % Test,
+      mockitoCore          % Test,
       scalaTest            % Test,
       sourcingMem          % Test,
       slf4j                % Test
@@ -202,6 +207,8 @@ lazy val service = project
     moduleName := "admin-service",
     libraryDependencies ++= Seq(
       akkaDistributed,
+      sparqlClient,
+      serviceIndexing,
       akkaHttpCors,
       akkaPersistenceCassandra,
       serviceHttp,
