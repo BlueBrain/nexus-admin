@@ -33,10 +33,10 @@ object Project {
     Encoder.encodeJson.contramap {
       case Project(id, rev, _, json, deprecated) =>
         json deepMerge Json.obj(
-          `@id`               -> id.asJson,
-          `@type`             -> Json.fromString(nxv.Project.show),
-          nxv.rev.show        -> Json.fromLong(rev),
-          nxv.deprecated.show -> Json.fromBoolean(deprecated)
+          `@id`                          -> id.asJson,
+          `@type`                        -> Json.fromString(nxv.Project.show),
+          nxv.rev.reference.value        -> Json.fromLong(rev),
+          nxv.deprecated.reference.value -> Json.fromBoolean(deprecated)
         )
 
     }

@@ -22,7 +22,7 @@ object project extends ProjectInferences {
     private[project] def unsafeDecompose(id: Id)(
         implicit projectNamespace: Namespace): (Namespace, ProjectReference) = {
       id.decompose match {
-        case (namespace, ref) if namespace.equals(projectNamespace) =>
+        case (namespace, ref) if namespace == projectNamespace =>
           applyRef[ProjectReference](ref.value) match {
             case Right(projectReference) => (namespace, projectReference)
             case Left(_)                 => throw new IllegalArgumentException(s"$ref in ${id.value} is not a valid ProjectReference")
