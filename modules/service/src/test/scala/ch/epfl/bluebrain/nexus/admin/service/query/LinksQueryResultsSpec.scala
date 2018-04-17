@@ -44,21 +44,21 @@ class LinksQueryResultsSpec extends WordSpecLike with Matchers {
     "return the correct next links when pagination offset is 0" in {
       val pagination = Pagination(0L, size)
 
-      val uri = Uri("http://localhost/v0/schemas/nexus/core?_size=10&other=4")
+      val uri = Uri("http://localhost/v0/schemas/nexus/core?size=10&other=4")
       LinksQueryResults(resp, pagination, uri).links shouldEqual Links(
         "_self" -> uri,
-        "_next" -> uri.withQuery(Query("_size" -> "5", "other" -> "4", "_from" -> "5")))
+        "_next" -> uri.withQuery(Query("size" -> "5", "other" -> "4", "from" -> "5")))
       LinksQueryResults(resp, pagination, uri).response shouldEqual resp
     }
 
     "return the correct next and previous links when pagination offset is 5" in {
       val pagination = Pagination(5L, size)
 
-      val uri = Uri("http://localhost/v0/schemas/nexus/core?_size=4")
+      val uri = Uri("http://localhost/v0/schemas/nexus/core?size=4")
       LinksQueryResults(resp, pagination, uri).links shouldEqual Links(
         "_self"     -> uri,
-        "_previous" -> uri.withQuery(Query("_size" -> "5", "_from" -> "0")),
-        "_next"     -> uri.withQuery(Query("_size" -> "5", "_from" -> "10")))
+        "_previous" -> uri.withQuery(Query("size" -> "5", "from" -> "0")),
+        "_next"     -> uri.withQuery(Query("size" -> "5", "from" -> "10")))
     }
 
     "return the correct previous links when pagination offset is 15" in {
@@ -69,7 +69,7 @@ class LinksQueryResultsSpec extends WordSpecLike with Matchers {
       val uri = Uri("http://localhost/v0/schemas/nexus/core")
       LinksQueryResults(response, pagination, uri).links shouldEqual Links(
         "_self"     -> uri,
-        "_previous" -> uri.withQuery(Query("_from" -> "10", "_size" -> "5")))
+        "_previous" -> uri.withQuery(Query("from" -> "10", "size" -> "5")))
     }
 
     "return the correct previous and next links when offset is 2" in {
@@ -77,8 +77,8 @@ class LinksQueryResultsSpec extends WordSpecLike with Matchers {
       val uri        = Uri("http://localhost/v0/schemas/nexus/core")
       LinksQueryResults(resp, pagination, uri).links shouldEqual Links(
         "_self"     -> uri,
-        "_previous" -> uri.withQuery(Query("_from" -> "0", "_size" -> "2")),
-        "_next"     -> uri.withQuery(Query("_from" -> "7", "_size" -> "5")))
+        "_previous" -> uri.withQuery(Query("from" -> "0", "size" -> "2")),
+        "_next"     -> uri.withQuery(Query("from" -> "7", "size" -> "5")))
     }
 
     "return the correct previous links when offset is out of scope" in {
@@ -88,7 +88,7 @@ class LinksQueryResultsSpec extends WordSpecLike with Matchers {
       val uri = Uri("http://localhost/v0/schemas/nexus/core")
       LinksQueryResults(response, pagination, uri).links shouldEqual Links(
         "_self"     -> uri,
-        "_previous" -> uri.withQuery(Query("_from" -> "12", "_size" -> "5")))
+        "_previous" -> uri.withQuery(Query("from" -> "12", "size" -> "5")))
     }
 
     "return the correct previous links when offset is out of scope and list has one element" in {
@@ -98,14 +98,14 @@ class LinksQueryResultsSpec extends WordSpecLike with Matchers {
       val uri = Uri("http://localhost/v0/schemas/nexus/core")
       LinksQueryResults(response, pagination, uri).links shouldEqual Links(
         "_self"     -> uri,
-        "_previous" -> uri.withQuery(Query("_from" -> "0", "_size" -> "3")))
+        "_previous" -> uri.withQuery(Query("from" -> "0", "size" -> "3")))
     }
 
     "return a correct Json representation from an unscored response" in {
       val uri = Uri("http://localhost/v0/schemas/nexus/core")
       val links = Links("_self" -> uri,
-                        "_previous" -> uri.withQuery(Query("_from" -> "0", "_size"  -> "5")),
-                        "_next"     -> uri.withQuery(Query("_from" -> "10", "_size" -> "5")))
+                        "_previous" -> uri.withQuery(Query("from" -> "0", "size"  -> "5")),
+                        "_next"     -> uri.withQuery(Query("from" -> "10", "size" -> "5")))
       val linksResults = LinksQueryResults(resp, links)
       linksResults.asJson shouldEqual Json.obj(
         "_total"   -> Json.fromLong(linksResults.response.total),
@@ -117,8 +117,8 @@ class LinksQueryResultsSpec extends WordSpecLike with Matchers {
     "return a correct Json representation form a scored response" in {
       val uri = Uri("http://localhost/v0/schemas/nexus/core")
       val links = Links("_self" -> uri,
-                        "_previous" -> uri.withQuery(Query("_from" -> "0", "_size"  -> "5")),
-                        "_next"     -> uri.withQuery(Query("_from" -> "10", "_size" -> "5")))
+                        "_previous" -> uri.withQuery(Query("from" -> "0", "size"  -> "5")),
+                        "_next"     -> uri.withQuery(Query("from" -> "10", "size" -> "5")))
       val scoredPage                       = List.fill(size)(ScoredQueryResult(1F, UUID.randomUUID().toString))
       val scoredResp: QueryResults[String] = ScoredQueryResults[String](total, 1F, scoredPage)
 

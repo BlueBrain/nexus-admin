@@ -25,7 +25,7 @@ trait QueryDirectives {
     * @param qs the preconfigured query settings
     */
   def paginated(implicit qs: PaginationConfig): Directive1[Pagination] =
-    (parameter('_from.as[Int] ? qs.pagination.from) & parameter('_size.as[Int] ? qs.pagination.size)).tmap {
+    (parameter('from.as[Int] ? qs.pagination.from) & parameter('size.as[Int] ? qs.pagination.size)).tmap {
       case (from, size) => Pagination(from.max(0), size.max(0).min(qs.maxSize.value))
     }
 
@@ -33,12 +33,12 @@ trait QueryDirectives {
     * Extracts the ''context'' query param from the request.
     */
   def context: Directive1[Json] =
-    parameter('_context.as[String] ? Json.obj().noSpaces).flatMap { contextParam =>
+    parameter('context.as[String] ? Json.obj().noSpaces).flatMap { contextParam =>
       parse(contextParam) match {
         case Right(ctxJson) => provide(Json.obj("@context" -> ctxJson).appendContext(Const.filterContext))
         case Left(_) =>
           reject(
-            MalformedQueryParamRejection("_context",
+            MalformedQueryParamRejection("context",
                                          "IllegalContext",
                                          Some(WrongOrInvalidJson(Some("The context must be a valid JSON")))))
       }
@@ -55,37 +55,37 @@ trait QueryDirectives {
     * Extracts the ''q'' query param from the request. This param will be used as a full text search
     */
   def q: Directive1[Option[String]] =
-    parameter('_q.?)
+    parameter('q.?)
 
   /**
     * Extracts the ''deprecated'' query param from the request.
     */
   def deprecated: Directive1[Option[Boolean]] =
-    parameter('_deprecated.as[Boolean].?)
+    parameter('deprecated.as[Boolean].?)
 
   /**
     * Extracts the ''published'' query param from the request.
     */
   def published: Directive1[Option[Boolean]] =
-    parameter('_published.as[Boolean].?)
+    parameter('published.as[Boolean].?)
 
   /**
     * Extracts the ''format'' query param from the request.
     */
   def format(implicit D: Decoder[JsonLdFormat]): Directive1[JsonLdFormat] =
-    parameter('_format.as[JsonLdFormat](unmarshallJsonString) ? (JsonLdFormat.Default: JsonLdFormat))
+    parameter('format.as[JsonLdFormat](unmarshallJsonString) ? (JsonLdFormat.Default: JsonLdFormat))
 
   /**
     * Extracts the ''sort'' query param from the request.
     */
   def sort(implicit D: Decoder[SortList]): Directive1[SortList] =
-    parameter('_sort.as[SortList](unmarshallJsonArr) ? SortList.Empty)
+    parameter('sort.as[SortList](unmarshallJsonArr) ? SortList.Empty)
 
   /**
     * Extracts the ''fields'' query param from the request.
     */
   def fields(implicit D: Decoder[Set[Field]]): Directive1[Set[Field]] = {
-    parameter('_fields.as[Set[Field]](unmarshallJsonArr) ? Set.empty[Field])
+    parameter('fields.as[Set[Field]](unmarshallJsonArr) ? Set.empty[Field])
   }
 
   /**

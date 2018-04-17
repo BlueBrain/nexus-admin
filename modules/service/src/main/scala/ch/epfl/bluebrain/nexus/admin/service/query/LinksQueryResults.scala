@@ -73,5 +73,5 @@ object LinksQueryResults {
   }
 
   private def addQuery(uri: Uri, from: Long, size: Int): Query =
-    Query(uri.query().toMap + (nxv.from.reference.value -> s"$from", nxv.size.reference.value -> s"$size"))
+    Query(uri.query().toMap + ("from" -> s"$from", "size" -> s"$size"))
 }
