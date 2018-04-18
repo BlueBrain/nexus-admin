@@ -6,11 +6,15 @@ import akka.http.scaladsl.model._
 import akka.stream.{ActorMaterializer, Materializer}
 import akka.testkit.TestKit
 import ch.epfl.bluebrain.nexus.admin.client.config.AdminConfig
+import ch.epfl.bluebrain.nexus.admin.client.types.Project.{Config, LoosePrefixMapping}
 import ch.epfl.bluebrain.nexus.admin.refined.project.ProjectReference
 import ch.epfl.bluebrain.nexus.commons.http.HttpClient.UntypedHttpClient
+import ch.epfl.bluebrain.nexus.commons.http.UnexpectedUnsuccessfulHttpResponse
 import ch.epfl.bluebrain.nexus.commons.iam.acls.{FullAccessControl, Permission, Permissions}
 import ch.epfl.bluebrain.nexus.commons.iam.identity.Identity.UserRef
+import ch.epfl.bluebrain.nexus.commons.iam.identity.IdentityId
 import ch.epfl.bluebrain.nexus.commons.test.Resources.contentOf
+import ch.epfl.bluebrain.nexus.commons.types.HttpRejection.UnauthorizedAccess
 import eu.timepit.refined.auto._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
@@ -25,7 +29,7 @@ class AdminClientSpec
     with ScalaFutures
     with BeforeAndAfterAll {
 
-  private val base = Uri("http://localhost/v0/projects/")
+  private val base = Uri("http://localhost/v1/projects/")
 
   private implicit val config: AdminConfig  = AdminConfig(base)
   private implicit val ec: ExecutionContext = system.dispatcher
@@ -39,38 +43,78 @@ class AdminClientSpec
   }
 
   "An AdminClient" should {
+
     "return an existing project from upstream" in {
-      val name: ProjectReference = "22g4jpv25hox63s"
+      val name: ProjectReference = "projectname"
       val mockedResponse = Future.successful(
         HttpResponse(
           entity = HttpEntity(ContentTypes.`application/json`, contentOf("/project.json")),
           status = StatusCodes.OK
         ))
       implicit val cl: UntypedHttpClient[Future] =
-        mockedClient(base.copy(path = base.path + "22g4jpv25hox63s"), mockedResponse)
+        mockedClient(base.copy(path = base.path + "projectname"), mockedResponse)
       val adminClient = AdminClient(config)
 
       val project = adminClient.getProject(name, None).futureValue
       project.deprecated shouldEqual false
       project.rev shouldEqual 3
       project.name shouldEqual name
+      project.config shouldEqual Config(10)
+      project.prefixMappings shouldEqual List(
+        LoosePrefixMapping("nxv-projectname", "https://nexus.example.com/vocabs/nexus/core/terms/v0.1.0/"),
+        LoosePrefixMapping("person-projectname", "https://shapes-registry.org/commons/person")
+      )
     }
 
-    "return an existing project ACLs from upstream" in {
-      val name: ProjectReference = "22g4jpv25hox63s"
+    "return ACLs from upstream for an existing project" in {
+      val name: ProjectReference = "projectname"
       val mockedResponse = Future.successful(
         HttpResponse(
           entity = HttpEntity(ContentTypes.`application/json`, contentOf("/project-acls.json")),
           status = StatusCodes.OK
         ))
       implicit val cl: UntypedHttpClient[Future] =
-        mockedClient(base.copy(path = base.path + "22g4jpv25hox63s/acls"), mockedResponse)
+        mockedClient(base.copy(path = base.path + "projectname/acls"), mockedResponse)
       val adminClient = AdminClient(config)
 
       val project = adminClient.getProjectAcls(name, None).futureValue
       project.acl shouldEqual List(
-        FullAccessControl(UserRef("bbp-test", "ca88f6d1-4f71-4fc0-b023-de82b8afdc30"), Path("22g4jpv25hox63s"), Permissions(Permission("projects/read")))
-      )
+        FullAccessControl(
+          UserRef(
+            IdentityId("https://nexus.example.com/v1/realms/bbp-test/users/ca88f6d1-4f71-4fc0-b023-de82b8afdc30")),
+          Path("projectname"),
+          Permissions(Permission("projects/read"))
+        ))
+    }
+
+    "forward unauthorized access errors" in {
+      val name: ProjectReference = "unauthorized"
+      val mockedResponse = Future.successful(
+        HttpResponse(
+          entity = HttpEntity(ContentTypes.`application/json`, contentOf("/unauthorized.json")),
+          status = StatusCodes.Unauthorized
+        ))
+      implicit val cl: UntypedHttpClient[Future] =
+        mockedClient(base.copy(path = base.path + "unauthorized"), mockedResponse)
+      val adminClient = AdminClient(config)
+
+      val error = adminClient.getProject(name, None).failed.futureValue
+      error shouldBe a[UnauthorizedAccess.type]
+    }
+
+    "handle unexpected upstream errors" in {
+      val name: ProjectReference = "nonexistent"
+      val mockedResponse = Future.successful(
+        HttpResponse(
+          entity = HttpEntity(ContentTypes.`text/plain(UTF-8)`, "Resource not found"),
+          status = StatusCodes.NotFound
+        ))
+      implicit val cl: UntypedHttpClient[Future] =
+        mockedClient(base.copy(path = base.path + "nonexistent"), mockedResponse)
+      val adminClient = AdminClient(config)
+
+      val error = adminClient.getProject(name, None).failed.futureValue
+      error shouldBe a[UnexpectedUnsuccessfulHttpResponse]
     }
   }
 

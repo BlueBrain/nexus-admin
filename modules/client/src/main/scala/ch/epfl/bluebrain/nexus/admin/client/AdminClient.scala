@@ -21,10 +21,27 @@ import journal.Logger
 
 import scala.concurrent.{ExecutionContext, Future}
 
+/**
+  * Admin client contract
+  *
+  * @tparam F the monadic effect type
+  */
 trait AdminClient[F[_]] {
 
+  /**
+    * Retrieves a [[Project]] resource instance.
+    *
+    * @param name        the project name
+    * @param credentials the optionally provided [[OAuth2BearerToken]]
+    */
   def getProject(name: ProjectReference, credentials: Option[OAuth2BearerToken]): F[Project]
 
+  /**
+    * Retrieves ACLs for a given project resource instance.
+    *
+    * @param name        the project name
+    * @param credentials the optionally provided [[OAuth2BearerToken]]
+    */
   def getProjectAcls(name: ProjectReference, credentials: Option[OAuth2BearerToken]): F[FullAccessControlList]
 
 }
@@ -33,6 +50,12 @@ object AdminClient {
 
   private val log = Logger[this.type]
 
+  /**
+    * Builds an [[AdminClient]] instance from a provided configuration and implicitly available instances of
+    * [[ExecutionContext]], [[Materializer]] and [[UntypedHttpClient]].
+    *
+    * @param config the provided [[AdminConfig]] instance
+    */
   def apply(config: AdminConfig)(implicit
                                  ec: ExecutionContext,
                                  mt: Materializer,
@@ -66,13 +89,15 @@ object AdminClient {
           Future.failed(UnauthorizedAccess)
         case ur: UnexpectedUnsuccessfulHttpResponse =>
           log.warn(
-            s"Received an unexpected response status code '${ur.response.status}' from IAM when attempting to perform and operation on a resource '$resource'")
+            s"Received an unexpected response status code '${ur.response.status}' from Admin when attempting to perform and operation on a resource '$resource'")
           Future.failed(ur)
+        // $COVERAGE-OFF$
         case err =>
           log.error(
-            s"Received an unexpected exception from IAM when attempting to perform and operation on a resource '$resource'",
+            s"Received an unexpected exception from Admin when attempting to perform and operation on a resource '$resource'",
             err)
           Future.failed(err)
+        // $COVERAGE-ON$
       }
     }
   }

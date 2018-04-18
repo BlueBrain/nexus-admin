@@ -229,7 +229,7 @@ lazy val client = project
       akkaHttpCore,
       circeCore,
       circeJava8,
-      commonsTest % Test,
+      commonsTest     % Test,
       akkaHttpTestKit % Test
     )
   )
@@ -241,7 +241,7 @@ lazy val root = project
     name                  := "admin",
     moduleName            := "admin",
     coverageFailOnMinimum := false,
-    Test / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-u", "target/test-reports")
+    Test / testOptions    += Tests.Argument(TestFrameworks.ScalaTest, "-u", "target/test-reports")
   )
   .aggregate(docs, refinements, ld, query, core, service, client, schemas)
 
