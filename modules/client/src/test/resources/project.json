@@ -1,0 +1,22 @@
+{
+  "@context": "https://bbp-nexus.epfl.ch/staging/v0/contexts/nexus/core/resource/v0.4.0",
+  "@id": "http://localhost/v0/projects/22g4jpv25hox63s",
+  "@type": "nxv:Project",
+  "config": {
+    "maxAttachmentSize": 10
+  },
+  "description": "22g4jpv25hox63s description",
+  "name": "22g4jpv25hox63s",
+  "prefixMappings": [
+    {
+      "namespace": "https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/",
+      "prefix": "nxv-22g4jpv25hox63s"
+    },
+    {
+      "namespace": "https://shapes-registry.org/commons/person",
+      "prefix": "person-22g4jpv25hox63s"
+    }
+  ],
+  "_rev": 3,
+  "_deprecated": false
+}

@@ -117,9 +117,9 @@ lazy val schemas = project
   .enablePlugins(WorkbenchPlugin, BuildInfoPlugin)
   .disablePlugins(ScapegoatSbtPlugin, DocumentationPlugin)
   .settings(
+    common,
     name                  := "admin-schemas",
     moduleName            := "admin-schemas",
-    resolvers             += Resolver.bintrayRepo("bogdanromanx", "maven"),
     coverageFailOnMinimum := false,
     libraryDependencies ++= Seq(
       commonsSchemas
@@ -147,10 +147,8 @@ lazy val ld = project
 
 lazy val query = project
   .in(file("modules/query"))
-  .enablePlugins(BuildInfoPlugin)
   .dependsOn(ld)
   .settings(
-    buildInfoSettings,
     name       := "admin-query",
     moduleName := "admin-query",
     libraryDependencies ++= Seq(
@@ -198,11 +196,10 @@ lazy val core = project
 
 lazy val service = project
   .in(file("modules/service"))
-  .enablePlugins(BuildInfoPlugin, ServicePackagingPlugin)
+  .enablePlugins(ServicePackagingPlugin)
   .dependsOn(core % testAndCompile, docs)
   .settings(
     common,
-    buildInfoSettings,
     name       := "admin-service",
     moduleName := "admin-service",
     libraryDependencies ++= Seq(
@@ -222,15 +219,31 @@ lazy val service = project
     Test / parallelExecution := false // workaround for jena initialization
   )
 
+lazy val client = project
+  .in(file("modules/client"))
+  .dependsOn(core % testAndCompile)
+  .settings(
+    name       := "admin-client",
+    moduleName := "admin-client",
+    libraryDependencies ++= Seq(
+      akkaHttpCore,
+      circeCore,
+      circeJava8,
+      commonsTest % Test,
+      akkaHttpTestKit % Test
+    )
+  )
+
 lazy val root = project
   .in(file("."))
   .settings(noPublish)
   .settings(
     name                  := "admin",
     moduleName            := "admin",
-    coverageFailOnMinimum := false
+    coverageFailOnMinimum := false,
+    Test / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-u", "target/test-reports")
   )
-  .aggregate(docs, refinements, ld, query, core, service, schemas)
+  .aggregate(docs, refinements, ld, query, core, service, client, schemas)
 
 /* ********************************************************
  ******************** Grouped Settings ********************
@@ -259,12 +272,12 @@ inThisBuild(
       Developer("bogdanromanx", "Bogdan Roman", "noreply@epfl.ch", url("https://bluebrain.epfl.ch/")),
       Developer("hygt", "Henry Genet", "noreply@epfl.ch", url("https://bluebrain.epfl.ch/")),
       Developer("umbreak", "Didac Montero Mendez", "noreply@epfl.ch", url("https://bluebrain.epfl.ch/")),
-      Developer("wwajerowicz", "Wojtek Wajerowicz", "noreply@epfl.ch", url("https://bluebrain.epfl.ch/")),
+      Developer("wwajerowicz", "Wojtek Wajerowicz", "noreply@epfl.ch", url("https://bluebrain.epfl.ch/"))
     ),
     // These are the sbt-release-early settings to configure
     releaseEarlyWith              := BintrayPublisher,
     releaseEarlyNoGpg             := true,
-    releaseEarlyEnableSyncToMaven := false,
+    releaseEarlyEnableSyncToMaven := false
   ))
 
 addCommandAlias("review", ";clean;scalafmtCheck;scalafmtSbtCheck;test:scalafmtCheck;coverage;scapegoat;test;coverageReport;coverageAggregate")

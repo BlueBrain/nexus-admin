@@ -18,7 +18,7 @@ import ch.epfl.bluebrain.nexus.admin.core.config.Settings
 import ch.epfl.bluebrain.nexus.admin.core.projects.Projects
 import ch.epfl.bluebrain.nexus.admin.core.projects.Projects.EvalProject
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceEvent
-import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceState.{Initial, next}
+import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceState.{next, Initial}
 import ch.epfl.bluebrain.nexus.admin.service.indexing.ResourceSparqlIndexer
 import ch.epfl.bluebrain.nexus.admin.service.routes.Proxy.AkkaStream
 import ch.epfl.bluebrain.nexus.admin.service.routes.{ProjectAclRoutes, ProjectRoutes, StaticRoutes}

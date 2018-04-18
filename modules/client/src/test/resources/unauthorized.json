@@ -1,0 +1,4 @@
+{
+  "@context": "https://bbp-nexus.epfl.ch/staging/v0/contexts/nexus/core/error/v0.1.0",
+  "code": "UnauthorizedAccess"
+}
