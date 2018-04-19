@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.admin.client
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.Uri.Path
+import akka.http.scaladsl.model.Uri.{Path, Query}
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.stream.{ActorMaterializer, Materializer}
@@ -77,10 +77,13 @@ class AdminClientSpec
         ))
       implicit val credentials: Option[OAuth2BearerToken] = Some(OAuth2BearerToken("validToken"))
       implicit val cl: UntypedHttpClient[Future] =
-        mockedClient(base.copy(path = base.path + "projectname/acls"), credentials, mockedResponse)
+        mockedClient(
+          base.copy(path = base.path + "projectname/acls").withQuery(Query("parents" -> "true", "self" -> "false")),
+          credentials,
+          mockedResponse)
       val adminClient = AdminClient(config)
 
-      val project = adminClient.getProjectAcls(name).futureValue
+      val project = adminClient.getProjectAcls(name, true, false).futureValue
       project.acl shouldEqual List(
         FullAccessControl(
           UserRef(

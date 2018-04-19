@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.admin.client
 
 import akka.http.scaladsl.client.RequestBuilding.Get
+import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.model.{HttpResponse, StatusCodes, Uri}
 import akka.stream.Materializer
@@ -40,9 +41,12 @@ trait AdminClient[F[_]] {
     * Retrieves ACLs for a given project resource instance.
     *
     * @param name        the project name
+    * @param parents     matches only the provided ''path'' (false) or the parents also (true)
+    * @param self        matches only the provided ''identities'' (true) or any identity which has the right own access (true)
     * @param credentials the optionally provided [[OAuth2BearerToken]]
     */
-  def getProjectAcls(name: ProjectReference)(implicit credentials: Option[OAuth2BearerToken]): F[FullAccessControlList]
+  def getProjectAcls(name: ProjectReference, parents: Boolean = false, self: Boolean = false)(
+      implicit credentials: Option[OAuth2BearerToken]): F[FullAccessControlList]
 
 }
 
@@ -73,14 +77,18 @@ object AdminClient {
         projectClient(requestFrom(credentials, path)).recoverWith { case e => recover(e, path) }
       }
 
-      override def getProjectAcls(name: ProjectReference)(
+      override def getProjectAcls(name: ProjectReference, parents: Boolean = false, self: Boolean = false)(
           implicit credentials: Option[OAuth2BearerToken]): Future[FullAccessControlList] = {
-        val path = name.value / "acls"
-        aclsClient(requestFrom(credentials, path)).recoverWith { case e => recover(e, path) }
+        val path  = name.value / "acls"
+        val query = Query("parents" -> parents.toString, "self" -> self.toString)
+        aclsClient(requestFrom(credentials, path, Some(query))).recoverWith { case e => recover(e, path) }
       }
 
-      private def requestFrom(credentials: Option[OAuth2BearerToken], path: Path) = {
-        val request = Get(config.baseUri.append(path))
+      private def requestFrom(credentials: Option[OAuth2BearerToken], path: Path, query: Option[Query] = None) = {
+        val request = query match {
+          case None    => Get(config.baseUri.append(path))
+          case Some(q) => Get(config.baseUri.append(path).withQuery(q))
+        }
         credentials.map(request.addCredentials).getOrElse(request)
       }
 
