@@ -16,7 +16,7 @@ import ch.epfl.bluebrain.nexus.commons.iam.identity.Identity.UserRef
 import ch.epfl.bluebrain.nexus.commons.iam.identity.IdentityId
 import ch.epfl.bluebrain.nexus.commons.test.Resources.contentOf
 import ch.epfl.bluebrain.nexus.commons.types.HttpRejection.UnauthorizedAccess
-import eu.timepit.refined._
+import eu.timepit.refined.auto._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 
@@ -46,7 +46,7 @@ class AdminClientSpec
   "An AdminClient" should {
 
     "return an existing project from upstream" in {
-      val name: ProjectReference = refineMV("projectname")
+      val name: ProjectReference = "projectname"
       val mockedResponse = Future.successful(
         HttpResponse(
           entity = HttpEntity(ContentTypes.`application/json`, contentOf("/project.json")),
@@ -62,14 +62,13 @@ class AdminClientSpec
       project.name shouldEqual name
       project.config shouldEqual Config(10)
       project.prefixMappings shouldEqual List(
-        LoosePrefixMapping(refineMV("nxv-projectname"),
-                           refineMV("https://nexus.example.com/vocabs/nexus/core/terms/v0.1.0/")),
-        LoosePrefixMapping(refineMV("person-projectname"), refineMV("https://shapes-registry.org/commons/person"))
+        LoosePrefixMapping("nxv-projectname", "https://nexus.example.com/vocabs/nexus/core/terms/v0.1.0/"),
+        LoosePrefixMapping("person-projectname", "https://shapes-registry.org/commons/person")
       )
     }
 
     "return ACLs from upstream for an existing project" in {
-      val name: ProjectReference = refineMV("projectname")
+      val name: ProjectReference = "projectname"
       val mockedResponse = Future.successful(
         HttpResponse(
           entity = HttpEntity(ContentTypes.`application/json`, contentOf("/project-acls.json")),
@@ -92,7 +91,7 @@ class AdminClientSpec
     }
 
     "forward unauthorized access errors" in {
-      val name: ProjectReference = refineMV("unauthorized")
+      val name: ProjectReference = "unauthorized"
       val mockedResponse = Future.successful(
         HttpResponse(
           entity = HttpEntity(ContentTypes.`application/json`, contentOf("/unauthorized.json")),
@@ -107,7 +106,7 @@ class AdminClientSpec
     }
 
     "handle unexpected upstream errors" in {
-      val name: ProjectReference = refineMV("nonexistent")
+      val name: ProjectReference = "nonexistent"
       val mockedResponse = Future.successful(
         HttpResponse(
           entity = HttpEntity(ContentTypes.`text/plain(UTF-8)`, "Resource not found"),

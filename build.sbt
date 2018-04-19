@@ -104,12 +104,11 @@ lazy val docs = project
 lazy val refinements = project
   .in(file("modules/refined"))
   .settings(
-    name                     := "admin-refined",
-    moduleName               := "admin-refined",
-    coverageEnabled          := false,
-    libraryDependencies      ++= Seq(akkaHttpCore, commonsIam, refined, scalaTest % Test),
-    Test / fork              := true,
-    Test / parallelExecution := false // workaround for jena initialization
+    commonTestSettings,
+    name                := "admin-refined",
+    moduleName          := "admin-refined",
+    coverageEnabled     := false,
+    libraryDependencies ++= Seq(akkaHttpCore, commonsIam, refined, scalaTest % Test)
   )
 
 lazy val schemas = project
@@ -130,6 +129,7 @@ lazy val ld = project
   .dependsOn(refinements, schemas)
   .in(file("modules/ld"))
   .settings(
+    commonTestSettings,
     name       := "admin-ld",
     moduleName := "admin-ld",
     libraryDependencies ++= Seq(
@@ -140,15 +140,14 @@ lazy val ld = project
       shapeless,
       scalaTest % Test,
       slf4j     % Test
-    ),
-    Test / fork              := true,
-    Test / parallelExecution := false // workaround for jena initialization
+    )
   )
 
 lazy val query = project
   .in(file("modules/query"))
   .dependsOn(ld)
   .settings(
+    commonTestSettings,
     name       := "admin-query",
     moduleName := "admin-query",
     libraryDependencies ++= Seq(
@@ -157,9 +156,7 @@ lazy val query = project
       scalaTest   % Test,
       commonsTest % Test,
       slf4j       % Test
-    ),
-    Test / fork              := true,
-    Test / parallelExecution := false // workaround for jena initialization
+    )
   )
 
 lazy val core = project
@@ -168,6 +165,7 @@ lazy val core = project
   .dependsOn(query)
   .settings(
     common,
+    commonTestSettings,
     buildInfoSettings,
     name       := "admin-core",
     moduleName := "admin-core",
@@ -189,9 +187,7 @@ lazy val core = project
       scalaTest            % Test,
       sourcingMem          % Test,
       slf4j                % Test
-    ),
-    Test / fork              := true,
-    Test / parallelExecution := false // workaround for jena initialization
+    )
   )
 
 lazy val service = project
@@ -200,6 +196,7 @@ lazy val service = project
   .dependsOn(core % testAndCompile, docs)
   .settings(
     common,
+    commonTestSettings,
     name       := "admin-service",
     moduleName := "admin-service",
     libraryDependencies ++= Seq(
@@ -214,23 +211,24 @@ lazy val service = project
       slf4j,
       akkaTestKit % Test,
       mockitoCore % Test
-    ),
-    Test / fork              := true,
-    Test / parallelExecution := false // workaround for jena initialization
+    )
   )
 
 lazy val client = project
   .in(file("modules/client"))
-  .dependsOn(core % testAndCompile)
+  .dependsOn(ld)
   .settings(
+    commonTestSettings,
     name       := "admin-client",
     moduleName := "admin-client",
     libraryDependencies ++= Seq(
       akkaHttpCore,
       circeCore,
       circeJava8,
+      circeRefined,
+      akkaHttpTestKit % Test,
       commonsTest     % Test,
-      akkaHttpTestKit % Test
+      scalaTest       % Test
     )
   )
 
@@ -240,8 +238,7 @@ lazy val root = project
   .settings(
     name                  := "admin",
     moduleName            := "admin",
-    coverageFailOnMinimum := false,
-    Test / testOptions    += Tests.Argument(TestFrameworks.ScalaTest, "-u", "target/test-reports")
+    coverageFailOnMinimum := false
   )
   .aggregate(docs, refinements, ld, query, core, service, client, schemas)
 
@@ -258,6 +255,12 @@ lazy val noPublish = Seq(
 )
 
 lazy val testAndCompile = "test->test;compile->compile"
+
+lazy val commonTestSettings = Seq(
+  Test / testOptions       += Tests.Argument(TestFrameworks.ScalaTest, "-u", "target/test-reports"),
+  Test / fork              := true,
+  Test / parallelExecution := false // workaround for jena initialization
+)
 
 lazy val buildInfoSettings =
   Seq(buildInfoKeys := Seq[BuildInfoKey](version), buildInfoPackage := "ch.epfl.bluebrain.nexus.admin.core.config")
