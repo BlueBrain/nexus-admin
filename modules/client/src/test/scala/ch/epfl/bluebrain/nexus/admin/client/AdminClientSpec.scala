@@ -30,9 +30,9 @@ class AdminClientSpec
     with ScalaFutures
     with BeforeAndAfterAll {
 
-  private val base = Uri("http://localhost/v1/projects/")
+  private val base   = Uri("http://localhost/v1/projects/")
+  private val config = AdminConfig(base)
 
-  private implicit val config: AdminConfig  = AdminConfig(base)
   private implicit val ec: ExecutionContext = system.dispatcher
   private implicit val mt: Materializer     = ActorMaterializer()
 
@@ -52,11 +52,12 @@ class AdminClientSpec
           entity = HttpEntity(ContentTypes.`application/json`, contentOf("/project.json")),
           status = StatusCodes.OK
         ))
+      implicit val credentials: Option[OAuth2BearerToken] = Some(OAuth2BearerToken("validToken"))
       implicit val cl: UntypedHttpClient[Future] =
-        mockedClient(base.copy(path = base.path + "projectname"), Some(OAuth2BearerToken("validToken")), mockedResponse)
+        mockedClient(base.copy(path = base.path + "projectname"), credentials, mockedResponse)
       val adminClient = AdminClient(config)
 
-      val project = adminClient.getProject(name, Some(OAuth2BearerToken("validToken"))).futureValue
+      val project = adminClient.getProject(name).futureValue
       project.deprecated shouldEqual false
       project.rev shouldEqual 3
       project.name shouldEqual name
@@ -74,13 +75,12 @@ class AdminClientSpec
           entity = HttpEntity(ContentTypes.`application/json`, contentOf("/project-acls.json")),
           status = StatusCodes.OK
         ))
+      implicit val credentials: Option[OAuth2BearerToken] = Some(OAuth2BearerToken("validToken"))
       implicit val cl: UntypedHttpClient[Future] =
-        mockedClient(base.copy(path = base.path + "projectname/acls"),
-                     Some(OAuth2BearerToken("validToken")),
-                     mockedResponse)
+        mockedClient(base.copy(path = base.path + "projectname/acls"), credentials, mockedResponse)
       val adminClient = AdminClient(config)
 
-      val project = adminClient.getProjectAcls(name, Some(OAuth2BearerToken("validToken"))).futureValue
+      val project = adminClient.getProjectAcls(name).futureValue
       project.acl shouldEqual List(
         FullAccessControl(
           UserRef(
@@ -88,6 +88,22 @@ class AdminClientSpec
           Path("projectname"),
           Permissions(Permission("projects/read"))
         ))
+    }
+
+    "work without a leading slash in its config" in {
+      val name: ProjectReference = "projectname"
+      val mockedResponse = Future.successful(
+        HttpResponse(
+          entity = HttpEntity(ContentTypes.`application/json`, contentOf("/project.json")),
+          status = StatusCodes.OK
+        ))
+      implicit val credentials: Option[OAuth2BearerToken] = Some(OAuth2BearerToken("validToken"))
+      implicit val cl: UntypedHttpClient[Future] =
+        mockedClient(base.copy(path = base.path + "projectname"), credentials, mockedResponse)
+      val adminClient = AdminClient(AdminConfig(Uri("http://localhost/v1/projects")))
+
+      val project = adminClient.getProject(name).futureValue
+      project.name shouldEqual name
     }
 
     "forward unauthorized access errors" in {
@@ -101,7 +117,7 @@ class AdminClientSpec
         mockedClient(base.copy(path = base.path + "unauthorized"), None, mockedResponse)
       val adminClient = AdminClient(config)
 
-      val error = adminClient.getProject(name, None).failed.futureValue
+      val error = adminClient.getProject(name)(None).failed.futureValue
       error shouldBe a[UnauthorizedAccess.type]
     }
 
@@ -116,7 +132,7 @@ class AdminClientSpec
         mockedClient(base.copy(path = base.path + "nonexistent"), None, mockedResponse)
       val adminClient = AdminClient(config)
 
-      val error = adminClient.getProject(name, None).failed.futureValue
+      val error = adminClient.getProject(name)(None).failed.futureValue
       error shouldBe a[UnexpectedUnsuccessfulHttpResponse]
     }
   }

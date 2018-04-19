@@ -1,9 +1,8 @@
 package ch.epfl.bluebrain.nexus.admin.client
 
 import akka.http.scaladsl.client.RequestBuilding.Get
-import akka.http.scaladsl.model.Uri._
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
-import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
+import akka.http.scaladsl.model.{HttpResponse, StatusCodes, Uri}
 import akka.stream.Materializer
 import ch.epfl.bluebrain.nexus.admin.client.config.AdminConfig
 import ch.epfl.bluebrain.nexus.admin.client.types.Project
@@ -11,7 +10,8 @@ import ch.epfl.bluebrain.nexus.admin.refined.project.ProjectReference
 import ch.epfl.bluebrain.nexus.commons.http.HttpClient.UntypedHttpClient
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport.unmarshaller
 import ch.epfl.bluebrain.nexus.commons.http.{HttpClient, UnexpectedUnsuccessfulHttpResponse}
-import ch.epfl.bluebrain.nexus.commons.iam.acls.FullAccessControlList
+import ch.epfl.bluebrain.nexus.commons.iam.acls.{FullAccessControlList, Path}
+import ch.epfl.bluebrain.nexus.commons.iam.acls.Path._
 import ch.epfl.bluebrain.nexus.commons.iam.identity.Identity
 import ch.epfl.bluebrain.nexus.commons.iam.io.serialization.JsonLdSerialization
 import ch.epfl.bluebrain.nexus.commons.types.HttpRejection.UnauthorizedAccess
@@ -34,7 +34,7 @@ trait AdminClient[F[_]] {
     * @param name        the project name
     * @param credentials the optionally provided [[OAuth2BearerToken]]
     */
-  def getProject(name: ProjectReference, credentials: Option[OAuth2BearerToken]): F[Project]
+  def getProject(name: ProjectReference)(implicit credentials: Option[OAuth2BearerToken]): F[Project]
 
   /**
     * Retrieves ACLs for a given project resource instance.
@@ -42,7 +42,7 @@ trait AdminClient[F[_]] {
     * @param name        the project name
     * @param credentials the optionally provided [[OAuth2BearerToken]]
     */
-  def getProjectAcls(name: ProjectReference, credentials: Option[OAuth2BearerToken]): F[FullAccessControlList]
+  def getProjectAcls(name: ProjectReference)(implicit credentials: Option[OAuth2BearerToken]): F[FullAccessControlList]
 
 }
 
@@ -67,20 +67,20 @@ object AdminClient {
 
     new AdminClient[Future] {
 
-      override def getProject(name: ProjectReference, credentials: Option[OAuth2BearerToken]): Future[Project] = {
+      override def getProject(name: ProjectReference)(
+          implicit credentials: Option[OAuth2BearerToken]): Future[Project] = {
         val path = Path(name.value)
         projectClient(requestFrom(credentials, path)).recoverWith { case e => recover(e, path) }
       }
 
-      override def getProjectAcls(name: ProjectReference,
-                                  credentials: Option[OAuth2BearerToken]): Future[FullAccessControlList] = {
-        val path = Path(name.value) + "/acls"
+      override def getProjectAcls(name: ProjectReference)(
+          implicit credentials: Option[OAuth2BearerToken]): Future[FullAccessControlList] = {
+        val path = name.value / "acls"
         aclsClient(requestFrom(credentials, path)).recoverWith { case e => recover(e, path) }
       }
 
       private def requestFrom(credentials: Option[OAuth2BearerToken], path: Path) = {
-        val basePath = config.baseUri.path
-        val request  = Get(config.baseUri.copy(path = basePath ++ path))
+        val request = Get(config.baseUri.append(path))
         credentials.map(request.addCredentials).getOrElse(request)
       }
 
@@ -100,5 +100,10 @@ object AdminClient {
         // $COVERAGE-ON$
       }
     }
+  }
+
+  private implicit class UriSyntax(uri: Uri) {
+    def append(path: Path): Uri =
+      uri.copy(path = (uri.path: Path) ++ path)
   }
 }
