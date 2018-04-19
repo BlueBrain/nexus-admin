@@ -163,6 +163,9 @@ Filtering example while listing:
 List Projects
 : @@snip [list-projects.sh](../assets/api-reference/projects/list-projects.sh)
 
+Filter query parameter
+: @@snip [list-projects-filter.json](../assets/api-reference/projects/list-projects-filter.json)
+
 List Projects Response
 :   @@snip [projects-list.json](../assets/api-reference/projects/projects-list.json)
 
@@ -170,6 +173,9 @@ Filtering example while searching (notice the additional score related fields):
 
 Search and Filter Projects
 : @@snip [search-list-projects.sh](../assets/api-reference/projects/search-list-projects.sh)
+
+Filter query parameter
+: @@snip [search-list-projects-filter.json](../assets/api-reference/projects/search-list-projects-filter.json)
 
 Search and Filter Projects Response
 :   @@snip [instance-list.json](../assets/api-reference/projects/projects-search-list.json)
