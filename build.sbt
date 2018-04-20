@@ -104,12 +104,11 @@ lazy val docs = project
 lazy val refinements = project
   .in(file("modules/refined"))
   .settings(
-    name                     := "admin-refined",
-    moduleName               := "admin-refined",
-    coverageEnabled          := false,
-    libraryDependencies      ++= Seq(akkaHttpCore, commonsIam, refined, scalaTest % Test),
-    Test / fork              := true,
-    Test / parallelExecution := false // workaround for jena initialization
+    commonTestSettings,
+    name                := "admin-refined",
+    moduleName          := "admin-refined",
+    coverageEnabled     := false,
+    libraryDependencies ++= Seq(akkaHttpCore, commonsIam, refined, scalaTest % Test)
   )
 
 lazy val schemas = project
@@ -117,9 +116,9 @@ lazy val schemas = project
   .enablePlugins(WorkbenchPlugin, BuildInfoPlugin)
   .disablePlugins(ScapegoatSbtPlugin, DocumentationPlugin)
   .settings(
+    common,
     name                  := "admin-schemas",
     moduleName            := "admin-schemas",
-    resolvers             += Resolver.bintrayRepo("bogdanromanx", "maven"),
     coverageFailOnMinimum := false,
     libraryDependencies ++= Seq(
       commonsSchemas
@@ -130,6 +129,7 @@ lazy val ld = project
   .dependsOn(refinements, schemas)
   .in(file("modules/ld"))
   .settings(
+    commonTestSettings,
     name       := "admin-ld",
     moduleName := "admin-ld",
     libraryDependencies ++= Seq(
@@ -140,17 +140,14 @@ lazy val ld = project
       shapeless,
       scalaTest % Test,
       slf4j     % Test
-    ),
-    Test / fork              := true,
-    Test / parallelExecution := false // workaround for jena initialization
+    )
   )
 
 lazy val query = project
   .in(file("modules/query"))
-  .enablePlugins(BuildInfoPlugin)
   .dependsOn(ld)
   .settings(
-    buildInfoSettings,
+    commonTestSettings,
     name       := "admin-query",
     moduleName := "admin-query",
     libraryDependencies ++= Seq(
@@ -159,9 +156,7 @@ lazy val query = project
       scalaTest   % Test,
       commonsTest % Test,
       slf4j       % Test
-    ),
-    Test / fork              := true,
-    Test / parallelExecution := false // workaround for jena initialization
+    )
   )
 
 lazy val core = project
@@ -170,6 +165,7 @@ lazy val core = project
   .dependsOn(query)
   .settings(
     common,
+    commonTestSettings,
     buildInfoSettings,
     name       := "admin-core",
     moduleName := "admin-core",
@@ -191,18 +187,16 @@ lazy val core = project
       scalaTest            % Test,
       sourcingMem          % Test,
       slf4j                % Test
-    ),
-    Test / fork              := true,
-    Test / parallelExecution := false // workaround for jena initialization
+    )
   )
 
 lazy val service = project
   .in(file("modules/service"))
-  .enablePlugins(BuildInfoPlugin, ServicePackagingPlugin)
+  .enablePlugins(ServicePackagingPlugin)
   .dependsOn(core % testAndCompile, docs)
   .settings(
     common,
-    buildInfoSettings,
+    commonTestSettings,
     name       := "admin-service",
     moduleName := "admin-service",
     libraryDependencies ++= Seq(
@@ -217,9 +211,25 @@ lazy val service = project
       slf4j,
       akkaTestKit % Test,
       mockitoCore % Test
-    ),
-    Test / fork              := true,
-    Test / parallelExecution := false // workaround for jena initialization
+    )
+  )
+
+lazy val client = project
+  .in(file("modules/client"))
+  .dependsOn(ld)
+  .settings(
+    commonTestSettings,
+    name       := "admin-client",
+    moduleName := "admin-client",
+    libraryDependencies ++= Seq(
+      akkaHttpCore,
+      circeCore,
+      circeJava8,
+      circeRefined,
+      akkaHttpTestKit % Test,
+      commonsTest     % Test,
+      scalaTest       % Test
+    )
   )
 
 lazy val root = project
@@ -230,7 +240,7 @@ lazy val root = project
     moduleName            := "admin",
     coverageFailOnMinimum := false
   )
-  .aggregate(docs, refinements, ld, query, core, service, schemas)
+  .aggregate(docs, refinements, ld, query, core, service, client, schemas)
 
 /* ********************************************************
  ******************** Grouped Settings ********************
@@ -246,6 +256,12 @@ lazy val noPublish = Seq(
 
 lazy val testAndCompile = "test->test;compile->compile"
 
+lazy val commonTestSettings = Seq(
+  Test / testOptions       += Tests.Argument(TestFrameworks.ScalaTest, "-u", "target/test-reports"),
+  Test / fork              := true,
+  Test / parallelExecution := false // workaround for jena initialization
+)
+
 lazy val buildInfoSettings =
   Seq(buildInfoKeys := Seq[BuildInfoKey](version), buildInfoPackage := "ch.epfl.bluebrain.nexus.admin.core.config")
 
@@ -259,12 +275,12 @@ inThisBuild(
       Developer("bogdanromanx", "Bogdan Roman", "noreply@epfl.ch", url("https://bluebrain.epfl.ch/")),
       Developer("hygt", "Henry Genet", "noreply@epfl.ch", url("https://bluebrain.epfl.ch/")),
       Developer("umbreak", "Didac Montero Mendez", "noreply@epfl.ch", url("https://bluebrain.epfl.ch/")),
-      Developer("wwajerowicz", "Wojtek Wajerowicz", "noreply@epfl.ch", url("https://bluebrain.epfl.ch/")),
+      Developer("wwajerowicz", "Wojtek Wajerowicz", "noreply@epfl.ch", url("https://bluebrain.epfl.ch/"))
     ),
     // These are the sbt-release-early settings to configure
     releaseEarlyWith              := BintrayPublisher,
     releaseEarlyNoGpg             := true,
-    releaseEarlyEnableSyncToMaven := false,
+    releaseEarlyEnableSyncToMaven := false
   ))
 
 addCommandAlias("review", ";clean;scalafmtCheck;scalafmtSbtCheck;test:scalafmtCheck;coverage;scapegoat;test;coverageReport;coverageAggregate")

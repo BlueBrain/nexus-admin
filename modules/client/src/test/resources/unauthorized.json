@@ -1,0 +1,4 @@
+{
+  "@context": "https://nexus.example.com/v1/contexts/nexus/core/error/v0.1.0",
+  "code": "UnauthorizedAccess"
+}

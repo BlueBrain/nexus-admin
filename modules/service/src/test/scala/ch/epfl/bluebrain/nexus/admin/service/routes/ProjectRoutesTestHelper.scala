@@ -10,7 +10,7 @@ import cats.instances.future._
 import ch.epfl.bluebrain.nexus.admin.core.config.{AppConfig, Settings}
 import ch.epfl.bluebrain.nexus.admin.core.projects.Projects
 import ch.epfl.bluebrain.nexus.admin.core.projects.Projects.EvalProject
-import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceState.{Initial, next}
+import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceState.{next, Initial}
 import ch.epfl.bluebrain.nexus.commons.iam.IamClient
 import ch.epfl.bluebrain.nexus.commons.iam.acls.{FullAccessControlList, Path, Permission, Permissions}
 import ch.epfl.bluebrain.nexus.commons.iam.identity.Caller.AnonymousCaller

@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceRejection.ResourceDo
 import ch.epfl.bluebrain.nexus.admin.service.directives.AuthDirectives.CustomAuthRejection
 import ch.epfl.bluebrain.nexus.admin.service.routes.ProjectAclRoutes.ProjectNotFound
 import ch.epfl.bluebrain.nexus.commons.http.ContextUri
-import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport.{OrderedKeys, marshallerHttp}
+import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport.{marshallerHttp, OrderedKeys}
 import ch.epfl.bluebrain.nexus.commons.types.HttpRejection
 import ch.epfl.bluebrain.nexus.commons.types.HttpRejection.{MethodNotSupported, UnauthorizedAccess, WrongOrInvalidJson}
 import io.circe.generic.extras.Configuration

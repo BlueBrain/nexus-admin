@@ -1,0 +1,17 @@
+{
+  "@context": "https://nexus.example.com/v1/contexts/nexus/core/iam/v0.1.0",
+  "acl": [
+    {
+      "path": "/projectname",
+      "identity": {
+        "@id": "https://nexus.example.com/v1/realms/bbp-test/users/ca88f6d1-4f71-4fc0-b023-de82b8afdc30",
+        "@type": "UserRef",
+        "realm": "bbp-test",
+        "sub": "ca88f6d1-4f71-4fc0-b023-de82b8afdc30"
+      },
+      "permissions": [
+        "projects/read"
+      ]
+    }
+  ]
+}

@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.commons.http.ContextUri
 import com.typesafe.config.Config
 import eu.timepit.refined.pureconfig._
 import pureconfig.ConvertHelpers._
-import pureconfig.{ConfigConvert, loadConfigOrThrow}
+import pureconfig.{loadConfigOrThrow, ConfigConvert}
 import eu.timepit.refined.api.RefType.applyRef
 import pureconfig.error.{CannotConvert, FailureReason}
 

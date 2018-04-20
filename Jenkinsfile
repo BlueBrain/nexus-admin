@@ -13,7 +13,7 @@ pipeline {
                     steps {
                         node("slave-sbt") {
                             checkout scm
-                            sh 'sbt clean scalafmtCheck scalafmtSbtCheck test:scalafmtCheck scapegoat'
+                            sh 'sbt clean scalafmtCheck scalafmtSbtCheck test:scalafmtCheck compile test:compile scapegoat'
                         }
                     }
                 }
@@ -64,6 +64,11 @@ pipeline {
                     sh "sbt clean coverage test coverageReport coverageAggregate"
                     sh "curl -s https://codecov.io/bash >> ./coverage.sh"
                     sh "bash ./coverage.sh -t `oc get secrets codecov-secret --template='{{.data.nexus_admin}}' | base64 -d`"
+                }
+            }
+            post {
+                always {
+                    junit '**/target/test-reports/TEST*.xml'
                 }
             }
         }

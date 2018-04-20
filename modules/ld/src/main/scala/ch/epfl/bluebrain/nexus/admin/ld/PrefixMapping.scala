@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.admin.ld
 
-import ch.epfl.bluebrain.nexus.admin.refined.ld.{Prefix, Namespace}
+import ch.epfl.bluebrain.nexus.admin.refined.ld.{Namespace, Prefix}
 import ch.epfl.bluebrain.nexus.commons.test.Randomness._
 import eu.timepit.refined.api.RefType.refinedRefType
 import eu.timepit.refined.api.Refined
