@@ -41,8 +41,8 @@ trait AdminClient[F[_]] {
     * Retrieves ACLs for a given project resource instance.
     *
     * @param name        the project name
-    * @param parents     matches only the provided ''path'' (false) or the parents also (true)
-    * @param self        matches only the provided ''identities'' (true) or any identity which has the right own access (true)
+    * @param parents     matches only the provided project ''path'' (false) or the parents also (true)
+    * @param self        matches only the caller ''identities'' (false) or any identity which has the right own access (true)
     * @param credentials the optionally provided [[OAuth2BearerToken]]
     */
   def getProjectAcls(name: ProjectReference, parents: Boolean = false, self: Boolean = false)(
@@ -74,17 +74,18 @@ object AdminClient {
       override def getProject(name: ProjectReference)(
           implicit credentials: Option[OAuth2BearerToken]): Future[Project] = {
         val path = Path(name.value)
-        projectClient(requestFrom(credentials, path)).recoverWith { case e => recover(e, path) }
+        projectClient(requestFrom(path)).recoverWith { case e => recover(e, path) }
       }
 
       override def getProjectAcls(name: ProjectReference, parents: Boolean = false, self: Boolean = false)(
           implicit credentials: Option[OAuth2BearerToken]): Future[FullAccessControlList] = {
         val path  = name.value / "acls"
         val query = Query("parents" -> parents.toString, "self" -> self.toString)
-        aclsClient(requestFrom(credentials, path, Some(query))).recoverWith { case e => recover(e, path) }
+        aclsClient(requestFrom(path, Some(query))).recoverWith { case e => recover(e, path) }
       }
 
-      private def requestFrom(credentials: Option[OAuth2BearerToken], path: Path, query: Option[Query] = None) = {
+      private def requestFrom(path: Path, query: Option[Query] = None)(
+          implicit credentials: Option[OAuth2BearerToken]) = {
         val request = query match {
           case None    => Get(config.baseUri.append(path))
           case Some(q) => Get(config.baseUri.append(path).withQuery(q))
