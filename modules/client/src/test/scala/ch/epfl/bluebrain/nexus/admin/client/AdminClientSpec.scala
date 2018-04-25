@@ -93,7 +93,7 @@ class AdminClientSpec
         ))
     }
 
-    "work without a leading slash in its config" in {
+    "work without a trailing slash in its config" in {
       val name: ProjectReference = "projectname"
       val mockedResponse = Future.successful(
         HttpResponse(
