@@ -26,9 +26,9 @@ object Const extends Resources {
     val maxScore = "maxscore"
   }
 
-  val filterContext: JsonLD = jsonContentOf("/filter-context.json")
+  val filterContext: JsonLD = jsonContentOf("/filter-context.json").mapObject(_.remove("@id"))
 
-  val projectContext: JsonLD = jsonContentOf("/project-context.json")
+  val projectContext: JsonLD = jsonContentOf("/project-context.json").mapObject(_.remove("@id"))
 
   val projectSchema: Json =
     jsonContentOf("/schemas/nexus/core/project/v0.1.0.json", Map(quote("{{base}}") -> "https://bbp-nexus.epfl.ch"))

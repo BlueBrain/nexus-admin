@@ -44,6 +44,7 @@ import io.circe.{Encoder, Json}
 import kamon.Kamon
 import kamon.system.SystemMetrics
 import org.apache.jena.query.ResultSet
+import ch.epfl.bluebrain.nexus.service.http.routes.StaticResourceRoutes
 
 import scala.collection.JavaConverters._
 import scala.concurrent.duration._
@@ -85,6 +86,13 @@ object Main {
       val projects                                   = Projects(agg, blazegraphClient)
       val api = uriPrefix(appConfig.http.apiUri)(
         ProjectRoutes(projects).routes ~ ProjectAclRoutes(projects, AkkaStream()).routes)
+      val staticResourceRoutes = new StaticResourceRoutes(
+        Map("/contexts/project" -> "/project-context.json",
+            "/contexts/filter"  -> "/filter-context.json",
+            "/schemas/project"  -> "/schemas/nexus/core/project/v0.1.0.json"),
+        "static",
+        appConfig.http.apiUri
+      ).routes
       val staticRoutes = StaticRoutes().routes
       val corsSettings = CorsSettings.defaultSettings
         .withAllowedMethods(List(GET, PUT, POST, DELETE, OPTIONS, HEAD))
@@ -92,7 +100,8 @@ object Main {
 
       startProjectsIndexer(blazegraphClient, appConfig.persistence)
 
-      val routes: Route = handleRejections(corsRejectionHandler)(cors(corsSettings)(staticRoutes ~ api))
+      val routes: Route =
+        handleRejections(corsRejectionHandler)(cors(corsSettings)(staticRoutes ~ staticResourceRoutes ~ api))
 
       logger.info("==== Cluster is Live ====")
 
