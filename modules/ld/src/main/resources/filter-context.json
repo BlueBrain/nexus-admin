@@ -69,5 +69,6 @@
     "size": {
       "@id": "nxv:size"
     }
-  }
+  },
+  "@id" : "{{base}}/static/contexts/filter"
 }

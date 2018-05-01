@@ -41,7 +41,7 @@ val shapelessVersion                = "2.3.3"
 val sourcingVersion                 = "0.10.4"
 
 // Nexus dependency versions
-val serviceVersion = "0.10.8"
+val serviceVersion = "0.10.11"
 val commonsVersion = "0.10.9"
 
 // Dependency modules

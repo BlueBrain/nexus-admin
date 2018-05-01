@@ -33,5 +33,6 @@
       "@id": "nxv:namespace",
       "@type": "@id"
     }
-  }
+  },
+  "@id" : "{{base}}/static/contexts/project"
 }
