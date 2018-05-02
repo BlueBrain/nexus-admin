@@ -256,7 +256,7 @@ lazy val noPublish = Seq(
 lazy val testAndCompile = "test->test;compile->compile"
 
 lazy val commonTestSettings = Seq(
-  Test / testOptions       += Tests.Argument(TestFrameworks.ScalaTest, "-u", "target/test-reports"),
+  Test / testOptions       += Tests.Argument(TestFrameworks.ScalaTest, "-o", "-u", "target/test-reports"),
   Test / fork              := true,
   Test / parallelExecution := false // workaround for jena initialization
 )
