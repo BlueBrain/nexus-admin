@@ -1,8 +1,9 @@
 package ch.epfl.bluebrain.nexus.admin.refined
 
 import ch.epfl.bluebrain.nexus.admin.refined.permissions._
-import ch.epfl.bluebrain.nexus.commons.iam.acls.{FullAccessControlList, Path, Permission, Permissions}
-import ch.epfl.bluebrain.nexus.commons.iam.identity.Identity
+import ch.epfl.bluebrain.nexus.commons.types.identity.Identity
+import ch.epfl.bluebrain.nexus.iam.client.types._
+import ch.epfl.bluebrain.nexus.service.http.Path
 import eu.timepit.refined.api.RefType.applyRef
 import eu.timepit.refined.auto._
 import org.scalatest.{EitherValues, Matchers, WordSpecLike}

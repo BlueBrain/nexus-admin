@@ -25,13 +25,13 @@ import ch.epfl.bluebrain.nexus.admin.service.routes.{ProjectAclRoutes, ProjectRo
 import ch.epfl.bluebrain.nexus.commons.http.HttpClient
 import ch.epfl.bluebrain.nexus.commons.http.HttpClient._
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport._
-import ch.epfl.bluebrain.nexus.commons.iam.acls.FullAccessControlList
-import ch.epfl.bluebrain.nexus.commons.iam.auth.User
-import ch.epfl.bluebrain.nexus.commons.iam.io.serialization.JsonLdSerialization
-import ch.epfl.bluebrain.nexus.commons.iam.{IamClient, IamUri}
 import ch.epfl.bluebrain.nexus.commons.shacl.validator.{ImportResolver, ShaclValidator}
 import ch.epfl.bluebrain.nexus.commons.sparql.client.BlazegraphClient
+import ch.epfl.bluebrain.nexus.commons.types.identity.User
+import ch.epfl.bluebrain.nexus.iam.client.types.FullAccessControlList
+import ch.epfl.bluebrain.nexus.iam.client.{IamClient, IamUri}
 import ch.epfl.bluebrain.nexus.service.http.directives.PrefixDirectives._
+import ch.epfl.bluebrain.nexus.service.http.routes.StaticResourceRoutes
 import ch.epfl.bluebrain.nexus.service.indexer.persistence.SequentialTagIndexer
 import ch.epfl.bluebrain.nexus.sourcing.akka.{ShardingAggregate, SourcingAkkaSettings}
 import ch.megard.akka.http.cors.scaladsl.CorsDirectives.{cors, corsRejectionHandler}
@@ -44,7 +44,6 @@ import io.circe.{Encoder, Json}
 import kamon.Kamon
 import kamon.system.SystemMetrics
 import org.apache.jena.query.ResultSet
-import ch.epfl.bluebrain.nexus.service.http.routes.StaticResourceRoutes
 
 import scala.collection.JavaConverters._
 import scala.concurrent.duration._
@@ -143,11 +142,12 @@ object Main {
   private def iamClient(baseIamUri: Uri)(implicit ec: ExecutionContext,
                                          mt: Materializer,
                                          cl: UntypedHttpClient[Future]): IamClient[Future] = {
-    implicit val identityDecoder = JsonLdSerialization.identityDecoder
-    implicit val iamUri          = IamUri(baseIamUri)
-    implicit val config          = Configuration.default.withDiscriminator("@type")
-    implicit val aclCl           = HttpClient.withAkkaUnmarshaller[FullAccessControlList]
-    implicit val userCl          = HttpClient.withAkkaUnmarshaller[User]
+
+    import ch.epfl.bluebrain.nexus.admin.service.decoders.IdentityJsonLdDecoder._
+    implicit val iamUri = IamUri(baseIamUri)
+    implicit val config = Configuration.default.withDiscriminator("@type")
+    implicit val aclCl  = HttpClient.withAkkaUnmarshaller[FullAccessControlList]
+    implicit val userCl = HttpClient.withAkkaUnmarshaller[User]
     IamClient()
   }
 

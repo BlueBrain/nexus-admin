@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceEvent.{ResourceCreat
 import ch.epfl.bluebrain.nexus.admin.ld.Const._
 import ch.epfl.bluebrain.nexus.admin.ld.JsonLdOps._
 import ch.epfl.bluebrain.nexus.admin.refined.ld.Id
-import ch.epfl.bluebrain.nexus.commons.iam.acls.Meta
+import ch.epfl.bluebrain.nexus.commons.types.Meta
 import ch.epfl.bluebrain.nexus.commons.sparql.client.{PatchStrategy, SparqlClient}
 import io.circe.Json
 

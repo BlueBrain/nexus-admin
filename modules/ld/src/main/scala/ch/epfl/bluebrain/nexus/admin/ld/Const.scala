@@ -4,7 +4,6 @@ import java.util.regex.Pattern.quote
 
 import ch.epfl.bluebrain.nexus.commons.test.Resources
 import eu.timepit.refined.auto._
-import eu.timepit.refined.string._
 import io.circe.Json
 
 // $COVERAGE-OFF$

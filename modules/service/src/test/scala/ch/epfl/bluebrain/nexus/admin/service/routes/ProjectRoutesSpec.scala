@@ -15,10 +15,11 @@ import ch.epfl.bluebrain.nexus.admin.refined.permissions.HasReadProjects
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport._
 import ch.epfl.bluebrain.nexus.commons.http.JsonOps._
 import ch.epfl.bluebrain.nexus.commons.http.RdfMediaTypes
-import ch.epfl.bluebrain.nexus.commons.iam.acls.Permission.Read
-import ch.epfl.bluebrain.nexus.commons.iam.acls.{FullAccessControlList, Path, Permission, Permissions}
-import ch.epfl.bluebrain.nexus.commons.iam.identity.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.commons.types.HttpRejection.UnauthorizedAccess
+import ch.epfl.bluebrain.nexus.commons.types.identity.Identity.Anonymous
+import ch.epfl.bluebrain.nexus.iam.client.types.Permission.Read
+import ch.epfl.bluebrain.nexus.iam.client.types._
+import ch.epfl.bluebrain.nexus.service.http.Path
 import eu.timepit.refined.api.RefType.{applyRef, refinedRefType}
 import io.circe.Json
 import io.circe.generic.auto._

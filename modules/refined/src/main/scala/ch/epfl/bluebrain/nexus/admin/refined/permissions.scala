@@ -1,12 +1,12 @@
 package ch.epfl.bluebrain.nexus.admin.refined
 
 import ch.epfl.bluebrain.nexus.admin.refined.permissions.{CreateProjects, ManageProjects, ReadProjects, WriteProjects}
-import ch.epfl.bluebrain.nexus.commons.iam.acls.{FullAccessControlList, Permission, Permissions}
+import ch.epfl.bluebrain.nexus.iam.client.types._
 import eu.timepit.refined.W
 import eu.timepit.refined.api.Inference.==>
 import eu.timepit.refined.api.{Inference, Refined, Validate}
-import shapeless.Witness
 import eu.timepit.refined.boolean.Or
+import shapeless.Witness
 
 import scala.util.Try
 

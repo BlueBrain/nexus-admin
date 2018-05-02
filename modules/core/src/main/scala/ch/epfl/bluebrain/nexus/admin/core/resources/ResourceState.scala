@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceEvent.{ResourceCreat
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceRejection._
 import ch.epfl.bluebrain.nexus.admin.core.types.Versioned
 import ch.epfl.bluebrain.nexus.admin.refined.ld.Id
-import ch.epfl.bluebrain.nexus.commons.iam.acls.Meta
+import ch.epfl.bluebrain.nexus.commons.types.Meta
 import io.circe.Json
 
 /**

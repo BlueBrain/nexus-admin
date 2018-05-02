@@ -14,16 +14,16 @@ import ch.epfl.bluebrain.nexus.admin.core.types.Ref
 import ch.epfl.bluebrain.nexus.admin.core.types.Ref._
 import ch.epfl.bluebrain.nexus.admin.core.types.RefVersioned._
 import ch.epfl.bluebrain.nexus.admin.refined.ld.Id
-import ch.epfl.bluebrain.nexus.admin.refined.project.ProjectUri._
 import ch.epfl.bluebrain.nexus.admin.refined.permissions.{HasCreateProjects, HasReadProjects, HasWriteProjects}
 import ch.epfl.bluebrain.nexus.admin.refined.project.ProjectReference
+import ch.epfl.bluebrain.nexus.admin.refined.project.ProjectUri._
 import ch.epfl.bluebrain.nexus.admin.service.directives.AuthDirectives._
 import ch.epfl.bluebrain.nexus.admin.service.directives.QueryDirectives._
 import ch.epfl.bluebrain.nexus.admin.service.directives.RefinedDirectives._
 import ch.epfl.bluebrain.nexus.admin.service.encoders.RoutesEncoder
 import ch.epfl.bluebrain.nexus.admin.service.routes.SearchResponse._
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport.{jsonUnmarshaller, marshallerHttp}
-import ch.epfl.bluebrain.nexus.commons.iam.IamClient
+import ch.epfl.bluebrain.nexus.iam.client.IamClient
 import ch.epfl.bluebrain.nexus.service.kamon.directives.TracingDirectives
 import io.circe.Json
 

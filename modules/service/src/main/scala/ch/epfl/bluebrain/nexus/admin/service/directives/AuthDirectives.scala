@@ -9,9 +9,10 @@ import akka.http.scaladsl.server.{AuthorizationFailedRejection, _}
 import ch.epfl.bluebrain.nexus.admin.core.CommonRejections
 import ch.epfl.bluebrain.nexus.admin.core.CommonRejections.DownstreamServiceError
 import ch.epfl.bluebrain.nexus.admin.service.directives.AuthDirectives._
-import ch.epfl.bluebrain.nexus.commons.iam.IamClient
-import ch.epfl.bluebrain.nexus.commons.iam.acls.{FullAccessControlList, Path}
-import ch.epfl.bluebrain.nexus.commons.iam.identity.Caller
+import ch.epfl.bluebrain.nexus.iam.client.IamClient
+import ch.epfl.bluebrain.nexus.iam.client.types.FullAccessControlList
+import ch.epfl.bluebrain.nexus.service.http.Path
+import ch.epfl.bluebrain.nexus.iam.client.Caller
 import ch.epfl.bluebrain.nexus.commons.types.HttpRejection.UnauthorizedAccess
 import eu.timepit.refined.api.{RefType, Validate}
 
@@ -33,7 +34,7 @@ trait AuthDirectives {
     * @return the [[Caller]]
     */
   def authCaller(implicit iamClient: IamClient[Future], cred: Option[OAuth2BearerToken]): Directive1[Caller] =
-    onComplete(iamClient.getCaller(cred, filterGroups = true)).flatMap {
+    onComplete(iamClient.getCaller(filterGroups = true)).flatMap {
       case Success(caller)             => provide(caller)
       case Failure(UnauthorizedAccess) => reject(AuthorizationFailedRejection)
       case Failure(err)                => reject(authorizationRejection(err))

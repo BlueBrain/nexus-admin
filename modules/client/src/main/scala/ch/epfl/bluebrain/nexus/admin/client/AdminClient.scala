@@ -5,18 +5,17 @@ import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.model.{HttpResponse, StatusCodes, Uri}
 import akka.stream.Materializer
+import ch.epfl.bluebrain.nexus.admin.client.IdentityJsonLdDecoder._
 import ch.epfl.bluebrain.nexus.admin.client.config.AdminConfig
 import ch.epfl.bluebrain.nexus.admin.client.types.Project
 import ch.epfl.bluebrain.nexus.admin.refined.project.ProjectReference
 import ch.epfl.bluebrain.nexus.commons.http.HttpClient.UntypedHttpClient
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport.unmarshaller
 import ch.epfl.bluebrain.nexus.commons.http.{HttpClient, UnexpectedUnsuccessfulHttpResponse}
-import ch.epfl.bluebrain.nexus.commons.iam.acls.{FullAccessControlList, Path}
-import ch.epfl.bluebrain.nexus.commons.iam.acls.Path._
-import ch.epfl.bluebrain.nexus.commons.iam.identity.Identity
-import ch.epfl.bluebrain.nexus.commons.iam.io.serialization.JsonLdSerialization
 import ch.epfl.bluebrain.nexus.commons.types.HttpRejection.UnauthorizedAccess
-import io.circe.Decoder
+import ch.epfl.bluebrain.nexus.iam.client.types.FullAccessControlList
+import ch.epfl.bluebrain.nexus.service.http.Path
+import ch.epfl.bluebrain.nexus.service.http.Path._
 import io.circe.generic.auto._
 import journal.Logger
 
@@ -64,8 +63,6 @@ object AdminClient {
                                  ec: ExecutionContext,
                                  mt: Materializer,
                                  cl: UntypedHttpClient[Future]): AdminClient[Future] = {
-    implicit val identityDecoder: Decoder[Identity] = JsonLdSerialization.identityDecoder
-
     val projectClient = HttpClient.withAkkaUnmarshaller[Project]
     val aclsClient    = HttpClient.withAkkaUnmarshaller[FullAccessControlList]
 

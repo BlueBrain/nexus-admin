@@ -13,11 +13,12 @@ import ch.epfl.bluebrain.nexus.admin.query.filtering.PropPath.{SubjectPath, UriP
 import ch.epfl.bluebrain.nexus.admin.query.filtering.Term.UriTerm
 import ch.epfl.bluebrain.nexus.admin.refined.permissions.HasReadProjects
 import ch.epfl.bluebrain.nexus.admin.refined.project.{ProjectReference, _}
-import ch.epfl.bluebrain.nexus.commons.iam.acls.Permission.Read
-import ch.epfl.bluebrain.nexus.commons.iam.acls.{FullAccessControlList, Path, Permission, Permissions}
-import ch.epfl.bluebrain.nexus.commons.iam.identity.Identity
 import ch.epfl.bluebrain.nexus.commons.test.Resources
+import ch.epfl.bluebrain.nexus.commons.types.identity.Identity
 import ch.epfl.bluebrain.nexus.commons.types.search.{Pagination, Sort, SortList}
+import ch.epfl.bluebrain.nexus.iam.client.types.Permission.Read
+import ch.epfl.bluebrain.nexus.iam.client.types._
+import ch.epfl.bluebrain.nexus.service.http.Path
 import eu.timepit.refined.api.RefType.applyRef
 import eu.timepit.refined.auto._
 import io.circe.Json

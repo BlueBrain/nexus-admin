@@ -7,7 +7,8 @@ import ch.epfl.bluebrain.nexus.admin.query.filtering.PropPath.SubjectPath
 import ch.epfl.bluebrain.nexus.admin.query.filtering.Term.UriTerm
 import ch.epfl.bluebrain.nexus.admin.query.filtering.{Expr, Op}
 import ch.epfl.bluebrain.nexus.admin.refined.project.ProjectReference
-import ch.epfl.bluebrain.nexus.commons.iam.acls.{FullAccessControlList, Path, Permission, Permissions}
+import ch.epfl.bluebrain.nexus.iam.client.types._
+import ch.epfl.bluebrain.nexus.service.http.Path
 import eu.timepit.refined.api.RefType.applyRef
 import shapeless.{:+:, CNil, Coproduct}
 
