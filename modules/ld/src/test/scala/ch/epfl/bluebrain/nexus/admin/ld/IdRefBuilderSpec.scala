@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.admin.ld
 
 import ch.epfl.bluebrain.nexus.admin.refined.ld._
 import eu.timepit.refined.auto._
-import eu.timepit.refined.string._
 import org.scalatest.{Matchers, WordSpecLike}
 
 class IdRefBuilderSpec extends WordSpecLike with Matchers {

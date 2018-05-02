@@ -11,8 +11,8 @@ import ch.epfl.bluebrain.nexus.admin.core.persistence.SerializerSpec.DataAndJson
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceEvent
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceEvent._
 import ch.epfl.bluebrain.nexus.admin.refined.ld.Id
-import ch.epfl.bluebrain.nexus.commons.iam.acls.Meta
-import ch.epfl.bluebrain.nexus.commons.iam.identity.Identity.UserRef
+import ch.epfl.bluebrain.nexus.commons.types.Meta
+import ch.epfl.bluebrain.nexus.commons.types.identity.Identity.UserRef
 import eu.timepit.refined.api.RefType.refinedRefType
 import eu.timepit.refined.auto._
 import io.circe.syntax._

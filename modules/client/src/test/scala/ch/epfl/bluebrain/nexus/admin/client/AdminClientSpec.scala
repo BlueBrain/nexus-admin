@@ -11,11 +11,11 @@ import ch.epfl.bluebrain.nexus.admin.client.types.Project.{Config, LoosePrefixMa
 import ch.epfl.bluebrain.nexus.admin.refined.project.ProjectReference
 import ch.epfl.bluebrain.nexus.commons.http.HttpClient.UntypedHttpClient
 import ch.epfl.bluebrain.nexus.commons.http.UnexpectedUnsuccessfulHttpResponse
-import ch.epfl.bluebrain.nexus.commons.iam.acls.{FullAccessControl, Permission, Permissions}
-import ch.epfl.bluebrain.nexus.commons.iam.identity.Identity.UserRef
-import ch.epfl.bluebrain.nexus.commons.iam.identity.IdentityId
 import ch.epfl.bluebrain.nexus.commons.test.Resources.contentOf
 import ch.epfl.bluebrain.nexus.commons.types.HttpRejection.UnauthorizedAccess
+import ch.epfl.bluebrain.nexus.commons.types.identity.Identity.UserRef
+import ch.epfl.bluebrain.nexus.commons.types.identity.IdentityId
+import ch.epfl.bluebrain.nexus.iam.client.types._
 import eu.timepit.refined.auto._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}

@@ -11,12 +11,13 @@ import ch.epfl.bluebrain.nexus.admin.core.config.{AppConfig, Settings}
 import ch.epfl.bluebrain.nexus.admin.core.projects.Projects
 import ch.epfl.bluebrain.nexus.admin.core.projects.Projects.EvalProject
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceState.{next, Initial}
-import ch.epfl.bluebrain.nexus.commons.iam.IamClient
-import ch.epfl.bluebrain.nexus.commons.iam.acls.{FullAccessControlList, Path, Permission, Permissions}
-import ch.epfl.bluebrain.nexus.commons.iam.identity.Caller.AnonymousCaller
-import ch.epfl.bluebrain.nexus.commons.iam.identity.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.commons.shacl.validator.{ImportResolver, ShaclValidator}
 import ch.epfl.bluebrain.nexus.commons.sparql.client.{InMemorySparqlActor, InMemorySparqlClient}
+import ch.epfl.bluebrain.nexus.commons.types.identity.Identity.Anonymous
+import ch.epfl.bluebrain.nexus.iam.client.Caller.AnonymousCaller
+import ch.epfl.bluebrain.nexus.iam.client.IamClient
+import ch.epfl.bluebrain.nexus.iam.client.types._
+import ch.epfl.bluebrain.nexus.service.http.Path
 import ch.epfl.bluebrain.nexus.sourcing.mem.MemoryAggregate
 import ch.epfl.bluebrain.nexus.sourcing.mem.MemoryAggregate._
 import com.typesafe.config.ConfigFactory
@@ -56,7 +57,7 @@ trait ProjectRoutesTestHelper extends WordSpecLike with ScalatestRouteTest with 
   private[routes] val route      = ProjectRoutes(projects).routes ~ ProjectAclRoutes(projects, proxy).routes
 
   private[routes] def setUpIamCalls(path: String) = {
-    when(cl.getCaller(optCred, filterGroups = true)).thenReturn(Future.successful(caller))
+    when(cl.getCaller(filterGroups = true)).thenReturn(Future.successful(caller))
     when(cl.getAcls(Path(path), parents = true, self = true)).thenReturn(Future.successful(acl))
   }
 

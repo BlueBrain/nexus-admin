@@ -25,24 +25,25 @@ scalafmt: {
  */
 
 // Dependency versions
-val akkaVersion                     = "2.5.11"
+val akkaVersion                     = "2.5.12"
 val akkaHttpVersion                 = "10.0.13"
 val akkaHttpCorsVersion             = "0.3.0"
 val akkaPersistenceInMemVersion     = "2.5.1.1"
-val akkaPersistenceCassandraVersion = "0.83"
+val akkaPersistenceCassandraVersion = "0.84"
 val catsVersion                     = "1.1.0"
 val circeVersion                    = "0.9.3"
-val jenaVersion                     = "3.6.0"
-val mockitoVersion                  = "2.17.0"
+val jenaVersion                     = "3.7.0"
+val mockitoVersion                  = "2.18.3"
 val pureconfigVersion               = "0.9.1"
-val refinedVersion                  = "0.8.7"
+val refinedVersion                  = "0.9.0"
 val scalaTestVersion                = "3.0.5"
 val shapelessVersion                = "2.3.3"
-val sourcingVersion                 = "0.10.4"
+val sourcingVersion                 = "0.10.5"
 
 // Nexus dependency versions
 val serviceVersion = "0.10.11"
-val commonsVersion = "0.10.9"
+val commonsVersion = "0.10.10"
+val iamVersion     = "0.5.16"
 
 // Dependency modules
 lazy val akkaDistributed          = "com.typesafe.akka"       %% "akka-distributed-data"      % akkaVersion
@@ -68,10 +69,10 @@ lazy val refined           = "eu.timepit" %% "refined"            % refinedVersi
 lazy val refinedPureConfig = "eu.timepit" %% "refined-pureconfig" % refinedVersion
 
 // Nexus dependency modules
-lazy val commonsIam        = "ch.epfl.bluebrain.nexus" %% "iam"                   % commonsVersion
 lazy val commonsQueryTypes = "ch.epfl.bluebrain.nexus" %% "commons-query-types"   % commonsVersion
 lazy val commonsSchemas    = "ch.epfl.bluebrain.nexus" %% "commons-schemas"       % commonsVersion
 lazy val commonsTest       = "ch.epfl.bluebrain.nexus" %% "commons-test"          % commonsVersion
+lazy val iamClient         = "ch.epfl.bluebrain.nexus" %% "iam-client"            % iamVersion
 lazy val sparqlClient      = "ch.epfl.bluebrain.nexus" %% "sparql-client"         % commonsVersion
 lazy val serialization     = "ch.epfl.bluebrain.nexus" %% "service-serialization" % serviceVersion
 lazy val serviceHttp       = "ch.epfl.bluebrain.nexus" %% "service-http"          % serviceVersion
@@ -108,7 +109,7 @@ lazy val refinements = project
     name                := "admin-refined",
     moduleName          := "admin-refined",
     coverageEnabled     := false,
-    libraryDependencies ++= Seq(akkaHttpCore, commonsIam, refined, scalaTest % Test)
+    libraryDependencies ++= Seq(iamClient, refined, serviceHttp, commonsTest % Test, scalaTest % Test)
   )
 
 lazy val schemas = project
@@ -151,7 +152,6 @@ lazy val query = project
     name       := "admin-query",
     moduleName := "admin-query",
     libraryDependencies ++= Seq(
-      commonsIam,
       commonsQueryTypes,
       scalaTest   % Test,
       commonsTest % Test,
@@ -205,7 +205,6 @@ lazy val service = project
       serviceIndexing,
       akkaHttpCors,
       akkaPersistenceCassandra,
-      serviceHttp,
       serviceKamon,
       sourcingAkka,
       slf4j,

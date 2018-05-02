@@ -18,11 +18,11 @@ import ch.epfl.bluebrain.nexus.admin.ld.PrefixMapping.randomPrefix
 import ch.epfl.bluebrain.nexus.admin.refined.project.ProjectReference
 import ch.epfl.bluebrain.nexus.commons.test.Randomness
 import ch.epfl.bluebrain.nexus.admin.refined.project._
-import ch.epfl.bluebrain.nexus.commons.iam.acls.Meta
+import ch.epfl.bluebrain.nexus.commons.types.Meta
 import ProjectValue._
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.admin.refined.ld.Id
-import ch.epfl.bluebrain.nexus.commons.iam.identity.Identity
+import ch.epfl.bluebrain.nexus.commons.types.identity.Identity
 import eu.timepit.refined.api.RefType.refinedRefType
 import io.circe.syntax._
 

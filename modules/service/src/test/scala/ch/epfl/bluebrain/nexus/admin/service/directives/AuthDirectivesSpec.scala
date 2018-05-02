@@ -13,14 +13,14 @@ import ch.epfl.bluebrain.nexus.admin.service.directives.AuthDirectives._
 import ch.epfl.bluebrain.nexus.admin.service.handlers.{ExceptionHandling, RejectionHandling}
 import ch.epfl.bluebrain.nexus.commons.http.ContextUri
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport._
-import ch.epfl.bluebrain.nexus.commons.iam.IamClient
-import ch.epfl.bluebrain.nexus.commons.iam.acls.{FullAccessControlList, Path, Permission, Permissions}
-import ch.epfl.bluebrain.nexus.commons.iam.auth.{AuthenticatedUser, User}
-import ch.epfl.bluebrain.nexus.commons.iam.identity.Caller.{AnonymousCaller, AuthenticatedCaller}
-import ch.epfl.bluebrain.nexus.commons.iam.identity.Identity.{Anonymous, GroupRef}
-import ch.epfl.bluebrain.nexus.commons.iam.identity.{Caller, IdentityId}
 import ch.epfl.bluebrain.nexus.commons.test.Randomness
 import ch.epfl.bluebrain.nexus.commons.types.HttpRejection.UnauthorizedAccess
+import ch.epfl.bluebrain.nexus.commons.types.identity.Identity.{Anonymous, GroupRef}
+import ch.epfl.bluebrain.nexus.commons.types.identity.{AuthenticatedUser, IdentityId, User}
+import ch.epfl.bluebrain.nexus.iam.client.Caller.{AnonymousCaller, AuthenticatedCaller}
+import ch.epfl.bluebrain.nexus.iam.client.{Caller, IamClient}
+import ch.epfl.bluebrain.nexus.iam.client.types._
+import ch.epfl.bluebrain.nexus.service.http.Path
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.auto._
 import io.circe.syntax._
@@ -83,7 +83,7 @@ class AuthDirectivesSpec
 
     "return unauthorized when the request contains an invalid token" in {
       implicit val cred: Option[OAuth2BearerToken] = Some(OAuth2BearerToken("invalid"))
-      when(cl.getCaller(cred, filterGroups = true)).thenReturn(Future.failed(UnauthorizedAccess))
+      when(cl.getCaller(filterGroups = true)).thenReturn(Future.failed(UnauthorizedAccess))
 
       Get("projects/proj") ~> route() ~> check {
         status shouldEqual StatusCodes.Unauthorized
@@ -93,7 +93,7 @@ class AuthDirectivesSpec
 
     "return internal server error when the downstream service is down" in {
       implicit val cred: Option[OAuth2BearerToken] = Some(OAuth2BearerToken("invalid"))
-      when(cl.getCaller(cred, filterGroups = true)).thenReturn(Future.failed(new RuntimeException("downstream error")))
+      when(cl.getCaller(filterGroups = true)).thenReturn(Future.failed(new RuntimeException("downstream error")))
 
       Get("projects/proj") ~> route() ~> check {
         status shouldEqual StatusCodes.InternalServerError
@@ -104,7 +104,7 @@ class AuthDirectivesSpec
     "return an authenticated caller when the request contains a valid token" in {
       implicit val cred: Option[OAuth2BearerToken] = Some(ValidCredentials)
       val expectedCaller                           = AuthenticatedCaller(ValidCredentials, user)
-      when(cl.getCaller(cred, filterGroups = true)).thenReturn(Future.successful(expectedCaller))
+      when(cl.getCaller(filterGroups = true)).thenReturn(Future.successful(expectedCaller))
       Get("projects/proj") ~> route() ~> check {
         status shouldEqual StatusCodes.OK
         responseAs[Json] shouldEqual (AuthenticatedCaller(ValidCredentials, user): Caller).asJson
@@ -114,7 +114,7 @@ class AuthDirectivesSpec
     "return an anonymous caller when the request contains a valid token" in {
       implicit val cred: Option[OAuth2BearerToken] = None
       val expectedCaller: Caller                   = AnonymousCaller(Uri("http://example.nexus.com/iam"))
-      when(cl.getCaller(cred, filterGroups = true)).thenReturn(Future.successful(expectedCaller))
+      when(cl.getCaller(filterGroups = true)).thenReturn(Future.successful(expectedCaller))
 
       Get("projects/proj") ~> route() ~> check {
         status shouldEqual StatusCodes.OK
