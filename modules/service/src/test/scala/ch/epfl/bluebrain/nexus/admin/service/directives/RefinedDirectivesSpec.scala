@@ -7,8 +7,9 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import ch.epfl.bluebrain.nexus.admin.core.CommonRejections.IllegalParam
 import ch.epfl.bluebrain.nexus.admin.core.Error
 import ch.epfl.bluebrain.nexus.admin.core.Error._
+import ch.epfl.bluebrain.nexus.admin.refined.organization.OrganizationReference
 import ch.epfl.bluebrain.nexus.admin.refined.project.ProjectReference
-import ch.epfl.bluebrain.nexus.admin.service.directives.RefinedDirectives.{segment, of => ofType}
+import ch.epfl.bluebrain.nexus.admin.service.directives.RefinedDirectives.{segment, segment2, of => ofType}
 import ch.epfl.bluebrain.nexus.admin.service.handlers.{ExceptionHandling, RejectionHandling}
 import ch.epfl.bluebrain.nexus.commons.http.ContextUri
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport._
@@ -47,9 +48,24 @@ class RefinedDirectivesSpec
 
     "return properly when refined type is a correct segment" in {
       Get("/abc") ~> handler(
-        (segment(ofType[ProjectReference]) & pathEndOrSingleSlash & get)(ref => complete(ref.value))) ~> check {
+        (segment(ofType[OrganizationReference]) & pathEndOrSingleSlash & get)(ref => complete(ref.value))) ~> check {
+        status shouldEqual StatusCodes.OK
+      }
+    }
+
+    "return properly when refined type is a correct reference which consists of two segments" in {
+      Get("/abc/def") ~> handler(
+        (segment2(ofType[ProjectReference]) & pathEndOrSingleSlash & get)(ref => complete(ref.value))) ~> check {
+        status shouldEqual StatusCodes.OK
+      }
+    }
+
+    "return properly when refined type is a correct reference which consists of one segment" in {
+      Get("/abc") ~> handler(
+        (segment(ofType[OrganizationReference]) & pathEndOrSingleSlash & get)(ref => complete(ref.value))) ~> check {
         status shouldEqual StatusCodes.OK
       }
     }
   }
+
 }

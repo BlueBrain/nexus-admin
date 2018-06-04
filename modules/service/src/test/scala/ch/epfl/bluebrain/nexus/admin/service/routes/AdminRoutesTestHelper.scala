@@ -1,16 +1,16 @@
 package ch.epfl.bluebrain.nexus.admin.service.routes
 
 import akka.actor.Props
-import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
-import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.model.headers.OAuth2BearerToken
+import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.util.Timeout
 import cats.instances.future._
 import ch.epfl.bluebrain.nexus.admin.core.config.{AppConfig, Settings}
+import ch.epfl.bluebrain.nexus.admin.core.organizations.Organizations
 import ch.epfl.bluebrain.nexus.admin.core.projects.Projects
-import ch.epfl.bluebrain.nexus.admin.core.projects.Projects.EvalProject
-import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceState.{next, Initial}
+import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceState.{next, Eval, Initial}
 import ch.epfl.bluebrain.nexus.commons.shacl.validator.{ImportResolver, ShaclValidator}
 import ch.epfl.bluebrain.nexus.commons.sparql.client.{InMemorySparqlActor, InMemorySparqlClient}
 import ch.epfl.bluebrain.nexus.commons.types.identity.Identity.Anonymous
@@ -29,12 +29,12 @@ import org.scalatest.mockito.MockitoSugar
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
-trait ProjectRoutesTestHelper extends WordSpecLike with ScalatestRouteTest with MockitoSugar with ScalaFutures {
+trait AdminRoutesTestHelper extends WordSpecLike with ScalatestRouteTest with MockitoSugar with ScalaFutures {
 
   implicit val defaultTimeout                          = Timeout(5 seconds)
   override implicit val patienceConfig: PatienceConfig = PatienceConfig(6 seconds, 300 milliseconds)
 
-  private def proxy: Proxy =
+  def proxy: Proxy =
     (req: HttpRequest) => Future.successful(HttpResponse(headers = req.headers, entity = req.entity))
 
   private[routes] val valid                         = ConfigFactory.parseResources("test-app.conf").resolve()
@@ -48,13 +48,22 @@ trait ProjectRoutesTestHelper extends WordSpecLike with ScalatestRouteTest with 
   private[routes] val acl = FullAccessControlList(
     (Anonymous(),
      Path("projects/proj"),
-     Permissions(Permission("projects/read"), Permission("projects/create"), Permission("projects/write"))))
+     Permissions(
+       Permission("projects/read"),
+       Permission("projects/create"),
+       Permission("projects/write"),
+       Permission("orgs/read"),
+       Permission("orgs/create"),
+       Permission("orgs/write")
+     )))
 
-  private[routes] val aggProject = MemoryAggregate("projects")(Initial, next, EvalProject().apply).toF[Future]
-  private val inMemoryActor      = system.actorOf(Props[InMemorySparqlActor]())
-  private val sparqlClient       = InMemorySparqlClient(inMemoryActor)
-  private[routes] val projects   = Projects(aggProject, sparqlClient)
-  private[routes] val route      = ProjectRoutes(projects).routes ~ ProjectAclRoutes(projects, proxy).routes
+  private[routes] val aggProject    = MemoryAggregate("projects")(Initial, next, Eval().apply).toF[Future]
+  private[routes] val aggOrg        = MemoryAggregate("orgs")(Initial, next, Eval().apply).toF[Future]
+  private val inMemoryActor         = system.actorOf(Props[InMemorySparqlActor]())
+  private val sparqlClient          = InMemorySparqlClient(inMemoryActor)
+  private[routes] val organizations = Organizations(aggOrg, sparqlClient)
+  private[routes] val projects      = Projects(organizations, aggProject, sparqlClient)
+  val route: Route
 
   private[routes] def setUpIamCalls(path: String) = {
     when(cl.getCaller(filterGroups = true)).thenReturn(Future.successful(caller))

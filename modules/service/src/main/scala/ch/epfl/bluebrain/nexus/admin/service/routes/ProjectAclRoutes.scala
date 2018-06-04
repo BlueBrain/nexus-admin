@@ -34,7 +34,7 @@ final class ProjectAclRoutes(projects: Projects[Future], proxy: Proxy)(implicit 
   private val iamUri = config.iam.baseUri
 
   protected def combined(implicit credentials: Option[OAuth2BearerToken]): Route =
-    (segment(of[ProjectReference]) & pathPrefix("acls") & pathEndOrSingleSlash) { name =>
+    (segment2(of[ProjectReference]) & pathPrefix("acls") & pathEndOrSingleSlash) { name =>
       (exists(name) & parameterMap & extractRequest) { (params, req) =>
         trace(s"${req.method.toString().toLowerCase()}ProjectACL") {
           complete(

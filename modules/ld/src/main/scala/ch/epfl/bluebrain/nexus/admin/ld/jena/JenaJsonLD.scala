@@ -32,10 +32,11 @@ private[ld] final case class JenaJsonLD(json: Json, private[jena] val modelF: ()
     val (subs, objs) = graph
       .find(Node.ANY, Node.ANY, Node.ANY)
       .asScala
-      .withFilter(triple => triple.getSubject.isBlankOrUri && triple.getObject.isBlankOrUri)
+      .withFilter(triple => triple.getSubject.isBlankOrUri)
       .foldLeft(Set.empty[Node] -> Set.empty[Node]) {
         case ((s, o), c) if selfPredicate(c.getPredicate) => s                  -> o
-        case ((s, o), c)                                  => (s + c.getSubject) -> (o + c.getObject)
+        case ((s, o), c) if c.getObject.isBlankOrUri      => (s + c.getSubject) -> (o + c.getObject)
+        case ((s, o), c)                                  => (s + c.getSubject) -> (o)
       }
     (subs -- objs).toList match {
       case head :: Nil => head.toIdType

@@ -41,6 +41,7 @@ class Settings(config: Config) extends Extension {
     loadConfigOrThrow[ClusterConfig](config, "app.cluster"),
     loadConfigOrThrow[PersistenceConfig](config, "app.persistence"),
     loadConfigOrThrow[ProjectsConfig](config, "app.projects"),
+    loadConfigOrThrow[OrganizationsConfig](config, "app.organizations"),
     loadConfigOrThrow[PrefixesConfig](config, "app.prefixes"),
     loadConfigOrThrow[IamConfig](config, "app.iam"),
     loadConfigOrThrow[PaginationConfig](config, "app.pagination"),

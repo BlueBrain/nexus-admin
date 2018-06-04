@@ -27,10 +27,13 @@ object Const extends Resources {
 
   val filterContext: JsonLD = jsonContentOf("/filter-context.json").mapObject(_.remove("@id"))
 
-  val projectContext: JsonLD = jsonContentOf("/project-context.json").mapObject(_.remove("@id"))
+  val projectContext: JsonLD      = jsonContentOf("/resource-context.json").mapObject(_.remove("@id"))
+  val organizationContext: JsonLD = jsonContentOf("/resource-context.json").mapObject(_.remove("@id"))
 
   val projectSchema: Json =
     jsonContentOf("/schemas/nexus/core/project/v0.1.0.json", Map(quote("{{base}}") -> "https://bbp-nexus.epfl.ch"))
+  val organizationSchema: Json =
+    jsonContentOf("/schemas/nexus/core/organization/v0.1.0.json", Map(quote("{{base}}") -> "https://bbp-nexus.epfl.ch"))
 
   //noinspection TypeAnnotation
   object rdf extends IdRefBuilder("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#") {
@@ -50,6 +53,9 @@ object Const extends Resources {
   //noinspection TypeAnnotation
   object nxv extends IdRefBuilder("nxv", "https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/") {
     val name           = build("name")
+    val uuid           = build("_uuid")
+    val base           = build("base")
+    val label          = build("label")
     val id             = build("_id")
     val rev            = build("_rev")
     val deprecated     = build("_deprecated")
@@ -62,6 +68,7 @@ object Const extends Resources {
     val updatedAtTime  = build("_updatedAtTime")
     val description    = build("description")
     val Project        = build("Project")
+    val Organization   = build("Organization")
     val config         = build("config")
     val attSize        = build("maxAttachmentSize")
     val prefixMappings = build("prefixMappings")

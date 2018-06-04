@@ -1,11 +1,13 @@
 package ch.epfl.bluebrain.nexus.admin.core.resources
 
 import java.time.Clock
+import java.util.UUID
 
 import cats.MonadError
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.admin.core.CallerCtx
 import ch.epfl.bluebrain.nexus.admin.core.Fault.{CommandRejected, Unexpected}
+import ch.epfl.bluebrain.nexus.admin.core.persistence.PersistenceId
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceCommand._
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceRejection._
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceState._
@@ -26,6 +28,7 @@ import ch.epfl.bluebrain.nexus.sourcing.Aggregate
 import com.github.ghik.silencer.silent
 import io.circe.Json
 import journal.Logger
+import ch.epfl.bluebrain.nexus.admin.core.persistence.PersistenceId._
 
 /**
   * Bundles operations that can be performed against a resource using the underlying persistence abstraction.
@@ -38,7 +41,8 @@ import journal.Logger
   * @tparam A the generic type of the id's ''reference''
   */
 @SuppressWarnings(Array("UnusedMethodParameter"))
-class Resources[F[_], A: IdResolvable: TypeFilterExpr](agg: Agg[F], sparqlClient: SparqlClient[F])(
+abstract class Resources[F[_], A: IdResolvable: PersistenceId: TypeFilterExpr](agg: Agg[F],
+                                                                               sparqlClient: SparqlClient[F])(
     implicit
     F: MonadError[F, Throwable],
     logger: Logger,
@@ -52,7 +56,7 @@ class Resources[F[_], A: IdResolvable: TypeFilterExpr](agg: Agg[F], sparqlClient
     * @return () or the appropriate rejection in the ''F'' context
     */
   @silent
-  def validateCreate(id: A, value: Json): F[Unit] = F.pure(())
+  def validateCreate(id: A, value: Json): F[Unit]
 
   /**
     * Certain validation to take place during update operations.
@@ -62,19 +66,21 @@ class Resources[F[_], A: IdResolvable: TypeFilterExpr](agg: Agg[F], sparqlClient
     * @return () or the appropriate rejection in the ''F'' context
     */
   @silent
-  def validateUpdate(id: A, value: Json): F[Unit] = F.pure(())
+  def validateUpdate(id: A, value: Json): F[Unit]
+
+  def tags: Set[String]
 
   /**
     * Asserts the resource exists and it allows modifications on children resources.
     *
-    * @param persId the unique persistence ID of the resource
+    * @param id  the unique id of the resource
     * @return () or the appropriate rejection in the ''F'' context
     */
-  def validateUnlocked(persId: String): F[Unit] =
-    agg.currentState(persId) flatMap {
-      case Initial                   => F.raiseError(CommandRejected(ParentResourceDoesNotExists))
-      case Current(_, _, _, _, true) => F.raiseError(CommandRejected(ResourceIsDeprecated))
-      case _                         => F.pure(())
+  def validateUnlocked(id: A): F[Unit] =
+    agg.currentState(id.persistenceId) flatMap {
+      case Initial                      => F.raiseError(CommandRejected(ParentResourceDoesNotExist))
+      case Current(_, _, _, _, _, true) => F.raiseError(CommandRejected(ResourceIsDeprecated))
+      case _                            => F.pure(())
     }
 
   /**
@@ -82,17 +88,15 @@ class Resources[F[_], A: IdResolvable: TypeFilterExpr](agg: Agg[F], sparqlClient
     *
     * @param id     the identifier of the resource
     * @param value  the json payload of the resource
-    * @param tags   the tags added to the consequent [[ResourceEvent]] which might be created as a result of this operation
-    * @param persId the unique persistence ID of the resource
     * @return a [[RefVersioned]] instance wrapped in the abstract ''F[_]'' type
     *         if successful, or a [[ch.epfl.bluebrain.nexus.admin.core.Fault]] wrapped within ''F[_]'' otherwise
     */
-  def create(id: A, value: Json)(tags: Set[String], persId: String)(
-      implicit ctx: CallerCtx,
-      @silent perms: HasCreateProjects): F[RefVersioned[A]] =
+  def create(id: A, value: Json)(implicit ctx: CallerCtx): F[RefVersioned[A]] =
     for {
       _ <- validateCreate(id, value)
-      r <- evaluate(CreateResource(id, ctx.meta, tags + persId, value), persId, s"Create res '$id'")
+      r <- evaluate(CreateResource(id, UUID.randomUUID().toString, ctx.meta, tags + id.persistenceId, value),
+                    id.persistenceId,
+                    s"Create res '$id'")
     } yield RefVersioned(id, r.rev)
 
   /**
@@ -101,17 +105,15 @@ class Resources[F[_], A: IdResolvable: TypeFilterExpr](agg: Agg[F], sparqlClient
     * @param id     the identifier of the resource
     * @param rev    the last known revision of the resource instance
     * @param value  the json payload of the resource
-    * @param tags   the tags added to the consequent [[ResourceEvent]] which might be created as a result of this operation
-    * @param persId the unique persistence ID of the resource
     * @return a [[RefVersioned]] instance wrapped in the abstract ''F[_]'' type
     *         if successful, or a [[ch.epfl.bluebrain.nexus.admin.core.Fault]] wrapped within ''F[_]'' otherwise
     */
-  def update(id: A, rev: Long, value: Json)(tags: Set[String], persId: String)(
-      implicit ctx: CallerCtx,
-      @silent perms: HasWriteProjects): F[RefVersioned[A]] =
+  def update(id: A, rev: Long, value: Json)(implicit ctx: CallerCtx): F[RefVersioned[A]] =
     for {
       _ <- validateUpdate(id, value)
-      r <- evaluate(UpdateResource(id, rev, ctx.meta, tags + persId, value), persId, s"Update res '$id'")
+      r <- evaluate(UpdateResource(id, rev, ctx.meta, tags + id.persistenceId, value),
+                    id.persistenceId,
+                    s"Update res '$id'")
     } yield RefVersioned(id, r.rev)
 
   /**
@@ -120,15 +122,11 @@ class Resources[F[_], A: IdResolvable: TypeFilterExpr](agg: Agg[F], sparqlClient
     *
     * @param id     the identifier of the resource
     * @param rev    the last known revision of the resource instance
-    * @param tags   the tags added to the consequent [[ResourceEvent]] which might be created as a result of this operation
-    * @param persId the unique persistence ID of the resource
     * @return a [[RefVersioned]] instance wrapped in the abstract ''F[_]'' type
     *         if successful, or a [[ch.epfl.bluebrain.nexus.admin.core.Fault]] wrapped within ''F[_]'' otherwise
     */
-  def deprecate(id: A, rev: Long)(tags: Set[String], persId: String)(
-      implicit ctx: CallerCtx,
-      @silent perms: HasWriteProjects): F[RefVersioned[A]] =
-    evaluate(DeprecateResource(id, rev, ctx.meta, tags + persId), persId, s"Deprecate res '$id'")
+  def deprecate(id: A, rev: Long)(implicit ctx: CallerCtx): F[RefVersioned[A]] =
+    evaluate(DeprecateResource(id, rev, ctx.meta, tags + id.persistenceId), id.persistenceId, s"Deprecate res '$id'")
       .map(r => RefVersioned(id, r.rev))
 
   /**
@@ -136,15 +134,14 @@ class Resources[F[_], A: IdResolvable: TypeFilterExpr](agg: Agg[F], sparqlClient
     * The (in)existence of the resource is represented by the [[scala.Option]] type wrapped within the ''F[_]'' context.
     *
     * @param id     the identifier of the resource
-    * @param persId the unique persistence ID of the resource
     * @return an optional [[Resource]] instance wrapped in the
     *         abstract ''F[_]'' type if successful, or a [[ch.epfl.bluebrain.nexus.admin.core.Fault]] wrapped within
     *         ''F[_]'' otherwise
     */
-  def fetch(id: A)(persId: String)(implicit @silent perms: HasReadProjects): F[Option[Resource[A]]] =
-    agg.currentState(persId).map {
+  def fetch(id: A): F[Option[Resource[A]]] =
+    agg.currentState(id.persistenceId).map {
       case Initial    => None
-      case c: Current => Some(Resource(id, c.rev, c.value, c.deprecated))
+      case c: Current => Some(Resource(id, c.uuid, c.rev, c.value, c.deprecated))
     }
 
   /**
@@ -153,14 +150,13 @@ class Resources[F[_], A: IdResolvable: TypeFilterExpr](agg: Agg[F], sparqlClient
     *
     * @param id     the identifier of the resource
     * @param rev    the revision attempted to be fetched
-    * @param persId the unique persistence ID of the resource
     * @return an optional [[Resource]] instance wrapped in the
     *         abstract ''F[_]'' type if successful, or a [[ch.epfl.bluebrain.nexus.admin.core.Fault]] wrapped within
     *         ''F[_]'' otherwise
     */
-  def fetch(id: A, rev: Long)(persId: String)(implicit @silent perms: HasReadProjects): F[Option[Resource[A]]] =
-    stateAt(persId, rev).map {
-      case c: Current if c.rev == rev => Some(Resource(id, c.rev, c.value, c.deprecated))
+  def fetch(id: A, rev: Long): F[Option[Resource[A]]] =
+    stateAt(id.persistenceId, rev).map {
+      case c: Current if c.rev == rev => Some(Resource(id, c.uuid, c.rev, c.value, c.deprecated))
       case _                          => None
     }
 

@@ -37,6 +37,7 @@ final case class AppConfig(description: DescriptionConfig,
                            cluster: ClusterConfig,
                            persistence: PersistenceConfig,
                            projects: ProjectsConfig,
+                           organizations: OrganizationsConfig,
                            prefixes: PrefixesConfig,
                            iam: IamConfig,
                            pagination: PaginationConfig,
@@ -80,6 +81,8 @@ object AppConfig {
 
   final case class ProjectsConfig(passivationTimeout: FiniteDuration, namespace: Namespace, attachmentSize: Long)
 
+  final case class OrganizationsConfig(passivationTimeout: FiniteDuration, namespace: Namespace)
+
   final case class PaginationConfig(from: Long Refined NonNegative,
                                     size: Int Refined Positive,
                                     maxSize: Int Refined Positive) {
@@ -106,6 +109,8 @@ object AppConfig {
   implicit def descriptionFromImplicit(implicit appConfig: AppConfig): DescriptionConfig = appConfig.description
 
   implicit def projectsConfigFromImplicit(implicit appConfig: AppConfig): ProjectsConfig = appConfig.projects
+  implicit def organizationsConfigFromImplicit(implicit appConfig: AppConfig): OrganizationsConfig =
+    appConfig.organizations
 
   implicit def coreContextUri(implicit appConfig: AppConfig): ContextUri = appConfig.prefixes.coreContext
 

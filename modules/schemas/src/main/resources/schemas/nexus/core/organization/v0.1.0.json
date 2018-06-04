@@ -235,14 +235,14 @@
     },
     "this": "{{base}}/static/schemas/project/shapes/"
   },
-  "@id" : "{{base}}/static/schemas/project",
+  "@id" : "{{base}}/static/schemas/organizations",
   "@type": "nxv:Schema",
   "shapes": [
     {
       "@id": "this:ProjectShape",
       "@type": "sh:NodeShape",
       "nodeKind": "sh:BlankNodeOrIRI",
-      "targetClass": "nxv:Project",
+      "targetClass": "nxv:Organization",
       "and": [
         {
           "node": "{{base}}/schemas/nexus/core/resource/v0.1.0/shapes/ResourceShape"
@@ -252,60 +252,12 @@
             {
               "path": "schema:name",
               "name": "Name",
-              "description": "The project name.",
+              "description": "The organization name.",
               "datatype": "xsd:string",
               "maxCount": 1,
               "minCount": 1
-            },
-            {
-              "path": "nxv:label",
-              "name": "Label",
-              "description": "The project label, used as part of the URL",
-              "datatype": "xsd:string",
-              "maxCount": 1,
-              "minCount": 1
-            },
-            {
-              "path": "nxv:base",
-              "name": "Base",
-              "description": "Project's based, used to create Nexus generated @ids",
-              "datatype": "xsd:string",
-              "maxCount": 1,
-              "minCount": 1
-            },
-            {
-              "path": "nxv:prefixMappings",
-              "name": "Prefix mappings",
-              "description": "Prefix mappings.",
-              "node": "this:PrefixMappingShape"
             }
           ]
-        }
-      ]
-    },
-    {
-      "@id": "this:PrefixMappingShape",
-      "@type": "sh:NodeShape",
-      "nodeKind": "sh:BlankNode",
-      "property": [
-        {
-          "path": "nxv:prefix",
-          "name": "Prefix name",
-          "description": "Prefix name shape. A prefix name should be a string of length at least 3 and at most 32.",
-          "datatype": "xsd:string",
-          "pattern": "^[a-z]{1}[a-z0-9-_]*$",
-          "sh:minLength": 1,
-          "sh:maxLength": 32,
-          "maxCount": 1,
-          "minCount": 1
-        },
-        {
-          "path": "nxv:namespace",
-          "name": "Namespace",
-          "description": "A namespace shape. A namespace should an IRI.",
-          "nodeKind": "sh:IRI",
-          "maxCount": 1,
-          "minCount": 1
         }
       ]
     },

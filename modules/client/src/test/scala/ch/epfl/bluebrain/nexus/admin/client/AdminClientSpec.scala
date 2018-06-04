@@ -46,7 +46,7 @@ class AdminClientSpec
   "An AdminClient" should {
 
     "return an existing project from upstream" in {
-      val name: ProjectReference = "projectname"
+      val name: ProjectReference = "orgname/projectname"
       val mockedResponse = Future.successful(
         HttpResponse(
           entity = HttpEntity(ContentTypes.`application/json`, contentOf("/project.json")),
@@ -54,13 +54,14 @@ class AdminClientSpec
         ))
       implicit val credentials: Option[OAuth2BearerToken] = Some(OAuth2BearerToken("validToken"))
       implicit val cl: UntypedHttpClient[Future] =
-        mockedClient(base.copy(path = base.path + "projectname"), credentials, mockedResponse)
+        mockedClient(base.copy(path = base.path + name.value), credentials, mockedResponse)
       val adminClient = AdminClient(config)
 
       val project = adminClient.getProject(name).futureValue
+      project.uuid shouldEqual "350df698-6813-11e8-adc0-fa7ae01bbebc"
       project.deprecated shouldEqual false
       project.rev shouldEqual 3
-      project.name shouldEqual name
+      project.name shouldEqual "projectname"
       project.config shouldEqual Config(10)
       project.prefixMappings shouldEqual List(
         LoosePrefixMapping("nxv-projectname", "https://nexus.example.com/vocabs/nexus/core/terms/v0.1.0/"),
@@ -69,7 +70,7 @@ class AdminClientSpec
     }
 
     "return ACLs from upstream for an existing project" in {
-      val name: ProjectReference = "projectname"
+      val name: ProjectReference = "orgname/projectname"
       val mockedResponse = Future.successful(
         HttpResponse(
           entity = HttpEntity(ContentTypes.`application/json`, contentOf("/project-acls.json")),
@@ -78,7 +79,7 @@ class AdminClientSpec
       implicit val credentials: Option[OAuth2BearerToken] = Some(OAuth2BearerToken("validToken"))
       implicit val cl: UntypedHttpClient[Future] =
         mockedClient(
-          base.copy(path = base.path + "projectname/acls").withQuery(Query("parents" -> "true", "self" -> "false")),
+          base.copy(path = base.path + s"${name.value}/acls").withQuery(Query("parents" -> "true", "self" -> "false")),
           credentials,
           mockedResponse)
       val adminClient = AdminClient(config)
@@ -94,7 +95,7 @@ class AdminClientSpec
     }
 
     "work without a trailing slash in its config" in {
-      val name: ProjectReference = "projectname"
+      val name: ProjectReference = "orgname/projectname"
       val mockedResponse = Future.successful(
         HttpResponse(
           entity = HttpEntity(ContentTypes.`application/json`, contentOf("/project.json")),
@@ -102,22 +103,22 @@ class AdminClientSpec
         ))
       implicit val credentials: Option[OAuth2BearerToken] = Some(OAuth2BearerToken("validToken"))
       implicit val cl: UntypedHttpClient[Future] =
-        mockedClient(base.copy(path = base.path + "projectname"), credentials, mockedResponse)
+        mockedClient(base.copy(path = base.path + name.value), credentials, mockedResponse)
       val adminClient = AdminClient(AdminConfig(Uri("http://localhost/v1/projects")))
 
       val project = adminClient.getProject(name).futureValue
-      project.name shouldEqual name
+      project.name shouldEqual "projectname"
     }
 
     "forward unauthorized access errors" in {
-      val name: ProjectReference = "unauthorized"
+      val name: ProjectReference = "orgname/unauthorized"
       val mockedResponse = Future.successful(
         HttpResponse(
           entity = HttpEntity(ContentTypes.`application/json`, contentOf("/unauthorized.json")),
           status = StatusCodes.Unauthorized
         ))
       implicit val cl: UntypedHttpClient[Future] =
-        mockedClient(base.copy(path = base.path + "unauthorized"), None, mockedResponse)
+        mockedClient(base.copy(path = base.path + name.value), None, mockedResponse)
       val adminClient = AdminClient(config)
 
       val error = adminClient.getProject(name)(None).failed.futureValue
@@ -125,14 +126,14 @@ class AdminClientSpec
     }
 
     "handle unexpected upstream errors" in {
-      val name: ProjectReference = "nonexistent"
+      val name: ProjectReference = "orgname/nonexistent"
       val mockedResponse = Future.successful(
         HttpResponse(
           entity = HttpEntity(ContentTypes.`text/plain(UTF-8)`, "Resource not found"),
           status = StatusCodes.NotFound
         ))
       implicit val cl: UntypedHttpClient[Future] =
-        mockedClient(base.copy(path = base.path + "nonexistent"), None, mockedResponse)
+        mockedClient(base.copy(path = base.path + name.value), None, mockedResponse)
       val adminClient = AdminClient(config)
 
       val error = adminClient.getProject(name)(None).failed.futureValue

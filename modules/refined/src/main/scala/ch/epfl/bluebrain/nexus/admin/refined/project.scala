@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.admin.refined
 
+import ch.epfl.bluebrain.nexus.admin.refined.organization.OrganizationReference
 import ch.epfl.bluebrain.nexus.admin.refined.ld.{IRelativeRef, Id, Namespace}
 import ch.epfl.bluebrain.nexus.admin.refined.project.{ProjectId, ProjectReferencePredicate}
 import eu.timepit.refined.W
@@ -11,7 +12,7 @@ import eu.timepit.refined.string.MatchesRegex
 import scala.util.Try
 
 object project extends ProjectInferences {
-  type ProjectReferencePredicate = MatchesRegex[W.`"[a-zA-Z0-9-_]{3,16}"`.T]
+  type ProjectReferencePredicate = MatchesRegex[W.`"[a-zA-Z0-9-_]{3,16}/[a-zA-Z0-9-_]{3,16}"`.T]
   type ProjectReference          = String Refined ProjectReferencePredicate
 
   type ProjectId = Id Refined ProjectUri
@@ -21,7 +22,7 @@ object project extends ProjectInferences {
   object ProjectUri {
     private[project] def unsafeDecompose(id: Id)(
         implicit projectNamespace: Namespace): (Namespace, ProjectReference) = {
-      id.decompose match {
+      id.decompose(projectNamespace) match {
         case (namespace, ref) if namespace == projectNamespace =>
           applyRef[ProjectReference](ref.value) match {
             case Right(projectReference) => (namespace, projectReference)
@@ -54,6 +55,22 @@ object project extends ProjectInferences {
 
   }
 
+  implicit class OrganizationReferenceSyntax(ref: ProjectReference) {
+
+    /**
+      * Extract [[OrganizationReference]] from [[ProjectReference]]
+      * @return [[OrganizationReference]]
+      */
+    def organizationReference: OrganizationReference = {
+      applyRef[OrganizationReference](ref.value.split("/")(0)) match {
+        case Right(orgRef) => orgRef
+        case Left(_) =>
+          throw new IllegalArgumentException(
+            s"Couldn't extract OrganizationReference from ProjectReference: ${ref.value}")
+      }
+    }
+
+  }
 }
 
 trait ProjectInferences {

@@ -11,6 +11,18 @@ import eu.timepit.refined.api.{RefType, Validate}
 trait RefinedDirectives {
 
   /**
+    * Extracts a refined type from two consecutive path segments.
+    */
+  def segment2[FTP, F[_, _], P](resolved: ApplyRefDirectivePartiallyApplied[FTP])(
+      implicit ev: F[String, P] =:= FTP,
+      rt: RefType[F],
+      v: Validate[String, P]): Directive1[FTP] = {
+    pathPrefix(Segment / Segment).tflatMap {
+      case (seg1, seg2) => resolved(s"$seg1/$seg2")
+    }
+  }
+
+  /**
     * Extracts a segment form the path executes the apply method from the passed ''resolved'' parameter.
     */
   def segment[FTP, F[_, _], P](resolved: ApplyRefDirectivePartiallyApplied[FTP])(

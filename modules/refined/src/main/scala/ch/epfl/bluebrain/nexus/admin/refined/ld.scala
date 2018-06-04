@@ -70,6 +70,13 @@ object ld extends LdInferences with TypeableInstances {
         }
     }
 
+    private[ld] def unsafeDecompose(s: String, namespace: Namespace): (Namespace, Reference) = {
+      if (s.startsWith(namespace.value))
+        (namespace, refinedRefType.unsafeWrap(s.stripPrefix(namespace.value)))
+      else
+        throw new IllegalArgumentException(s"$s doesn't start with required namespace: ${namespace.value}")
+    }
+
     /**
       * Interface syntax to expose new functionality into [[Namespace]], [[Reference]] tuple type.
       *
@@ -98,6 +105,14 @@ object ld extends LdInferences with TypeableInstances {
         */
       def decompose: (Namespace, Reference) =
         unsafeDecompose(value.value)
+
+      /**
+        * Decompose the ''value'' into two parts, the [[Namespace]] and the [[Reference]]
+        */
+      def decompose(namespace: Namespace): (Namespace, Reference) =
+        unsafeDecompose(value.value, namespace)
+
+      def reference(namespace: Namespace): Reference = ???
     }
 
     final implicit def uriValidate: Validate.Plain[String, Uri] =

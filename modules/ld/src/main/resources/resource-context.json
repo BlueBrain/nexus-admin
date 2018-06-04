@@ -12,19 +12,19 @@
     "skos": "http://www.w3.org/2004/02/skos/core#",
     "xsd": "http://www.w3.org/2001/XMLSchema#",
     "name": {
-      "@id": "nxv:name"
+      "@id": "schema:name"
+    },
+    "label": {
+      "@id": "nxv:label"
+    },
+    "_uuid": {
+      "@id": "nxv:_uuid"
     },
     "prefixMappings": {
       "@id": "nxv:prefixMappings"
     },
-    "config": {
-      "@id": "nxv:config"
-    },
-    "maxAttachmentSize": {
-      "@id": "nxv:maxAttachmentSize"
-    },
-    "description": {
-      "@id": "nxv:description"
+    "base": {
+      "@id": "nxv:base"
     },
     "prefix": {
       "@id": "nxv:prefix"

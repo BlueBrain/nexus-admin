@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.admin.client.types
 import ch.epfl.bluebrain.nexus.admin.client.types.Project._
 import ch.epfl.bluebrain.nexus.admin.ld.Const._
 import ch.epfl.bluebrain.nexus.admin.refined.ld.{AliasOrNamespace, Prefix}
-import ch.epfl.bluebrain.nexus.admin.refined.project.ProjectReference
 import io.circe.Decoder
 import io.circe.generic.semiauto.deriveDecoder
 import io.circe.refined._
@@ -16,12 +15,14 @@ import io.circe.refined._
   * @param config         the configuration of the project
   * @param rev            the selected revision for the project
   * @param deprecated     the deprecation status of the project
+  * @param uuid           the permanent identifier for the project
   */
-final case class Project(name: ProjectReference,
+final case class Project(name: String,
                          prefixMappings: List[LoosePrefixMapping],
                          config: Config,
                          rev: Long,
-                         deprecated: Boolean)
+                         deprecated: Boolean,
+                         uuid: String)
 
 object Project {
 
@@ -45,12 +46,13 @@ object Project {
                               DC: Decoder[Config] = deriveDecoder[Config]): Decoder[Project] = {
     Decoder.instance { c =>
       for {
-        name       <- c.downField(nxv.name.reference.value).as[ProjectReference]
+        name       <- c.downField(nxv.name.reference.value).as[String]
         lpm        <- c.downField(nxv.prefixMappings.reference.value).as[List[LoosePrefixMapping]]
         config     <- c.downField(nxv.config.reference.value).as[Config]
         rev        <- c.downField(nxv.rev.reference.value).as[Long]
         deprecated <- c.downField(nxv.deprecated.reference.value).as[Boolean]
-      } yield Project(name, lpm, config, rev, deprecated)
+        uuid       <- c.downField(nxv.uuid.reference.value).as[String]
+      } yield Project(name, lpm, config, rev, deprecated, uuid)
     }
   }
 }

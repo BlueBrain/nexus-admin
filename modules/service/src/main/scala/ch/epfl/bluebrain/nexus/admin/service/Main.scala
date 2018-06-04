@@ -15,10 +15,10 @@ import akka.stream.{ActorMaterializer, Materializer}
 import cats.instances.future._
 import ch.epfl.bluebrain.nexus.admin.core.config.AppConfig._
 import ch.epfl.bluebrain.nexus.admin.core.config.Settings
+import ch.epfl.bluebrain.nexus.admin.core.organizations.Organizations
 import ch.epfl.bluebrain.nexus.admin.core.projects.Projects
-import ch.epfl.bluebrain.nexus.admin.core.projects.Projects.EvalProject
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceEvent
-import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceState.{next, Initial}
+import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceState.{next, Eval, Initial}
 import ch.epfl.bluebrain.nexus.admin.service.indexing.ResourceSparqlIndexer
 import ch.epfl.bluebrain.nexus.admin.service.routes.Proxy.AkkaStream
 import ch.epfl.bluebrain.nexus.admin.service.routes.{ProjectAclRoutes, ProjectRoutes, StaticRoutes}
@@ -78,17 +78,24 @@ object Main {
     cluster.registerOnMemberUp {
 
       val timeout = appConfig.projects.passivationTimeout
-      val agg = ShardingAggregate("project", sourcingSettings.copy(passivationTimeout = timeout))(Initial,
-                                                                                                  next,
-                                                                                                  EvalProject().apply)
+      val projAgg =
+        ShardingAggregate("project", sourcingSettings.copy(passivationTimeout = timeout))(Initial, next, Eval().apply)
+      val orgAgg =
+        ShardingAggregate("organizations", sourcingSettings.copy(passivationTimeout = timeout))(Initial,
+                                                                                                next,
+                                                                                                Eval().apply)
       val blazegraphClient: BlazegraphClient[Future] = sparqlClient(appConfig.sparql)
-      val projects                                   = Projects(agg, blazegraphClient)
+      val organizations: Organizations[Future]       = Organizations(orgAgg, blazegraphClient)
+      val projects                                   = Projects(organizations, projAgg, blazegraphClient)
       val api = uriPrefix(appConfig.http.apiUri)(
         ProjectRoutes(projects).routes ~ ProjectAclRoutes(projects, AkkaStream()).routes)
       val staticResourceRoutes = new StaticResourceRoutes(
-        Map("/contexts/project" -> "/project-context.json",
-            "/contexts/filter"  -> "/filter-context.json",
-            "/schemas/project"  -> "/schemas/nexus/core/project/v0.1.0.json"),
+        Map(
+          "/contexts/resource"    -> "/resource-context.json",
+          "/contexts/filter"      -> "/filter-context.json",
+          "/schemas/project"      -> "/schemas/nexus/core/project/v0.1.0.json",
+          "/schemas/organization" -> "/schemas/nexus/core/organization/v0.1.0.json"
+        ),
         "static",
         appConfig.http.apiUri
       ).routes
