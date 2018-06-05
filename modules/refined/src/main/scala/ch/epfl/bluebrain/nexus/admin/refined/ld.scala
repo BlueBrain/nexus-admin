@@ -111,8 +111,6 @@ object ld extends LdInferences with TypeableInstances {
         */
       def decompose(namespace: Namespace): (Namespace, Reference) =
         unsafeDecompose(value.value, namespace)
-
-      def reference(namespace: Namespace): Reference = ???
     }
 
     final implicit def uriValidate: Validate.Plain[String, Uri] =
