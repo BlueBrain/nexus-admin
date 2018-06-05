@@ -8,13 +8,15 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.admin.core.CallerCtx
 import ch.epfl.bluebrain.nexus.admin.core.Fault.{CommandRejected, Unexpected}
 import ch.epfl.bluebrain.nexus.admin.core.persistence.PersistenceId
+import ch.epfl.bluebrain.nexus.admin.core.persistence.PersistenceId._
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceCommand._
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceRejection._
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceState._
 import ch.epfl.bluebrain.nexus.admin.core.resources.Resources.Agg
 import ch.epfl.bluebrain.nexus.admin.core.types.Ref._
 import ch.epfl.bluebrain.nexus.admin.core.types.RefVersioned
-import ch.epfl.bluebrain.nexus.admin.ld.IdResolvable
+import ch.epfl.bluebrain.nexus.admin.ld.Const.{nxv, rdf, resourceContext}
+import ch.epfl.bluebrain.nexus.admin.ld.{IdRef, IdResolvable, JsonLD}
 import ch.epfl.bluebrain.nexus.admin.query.QueryPayload
 import ch.epfl.bluebrain.nexus.admin.query.QueryResultsOps._
 import ch.epfl.bluebrain.nexus.admin.query.builder.{FilteredQuery, TypeFilterExpr}
@@ -22,13 +24,13 @@ import ch.epfl.bluebrain.nexus.admin.refined.ld.Id
 import ch.epfl.bluebrain.nexus.admin.refined.ld.Uri._
 import ch.epfl.bluebrain.nexus.admin.refined.permissions._
 import ch.epfl.bluebrain.nexus.admin.refined.project.ProjectReference
+import ch.epfl.bluebrain.nexus.commons.shacl.validator.ShaclValidatorErr.{CouldNotFindImports, IllegalImportDefinition}
+import ch.epfl.bluebrain.nexus.commons.shacl.validator.{ShaclSchema, ShaclValidator}
 import ch.epfl.bluebrain.nexus.commons.sparql.client.SparqlClient
 import ch.epfl.bluebrain.nexus.commons.types.search.{Pagination, QueryResults}
 import ch.epfl.bluebrain.nexus.sourcing.Aggregate
-import com.github.ghik.silencer.silent
 import io.circe.Json
 import journal.Logger
-import ch.epfl.bluebrain.nexus.admin.core.persistence.PersistenceId._
 
 /**
   * Bundles operations that can be performed against a resource using the underlying persistence abstraction.
@@ -45,28 +47,36 @@ abstract class Resources[F[_], A: IdResolvable: PersistenceId: TypeFilterExpr](a
                                                                                sparqlClient: SparqlClient[F])(
     implicit
     F: MonadError[F, Throwable],
+    validator: ShaclValidator[F],
     logger: Logger,
     clock: Clock) {
 
-  /**
-    * Certain validation to take place during creation operations.
-    *
-    * @param id    the identifier of the resource
-    * @param value the json payload of the resource
-    * @return () or the appropriate rejection in the ''F'' context
-    */
-  @silent
-  def validateCreate(id: A, value: Json): F[Unit]
+  def resourceType: IdRef
+
+  def resourceSchema: Json
 
   /**
-    * Certain validation to take place during update operations.
+    * Certain validation to perform on the payload.
     *
     * @param id    the identifier of the resource
     * @param value the json payload of the resource
     * @return () or the appropriate rejection in the ''F'' context
     */
-  @silent
-  def validateUpdate(id: A, value: Json): F[Unit]
+  def validate(id: A, value: JsonLD): F[Unit] = {
+    value.appendContext(resourceContext).add(rdf.tpe, resourceType).add(nxv.label, id.value).apply() match {
+      case Some(merged) =>
+        validator(ShaclSchema(resourceSchema), merged)
+          .flatMap { report =>
+            if (report.conforms) F.pure(())
+            else F.raiseError[Unit](CommandRejected(ShapeConstraintViolations(report.result.map(_.reason))))
+          }
+          .recoverWith {
+            case CouldNotFindImports(missing)     => F.raiseError(CommandRejected(MissingImportsViolation(missing)))
+            case IllegalImportDefinition(missing) => F.raiseError(CommandRejected(IllegalImportsViolation(missing)))
+          }
+      case None => F.raiseError(Unexpected(s"Could not add @type to the payload '${value.json}'"))
+    }
+  }
 
   def tags: Set[String]
 
@@ -93,7 +103,7 @@ abstract class Resources[F[_], A: IdResolvable: PersistenceId: TypeFilterExpr](a
     */
   def create(id: A, value: Json)(implicit ctx: CallerCtx): F[RefVersioned[A]] =
     for {
-      _ <- validateCreate(id, value)
+      _ <- validate(id, value)
       r <- evaluate(CreateResource(id, UUID.randomUUID().toString, ctx.meta, tags + id.persistenceId, value),
                     id.persistenceId,
                     s"Create res '$id'")
@@ -110,7 +120,7 @@ abstract class Resources[F[_], A: IdResolvable: PersistenceId: TypeFilterExpr](a
     */
   def update(id: A, rev: Long, value: Json)(implicit ctx: CallerCtx): F[RefVersioned[A]] =
     for {
-      _ <- validateUpdate(id, value)
+      _ <- validate(id, value)
       r <- evaluate(UpdateResource(id, rev, ctx.meta, tags + id.persistenceId, value),
                     id.persistenceId,
                     s"Update res '$id'")

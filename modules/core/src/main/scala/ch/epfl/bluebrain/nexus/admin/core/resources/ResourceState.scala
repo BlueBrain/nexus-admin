@@ -108,6 +108,11 @@ object ResourceState {
   }
 
   object Eval {
+
+    /**
+      * Create a new [[Eval]] instance.
+      * @return  new [[Eval]] instance
+      */
     final def apply(): Eval = new Eval
   }
 }

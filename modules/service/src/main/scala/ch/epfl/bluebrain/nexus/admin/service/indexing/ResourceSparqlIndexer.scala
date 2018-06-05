@@ -23,10 +23,10 @@ class ResourceSparqlIndexer[F[_]](client: SparqlClient[F]) {
   final def index(event: ResourceEvent): F[Unit] = event match {
     case ResourceCreated(id, uuid, rev, meta, _, value) =>
       val createdAt = Json.obj(nxv.createdAtTime.value -> meta.instant.jsonLd)
-      val data      = value deepMerge buildMeta(id, uuid, rev, meta) deepMerge createdAt deepMerge projectContext
+      val data      = value deepMerge buildMeta(id, uuid, rev, meta) deepMerge createdAt deepMerge resourceContext
       client.replace(id.value, data)
     case ResourceUpdated(id, uuid, rev, meta, _, value) =>
-      val data = value deepMerge buildMeta(id, uuid, rev, meta) deepMerge projectContext
+      val data = value deepMerge buildMeta(id, uuid, rev, meta) deepMerge resourceContext
       client.patch(id.value, data, PatchStrategy.removeButPredicates(Set(nxv.createdAtTime.value)))
     case ResourceDeprecated(id, uuid, rev, meta, _) =>
       val deprecated = Json.obj(nxv.deprecated.value -> Json.fromBoolean(true))

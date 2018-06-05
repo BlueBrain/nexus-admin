@@ -24,9 +24,9 @@ object organization extends OrganizationInferences {
     private[organization] def unsafeDecompose(id: Id)(
         implicit organizationNamespace: Namespace): (Namespace, OrganizationReference) = {
       id.decompose match {
-        case (namespace, ref) if namespace == organizationNamespace =>
+        case (`organizationNamespace`, ref) =>
           applyRef[OrganizationReference](ref.value) match {
-            case Right(organizationReference) => (namespace, organizationReference)
+            case Right(organizationReference) => (organizationNamespace, organizationReference)
             case Left(_) =>
               throw new IllegalArgumentException(s"$ref in ${id.value} is not a valid OrganizationReference")
           }

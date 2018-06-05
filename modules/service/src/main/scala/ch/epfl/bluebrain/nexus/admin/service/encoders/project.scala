@@ -2,11 +2,12 @@ package ch.epfl.bluebrain.nexus.admin.service.encoders
 
 import cats.syntax.show._
 import ch.epfl.bluebrain.nexus.admin.core.resources.Resource
-import ch.epfl.bluebrain.nexus.admin.ld.Const.{nxv, projectContext, schema}
-import ch.epfl.bluebrain.nexus.admin.ld.JsonLD
+import ch.epfl.bluebrain.nexus.admin.ld.Const.{nxv, resourceContext, schema}
+import ch.epfl.bluebrain.nexus.admin.ld.{Const, JsonLD}
 import ch.epfl.bluebrain.nexus.admin.ld.JsonLD._
 import ch.epfl.bluebrain.nexus.admin.refined.ld.Namespace
 import ch.epfl.bluebrain.nexus.admin.refined.project.ProjectReference
+import eu.timepit.refined.auto._
 import io.circe.{Encoder, Json}
 
 object project {
@@ -20,8 +21,8 @@ object project {
           ns     <- c.value[String](nxv.namespace)
         } yield
           Json.obj(
-            "prefix"    -> Json.fromString(prefix),
-            "namespace" -> Json.fromString(ns)
+            nxv.prefix.reference.value    -> Json.fromString(prefix),
+            nxv.namespace.reference.value -> Json.fromString(ns)
           )) match {
           case Some(v) => v :: acc
           case None    => acc
@@ -38,24 +39,24 @@ object project {
     Encoder.encodeJson.contramap { resource =>
       val ld =
         resource.value
-          .appendContext(projectContext)
+          .appendContext(resourceContext)
 
       Json.obj(
-        "@id"   -> Json.fromString(s"${projectNamespace.value}${resource.id.value.value}"),
-        "@type" -> Json.fromString(nxv.Project.curie.show),
-        "label" -> Json.fromString(resource.id.value.value),
-        "name" -> Json.fromString(
+        Const.`@id`               -> Json.fromString(s"${projectNamespace.value}${resource.id.value.value}"),
+        Const.`@type`             -> Json.fromString(nxv.Project.curie.show),
+        nxv.label.reference.value -> Json.fromString(resource.id.value),
+        nxv.name.reference.value -> Json.fromString(
           ld.value[String](schema.name)
             .getOrElse(throw new IllegalArgumentException(
               s"${resource.value.noSpaces} did not contain predicate ${schema.name.value}"))),
-        "base" -> Json.fromString(
+        nxv.base.reference.value -> Json.fromString(
           ld.value[String](nxv.base)
             .getOrElse(throw new IllegalArgumentException(
               s"${resource.value.noSpaces} did not contain predicate ${nxv.base.value}"))),
-        "prefixMappings" -> Json.fromValues(retrieveMappings(ld)),
-        "_rev"           -> Json.fromLong(resource.rev),
-        "_deprecated"    -> Json.fromBoolean(resource.deprecated),
-        "_uuid"          -> Json.fromString(resource.uuid)
+        nxv.prefixMappings.reference.value -> Json.fromValues(retrieveMappings(ld)),
+        nxv.rev.reference.value            -> Json.fromLong(resource.rev),
+        nxv.deprecated.reference.value     -> Json.fromBoolean(resource.deprecated),
+        nxv.uuid.reference.value           -> Json.fromString(resource.uuid)
       )
 
     }
