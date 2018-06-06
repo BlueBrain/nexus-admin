@@ -62,7 +62,6 @@ object Projects {
 
   implicit val projectReferencePersistenceId = new PersistenceId[ProjectReference] {
     override def persistenceId(id: ProjectReference): String = {
-      println(s"${id.getClass} -> ${id.value}")
       id.value
     }
   }

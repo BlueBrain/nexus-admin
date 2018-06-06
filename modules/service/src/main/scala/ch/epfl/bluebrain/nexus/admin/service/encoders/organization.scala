@@ -20,9 +20,7 @@ object organization {
   implicit def organizationEncoder(
       implicit organizationNamespace: Namespace): Encoder[Resource[OrganizationReference]] =
     Encoder.encodeJson.contramap { resource =>
-      val ld =
-        resource.value
-          .appendContext(resourceContext)
+      val ld = resource.value.appendContext(resourceContext)
 
       Json.obj(
         Const.`@id`               -> Json.fromString(s"${organizationNamespace.value}${resource.id.value.value}"),
