@@ -25,6 +25,6 @@ object Fault {
     *
     * @param rejection the rejection returned for a command evaluation
     */
-  final case class CommandRejected(rejection: Rejection) extends Fault("Command rejected")
+  final case class CommandRejected(rejection: Rejection) extends Fault(s"Command rejected ${rejection.toString} ")
 
 }

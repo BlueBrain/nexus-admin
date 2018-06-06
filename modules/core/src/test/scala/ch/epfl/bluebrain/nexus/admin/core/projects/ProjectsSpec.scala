@@ -6,13 +6,11 @@ import akka.actor.ActorSystem
 import akka.testkit.{DefaultTimeout, TestKit}
 import cats.instances.future._
 import ch.epfl.bluebrain.nexus.admin.core.CallerCtx._
-import ch.epfl.bluebrain.nexus.admin.core.CommonRejections.IllegalPayload
 import ch.epfl.bluebrain.nexus.admin.core.Fault.CommandRejected
-import ch.epfl.bluebrain.nexus.admin.core.TestHepler
-import ch.epfl.bluebrain.nexus.admin.core.config.AppConfig.ProjectsConfig
-import ch.epfl.bluebrain.nexus.admin.core.projects.Project.ProjectValue
-import ch.epfl.bluebrain.nexus.admin.core.projects.Projects.EvalProject
-import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceRejection
+import ch.epfl.bluebrain.nexus.admin.core.TestHelper
+import ch.epfl.bluebrain.nexus.admin.core.config.AppConfig.{OrganizationsConfig, ProjectsConfig}
+import ch.epfl.bluebrain.nexus.admin.core.organizations.Organizations
+import ch.epfl.bluebrain.nexus.admin.core.resources.{Resource, ResourceRejection}
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceRejection._
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceState._
 import ch.epfl.bluebrain.nexus.admin.core.types.Ref._
@@ -42,7 +40,7 @@ import io.circe.syntax._
 import org.apache.jena.datatypes.RDFDatatype
 import org.apache.jena.graph.Node
 import org.apache.jena.query.{QuerySolution, QuerySolutionMap, ResultSet}
-import org.apache.jena.rdf.model._
+import org.apache.jena.rdf.model.{Resource => JenaResource, _}
 import org.apache.jena.sparql.engine.binding.Binding
 import org.mockito.Mockito.when
 import org.scalatest.concurrent.ScalaFutures
@@ -59,145 +57,165 @@ class ProjectsSpec
     with Matchers
     with TryValues
     with ScalaFutures
-    with TestHepler
+    with TestHelper
     with MockitoSugar
     with CancelAfterFailure {
 
   private implicit val caller: AnonymousCaller = AnonymousCaller(Anonymous())
-  private implicit val config: ProjectsConfig =
+  private implicit val projConfig: ProjectsConfig =
     ProjectsConfig(3 seconds, "https://nexus.example.ch/v1/projects/", 100000L)
+  private implicit val orgConfig: OrganizationsConfig =
+    OrganizationsConfig(3 seconds, "https://nexus.example.ch/v1/orgs/")
   private implicit val ex                             = system.dispatcher
-  private val aggProject                              = MemoryAggregate("projects")(Initial, next, EvalProject().apply).toF[Future]
+  private val orgsAggregate                           = MemoryAggregate("organizations")(Initial, next, Eval().apply).toF[Future]
+  private val aggProject                              = MemoryAggregate("projects")(Initial, next, Eval().apply).toF[Future]
   private val cl                                      = mock[SparqlClient[Future]]
   implicit val shaclValidator: ShaclValidator[Future] = ShaclValidator(ImportResolver.noop[Future])
-  private val projects                                = Projects(aggProject, cl)
+  private val organizations                           = Organizations(orgsAggregate, cl)
+  private val projects                                = Projects(organizations, aggProject, cl)
 
   override implicit val patienceConfig: PatienceConfig =
     PatienceConfig(5 seconds, 100 milliseconds)
-
   trait Context {
-    val id: ProjectReference = genReference()
-    val value: ProjectValue  = genProjectValue()
+    val id: ProjectReference = genProjectReference()
+    val value: Json          = genProjectValue()
+
+    val orgValue: Json = genOrganizationValue()
   }
 
   "A Project bundle" should {
-    implicit val hasWrite: HasWriteProjects =
-      applyRef[HasWriteProjects](
-        FullAccessControlList((Identity.Anonymous(), Path./, Permissions(Read, Permission("projects/write"))))
-      ).toPermTry.success.value
-    implicit val hasOwn: HasCreateProjects =
-      applyRef[HasCreateProjects](FullAccessControlList(
-        (Identity.Anonymous(), Path./, Permissions(Read, Permission("projects/create"))))).toPermTry.success.value
     implicit val hasRead: HasReadProjects =
       applyRef[HasReadProjects](FullAccessControlList(
         (Identity.Anonymous(), Path./, Permissions(Read, Permission("projects/read"))))).toPermTry.success.value
 
     "create a new project" in new Context {
-      projects.create(id, value.asJson).futureValue shouldEqual RefVersioned(id, 1L)
-      projects.fetch(id).futureValue shouldEqual Some(Project(id, 1L, value, value.asJson, deprecated = false))
+      organizations.create(id.organizationReference, orgValue).futureValue
+      projects.create(id, value).futureValue shouldEqual RefVersioned(id, 1L)
+
+      val proj = projects.fetch(id).futureValue.get
+      proj.id.value shouldEqual id
+      proj.uuid should fullyMatch regex """[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"""
+      proj.deprecated shouldEqual false
+      proj.rev shouldEqual 1L
+      proj.value shouldEqual value
+
     }
 
     "prevent creating a project without a name" in new Context {
+      organizations.create(id.organizationReference, orgValue).futureValue
       val rej =
         projects.create(id, value.asJson.removeKeys("name")).failed.futureValue.asInstanceOf[CommandRejected].rejection
       rej shouldBe a[ResourceRejection.ShapeConstraintViolations]
     }
 
-    "prevent updating a project that overrides prefixMappings with other values" in new Context {
-      val updatedValue: ProjectValue = genProjectValue(nxvPrefix = randomProjectPrefix())
-      projects.create(id, value.asJson).futureValue shouldEqual RefVersioned(id, 1L)
-      projects.update(id, 1L, updatedValue.asJson).failed.futureValue shouldEqual CommandRejected(WrappedRejection(
-        IllegalPayload("Invalid 'prefixMappings' object",
-                       Some("The 'prefixMappings' values cannot be overridden but just new values can be appended."))))
-    }
-
-    "prevent updating a project with maxAttachmentSize as a string" in new Context {
-      val updatedValue: ProjectValue = genProjectUpdate()
-      val updatedJson = updatedValue.asJson deepMerge Json.obj(
-        "config" -> Json.obj("maxAttachmentSize" -> Json.fromString("one")))
-      projects.create(id, value.asJson).futureValue shouldEqual RefVersioned(id, 1L)
-      val rej = projects.update(id, 1L, updatedJson).failed.futureValue.asInstanceOf[CommandRejected].rejection
-      rej shouldBe a[ResourceRejection.ShapeConstraintViolations]
+    "prevent creating a project with organization that doesn't exist " in new Context {
+      val rej =
+        projects.create(id, value.asJson).failed.futureValue.asInstanceOf[CommandRejected].rejection
+      rej shouldEqual ResourceRejection.ParentResourceDoesNotExist
     }
 
     "update a project" in new Context {
-      val updatedValue: ProjectValue = genProjectUpdate()
-      projects.create(id, value.asJson).futureValue shouldEqual RefVersioned(id, 1L)
-      projects.update(id, 1L, updatedValue.asJson).futureValue shouldEqual RefVersioned(id, 2L)
-      projects.fetch(id).futureValue shouldEqual Some(
-        Project(id, 2L, updatedValue, updatedValue.asJson, deprecated = false))
+      organizations.create(id.organizationReference, orgValue).futureValue
+
+      val updatedValue: Json = genProjectUpdate()
+      projects.create(id, value).futureValue shouldEqual RefVersioned(id, 1L)
+      val uuid = projects.fetch(id).futureValue.get.uuid
+      projects.update(id, 1L, updatedValue).futureValue shouldEqual RefVersioned(id, 2L)
+      projects.fetch(id).futureValue shouldEqual Some(Resource(id, uuid, 2L, updatedValue, deprecated = false))
     }
 
     "deprecate a project" in new Context {
-      projects.create(id, value.asJson).futureValue shouldEqual RefVersioned(id, 1L)
+      organizations.create(id.organizationReference, orgValue).futureValue
+
+      projects.create(id, value).futureValue shouldEqual RefVersioned(id, 1L)
+      val uuid = projects.fetch(id).futureValue.get.uuid
+
       projects.deprecate(id, 1L).futureValue shouldEqual RefVersioned(id, 2L)
-      projects.fetch(id).futureValue shouldEqual Some(Project(id, 2L, value, value.asJson, deprecated = true))
+      projects.fetch(id).futureValue shouldEqual Some(Resource(id, uuid, 2L, value, deprecated = true))
     }
 
     "fetch old revision of a project" in new Context {
-      val updatedValue: ProjectValue = genProjectUpdate()
-      projects.create(id, value.asJson).futureValue shouldEqual RefVersioned(id, 1L)
-      projects.update(id, 1L, updatedValue.asJson).futureValue shouldEqual RefVersioned(id, 2L)
+      organizations.create(id.organizationReference, orgValue).futureValue
 
-      projects.fetch(id, 2L).futureValue shouldEqual Some(
-        Project(id, 2L, updatedValue, updatedValue.asJson, deprecated = false))
-      projects.fetch(id, 1L).futureValue shouldEqual Some(Project(id, 1L, value, value.asJson, deprecated = false))
+      val updatedValue: Json = genProjectUpdate()
+      projects.create(id, value).futureValue shouldEqual RefVersioned(id, 1L)
+      val uuid = projects.fetch(id).futureValue.get.uuid
+      projects.update(id, 1L, updatedValue).futureValue shouldEqual RefVersioned(id, 2L)
+
+      projects.fetch(id, 2L).futureValue shouldEqual Some(Resource(id, uuid, 2L, updatedValue, deprecated = false))
+      projects.fetch(id, 1L).futureValue shouldEqual Some(Resource(id, uuid, 1L, value, deprecated = false))
 
     }
 
     "return None when fetching a revision that does not exist" in new Context {
-      projects.create(id, value.asJson).futureValue shouldEqual RefVersioned(id, 1L)
+      organizations.create(id.organizationReference, orgValue).futureValue
+
+      projects.create(id, value).futureValue shouldEqual RefVersioned(id, 1L)
       projects.fetch(id, 10L).futureValue shouldEqual None
     }
 
     "prevent double deprecations" in new Context {
+      organizations.create(id.organizationReference, orgValue).futureValue
+
       projects.create(id, value.asJson).futureValue shouldEqual RefVersioned(id, 1L)
       projects.deprecate(id, 1L).futureValue shouldEqual RefVersioned(id, 2L)
       projects.deprecate(id, 2L).failed.futureValue shouldEqual CommandRejected(ResourceIsDeprecated)
     }
 
     "prevent updating when deprecated" in new Context {
-      val updatedValue: ProjectValue = genProjectValue()
-      projects.create(id, value.asJson).futureValue shouldEqual RefVersioned(id, 1L)
+      organizations.create(id.organizationReference, orgValue).futureValue
+
+      val updatedValue: Json = genProjectValue()
+      projects.create(id, value).futureValue shouldEqual RefVersioned(id, 1L)
       projects.deprecate(id, 1L).futureValue shouldEqual RefVersioned(id, 2L)
-      projects.update(id, 2L, updatedValue.asJson).failed.futureValue shouldEqual CommandRejected(ResourceIsDeprecated)
+      projects.update(id, 2L, updatedValue).failed.futureValue shouldEqual CommandRejected(ResourceIsDeprecated)
     }
 
     "prevent updating to non existing project" in new Context {
-      projects.create(id, value.asJson).futureValue shouldEqual RefVersioned(id, 1L)
-      projects.update(genReference(), 2L, value.asJson).failed.futureValue shouldEqual CommandRejected(
-        ResourceDoesNotExists)
+      organizations.create(id.organizationReference, orgValue).futureValue
+
+      projects.update(id, 2L, value.asJson).failed.futureValue shouldEqual CommandRejected(ResourceDoesNotExists)
     }
 
     "prevent updating with incorrect rev" in new Context {
-      val updatedValue: ProjectValue = genProjectValue()
-      projects.create(id, value.asJson).futureValue shouldEqual RefVersioned(id, 1L)
-      projects.update(id, 2L, updatedValue.asJson).failed.futureValue shouldEqual CommandRejected(
-        IncorrectRevisionProvided)
+      organizations.create(id.organizationReference, orgValue).futureValue
+
+      val updatedValue: Json = genProjectValue()
+      projects.create(id, value).futureValue shouldEqual RefVersioned(id, 1L)
+      projects.update(id, 2L, updatedValue).failed.futureValue shouldEqual CommandRejected(IncorrectRevisionProvided)
     }
 
     "prevent deprecation with incorrect rev" in new Context {
+      organizations.create(id.organizationReference, orgValue).futureValue
+
       projects.create(id, value.asJson).futureValue shouldEqual RefVersioned(id, 1L)
       projects.deprecate(id, 2L).failed.futureValue shouldEqual CommandRejected(IncorrectRevisionProvided)
     }
 
     "prevent deprecation to non existing project incorrect rev" in new Context {
+      organizations.create(id.organizationReference, orgValue).futureValue
+
       projects.create(id, value.asJson).futureValue shouldEqual RefVersioned(id, 1L)
-      projects.deprecate(genReference(), 1L).failed.futureValue shouldEqual CommandRejected(ResourceDoesNotExists)
+      projects.deprecate(genProjectReference(), 1L).failed.futureValue shouldEqual CommandRejected(
+        ResourceDoesNotExists)
     }
 
     "project cannot be used from a child resource when does not exist" in new Context {
-      projects.validateUnlocked(genReference()).failed.futureValue shouldEqual CommandRejected(
-        ParentResourceDoesNotExists)
+      projects.validateUnlocked(genProjectReference()).failed.futureValue shouldEqual CommandRejected(
+        ParentResourceDoesNotExist)
     }
 
     "project cannot be used from a child resource when it is already deprecated" in new Context {
+      organizations.create(id.organizationReference, orgValue).futureValue
+
       projects.create(id, value.asJson).futureValue shouldEqual RefVersioned(id, 1L)
       projects.deprecate(id, 1L).futureValue shouldEqual RefVersioned(id, 2L)
       projects.validateUnlocked(id).failed.futureValue shouldEqual CommandRejected(ResourceIsDeprecated)
     }
 
     "project can be used from a child resource" in new Context {
+      organizations.create(id.organizationReference, orgValue).futureValue
+
       projects.create(id, value.asJson).futureValue shouldEqual RefVersioned(id, 1L)
       projects.validateUnlocked(id).futureValue shouldEqual (())
     }
@@ -246,13 +264,13 @@ class ProjectsSpec
         List(
           ScoredQueryResult[Id](
             1.0f,
-            applyRef[Id](s"https://nexus.example.ch/v1/projects/${genReference().value}").toOption.get),
+            applyRef[Id](s"https://nexus.example.ch/v1/projects/${genProjectReference().value}").toOption.get),
           ScoredQueryResult[Id](
             0.5f,
-            applyRef[Id](s"https://nexus.example.ch/v1/projects/${genReference().value}").toOption.get),
+            applyRef[Id](s"https://nexus.example.ch/v1/projects/${genProjectReference().value}").toOption.get),
           ScoredQueryResult[Id](
             0.25f,
-            applyRef[Id](s"https://nexus.example.ch/v1/projects/${genReference().value}").toOption.get)
+            applyRef[Id](s"https://nexus.example.ch/v1/projects/${genProjectReference().value}").toOption.get)
         )
       )
       val resultSet: ResultSet = resultSetFromQueryResults(expectedResult)
@@ -264,9 +282,9 @@ class ProjectsSpec
     "list only projects the user has access to" in new Context {
       val queryPayload = QueryPayload(q = Some("test"), published = Some(true))
       val pagination   = Pagination(from = genInt().toLong, size = genInt())
-      val projectRef1  = genReference()
-      val projectRef2  = genReference()
-      val projectRef3  = genReference()
+      val projectRef1  = genProjectReference()
+      val projectRef2  = genProjectReference()
+      val projectRef3  = genProjectReference()
       val expectedQuery =
         s"""
            |PREFIX bds: <http://www.bigdata.com/rdf/search#>
@@ -356,7 +374,7 @@ class ProjectsSpec
 
         override def visitWith(rv: RDFVisitor): AnyRef = ???
 
-        override def asResource(): Resource = ???
+        override def asResource(): JenaResource = ???
 
         override def asLiteral(): Literal = new Literal {
           override def inModel(m: Model): Literal = ???
@@ -409,7 +427,7 @@ class ProjectsSpec
 
           override def visitWith(rv: RDFVisitor): AnyRef = ???
 
-          override def asResource(): Resource = ???
+          override def asResource(): JenaResource = ???
 
           override def asLiteral(): Literal = ???
 
@@ -440,10 +458,10 @@ class ProjectsSpec
 
         override def visitWith(rv: RDFVisitor): AnyRef = ???
 
-        override def asResource(): Resource = new Resource {
+        override def asResource(): JenaResource = new JenaResource {
           override def getId: AnonId = ???
 
-          override def inModel(m: Model): Resource = ???
+          override def inModel(m: Model): JenaResource = ???
 
           override def hasURI(uri: String): Boolean = ???
 
@@ -467,27 +485,27 @@ class ProjectsSpec
 
           override def listProperties(): StmtIterator = ???
 
-          override def addLiteral(p: Property, o: Boolean): Resource = ???
+          override def addLiteral(p: Property, o: Boolean): JenaResource = ???
 
-          override def addLiteral(p: Property, o: Long): Resource = ???
+          override def addLiteral(p: Property, o: Long): JenaResource = ???
 
-          override def addLiteral(p: Property, o: Char): Resource = ???
+          override def addLiteral(p: Property, o: Char): JenaResource = ???
 
-          override def addLiteral(value: Property, d: Double): Resource = ???
+          override def addLiteral(value: Property, d: Double): JenaResource = ???
 
-          override def addLiteral(value: Property, d: Float): Resource = ???
+          override def addLiteral(value: Property, d: Float): JenaResource = ???
 
-          override def addLiteral(p: Property, o: scala.Any): Resource = ???
+          override def addLiteral(p: Property, o: scala.Any): JenaResource = ???
 
-          override def addLiteral(p: Property, o: Literal): Resource = ???
+          override def addLiteral(p: Property, o: Literal): JenaResource = ???
 
-          override def addProperty(p: Property, o: String): Resource = ???
+          override def addProperty(p: Property, o: String): JenaResource = ???
 
-          override def addProperty(p: Property, o: String, l: String): Resource = ???
+          override def addProperty(p: Property, o: String, l: String): JenaResource = ???
 
-          override def addProperty(p: Property, lexicalForm: String, datatype: RDFDatatype): Resource = ???
+          override def addProperty(p: Property, lexicalForm: String, datatype: RDFDatatype): JenaResource = ???
 
-          override def addProperty(p: Property, o: RDFNode): Resource = ???
+          override def addProperty(p: Property, o: RDFNode): JenaResource = ???
 
           override def hasProperty(p: Property): Boolean = ???
 
@@ -509,17 +527,17 @@ class ProjectsSpec
 
           override def hasProperty(p: Property, o: RDFNode): Boolean = ???
 
-          override def removeProperties(): Resource = ???
+          override def removeProperties(): JenaResource = ???
 
-          override def removeAll(p: Property): Resource = ???
+          override def removeAll(p: Property): JenaResource = ???
 
-          override def begin(): Resource = ???
+          override def begin(): JenaResource = ???
 
-          override def abort(): Resource = ???
+          override def abort(): JenaResource = ???
 
-          override def commit(): Resource = ???
+          override def commit(): JenaResource = ???
 
-          override def getPropertyResourceValue(p: Property): Resource = ???
+          override def getPropertyResourceValue(p: Property): JenaResource = ???
 
           override def isAnon: Boolean = ???
 
@@ -537,7 +555,7 @@ class ProjectsSpec
 
           override def visitWith(rv: RDFVisitor): AnyRef = ???
 
-          override def asResource(): Resource = ???
+          override def asResource(): JenaResource = ???
 
           override def asLiteral(): Literal = ???
 

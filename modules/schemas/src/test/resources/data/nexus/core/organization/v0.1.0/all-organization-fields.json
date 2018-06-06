@@ -1,0 +1,20 @@
+{
+  "@context": {
+    "nxv": "https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/",
+    "schema": "http://schema.org/",
+    "name": {
+      "@id": "schema:name"
+    },
+    "label": {
+      "@id": "nxv:label"
+    },
+    "_uuid" : {
+      "@id": "nxv:_uuid"
+    }
+  },
+  "@id": "https://example.nexus.com/api/orgs/name",
+  "@type": "nxv:Organization",
+  "name": "name",
+  "label": "label",
+  "_uuid" : "63565da4-640f-11e8-adc0-fa7ae01bbebc"
+}

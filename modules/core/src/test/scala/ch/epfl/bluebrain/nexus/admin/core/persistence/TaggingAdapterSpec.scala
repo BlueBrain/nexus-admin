@@ -11,6 +11,7 @@ import ch.epfl.bluebrain.nexus.commons.test.Randomness
 import eu.timepit.refined.auto._
 import io.circe.Json
 import org.scalatest.{Inspectors, Matchers, WordSpecLike}
+import java.util.UUID
 
 class TaggingAdapterSpec extends WordSpecLike with Matchers with Inspectors with Randomness {
 
@@ -26,9 +27,11 @@ class TaggingAdapterSpec extends WordSpecLike with Matchers with Inspectors with
     val meta   = Meta(UserRef("realm", "sub:1234"), Clock.systemUTC.instant())
 
     val mapping = Map(
-      ResourceCreated(id, 1L, meta, Set("project", "other"), genJson()) -> Set("project", "other"),
-      ResourceUpdated(id, 2L, meta, Set("project", "one"), genJson())   -> Set("project", "one"),
-      ResourceDeprecated(id, 3L, meta, Set("project"))                  -> Set("project")
+      ResourceCreated(id, UUID.randomUUID().toString, 1L, meta, Set("project", "other"), genJson()) -> Set("project",
+                                                                                                           "other"),
+      ResourceUpdated(id, UUID.randomUUID().toString, 2L, meta, Set("project", "one"), genJson()) -> Set("project",
+                                                                                                         "one"),
+      ResourceDeprecated(id, UUID.randomUUID().toString, 3L, meta, Set("project")) -> Set("project")
     )
 
     "set the appropriate tags" in {

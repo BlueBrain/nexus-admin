@@ -2,25 +2,19 @@ package ch.epfl.bluebrain.nexus.admin.service.routes
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.BasicHttpCredentials
+import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import ch.epfl.bluebrain.nexus.admin.core.CommonRejections.{IllegalParam, IllegalPayload, MissingParameter}
+import ch.epfl.bluebrain.nexus.admin.core.CommonRejections.{IllegalParam, MissingParameter}
 import ch.epfl.bluebrain.nexus.admin.core.Error._
 import ch.epfl.bluebrain.nexus.admin.core.config.AppConfig._
-import ch.epfl.bluebrain.nexus.admin.core.projects.Project
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceRejection._
-import ch.epfl.bluebrain.nexus.admin.core.types.Ref._
-import ch.epfl.bluebrain.nexus.admin.core.{Error, TestHepler}
+import ch.epfl.bluebrain.nexus.admin.core.{CallerCtx, Error, TestHelper}
 import ch.epfl.bluebrain.nexus.admin.ld.Const._
-import ch.epfl.bluebrain.nexus.admin.refined.permissions.HasReadProjects
+import ch.epfl.bluebrain.nexus.admin.refined.project._
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport._
 import ch.epfl.bluebrain.nexus.commons.http.JsonOps._
 import ch.epfl.bluebrain.nexus.commons.http.RdfMediaTypes
 import ch.epfl.bluebrain.nexus.commons.types.HttpRejection.UnauthorizedAccess
-import ch.epfl.bluebrain.nexus.commons.types.identity.Identity.Anonymous
-import ch.epfl.bluebrain.nexus.iam.client.types.Permission.Read
-import ch.epfl.bluebrain.nexus.iam.client.types._
-import ch.epfl.bluebrain.nexus.service.http.Path
-import eu.timepit.refined.api.RefType.{applyRef, refinedRefType}
 import io.circe.Json
 import io.circe.generic.auto._
 import io.circe.syntax._
@@ -34,22 +28,21 @@ class ProjectRoutesSpec
     with ScalatestRouteTest
     with ScalaFutures
     with MockitoSugar
-    with TestHepler
-    with ProjectRoutesTestHelper {
+    with TestHelper
+    with AdminRoutesTestHelper {
+
+  val route = ProjectRoutes(projects).routes ~ ProjectAclRoutes(projects, proxy).routes
 
   "A ProjectRoutes" should {
 
-    val readAcls =
-      FullAccessControlList((Anonymous(), Path("projects/proj"), Permissions(Read, Permission("projects/read"))))
-    implicit val hasRead: HasReadProjects =
-      applyRef[HasReadProjects](readAcls).toPermTry.get
-
-    val reference    = genReference()
-    val projectValue = genProjectValue()
-    val json         = projectValue.asJson
+    val reference      = genProjectReference()
+    val projectValue   = genProjectValue()
+    val json           = projectValue.asJson
+    val orgValue: Json = genOrganizationValue()
 
     "create a project" in {
       setUpIamCalls(reference.value)
+      organizations.create(reference.organizationReference, orgValue)(CallerCtx(caller)).futureValue
 
       Put(s"/projects/${reference.value}", json) ~> addCredentials(cred) ~> route ~> check {
         status shouldEqual StatusCodes.Created
@@ -59,12 +52,17 @@ class ProjectRoutesSpec
           "_rev"     -> Json.fromLong(1L)
         )
       }
-      projects.fetch(reference).futureValue shouldEqual Some(
-        Project(reference, 1L, projectValue, json, deprecated = false))
+      val created = projects.fetch(reference).futureValue.get
+      created.id.value shouldEqual reference
+      created.rev shouldEqual 1L
+      created.uuid should fullyMatch regex """[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"""
+      created.deprecated shouldEqual false
+      created.value shouldEqual json
     }
 
     "reject the creation of a project without name" in {
-      val other = genReference()
+      val other = genProjectReference()
+      organizations.create(other.organizationReference, orgValue)(CallerCtx(caller)).futureValue
       setUpIamCalls(other.value)
       Put(s"/projects/${other.value}", genProjectValue().asJson.removeKeys("name")) ~> addCredentials(cred) ~> route ~> check {
         status shouldEqual StatusCodes.BadRequest
@@ -80,14 +78,14 @@ class ProjectRoutesSpec
     }
 
     "reject the creation of a project with wrong id" in {
-      Put(s"/projects/123K=-", genProjectValue().asJson) ~> addCredentials(cred) ~> route ~> check {
+      Put(s"/projects/someorg/123K=-", genProjectValue().asJson) ~> addCredentials(cred) ~> route ~> check {
         status shouldEqual StatusCodes.BadRequest
         responseAs[Error].code shouldEqual classNameOf[IllegalParam.type]
       }
     }
 
     "return not found for missing project" in {
-      val other = genReference()
+      val other = genProjectReference()
       setUpIamCalls(other.value)
       Get(s"/projects/${other.value}") ~> addCredentials(cred) ~> route ~> check {
         status shouldEqual StatusCodes.NotFound
@@ -117,11 +115,16 @@ class ProjectRoutesSpec
           "_rev"     -> Json.fromLong(2L)
         )
       }
-      projects.fetch(reference).futureValue shouldEqual Some(
-        Project(reference, 2L, projectValue, json, deprecated = true))
+      val created = projects.fetch(reference).futureValue.get
+      created.id.value shouldEqual reference
+      created.rev shouldEqual 2L
+      created.uuid should fullyMatch regex """[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"""
+      created.deprecated shouldEqual true
+      created.value shouldEqual json
     }
 
     "fetch latest revision of a project" in {
+      val uuid = projects.fetch(reference).futureValue.get.uuid
       Get(s"/projects/${reference.value}") ~> addCredentials(cred) ~> route ~> check {
         status shouldEqual StatusCodes.OK
         contentType shouldEqual RdfMediaTypes.`application/ld+json`.toContentType
@@ -129,13 +132,16 @@ class ProjectRoutesSpec
           `@context`    -> Json.fromString(appConfig.prefixes.coreContext.toString()),
           `@id`         -> Json.fromString(s"http://127.0.0.1:8080/v1/projects/${reference.value}"),
           `@type`       -> Json.fromString("nxv:Project"),
+          "label"       -> Json.fromString(reference.value),
           "_rev"        -> Json.fromLong(2L),
-          "_deprecated" -> Json.fromBoolean(true)
+          "_deprecated" -> Json.fromBoolean(true),
+          "_uuid"       -> Json.fromString(uuid)
         ))
       }
     }
 
     "fetch old revision of a project" in {
+      val uuid = projects.fetch(reference).futureValue.get.uuid
       Get(s"/projects/${reference.value}?rev=1") ~> addCredentials(cred) ~> route ~> check {
         status shouldEqual StatusCodes.OK
         contentType shouldEqual RdfMediaTypes.`application/ld+json`.toContentType
@@ -143,8 +149,10 @@ class ProjectRoutesSpec
           `@context`    -> Json.fromString(appConfig.prefixes.coreContext.toString()),
           `@id`         -> Json.fromString(s"http://127.0.0.1:8080/v1/projects/${reference.value}"),
           `@type`       -> Json.fromString("nxv:Project"),
+          "label"       -> Json.fromString(reference.value),
           "_rev"        -> Json.fromLong(1L),
-          "_deprecated" -> Json.fromBoolean(false)
+          "_deprecated" -> Json.fromBoolean(false),
+          "_uuid"       -> Json.fromString(uuid)
         ))
       }
     }
@@ -163,7 +171,7 @@ class ProjectRoutesSpec
     }
 
     "reject the deprecation of a project which does not exists" in {
-      val other = genReference()
+      val other = genProjectReference()
       setUpIamCalls(other.value)
       Delete(s"/projects/${other.value}?rev=1", json) ~> addCredentials(cred) ~> route ~> check {
         status shouldEqual StatusCodes.NotFound
@@ -171,12 +179,15 @@ class ProjectRoutesSpec
       }
     }
 
-    val refUpdate        = genReference()
+    val refUpdate        = genProjectReference()
     val projectValUpdate = genProjectUpdate()
     val jsonUpdate       = projectValUpdate.asJson
+    val orgUpdateValue   = genOrganizationValue()
 
     "update a project" in {
       setUpIamCalls(refUpdate.value)
+
+      organizations.create(refUpdate.organizationReference, orgUpdateValue)(CallerCtx(caller)).futureValue
 
       Put(s"/projects/${refUpdate.value}", json) ~> addCredentials(cred) ~> route ~> check {
         status shouldEqual StatusCodes.Created
@@ -193,23 +204,18 @@ class ProjectRoutesSpec
     }
 
     "reject the update of a project without name" in {
-      val json = jsonUpdate deepMerge Json.obj("config" -> Json.obj("maxAttachmentSize" -> Json.fromString("one")))
+      val json = jsonUpdate.removeKeys("name")
       Put(s"/projects/${refUpdate.value}?rev=2", json) ~> addCredentials(cred) ~> route ~> check {
         status shouldEqual StatusCodes.BadRequest
         responseAs[Error].code shouldEqual classNameOf[ShapeConstraintViolations.type]
       }
     }
 
-    "reject the update of a project which contains the same prefix on the prefixMappings payload as the existing project" in {
-      val invalidUpdate = genProjectValue(randomProjectPrefix(), randomProjectPrefix()).asJson
-      Put(s"/projects/${refUpdate.value}?rev=2", invalidUpdate) ~> addCredentials(cred) ~> route ~> check {
-        status shouldEqual StatusCodes.BadRequest
-        responseAs[Error].code shouldEqual classNameOf[IllegalPayload.type]
-      }
-    }
-
     "reject the update of a project which does not exists" in {
-      val other = genReference()
+      val other               = genProjectReference()
+      val otherOrgUpdateValue = genOrganizationValue()
+      organizations.create(other.organizationReference, otherOrgUpdateValue)(CallerCtx(caller)).futureValue
+
       setUpIamCalls(other.value)
       Put(s"/projects/${other.value}?rev=1", json) ~> addCredentials(cred) ~> route ~> check {
         status shouldEqual StatusCodes.NotFound

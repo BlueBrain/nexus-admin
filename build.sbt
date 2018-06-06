@@ -44,6 +44,7 @@ val sourcingVersion                 = "0.10.5"
 val serviceVersion = "0.10.11"
 val commonsVersion = "0.10.10"
 val iamVersion     = "0.5.16"
+val rdfVersion     = "0.1.1"
 
 // Dependency modules
 lazy val akkaDistributed          = "com.typesafe.akka"       %% "akka-distributed-data"      % akkaVersion
@@ -81,6 +82,7 @@ lazy val sourcingAkka      = "ch.epfl.bluebrain.nexus" %% "sourcing-akka"       
 lazy val serviceIndexing   = "ch.epfl.bluebrain.nexus" %% "service-indexing"      % serviceVersion
 lazy val sourcingCore      = "ch.epfl.bluebrain.nexus" %% "sourcing-core"         % sourcingVersion
 lazy val sourcingMem       = "ch.epfl.bluebrain.nexus" %% "sourcing-mem"          % sourcingVersion
+lazy val rdfCore           = "ch.epfl.bluebrain.nexus" %% "rdf-core"              % rdfVersion
 lazy val akkaHttpCors      = "ch.megard"               %% "akka-http-cors"        % akkaHttpCorsVersion
 
 // Projects
@@ -109,7 +111,7 @@ lazy val refinements = project
     name                := "admin-refined",
     moduleName          := "admin-refined",
     coverageEnabled     := false,
-    libraryDependencies ++= Seq(iamClient, refined, serviceHttp, commonsTest % Test, scalaTest % Test)
+    libraryDependencies ++= Seq(iamClient, rdfCore, refined, serviceHttp, commonsTest % Test, scalaTest % Test)
   )
 
 lazy val schemas = project
@@ -136,6 +138,7 @@ lazy val ld = project
     libraryDependencies ++= Seq(
       catsCore,
       circeCore,
+      rdfCore,
       commonsTest,
       jenaArq,
       shapeless,

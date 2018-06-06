@@ -63,7 +63,7 @@ object ExceptionHandling {
       case IncorrectRevisionProvided    => Conflict
       case ResourceAlreadyExists        => Conflict
       case ResourceDoesNotExists        => NotFound
-      case ParentResourceDoesNotExists  => NotFound
+      case ParentResourceDoesNotExist   => NotFound
       case ResourceIsDeprecated         => BadRequest
       case _: MissingImportsViolation   => BadRequest
       case _: IllegalImportsViolation   => BadRequest

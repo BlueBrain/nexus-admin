@@ -8,8 +8,8 @@ import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.admin.core.CallerCtx._
 import ch.epfl.bluebrain.nexus.admin.core.config.AppConfig
 import ch.epfl.bluebrain.nexus.admin.core.config.AppConfig._
-import ch.epfl.bluebrain.nexus.admin.core.projects.Project._
-import ch.epfl.bluebrain.nexus.admin.core.projects.{Project, Projects}
+import ch.epfl.bluebrain.nexus.admin.core.projects.Projects
+import ch.epfl.bluebrain.nexus.admin.core.resources.Resource
 import ch.epfl.bluebrain.nexus.admin.core.types.Ref
 import ch.epfl.bluebrain.nexus.admin.core.types.Ref._
 import ch.epfl.bluebrain.nexus.admin.core.types.RefVersioned._
@@ -20,6 +20,7 @@ import ch.epfl.bluebrain.nexus.admin.refined.project.ProjectUri._
 import ch.epfl.bluebrain.nexus.admin.service.directives.AuthDirectives._
 import ch.epfl.bluebrain.nexus.admin.service.directives.QueryDirectives._
 import ch.epfl.bluebrain.nexus.admin.service.directives.RefinedDirectives._
+import ch.epfl.bluebrain.nexus.admin.service.encoders.project._
 import ch.epfl.bluebrain.nexus.admin.service.encoders.RoutesEncoder
 import ch.epfl.bluebrain.nexus.admin.service.routes.SearchResponse._
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport.{jsonUnmarshaller, marshallerHttp}
@@ -43,15 +44,17 @@ final class ProjectRoutes(projects: Projects[Future])(implicit iamClient: IamCli
   import tracing._
   implicit val pc: PaginationConfig = config.pagination
 
-  val idResolvable = Ref.refToResolvable
-  implicit val idExtractor: (Project) => Id = { p =>
+  implicit val projectNamespace = config.projects.namespace
+  val idResolvable              = Ref.projectRefToResolvable
+  implicit val idExtractor: Resource[ProjectReference] => Id = { p =>
     idResolvable(p.id.value)
   }
 
-  private implicit val encoders: RoutesEncoder[Project] = new RoutesEncoder[Project]()
+  private implicit val encoders: RoutesEncoder[Resource[ProjectReference]] =
+    new RoutesEncoder[Resource[ProjectReference]]()
   import encoders._
   private def readRoutes(implicit credentials: Option[OAuth2BearerToken]): Route =
-    (segment(of[ProjectReference]) & pathEndOrSingleSlash) { name =>
+    (segment2(of[ProjectReference]) & pathEndOrSingleSlash) { name =>
       (get & authorizeOn[HasReadProjects](name.value)) { implicit perms =>
         parameter('rev.as[Long].?) {
           case Some(rev) =>
@@ -73,7 +76,7 @@ final class ProjectRoutes(projects: Projects[Future])(implicit iamClient: IamCli
     }
 
   private def writeRoutes(implicit credentials: Option[OAuth2BearerToken]): Route =
-    (segment(of[ProjectReference]) & pathEndOrSingleSlash) { name =>
+    (segment2(of[ProjectReference]) & pathEndOrSingleSlash) { name =>
       (put & entity(as[Json])) { json =>
         authCaller.apply { implicit caller =>
           parameter('rev.as[Long].?) {
@@ -115,7 +118,7 @@ final class ProjectRoutes(projects: Projects[Future])(implicit iamClient: IamCli
       trace("searchProjects") {
         (pathEndOrSingleSlash & authorizeOn[HasReadProjects](Path.Empty / "*")) { implicit acls =>
           implicit val projectNamespace = config.projects.namespace
-          implicit val projectsResolver: Id => Future[Option[Project]] = { id =>
+          implicit val projectsResolver: Id => Future[Option[Resource[ProjectReference]]] = { id =>
             {
               id.projectReference match {
                 case Some(projId) => projects.fetch(projId)
@@ -124,7 +127,10 @@ final class ProjectRoutes(projects: Projects[Future])(implicit iamClient: IamCli
             }
 
           }
-          projects.list(query, pagination).buildResponse[Project](query.fields, config.http.publicUri, pagination)
+
+          projects
+            .list(query, pagination)
+            .buildResponse[Resource[ProjectReference]](query.fields, config.http.publicUri, pagination)
         }
       }
     }

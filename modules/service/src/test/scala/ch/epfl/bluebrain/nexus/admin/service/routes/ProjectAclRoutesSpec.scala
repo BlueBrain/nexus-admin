@@ -4,26 +4,32 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.Authorization
 import ch.epfl.bluebrain.nexus.admin.core.Error.classNameOf
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceRejection.ResourceDoesNotExists
-import ch.epfl.bluebrain.nexus.admin.core.{Error, TestHepler}
+import ch.epfl.bluebrain.nexus.admin.core.{CallerCtx, Error, TestHelper}
 import ch.epfl.bluebrain.nexus.admin.ld.Const.{`@context`, `@id`}
 import ch.epfl.bluebrain.nexus.admin.refined.project.ProjectReference
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport._
+import akka.http.scaladsl.server.Directives._
 import eu.timepit.refined.auto._
 import io.circe.Json
 import io.circe.generic.auto._
 import io.circe.syntax._
 import org.scalatest.{Matchers, WordSpecLike}
+import ch.epfl.bluebrain.nexus.admin.refined.project._
 
-class ProjectAclRoutesSpec extends WordSpecLike with Matchers with ProjectRoutesTestHelper with TestHepler {
+class ProjectAclRoutesSpec extends WordSpecLike with Matchers with AdminRoutesTestHelper with TestHelper {
+
+  val route = ProjectRoutes(projects).routes ~ ProjectAclRoutes(projects, proxy).routes
 
   "A ProjectAclRoutes" should {
 
-    val proj: ProjectReference = "proj"
+    val proj: ProjectReference = "org/proj"
     val projectValue           = genProjectValue()
     val json                   = projectValue.asJson
+    val orgValue: Json         = genOrganizationValue()
 
     "reject when project does not exists" in {
       setUpIamCalls(proj.value)
+      organizations.create(proj.organizationReference, orgValue)(CallerCtx(caller)).futureValue
 
       Get(s"/projects/${proj.value}/acls") ~> addCredentials(cred) ~> route ~> check {
         status shouldEqual StatusCodes.NotFound

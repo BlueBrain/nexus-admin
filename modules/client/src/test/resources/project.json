@@ -1,6 +1,6 @@
 {
   "@context": "https://nexus.example.com/v1/contexts/nexus/core/resource/v0.1.0",
-  "@id": "http://localhost/v1/projects/projectname",
+  "@id": "http://localhost/v1/projects/orgname/projectname",
   "@type": "nxv:Project",
   "config": {
     "maxAttachmentSize": 10
@@ -18,5 +18,6 @@
     }
   ],
   "_rev": 3,
-  "_deprecated": false
+  "_deprecated": false,
+  "_uuid": "350df698-6813-11e8-adc0-fa7ae01bbebc"
 }

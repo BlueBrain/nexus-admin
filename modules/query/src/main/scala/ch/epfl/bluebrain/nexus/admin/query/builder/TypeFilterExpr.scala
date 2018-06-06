@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.admin.query.filtering.PropPath.UriPath
 import ch.epfl.bluebrain.nexus.admin.query.filtering.Term.UriTerm
 import ch.epfl.bluebrain.nexus.admin.refined.project.ProjectReference
 import ch.epfl.bluebrain.nexus.admin.ld.Const._
+import ch.epfl.bluebrain.nexus.admin.refined.organization.OrganizationReference
 
 /**
   * Defines the creation of a type expression to target specific type resources.
@@ -28,4 +29,8 @@ object TypeFilterExpr {
       ComparisonExpr(Eq, UriPath(rdf.tpe.value), UriTerm(nxv.Project.value))
   }
 
+  implicit val orgFilterExpr = new TypeFilterExpr[OrganizationReference] {
+    override def apply() =
+      ComparisonExpr(Eq, UriPath(rdf.tpe.value), UriTerm(nxv.Organization.value))
+  }
 }

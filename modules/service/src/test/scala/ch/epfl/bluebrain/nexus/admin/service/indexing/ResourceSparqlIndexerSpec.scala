@@ -1,6 +1,7 @@
 package ch.epfl.bluebrain.nexus.admin.service.indexing
 
 import java.time.Instant
+import java.util.UUID
 
 import akka.actor.{ActorSystem, Props}
 import akka.testkit.{DefaultTimeout, TestKit}
@@ -9,18 +10,16 @@ import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
 import cats.instances.future._
 import ch.epfl.bluebrain.nexus.admin.core.config.AppConfig.ProjectsConfig
-import ch.epfl.bluebrain.nexus.admin.core.projects.Project.{Config, LoosePrefixMapping, ProjectValue}
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceEvent.{ResourceCreated, ResourceDeprecated, ResourceUpdated}
 import ch.epfl.bluebrain.nexus.admin.core.types.Ref._
 import eu.timepit.refined.auto._
 import ch.epfl.bluebrain.nexus.admin.ld.Const.{nxv, rdf}
-import ch.epfl.bluebrain.nexus.admin.ld.PrefixMapping.randomPrefix
 import ch.epfl.bluebrain.nexus.admin.refined.project.ProjectReference
 import ch.epfl.bluebrain.nexus.commons.test.Randomness
 import ch.epfl.bluebrain.nexus.admin.refined.project._
 import ch.epfl.bluebrain.nexus.commons.types.Meta
-import ProjectValue._
 import akka.http.scaladsl.model.Uri
+import ch.epfl.bluebrain.nexus.admin.core.TestHelper
 import ch.epfl.bluebrain.nexus.admin.refined.ld.Id
 import ch.epfl.bluebrain.nexus.commons.types.identity.Identity
 import eu.timepit.refined.api.RefType.refinedRefType
@@ -30,6 +29,7 @@ import scala.collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
 import ch.epfl.bluebrain.nexus.admin.ld.Const._
+import io.circe.Json
 
 class ResourceSparqlIndexerSpec
     extends TestKit(ActorSystem("ResourceSparqlIndexerSpec"))
@@ -38,7 +38,8 @@ class ResourceSparqlIndexerSpec
     with Matchers
     with ScalaFutures
     with BeforeAndAfterAll
-    with Randomness {
+    with Randomness
+    with TestHelper {
 
   override implicit val patienceConfig: PatienceConfig =
     PatienceConfig(5 seconds, 100 milliseconds)
@@ -48,29 +49,23 @@ class ResourceSparqlIndexerSpec
     super.afterAll()
   }
 
-  def genProjectValue(): ProjectValue = {
-    val prefixMappings = List(
-      LoosePrefixMapping(randomPrefix(), refinedRefType.unsafeRewrap(nxv.namespaceBuilder)),
-      LoosePrefixMapping(randomPrefix(), refinedRefType.unsafeRewrap(rdf.namespaceBuilder))
-    )
-    ProjectValue(genString(), Some(genString()), prefixMappings, Config(genInt().toLong))
-  }
-
   def genReference(length: Int = 9): ProjectReference =
     refinedRefType.unsafeWrap(genString(length = length, Vector.range('a', 'z') ++ Vector.range('0', '9')))
 
   def projectTriples(id: Id,
+                     uuid: String,
                      createdAt: Instant,
                      updatedAt: Instant,
-                     pv: ProjectValue,
+                     pv: Json,
                      rev: Long,
                      deprecated: Boolean = false): List[(String, String, String)] = List(
     (id.value, nxv.createdAtTime.value, createdAt.toString),
     (id.value, nxv.updatedAtTime.value, updatedAt.toString),
     (id.value, nxv.rev.value, rev.toString),
-    (id.value, nxv.description.value, pv.description.get),
+    (id.value, schema.name.value, pv.getString("name")),
     (id.value, rdf.tpe.value, nxv.Project.value),
-    (id.value, nxv.deprecated.value, deprecated.toString)
+    (id.value, nxv.deprecated.value, deprecated.toString),
+    (id.value, nxv.uuid.value, uuid)
   )
 
   "ResourceSparqlIndexer" should {
@@ -82,29 +77,42 @@ class ResourceSparqlIndexerSpec
     val meta          = Meta(Identity.Anonymous(), Instant.now())
 
     "index resource created event" in new Fixture {
-      val projectValue: ProjectValue = genProjectValue()
-      val event                      = ResourceCreated(id, 1L, meta, Set.empty, projectValue.asJson)
+      val uuid               = UUID.randomUUID().toString
+      val projectValue: Json = genProjectValue()
+      val event              = ResourceCreated(id, uuid, 1L, meta, Set.empty, projectValue)
       indexer.index(event).futureValue
 
-      cl.triples(id.value) should have size 15
-      cl.triples(id.value) should contain allElementsOf projectTriples(id, meta.instant, meta.instant, projectValue, 1L)
+      cl.triples(id.value) should have size 14
+      cl.triples(id.value) should contain allElementsOf projectTriples(id,
+                                                                       uuid,
+                                                                       meta.instant,
+                                                                       meta.instant,
+                                                                       projectValue,
+                                                                       1L)
     }
 
     "index resource updated event" in new Fixture {
-      val projectValue: ProjectValue = genProjectValue()
-      val event                      = ResourceCreated(id, 1L, meta, Set.empty, projectValue.asJson)
+      val uuid               = UUID.randomUUID().toString
+      val projectValue: Json = genProjectValue()
+      val event              = ResourceCreated(id, uuid, 1L, meta, Set.empty, projectValue.asJson)
       indexer.index(event).futureValue
 
-      cl.triples(id.value) should have size 15
-      cl.triples(id.value) should contain allElementsOf projectTriples(id, meta.instant, meta.instant, projectValue, 1L)
+      cl.triples(id.value) should have size 14
+      cl.triples(id.value) should contain allElementsOf projectTriples(id,
+                                                                       uuid,
+                                                                       meta.instant,
+                                                                       meta.instant,
+                                                                       projectValue,
+                                                                       1L)
 
-      val updatedProject = projectValue.copy(description = Some(genString()))
+      val updatedProject = projectValue.updateField("name", genString())
       val updatedMeta    = meta.copy(instant = meta.instant.plusSeconds(60L))
-      val updateEvent    = ResourceUpdated(id, 2L, updatedMeta, Set.empty, updatedProject.asJson)
+      val updateEvent    = ResourceUpdated(id, uuid, 2L, updatedMeta, Set.empty, updatedProject)
       indexer.index(updateEvent).futureValue
 
-      cl.triples(id.value) should have size 15
+      cl.triples(id.value) should have size 14
       cl.triples(id.value) should contain allElementsOf projectTriples(id,
+                                                                       uuid,
                                                                        meta.instant,
                                                                        updatedMeta.instant,
                                                                        updatedProject,
@@ -112,19 +120,26 @@ class ResourceSparqlIndexerSpec
     }
 
     "index resource deprecated event" in new Fixture {
-      val projectValue: ProjectValue = genProjectValue()
-      val event                      = ResourceCreated(id, 1L, meta, Set.empty, projectValue.asJson)
+      val uuid               = UUID.randomUUID().toString
+      val projectValue: Json = genProjectValue()
+      val event              = ResourceCreated(id, uuid, 1L, meta, Set.empty, projectValue.asJson)
       indexer.index(event).futureValue
 
-      cl.triples(id.value) should have size 15
-      cl.triples(id.value) should contain allElementsOf projectTriples(id, meta.instant, meta.instant, projectValue, 1L)
+      cl.triples(id.value) should have size 14
+      cl.triples(id.value) should contain allElementsOf projectTriples(id,
+                                                                       uuid,
+                                                                       meta.instant,
+                                                                       meta.instant,
+                                                                       projectValue,
+                                                                       1L)
 
       val deprecateMeta  = meta.copy(instant = meta.instant.plusSeconds(60L))
-      val deprecateEvent = ResourceDeprecated(id, 2L, deprecateMeta, Set.empty)
+      val deprecateEvent = ResourceDeprecated(id, uuid, 2L, deprecateMeta, Set.empty)
       indexer.index(deprecateEvent).futureValue
 
-      cl.triples(id.value) should have size 15
+      cl.triples(id.value) should have size 14
       cl.triples(id.value) should contain allElementsOf projectTriples(id,
+                                                                       uuid,
                                                                        meta.instant,
                                                                        deprecateMeta.instant,
                                                                        projectValue,
@@ -155,12 +170,8 @@ class ResourceSparqlIndexerSpec
 
   trait Fixture {
     implicit val config: ProjectsConfig = ProjectsConfig(3 seconds, "https://nexus.example.ch/v1/projects/", 100000L)
-    val idResolvable                    = refToResolvable
+    val idResolvable                    = projectRefToResolvable
     val id: Id                          = idResolvable(genReference())
-    val prefixMappings = List(
-      LoosePrefixMapping(randomPrefix(), refinedRefType.unsafeRewrap(nxv.namespaceBuilder)),
-      LoosePrefixMapping(randomPrefix(), refinedRefType.unsafeRewrap(rdf.namespaceBuilder))
-    )
 
   }
 

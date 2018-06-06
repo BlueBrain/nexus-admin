@@ -29,7 +29,7 @@ object ResourceRejection {
   /**
     * Signals that an operation on a resource cannot be performed due to the fact that the referenced parent resource does not exist.
     */
-  final case object ParentResourceDoesNotExists extends ResourceRejection
+  final case object ParentResourceDoesNotExist extends ResourceRejection
 
   /**
     * Signals that a resource update cannot be performed due its deprecation status.

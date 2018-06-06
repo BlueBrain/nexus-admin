@@ -2,15 +2,14 @@ package ch.epfl.bluebrain.nexus.admin.service.encoders
 
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.admin.ld.Const.nxv
+import ch.epfl.bluebrain.nexus.admin.ld.JsonLdOps._
 import ch.epfl.bluebrain.nexus.admin.refined.ld.Id
+import ch.epfl.bluebrain.nexus.admin.service.types.Links
 import ch.epfl.bluebrain.nexus.commons.http.ContextUri
 import ch.epfl.bluebrain.nexus.commons.http.JsonOps.JsonOpsSyntax
 import ch.epfl.bluebrain.nexus.commons.types.search.QueryResult.{ScoredQueryResult, UnscoredQueryResult}
 import io.circe.syntax._
 import io.circe.{Encoder, Json}
-import ch.epfl.bluebrain.nexus.admin.ld.JsonLdOps._
-import ch.epfl.bluebrain.nexus.admin.service.types.Links
-import ch.epfl.bluebrain.nexus.commons.http.JsonOps._
 
 /**
   * Constructs implicit encoders used to format HTTP responses.

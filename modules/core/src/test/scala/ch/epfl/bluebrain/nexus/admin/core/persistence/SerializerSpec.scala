@@ -2,10 +2,11 @@ package ch.epfl.bluebrain.nexus.admin.core.persistence
 
 import java.nio.charset.Charset
 import java.time.Clock
+import java.util.UUID
 
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.serialization.{SerializationExtension, SerializerWithStringManifest}
-import ch.epfl.bluebrain.nexus.admin.core.TestHepler
+import ch.epfl.bluebrain.nexus.admin.core.TestHelper
 import ch.epfl.bluebrain.nexus.admin.core.persistence.Serializer.EventSerializer
 import ch.epfl.bluebrain.nexus.admin.core.persistence.SerializerSpec.DataAndJson
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceEvent
@@ -15,11 +16,10 @@ import ch.epfl.bluebrain.nexus.commons.types.Meta
 import ch.epfl.bluebrain.nexus.commons.types.identity.Identity.UserRef
 import eu.timepit.refined.api.RefType.refinedRefType
 import eu.timepit.refined.auto._
-import io.circe.syntax._
 import org.scalatest.{Inspectors, Matchers, WordSpecLike}
 import shapeless.Typeable
 
-class SerializerSpec extends WordSpecLike with Matchers with Inspectors with ScalatestRouteTest with TestHepler {
+class SerializerSpec extends WordSpecLike with Matchers with Inspectors with ScalatestRouteTest with TestHelper {
 
   private final val UTF8: Charset = Charset.forName("UTF-8")
   private final val serialization = SerializationExtension(system)
@@ -36,18 +36,19 @@ class SerializerSpec extends WordSpecLike with Matchers with Inspectors with Sca
     "using EventSerializer" should {
       val value  = genProjectValue()
       val value2 = genProjectValue()
+      val uuid   = UUID.randomUUID().toString
       val results = List(
         DataAndJson(
-          ResourceCreated(projectId, 1L, meta, tags, value.asJson),
-          s"""{"id":"https://bbp.epfl.ch/nexus/projects/projectid","rev":1,"meta":{"author":{"id":"realms/realm/users/sub:1234","type":"UserRef"},"instant":"${meta.instant}"},"tags":["project"],"value":{"name":"${value.name}","description":"${value.description.get}","prefixMappings":[{"prefix":"nxv","namespace":"https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/"},{"prefix":"rdf","namespace":"http://www.w3.org/1999/02/22-rdf-syntax-ns#type"}],"config":{"maxAttachmentSize":${value.config.maxAttachmentSize}}},"type":"ResourceCreated"}"""
+          ResourceCreated(projectId, uuid, 1L, meta, tags, value),
+          s"""{"id":"https://bbp.epfl.ch/nexus/projects/projectid","uuid":"$uuid","rev":1,"meta":{"author":{"id":"realms/realm/users/sub:1234","type":"UserRef"},"instant":"${meta.instant}"},"tags":["project"],"value":${value.noSpaces},"type":"ResourceCreated"}"""
         ),
         DataAndJson(
-          ResourceUpdated(projectId, 1L, meta, tags, value2.asJson),
-          s"""{"id":"https://bbp.epfl.ch/nexus/projects/projectid","rev":1,"meta":{"author":{"id":"realms/realm/users/sub:1234","type":"UserRef"},"instant":"${meta.instant}"},"tags":["project"],"value":{"name":"${value2.name}","description":"${value2.description.get}","prefixMappings":[{"prefix":"nxv","namespace":"https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/"},{"prefix":"rdf","namespace":"http://www.w3.org/1999/02/22-rdf-syntax-ns#type"}],"config":{"maxAttachmentSize":${value2.config.maxAttachmentSize}}},"type":"ResourceUpdated"}"""
+          ResourceUpdated(projectId, uuid, 1L, meta, tags, value2),
+          s"""{"id":"https://bbp.epfl.ch/nexus/projects/projectid","uuid":"$uuid","rev":1,"meta":{"author":{"id":"realms/realm/users/sub:1234","type":"UserRef"},"instant":"${meta.instant}"},"tags":["project"],"value":${value2.noSpaces},"type":"ResourceUpdated"}"""
         ),
         DataAndJson(
-          ResourceDeprecated(projectId, 1L, meta, tags),
-          s"""{"id":"https://bbp.epfl.ch/nexus/projects/projectid","rev":1,"meta":{"author":{"id":"realms/realm/users/sub:1234","type":"UserRef"},"instant":"${meta.instant}"},"tags":["project"],"type":"ResourceDeprecated"}"""
+          ResourceDeprecated(projectId, uuid, 1L, meta, tags),
+          s"""{"id":"https://bbp.epfl.ch/nexus/projects/projectid","uuid":"$uuid","rev":1,"meta":{"author":{"id":"realms/realm/users/sub:1234","type":"UserRef"},"instant":"${meta.instant}"},"tags":["project"],"type":"ResourceDeprecated"}"""
         )
       )
 
