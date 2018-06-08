@@ -19,9 +19,9 @@ object ResourceRestrictionExpr {
   protected type Ids = Root.type :+: ProjectReference :+: CNil
 
   private implicit def toIds(path: Path): Option[Ids] = path.segments match {
-    case project :: Nil => applyRef[ProjectReference](project).toOption.map(Coproduct[Ids](_))
-    case Nil            => Some(Coproduct[Ids](Root))
-    case _              => None
+    case org :: project :: Nil => applyRef[ProjectReference](s"$org/$project").toOption.map(Coproduct[Ids](_))
+    case Nil                   => Some(Coproduct[Ids](Root))
+    case _                     => None
   }
 
   final def apply(acls: FullAccessControlList)(implicit idResolvable: IdResolvable[ProjectReference]): Expr = {

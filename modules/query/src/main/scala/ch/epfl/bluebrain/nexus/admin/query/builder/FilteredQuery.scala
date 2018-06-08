@@ -18,6 +18,7 @@ import ch.epfl.bluebrain.nexus.admin.refined.permissions.HasReadProjects
 import ch.epfl.bluebrain.nexus.admin.refined.project.ProjectReference
 import ch.epfl.bluebrain.nexus.commons.types.search.Sort.OrderType.Desc
 import ch.epfl.bluebrain.nexus.commons.types.search.{Pagination, Sort, SortList}
+import eu.timepit.refined.auto._
 
 /**
   * Describes paginated queries based on filters.
@@ -37,7 +38,7 @@ object FilteredQuery {
       idRes: IdResolvable[ProjectReference]): String = {
     applyWithWhere(
       buildWhereFrom(
-        addToFilter(query.filter and ResourceRestrictionExpr(acls.value), query.deprecated, query.published).expr),
+        addToFilter(query.filter and ResourceRestrictionExpr(acls), query.deprecated, query.published).expr),
       pagination,
       query.q,
       query.sort)
