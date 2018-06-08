@@ -21,7 +21,7 @@ import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceEvent
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceState.{next, Eval, Initial}
 import ch.epfl.bluebrain.nexus.admin.service.indexing.ResourceSparqlIndexer
 import ch.epfl.bluebrain.nexus.admin.service.routes.Proxy.AkkaStream
-import ch.epfl.bluebrain.nexus.admin.service.routes.{ProjectAclRoutes, ProjectRoutes, StaticRoutes}
+import ch.epfl.bluebrain.nexus.admin.service.routes.{OrganizationRoutes, ProjectAclRoutes, ProjectRoutes, StaticRoutes}
 import ch.epfl.bluebrain.nexus.commons.http.HttpClient
 import ch.epfl.bluebrain.nexus.commons.http.HttpClient._
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport._
@@ -88,7 +88,9 @@ object Main {
       val organizations: Organizations[Future]       = Organizations(orgAgg, blazegraphClient)
       val projects                                   = Projects(organizations, projAgg, blazegraphClient)
       val api = uriPrefix(appConfig.http.apiUri)(
-        ProjectRoutes(projects).routes ~ ProjectAclRoutes(projects, AkkaStream()).routes)
+        OrganizationRoutes(organizations).routes ~ ProjectRoutes(projects).routes ~ ProjectAclRoutes(
+          projects,
+          AkkaStream()).routes)
       val staticResourceRoutes = new StaticResourceRoutes(
         Map(
           "/contexts/resource"    -> "/resource-context.json",

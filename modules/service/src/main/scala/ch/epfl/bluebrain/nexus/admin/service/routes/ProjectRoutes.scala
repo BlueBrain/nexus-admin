@@ -116,7 +116,7 @@ final class ProjectRoutes(projects: Projects[Future])(implicit iamClient: IamCli
   private def searchRoutes(implicit credentials: Option[OAuth2BearerToken]): Route =
     (pathEndOrSingleSlash & get & paramsToQuery) { (pagination, query) =>
       trace("searchProjects") {
-        (pathEndOrSingleSlash & authorizeOn[HasReadProjects](Path.Empty / "*")) { implicit acls =>
+        (pathEndOrSingleSlash & authorizeOn[HasReadProjects](Path.Empty / "*" / "*")) { implicit acls =>
           implicit val projectNamespace = config.projects.namespace
           implicit val projectsResolver: Id => Future[Option[Resource[ProjectReference]]] = { id =>
             {

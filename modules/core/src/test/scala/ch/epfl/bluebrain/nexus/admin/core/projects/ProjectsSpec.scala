@@ -344,9 +344,15 @@ class ProjectsSpec
       implicit val hasRead: HasReadProjects =
         applyRef[HasReadProjects](
           FullAccessControlList(
-            (Identity.Anonymous(), Path./(projectRef1.value), Permissions(Read, Permission("projects/read"))),
-            (Identity.Anonymous(), Path./(projectRef2.value), Permissions(Read, Permission("projects/read"))),
-            (Identity.Anonymous(), Path./(projectRef3.value), Permissions(Read, Permission("projects/read")))
+            (Identity.Anonymous(),
+             Path./(projectRef1.organizationReference) / projectRef1.value.split("/")(1),
+             Permissions(Read, Permission("projects/read"))),
+            (Identity.Anonymous(),
+             Path./(projectRef2.organizationReference) / projectRef2.value.split("/")(1),
+             Permissions(Read, Permission("projects/read"))),
+            (Identity.Anonymous(),
+             Path./(projectRef3.organizationReference) / projectRef3.value.split("/")(1),
+             Permissions(Read, Permission("projects/read")))
           )).toPermTry.success.value
 
       projects.list(queryPayload, pagination).futureValue shouldEqual expectedResult
