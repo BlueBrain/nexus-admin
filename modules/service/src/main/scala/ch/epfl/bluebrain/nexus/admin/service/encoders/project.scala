@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.admin.ld.Const.{nxv, resourceContext, schema}
 import ch.epfl.bluebrain.nexus.admin.ld.{Const, JsonLD}
 import ch.epfl.bluebrain.nexus.admin.ld.JsonLD._
 import ch.epfl.bluebrain.nexus.admin.refined.ld.Namespace
-import ch.epfl.bluebrain.nexus.admin.refined.project.ProjectReference
+import ch.epfl.bluebrain.nexus.admin.refined.project._
 import eu.timepit.refined.auto._
 import io.circe.{Encoder, Json}
 
@@ -44,7 +44,7 @@ object project {
       Json.obj(
         Const.`@id`               -> Json.fromString(s"${projectNamespace.value}${resource.id.value.value}"),
         Const.`@type`             -> Json.fromString(nxv.Project.curie.show),
-        nxv.label.reference.value -> Json.fromString(resource.id.value),
+        nxv.label.reference.value -> Json.fromString(resource.id.value.projectLabel),
         nxv.name.reference.value -> Json.fromString(
           ld.value[String](schema.name)
             .getOrElse(throw new IllegalArgumentException(

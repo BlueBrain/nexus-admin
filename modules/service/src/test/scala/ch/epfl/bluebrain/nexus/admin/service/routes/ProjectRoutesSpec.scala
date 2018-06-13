@@ -132,7 +132,7 @@ class ProjectRoutesSpec
           `@context`    -> Json.fromString(appConfig.prefixes.coreContext.toString()),
           `@id`         -> Json.fromString(s"http://127.0.0.1:8080/v1/projects/${reference.value}"),
           `@type`       -> Json.fromString("nxv:Project"),
-          "label"       -> Json.fromString(reference.value),
+          "label"       -> Json.fromString(reference.value.split("/")(1)),
           "_rev"        -> Json.fromLong(2L),
           "_deprecated" -> Json.fromBoolean(true),
           "_uuid"       -> Json.fromString(uuid)
@@ -149,7 +149,7 @@ class ProjectRoutesSpec
           `@context`    -> Json.fromString(appConfig.prefixes.coreContext.toString()),
           `@id`         -> Json.fromString(s"http://127.0.0.1:8080/v1/projects/${reference.value}"),
           `@type`       -> Json.fromString("nxv:Project"),
-          "label"       -> Json.fromString(reference.value),
+          "label"       -> Json.fromString(reference.value.split("/")(1)),
           "_rev"        -> Json.fromLong(1L),
           "_deprecated" -> Json.fromBoolean(false),
           "_uuid"       -> Json.fromString(uuid)

@@ -55,7 +55,7 @@ object project extends ProjectInferences {
 
   }
 
-  implicit class OrganizationReferenceSyntax(ref: ProjectReference) {
+  implicit class ProjectReferenceOps(ref: ProjectReference) {
 
     /**
       * Extract [[OrganizationReference]] from [[ProjectReference]]
@@ -69,6 +69,12 @@ object project extends ProjectInferences {
             s"Couldn't extract OrganizationReference from ProjectReference: ${ref.value}")
       }
     }
+
+    /**
+      * Extract project label from [[ProjectReference]]
+      * @return project label
+      */
+    def projectLabel: String = ref.value.split("/")(1)
 
   }
 }

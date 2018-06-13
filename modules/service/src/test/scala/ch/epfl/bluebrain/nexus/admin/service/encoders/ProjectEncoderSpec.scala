@@ -29,7 +29,7 @@ class ProjectEncoderSpec extends WordSpecLike with Matchers with TestHelper {
         .obj(
           "@id"         -> Json.fromString(s"https://nexus.example.ch/v1/projects/${resource.id.value.value}"),
           "@type"       -> Json.fromString(nxv.Project.curie.show),
-          "label"       -> Json.fromString(resource.id.value.value),
+          "label"       -> Json.fromString(resource.id.value.value.split("/")(1)),
           "_rev"        -> Json.fromLong(resource.rev),
           "_deprecated" -> Json.fromBoolean(resource.deprecated),
           "_uuid"       -> Json.fromString(resource.uuid)
