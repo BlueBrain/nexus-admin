@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.admin.service.routes
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.Authorization
+import cats.syntax.show._
 import ch.epfl.bluebrain.nexus.admin.core.Error.classNameOf
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceRejection.ResourceDoesNotExists
 import ch.epfl.bluebrain.nexus.admin.core.{CallerCtx, Error, TestHelper}
@@ -22,34 +23,34 @@ class ProjectAclRoutesSpec extends WordSpecLike with Matchers with AdminRoutesTe
 
   "A ProjectAclRoutes" should {
 
-    val proj: ProjectReference = "org/proj"
+    val proj: ProjectReference = ProjectReference("org", "proj")
     val projectValue           = genProjectValue()
     val json                   = projectValue.asJson
     val orgValue: Json         = genOrganizationValue()
 
     "reject when project does not exists" in {
-      setUpIamCalls(proj.value)
+      setUpIamCalls(proj.show)
       organizations.create(proj.organizationReference, orgValue)(CallerCtx(caller)).futureValue
 
-      Get(s"/projects/${proj.value}/acls") ~> addCredentials(cred) ~> route ~> check {
+      Get(s"/projects/${proj.show}/acls") ~> addCredentials(cred) ~> route ~> check {
         status shouldEqual StatusCodes.NotFound
         responseAs[Error].code shouldEqual classNameOf[ResourceDoesNotExists.type]
       }
     }
 
     "create a project" in {
-      Put(s"/projects/${proj.value}", json) ~> addCredentials(cred) ~> route ~> check {
+      Put(s"/projects/${proj.show}", json) ~> addCredentials(cred) ~> route ~> check {
         status shouldEqual StatusCodes.Created
         responseAs[Json] shouldEqual Json.obj(
           `@context` -> Json.fromString(appConfig.prefixes.coreContext.toString()),
-          `@id`      -> Json.fromString(s"http://127.0.0.1:8080/v1/projects/${proj.value}"),
+          `@id`      -> Json.fromString(s"http://127.0.0.1:8080/v1/projects/${proj.show}"),
           "_rev"     -> Json.fromLong(1L)
         )
       }
     }
 
     "proxy the request to iam (GET method)" in {
-      Get(s"/projects/${proj.value}/acls?self=true") ~> addCredentials(cred) ~> route ~> check {
+      Get(s"/projects/${proj.show}/acls?self=true") ~> addCredentials(cred) ~> route ~> check {
         status shouldEqual StatusCodes.OK
         responseEntity.isKnownEmpty() shouldEqual true
         header("Authorization") shouldEqual Some(Authorization(cred))
@@ -57,7 +58,7 @@ class ProjectAclRoutesSpec extends WordSpecLike with Matchers with AdminRoutesTe
     }
 
     "proxy the request to iam (PUT method)" in {
-      Put(s"/projects/${proj.value}/acls", json) ~> addCredentials(cred) ~> route ~> check {
+      Put(s"/projects/${proj.show}/acls", json) ~> addCredentials(cred) ~> route ~> check {
         status shouldEqual StatusCodes.OK
         responseAs[Json] shouldEqual json
       }

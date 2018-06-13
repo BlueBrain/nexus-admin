@@ -3,6 +3,9 @@ package ch.epfl.bluebrain.nexus.admin.service.directives
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Directive1, ValidationRejection}
 import ch.epfl.bluebrain.nexus.admin.core.CommonRejections.IllegalParam
+import ch.epfl.bluebrain.nexus.admin.refined.organization.OrganizationReference
+import ch.epfl.bluebrain.nexus.admin.refined.project._
+import eu.timepit.refined.api.RefType.applyRef
 import eu.timepit.refined.api.{RefType, Validate}
 
 /**
@@ -11,14 +14,18 @@ import eu.timepit.refined.api.{RefType, Validate}
 trait RefinedDirectives {
 
   /**
-    * Extracts a refined type from two consecutive path segments.
+    * Extracts a [[ProjectReference]] from two consecutive path segments.
     */
-  def segment2[FTP, F[_, _], P](resolved: ApplyRefDirectivePartiallyApplied[FTP])(
-      implicit ev: F[String, P] =:= FTP,
-      rt: RefType[F],
-      v: Validate[String, P]): Directive1[FTP] = {
+  def projectReference: Directive1[ProjectReference] = {
     pathPrefix(Segment / Segment).tflatMap {
-      case (seg1, seg2) => resolved(s"$seg1/$seg2")
+      case (seg1, seg2) =>
+        (for {
+          org  <- applyRef[OrganizationReference](seg1)
+          proj <- applyRef[ProjectLabel](seg2)
+        } yield ProjectReference(org, proj)) match {
+          case Right(r)  => provide(r)
+          case Left(err) => reject(ValidationRejection(err, Some(IllegalParam(err))))
+        }
     }
   }
 

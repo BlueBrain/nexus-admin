@@ -42,7 +42,7 @@ object project {
           .appendContext(resourceContext)
 
       Json.obj(
-        Const.`@id`               -> Json.fromString(s"${projectNamespace.value}${resource.id.value.value}"),
+        Const.`@id`               -> Json.fromString(s"${projectNamespace.value}${resource.id.value.show}"),
         Const.`@type`             -> Json.fromString(nxv.Project.curie.show),
         nxv.label.reference.value -> Json.fromString(resource.id.value.projectLabel),
         nxv.name.reference.value -> Json.fromString(

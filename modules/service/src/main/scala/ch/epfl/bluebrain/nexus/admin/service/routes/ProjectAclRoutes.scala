@@ -6,6 +6,7 @@ import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.model.{HttpRequest, Uri}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Directive0, Route}
+import cats.syntax.show._
 import ch.epfl.bluebrain.nexus.admin.core.config.AppConfig
 import ch.epfl.bluebrain.nexus.admin.core.config.AppConfig._
 import ch.epfl.bluebrain.nexus.admin.core.projects.Projects
@@ -34,14 +35,14 @@ final class ProjectAclRoutes(projects: Projects[Future], proxy: Proxy)(implicit 
   private val iamUri = config.iam.baseUri
 
   protected def combined(implicit credentials: Option[OAuth2BearerToken]): Route =
-    (segment2(of[ProjectReference]) & pathPrefix("acls") & pathEndOrSingleSlash) { name =>
+    (projectReference & pathPrefix("acls") & pathEndOrSingleSlash) { name =>
       (exists(name) & parameterMap & extractRequest) { (params, req) =>
         trace(s"${req.method.toString().toLowerCase()}ProjectACL") {
           complete(
             proxy(
               req
                 .withHeaders()
-                .withUri(iamUri.append("acls" / name.value).withQuery(Query(params)))
+                .withUri(iamUri.append("acls" / name.show).withQuery(Query(params)))
                 .withCred(credentials)))
         }
       }
@@ -55,7 +56,7 @@ final class ProjectAclRoutes(projects: Projects[Future], proxy: Proxy)(implicit 
   }
 
   private def exists(name: ProjectReference)(implicit credentials: Option[OAuth2BearerToken]): Directive0 =
-    authorizeOn[HasReadProjects](name.value) flatMap { implicit perms =>
+    authorizeOn[HasReadProjects](name.show) flatMap { implicit perms =>
       onSuccess(projects.fetch(name)) flatMap {
         case Some(_) => pass
         case _       => reject(ProjectNotFound)
