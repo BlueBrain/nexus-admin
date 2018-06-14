@@ -1,8 +1,10 @@
 package ch.epfl.bluebrain.nexus.admin.client.types
 
-import ch.epfl.bluebrain.nexus.admin.client.types.Project._
 import ch.epfl.bluebrain.nexus.admin.ld.Const._
 import ch.epfl.bluebrain.nexus.admin.refined.ld.{AliasOrNamespace, Prefix}
+import ch.epfl.bluebrain.nexus.rdf.Iri
+import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
+import eu.timepit.refined.auto._
 import io.circe.Decoder
 import io.circe.generic.semiauto.deriveDecoder
 import io.circe.refined._
@@ -18,7 +20,7 @@ import io.circe.refined._
   * @param uuid           the permanent identifier for the project
   */
 final case class Project(name: String,
-                         prefixMappings: List[LoosePrefixMapping],
+                         prefixMappings: Map[String, AbsoluteIri],
                          base: String,
                          rev: Long,
                          deprecated: Boolean,
@@ -34,18 +36,27 @@ object Project {
     */
   final case class LoosePrefixMapping(prefix: Prefix, namespace: AliasOrNamespace)
 
+  private def mappingToMapEntry(mapping: LoosePrefixMapping): Option[(String, AbsoluteIri)] = {
+    Iri.absolute(mapping.namespace.value) match {
+      case Right(iri) => Some((mapping.prefix, iri))
+      case Left(_)    => None
+    }
+
+  }
+
   implicit def projectDecoder(
       implicit
       DLPM: Decoder[LoosePrefixMapping] = deriveDecoder[LoosePrefixMapping]): Decoder[Project] = {
     Decoder.instance { c =>
       for {
-        name       <- c.downField(nxv.name.reference.value).as[String]
-        lpm        <- c.downField(nxv.prefixMappings.reference.value).as[List[LoosePrefixMapping]]
+        name <- c.downField(nxv.name.reference.value).as[String]
+        lpm  <- c.downField(nxv.prefixMappings.reference.value).as[List[LoosePrefixMapping]]
+        mappings = lpm.map(mappingToMapEntry).flatten.toMap
         base       <- c.downField(nxv.base.reference.value).as[String]
         rev        <- c.downField(nxv.rev.reference.value).as[Long]
         deprecated <- c.downField(nxv.deprecated.reference.value).as[Boolean]
         uuid       <- c.downField(nxv.uuid.reference.value).as[String]
-      } yield Project(name, lpm, base, rev, deprecated, uuid)
+      } yield Project(name, mappings, base, rev, deprecated, uuid)
     }
   }
 }

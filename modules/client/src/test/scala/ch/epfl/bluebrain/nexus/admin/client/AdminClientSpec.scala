@@ -8,7 +8,6 @@ import akka.stream.{ActorMaterializer, Materializer}
 import akka.testkit.TestKit
 import cats.syntax.show._
 import ch.epfl.bluebrain.nexus.admin.client.config.AdminConfig
-import ch.epfl.bluebrain.nexus.admin.client.types.Project.LoosePrefixMapping
 import ch.epfl.bluebrain.nexus.admin.refined.project.ProjectReference
 import ch.epfl.bluebrain.nexus.commons.http.HttpClient.UntypedHttpClient
 import ch.epfl.bluebrain.nexus.commons.http.UnexpectedUnsuccessfulHttpResponse
@@ -17,9 +16,10 @@ import ch.epfl.bluebrain.nexus.commons.types.HttpRejection.UnauthorizedAccess
 import ch.epfl.bluebrain.nexus.commons.types.identity.Identity.UserRef
 import ch.epfl.bluebrain.nexus.commons.types.identity.IdentityId
 import ch.epfl.bluebrain.nexus.iam.client.types._
+import ch.epfl.bluebrain.nexus.rdf.Iri
 import eu.timepit.refined.auto._
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
+import org.scalatest.{BeforeAndAfterAll, Matchers, OptionValues, WordSpecLike}
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
@@ -29,7 +29,8 @@ class AdminClientSpec
     with WordSpecLike
     with Matchers
     with ScalaFutures
-    with BeforeAndAfterAll {
+    with BeforeAndAfterAll
+    with OptionValues {
 
   private val base   = Uri("http://localhost/v1/projects/")
   private val config = AdminConfig(base)
@@ -64,9 +65,9 @@ class AdminClientSpec
       project.rev shouldEqual 3
       project.name shouldEqual "projectname"
       project.base shouldEqual "http://localhost/v1/resources/"
-      project.prefixMappings shouldEqual List(
-        LoosePrefixMapping("nxv-projectname", "https://nexus.example.com/vocabs/nexus/core/terms/v0.1.0/"),
-        LoosePrefixMapping("person-projectname", "https://shapes-registry.org/commons/person")
+      project.prefixMappings shouldEqual Map(
+        "nxv-projectname"    -> Iri.absolute("https://nexus.example.com/vocabs/nexus/core/terms/v0.1.0/").toOption.value,
+        "person-projectname" -> Iri.absolute("https://shapes-registry.org/commons/person").toOption.value
       )
     }
 
