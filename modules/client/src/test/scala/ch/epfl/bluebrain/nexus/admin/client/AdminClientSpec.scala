@@ -8,7 +8,7 @@ import akka.stream.{ActorMaterializer, Materializer}
 import akka.testkit.TestKit
 import cats.syntax.show._
 import ch.epfl.bluebrain.nexus.admin.client.config.AdminConfig
-import ch.epfl.bluebrain.nexus.admin.client.types.Project.{Config, LoosePrefixMapping}
+import ch.epfl.bluebrain.nexus.admin.client.types.Project.LoosePrefixMapping
 import ch.epfl.bluebrain.nexus.admin.refined.project.ProjectReference
 import ch.epfl.bluebrain.nexus.commons.http.HttpClient.UntypedHttpClient
 import ch.epfl.bluebrain.nexus.commons.http.UnexpectedUnsuccessfulHttpResponse
@@ -63,7 +63,7 @@ class AdminClientSpec
       project.deprecated shouldEqual false
       project.rev shouldEqual 3
       project.name shouldEqual "projectname"
-      project.config shouldEqual Config(10)
+      project.base shouldEqual "http://localhost/v1/resources/"
       project.prefixMappings shouldEqual List(
         LoosePrefixMapping("nxv-projectname", "https://nexus.example.com/vocabs/nexus/core/terms/v0.1.0/"),
         LoosePrefixMapping("person-projectname", "https://shapes-registry.org/commons/person")

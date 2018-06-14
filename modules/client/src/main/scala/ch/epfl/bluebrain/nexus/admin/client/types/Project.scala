@@ -12,14 +12,14 @@ import io.circe.refined._
   *
   * @param name           the name of the project
   * @param prefixMappings the prefix mappings
-  * @param config         the configuration of the project
+  * @param base           the base used to generate IDs
   * @param rev            the selected revision for the project
   * @param deprecated     the deprecation status of the project
   * @param uuid           the permanent identifier for the project
   */
 final case class Project(name: String,
                          prefixMappings: List[LoosePrefixMapping],
-                         config: Config,
+                         base: String,
                          rev: Long,
                          deprecated: Boolean,
                          uuid: String)
@@ -34,25 +34,18 @@ object Project {
     */
   final case class LoosePrefixMapping(prefix: Prefix, namespace: AliasOrNamespace)
 
-  /**
-    * Project configuration
-    *
-    * @param maxAttachmentSize the maximum attachment file size in bytes
-    */
-  final case class Config(maxAttachmentSize: Long)
-
-  implicit def projectDecoder(implicit
-                              DLPM: Decoder[LoosePrefixMapping] = deriveDecoder[LoosePrefixMapping],
-                              DC: Decoder[Config] = deriveDecoder[Config]): Decoder[Project] = {
+  implicit def projectDecoder(
+      implicit
+      DLPM: Decoder[LoosePrefixMapping] = deriveDecoder[LoosePrefixMapping]): Decoder[Project] = {
     Decoder.instance { c =>
       for {
         name       <- c.downField(nxv.name.reference.value).as[String]
         lpm        <- c.downField(nxv.prefixMappings.reference.value).as[List[LoosePrefixMapping]]
-        config     <- c.downField(nxv.config.reference.value).as[Config]
+        base       <- c.downField(nxv.base.reference.value).as[String]
         rev        <- c.downField(nxv.rev.reference.value).as[Long]
         deprecated <- c.downField(nxv.deprecated.reference.value).as[Boolean]
         uuid       <- c.downField(nxv.uuid.reference.value).as[String]
-      } yield Project(name, lpm, config, rev, deprecated, uuid)
+      } yield Project(name, lpm, base, rev, deprecated, uuid)
     }
   }
 }
