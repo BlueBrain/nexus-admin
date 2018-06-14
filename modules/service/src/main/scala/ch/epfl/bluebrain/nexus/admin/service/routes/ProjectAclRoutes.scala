@@ -19,6 +19,7 @@ import ch.epfl.bluebrain.nexus.iam.client.IamClient
 import ch.epfl.bluebrain.nexus.service.http.Path
 import ch.epfl.bluebrain.nexus.service.http.Path._
 import ch.epfl.bluebrain.nexus.service.kamon.directives.TracingDirectives
+import eu.timepit.refined.auto._
 
 import scala.concurrent.Future
 
@@ -42,7 +43,8 @@ final class ProjectAclRoutes(projects: Projects[Future], proxy: Proxy)(implicit 
             proxy(
               req
                 .withHeaders()
-                .withUri(iamUri.append("acls" / name.show).withQuery(Query(params)))
+                .withUri(
+                  iamUri.append("acls" / name.organizationReference.value / name.projectLabel).withQuery(Query(params)))
                 .withCred(credentials)))
         }
       }
