@@ -7,12 +7,13 @@ import akka.actor.{ActorSystem, Props}
 import akka.testkit.{DefaultTimeout, TestKit}
 import ch.epfl.bluebrain.nexus.commons.sparql.client.{InMemorySparqlActor, InMemorySparqlClient}
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{BeforeAndAfterAll, Matchers, WordSpecLike}
+import org.scalatest.{BeforeAndAfterAll, Matchers, OptionValues, WordSpecLike}
 import cats.instances.future._
 import ch.epfl.bluebrain.nexus.admin.core.config.AppConfig.ProjectsConfig
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceEvent.{ResourceCreated, ResourceDeprecated, ResourceUpdated}
 import ch.epfl.bluebrain.nexus.admin.core.types.Ref._
 import eu.timepit.refined.auto._
+import eu.timepit.refined.api.RefType.applyRef
 import ch.epfl.bluebrain.nexus.admin.ld.Const.{nxv, rdf}
 import ch.epfl.bluebrain.nexus.admin.refined.project.ProjectReference
 import ch.epfl.bluebrain.nexus.commons.test.Randomness
@@ -29,6 +30,7 @@ import scala.collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
 import ch.epfl.bluebrain.nexus.admin.ld.Const._
+import ch.epfl.bluebrain.nexus.admin.refined.organization.OrganizationReference
 import io.circe.Json
 
 class ResourceSparqlIndexerSpec
@@ -39,7 +41,8 @@ class ResourceSparqlIndexerSpec
     with ScalaFutures
     with BeforeAndAfterAll
     with Randomness
-    with TestHelper {
+    with TestHelper
+    with OptionValues {
 
   override implicit val patienceConfig: PatienceConfig =
     PatienceConfig(5 seconds, 100 milliseconds)
@@ -49,8 +52,10 @@ class ResourceSparqlIndexerSpec
     super.afterAll()
   }
 
-  def genReference(length: Int = 9): ProjectReference =
-    refinedRefType.unsafeWrap(genString(length = length, Vector.range('a', 'z') ++ Vector.range('0', '9')))
+  def genReference(length: Int = 9): ProjectReference = ProjectReference(
+    applyRef[OrganizationReference](genString(length = length, Vector.range('a', 'z') ++ Vector.range('0', '9'))).toOption.value,
+    applyRef[ProjectLabel](genString(length = length, Vector.range('a', 'z') ++ Vector.range('0', '9'))).toOption.value
+  )
 
   def projectTriples(id: Id,
                      uuid: String,

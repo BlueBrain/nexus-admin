@@ -6,7 +6,8 @@ import ch.epfl.bluebrain.nexus.admin.query.filtering.Op.Or
 import ch.epfl.bluebrain.nexus.admin.query.filtering.PropPath.SubjectPath
 import ch.epfl.bluebrain.nexus.admin.query.filtering.Term.UriTerm
 import ch.epfl.bluebrain.nexus.admin.query.filtering.{Expr, Op}
-import ch.epfl.bluebrain.nexus.admin.refined.project.ProjectReference
+import ch.epfl.bluebrain.nexus.admin.refined.organization.OrganizationReference
+import ch.epfl.bluebrain.nexus.admin.refined.project.{ProjectLabel, ProjectReference}
 import ch.epfl.bluebrain.nexus.iam.client.types._
 import ch.epfl.bluebrain.nexus.service.http.Path
 import eu.timepit.refined.api.RefType.applyRef
@@ -19,9 +20,13 @@ object ResourceRestrictionExpr {
   protected type Ids = Root.type :+: ProjectReference :+: CNil
 
   private implicit def toIds(path: Path): Option[Ids] = path.segments match {
-    case org :: project :: Nil => applyRef[ProjectReference](s"$org/$project").toOption.map(Coproduct[Ids](_))
-    case Nil                   => Some(Coproduct[Ids](Root))
-    case _                     => None
+    case org :: project :: Nil =>
+      for {
+        orgRef    <- applyRef[OrganizationReference](org).toOption
+        projLabel <- applyRef[ProjectLabel](project).toOption
+      } yield Coproduct[Ids](ProjectReference(orgRef, projLabel))
+    case Nil => Some(Coproduct[Ids](Root))
+    case _   => None
   }
 
   final def apply(acls: FullAccessControlList)(implicit idResolvable: IdResolvable[ProjectReference]): Expr = {

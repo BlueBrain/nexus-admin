@@ -11,8 +11,9 @@ import ch.epfl.bluebrain.nexus.admin.query.filtering.Filter
 import ch.epfl.bluebrain.nexus.admin.query.filtering.Op.{Eq, Or}
 import ch.epfl.bluebrain.nexus.admin.query.filtering.PropPath.{SubjectPath, UriPath}
 import ch.epfl.bluebrain.nexus.admin.query.filtering.Term.UriTerm
+import ch.epfl.bluebrain.nexus.admin.refined.ld.Reference
 import ch.epfl.bluebrain.nexus.admin.refined.permissions.HasReadProjects
-import ch.epfl.bluebrain.nexus.admin.refined.project.{ProjectReference, _}
+import ch.epfl.bluebrain.nexus.admin.refined.project.ProjectReference
 import ch.epfl.bluebrain.nexus.commons.test.Resources
 import ch.epfl.bluebrain.nexus.commons.types.identity.Identity
 import ch.epfl.bluebrain.nexus.commons.types.search.{Pagination, Sort, SortList}
@@ -40,7 +41,9 @@ class FilteredQuerySpec extends WordSpecLike with Matchers with Resources with E
     applyRef[HasReadProjects](FullAccessControlList(
       (Identity.Anonymous(), Path./, Permissions(Read, Permission("projects/read"))))).toOption.get
   implicit val idRef: IdResolvable[ProjectReference] = (a: ProjectReference) =>
-    IdRef("projects", "https://localhost/project/", a)
+    IdRef("projects",
+          "https://localhost/project/",
+          applyRef[Reference].unsafeFrom(s"${a.organizationReference}/${a.projectLabel}"))
 
   "A FilteredQuery" should {
     val pagination = Pagination(13, 17)

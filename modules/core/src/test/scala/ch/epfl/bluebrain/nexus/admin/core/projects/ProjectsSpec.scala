@@ -5,6 +5,7 @@ import java.util
 import akka.actor.ActorSystem
 import akka.testkit.{DefaultTimeout, TestKit}
 import cats.instances.future._
+import cats.syntax.show._
 import ch.epfl.bluebrain.nexus.admin.core.CallerCtx._
 import ch.epfl.bluebrain.nexus.admin.core.Fault.CommandRejected
 import ch.epfl.bluebrain.nexus.admin.core.TestHelper
@@ -303,7 +304,7 @@ class ProjectsSpec
            |FILTER ( ?var_1 = true )
            |
            |
-           |FILTER ( ?s = <https://nexus.example.ch/v1/projects/${projectRef1.value}> || ?s = <https://nexus.example.ch/v1/projects/${projectRef2.value}> || ?s = <https://nexus.example.ch/v1/projects/${projectRef3.value}> )
+           |FILTER ( ?s = <https://nexus.example.ch/v1/projects/${projectRef1.show}> || ?s = <https://nexus.example.ch/v1/projects/${projectRef2.show}> || ?s = <https://nexus.example.ch/v1/projects/${projectRef3.show}> )
            |
            |
            |  }
@@ -345,13 +346,13 @@ class ProjectsSpec
         applyRef[HasReadProjects](
           FullAccessControlList(
             (Identity.Anonymous(),
-             Path./(projectRef1.organizationReference) / projectRef1.value.split("/")(1),
+             Path./(projectRef1.organizationReference) / projectRef1.projectLabel,
              Permissions(Read, Permission("projects/read"))),
             (Identity.Anonymous(),
-             Path./(projectRef2.organizationReference) / projectRef2.value.split("/")(1),
+             Path./(projectRef2.organizationReference) / projectRef2.projectLabel,
              Permissions(Read, Permission("projects/read"))),
             (Identity.Anonymous(),
-             Path./(projectRef3.organizationReference) / projectRef3.value.split("/")(1),
+             Path./(projectRef3.organizationReference) / projectRef3.value.projectLabel,
              Permissions(Read, Permission("projects/read")))
           )).toPermTry.success.value
 

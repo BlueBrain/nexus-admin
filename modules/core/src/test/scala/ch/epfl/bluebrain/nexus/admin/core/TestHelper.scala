@@ -4,7 +4,7 @@ import ch.epfl.bluebrain.nexus.admin.core.Fault.Unexpected
 import ch.epfl.bluebrain.nexus.admin.ld.Const.{nxv, rdf}
 import ch.epfl.bluebrain.nexus.admin.refined.ld.{Namespace, Prefix}
 import ch.epfl.bluebrain.nexus.admin.refined.organization.OrganizationReference
-import ch.epfl.bluebrain.nexus.admin.refined.project.ProjectReference
+import ch.epfl.bluebrain.nexus.admin.refined.project.{ProjectLabel, ProjectReference}
 import ch.epfl.bluebrain.nexus.commons.test.Randomness
 import eu.timepit.refined.W
 import eu.timepit.refined.api.RefType.{applyRef, refinedRefType}
@@ -36,8 +36,8 @@ trait TestHelper extends Randomness with OptionValues {
   def genProjectReference(length: Int = 9): ProjectReference = {
 
     val idPool = Vector.range('a', 'z') ++ Vector.range('0', '9')
-    val id     = s"${genString(length = length, idPool)}/${genString(length = length, idPool)}"
-    applyRef[ProjectReference](id).right.get
+    val id     = s"${genString(length = length, idPool)}"
+    ProjectReference(genOrgReference(), applyRef[ProjectLabel](id).right.get)
   }
   def genOrgReference(length: Int = 9): OrganizationReference = {
     val idPool = Vector.range('a', 'z') ++ Vector.range('0', '9')

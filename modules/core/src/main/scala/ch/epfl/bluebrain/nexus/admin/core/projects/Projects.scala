@@ -61,9 +61,7 @@ object Projects {
   private[projects] implicit val logger: Logger = Logger[this.type]
 
   implicit val projectReferencePersistenceId = new PersistenceId[ProjectReference] {
-    override def persistenceId(id: ProjectReference): String = {
-      id.value
-    }
+    override def persistenceId(id: ProjectReference): String = id.show
   }
 
   /**

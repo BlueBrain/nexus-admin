@@ -16,6 +16,7 @@ import ch.epfl.bluebrain.nexus.commons.types.HttpRejection.UnauthorizedAccess
 import ch.epfl.bluebrain.nexus.iam.client.types.FullAccessControlList
 import ch.epfl.bluebrain.nexus.service.http.Path
 import ch.epfl.bluebrain.nexus.service.http.Path._
+import eu.timepit.refined.auto._
 import io.circe.generic.auto._
 import journal.Logger
 
@@ -70,13 +71,13 @@ object AdminClient {
 
       override def getProject(name: ProjectReference)(
           implicit credentials: Option[OAuth2BearerToken]): Future[Project] = {
-        val path = Path(name.value)
+        val path = name.organizationReference.value / name.projectLabel
         projectClient(requestFrom(path)).recoverWith { case e => recover(e, path) }
       }
 
       override def getProjectAcls(name: ProjectReference, parents: Boolean = false, self: Boolean = false)(
           implicit credentials: Option[OAuth2BearerToken]): Future[FullAccessControlList] = {
-        val path  = name.value / "acls"
+        val path  = name.organizationReference.value / name.projectLabel / "acls"
         val query = Query("parents" -> parents.toString, "self" -> self.toString)
         aclsClient(requestFrom(path, Some(query))).recoverWith { case e => recover(e, path) }
       }

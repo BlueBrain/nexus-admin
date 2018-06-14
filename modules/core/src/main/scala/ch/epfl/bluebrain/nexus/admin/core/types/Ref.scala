@@ -1,13 +1,16 @@
 package ch.epfl.bluebrain.nexus.admin.core.types
 
 import ch.epfl.bluebrain.nexus.admin.core.config.AppConfig.{OrganizationsConfig, ProjectsConfig}
+import ch.epfl.bluebrain.nexus.admin.ld.IdOps._
 import ch.epfl.bluebrain.nexus.admin.ld.{IdRef, IdResolvable}
-import ch.epfl.bluebrain.nexus.admin.refined.project.{ProjectReference, _}
+import ch.epfl.bluebrain.nexus.admin.refined.ld.Reference
+import ch.epfl.bluebrain.nexus.admin.refined.organization.{OrganizationReference, _}
+import ch.epfl.bluebrain.nexus.admin.refined.project.ProjectReference
+import cats.syntax.show._
+import eu.timepit.refined.api.RefType.{applyRef, refinedRefType}
 import eu.timepit.refined.auto._
 import io.circe.Encoder
 import io.circe.syntax._
-import ch.epfl.bluebrain.nexus.admin.ld.IdOps._
-import ch.epfl.bluebrain.nexus.admin.refined.organization.{OrganizationReference, _}
 
 /**
   * A reference of a generic type with an evidence of [[IdResolvable]].
@@ -27,7 +30,7 @@ object Ref {
     * @param config the implicitly available project specific settings
     */
   final implicit def projectRefToResolvable(implicit config: ProjectsConfig): IdResolvable[ProjectReference] =
-    (a: ProjectReference) => IdRef("projects", config.namespace, a)
+    (a: ProjectReference) => IdRef("projects", config.namespace, applyRef[Reference].unsafeFrom(a.show))
 
   /**
     * Builds a [[IdResolvable]] from the available ''config''

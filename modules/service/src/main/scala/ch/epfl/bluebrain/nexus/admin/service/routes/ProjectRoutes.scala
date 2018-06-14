@@ -5,6 +5,7 @@ import akka.http.scaladsl.model.Uri.Path
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
+import cats.syntax.show._
 import ch.epfl.bluebrain.nexus.admin.core.CallerCtx._
 import ch.epfl.bluebrain.nexus.admin.core.config.AppConfig
 import ch.epfl.bluebrain.nexus.admin.core.config.AppConfig._
@@ -15,8 +16,7 @@ import ch.epfl.bluebrain.nexus.admin.core.types.Ref._
 import ch.epfl.bluebrain.nexus.admin.core.types.RefVersioned._
 import ch.epfl.bluebrain.nexus.admin.refined.ld.Id
 import ch.epfl.bluebrain.nexus.admin.refined.permissions.{HasCreateProjects, HasReadProjects, HasWriteProjects}
-import ch.epfl.bluebrain.nexus.admin.refined.project.ProjectReference
-import ch.epfl.bluebrain.nexus.admin.refined.project.ProjectUri._
+import ch.epfl.bluebrain.nexus.admin.refined.project._
 import ch.epfl.bluebrain.nexus.admin.service.directives.AuthDirectives._
 import ch.epfl.bluebrain.nexus.admin.service.directives.QueryDirectives._
 import ch.epfl.bluebrain.nexus.admin.service.directives.RefinedDirectives._
@@ -54,8 +54,8 @@ final class ProjectRoutes(projects: Projects[Future])(implicit iamClient: IamCli
     new RoutesEncoder[Resource[ProjectReference]]()
   import encoders._
   private def readRoutes(implicit credentials: Option[OAuth2BearerToken]): Route =
-    (segment2(of[ProjectReference]) & pathEndOrSingleSlash) { name =>
-      (get & authorizeOn[HasReadProjects](name.value)) { implicit perms =>
+    (projectReference & pathEndOrSingleSlash) { name =>
+      (get & authorizeOn[HasReadProjects](name.show)) { implicit perms =>
         parameter('rev.as[Long].?) {
           case Some(rev) =>
             trace("getProjectRev") {
@@ -76,18 +76,18 @@ final class ProjectRoutes(projects: Projects[Future])(implicit iamClient: IamCli
     }
 
   private def writeRoutes(implicit credentials: Option[OAuth2BearerToken]): Route =
-    (segment2(of[ProjectReference]) & pathEndOrSingleSlash) { name =>
+    (projectReference & pathEndOrSingleSlash) { name =>
       (put & entity(as[Json])) { json =>
         authCaller.apply { implicit caller =>
           parameter('rev.as[Long].?) {
             case Some(rev) =>
-              (trace("updateProject") & authorizeOn[HasWriteProjects](name.value)) { implicit perms =>
+              (trace("updateProject") & authorizeOn[HasWriteProjects](name.show)) { implicit perms =>
                 onSuccess(projects.update(name, rev, json)) { ref =>
                   complete(StatusCodes.OK -> ref)
                 }
               }
             case None =>
-              (trace("createProject") & authorizeOn[HasCreateProjects](name.value)) { implicit perms =>
+              (trace("createProject") & authorizeOn[HasCreateProjects](name.show)) { implicit perms =>
                 onSuccess(projects.create(name, json)) { ref =>
                   complete(StatusCodes.Created -> ref)
                 }
@@ -98,7 +98,7 @@ final class ProjectRoutes(projects: Projects[Future])(implicit iamClient: IamCli
         delete {
           parameter('rev.as[Long]) { rev =>
             authCaller.apply { implicit caller =>
-              (trace("deprecateProject") & authorizeOn[HasWriteProjects](name.value)) { implicit perms =>
+              (trace("deprecateProject") & authorizeOn[HasWriteProjects](name.show)) { implicit perms =>
                 onSuccess(projects.deprecate(name, rev)) { ref =>
                   complete(StatusCodes.OK -> ref)
                 }
