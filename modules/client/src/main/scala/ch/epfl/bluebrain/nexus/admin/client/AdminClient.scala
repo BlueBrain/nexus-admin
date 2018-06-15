@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.admin.client
 import akka.http.scaladsl.client.RequestBuilding.Get
 import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
-import akka.http.scaladsl.model.{HttpResponse, StatusCodes, Uri}
+import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
 import akka.stream.Materializer
 import ch.epfl.bluebrain.nexus.admin.client.config.AdminConfig
 import ch.epfl.bluebrain.nexus.admin.client.types.Project
@@ -12,9 +12,8 @@ import ch.epfl.bluebrain.nexus.commons.http.HttpClient.UntypedHttpClient
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport.unmarshaller
 import ch.epfl.bluebrain.nexus.commons.http.{HttpClient, UnexpectedUnsuccessfulHttpResponse}
 import ch.epfl.bluebrain.nexus.commons.types.HttpRejection.UnauthorizedAccess
-import ch.epfl.bluebrain.nexus.iam.client.types.FullAccessControlList
-import ch.epfl.bluebrain.nexus.service.http.Path
-import ch.epfl.bluebrain.nexus.service.http.Path._
+import ch.epfl.bluebrain.nexus.iam.client.types.Address._
+import ch.epfl.bluebrain.nexus.iam.client.types.{Address, AuthToken, FullAccessControlList}
 import eu.timepit.refined.auto._
 import io.circe.generic.auto._
 import journal.Logger
@@ -32,9 +31,9 @@ trait AdminClient[F[_]] {
     * Retrieves a [[Project]] resource instance.
     *
     * @param name        the project name
-    * @param credentials the optionally provided [[OAuth2BearerToken]]
+    * @param credentials the optionally provided [[AuthToken]]
     */
-  def getProject(name: ProjectReference)(implicit credentials: Option[OAuth2BearerToken]): F[Project]
+  def getProject(name: ProjectReference)(implicit credentials: Option[AuthToken]): F[Project]
 
   /**
     * Retrieves ACLs for a given project resource instance.
@@ -42,10 +41,10 @@ trait AdminClient[F[_]] {
     * @param name        the project name
     * @param parents     matches only the provided project ''path'' (false) or the parents also (true)
     * @param self        matches only the caller ''identities'' (false) or any identity which has the right own access (true)
-    * @param credentials the optionally provided [[OAuth2BearerToken]]
+    * @param credentials the optionally provided [[AuthToken]]
     */
   def getProjectAcls(name: ProjectReference, parents: Boolean = false, self: Boolean = false)(
-      implicit credentials: Option[OAuth2BearerToken]): F[FullAccessControlList]
+      implicit credentials: Option[AuthToken]): F[FullAccessControlList]
 
 }
 
@@ -68,29 +67,27 @@ object AdminClient {
 
     new AdminClient[Future] {
 
-      override def getProject(name: ProjectReference)(
-          implicit credentials: Option[OAuth2BearerToken]): Future[Project] = {
+      override def getProject(name: ProjectReference)(implicit credentials: Option[AuthToken]): Future[Project] = {
         val path = name.organizationReference.value / name.projectLabel
         projectClient(requestFrom(path)).recoverWith { case e => recover(e, path) }
       }
 
       override def getProjectAcls(name: ProjectReference, parents: Boolean = false, self: Boolean = false)(
-          implicit credentials: Option[OAuth2BearerToken]): Future[FullAccessControlList] = {
+          implicit credentials: Option[AuthToken]): Future[FullAccessControlList] = {
         val path  = name.organizationReference.value / name.projectLabel / "acls"
         val query = Query("parents" -> parents.toString, "self" -> self.toString)
         aclsClient(requestFrom(path, Some(query))).recoverWith { case e => recover(e, path) }
       }
 
-      private def requestFrom(path: Path, query: Option[Query] = None)(
-          implicit credentials: Option[OAuth2BearerToken]) = {
+      private def requestFrom(path: Address, query: Option[Query] = None)(implicit credentials: Option[AuthToken]) = {
         val request = query match {
           case None    => Get(config.baseUri.append(path))
           case Some(q) => Get(config.baseUri.append(path).withQuery(q))
         }
-        credentials.map(request.addCredentials).getOrElse(request)
+        credentials.map(request.addCredentials(_)).getOrElse(request)
       }
 
-      private def recover(th: Throwable, resource: Path) = th match {
+      private def recover(th: Throwable, resource: Address) = th match {
         case UnexpectedUnsuccessfulHttpResponse(HttpResponse(StatusCodes.Unauthorized, _, _, _)) =>
           Future.failed(UnauthorizedAccess)
         case ur: UnexpectedUnsuccessfulHttpResponse =>
@@ -108,8 +105,6 @@ object AdminClient {
     }
   }
 
-  private implicit class UriSyntax(uri: Uri) {
-    def append(path: Path): Uri =
-      uri.copy(path = (uri.path: Path) ++ path)
-  }
+  private implicit def toAkka(token: AuthToken): OAuth2BearerToken = OAuth2BearerToken(token.value)
+
 }

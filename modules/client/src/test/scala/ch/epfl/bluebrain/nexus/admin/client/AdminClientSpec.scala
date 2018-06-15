@@ -53,7 +53,7 @@ class AdminClientSpec
           entity = HttpEntity(ContentTypes.`application/json`, contentOf("/project.json")),
           status = StatusCodes.OK
         ))
-      implicit val credentials: Option[OAuth2BearerToken] = Some(OAuth2BearerToken("validToken"))
+      implicit val credentials: Option[AuthToken] = Some(AuthToken("validToken"))
       implicit val cl: UntypedHttpClient[Future] =
         mockedClient(base.copy(path = base.path + name.show), credentials, mockedResponse)
       val adminClient = AdminClient(config)
@@ -77,7 +77,7 @@ class AdminClientSpec
           entity = HttpEntity(ContentTypes.`application/json`, contentOf("/project-acls.json")),
           status = StatusCodes.OK
         ))
-      implicit val credentials: Option[OAuth2BearerToken] = Some(OAuth2BearerToken("validToken"))
+      implicit val credentials: Option[AuthToken] = Some(AuthToken("validToken"))
       implicit val cl: UntypedHttpClient[Future] =
         mockedClient(
           base.copy(path = base.path + s"${name.show}/acls").withQuery(Query("parents" -> "true", "self" -> "false")),
@@ -101,7 +101,7 @@ class AdminClientSpec
           entity = HttpEntity(ContentTypes.`application/json`, contentOf("/project.json")),
           status = StatusCodes.OK
         ))
-      implicit val credentials: Option[OAuth2BearerToken] = Some(OAuth2BearerToken("validToken"))
+      implicit val credentials: Option[AuthToken] = Some(AuthToken("validToken"))
       implicit val cl: UntypedHttpClient[Future] =
         mockedClient(base.copy(path = base.path + name.show), credentials, mockedResponse)
       val adminClient = AdminClient(AdminConfig(Uri("http://localhost/v1/projects")))
@@ -144,7 +144,7 @@ class AdminClientSpec
   }
 
   def mockedClient(expectedUri: Uri,
-                   expectedAuth: Option[OAuth2BearerToken],
+                   expectedAuth: Option[AuthToken],
                    response: Future[HttpResponse]): UntypedHttpClient[Future] =
     new UntypedHttpClient[Future] {
       override def apply(req: HttpRequest): Future[HttpResponse] =
@@ -152,7 +152,7 @@ class AdminClientSpec
           (expectedAuth, req.header[Authorization]) match {
             case (None, None) =>
               response
-            case (Some(OAuth2BearerToken(t1)), Some(Authorization(OAuth2BearerToken(t2)))) if t1 == t2 =>
+            case (Some(AuthToken(t1)), Some(Authorization(OAuth2BearerToken(t2)))) if t1 == t2 =>
               response
             case _ =>
               fail("Wrong request credentials")
