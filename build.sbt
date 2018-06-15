@@ -25,11 +25,11 @@ scalafmt: {
  */
 
 // Dependency versions
-val akkaVersion                     = "2.5.12"
+val akkaVersion                     = "2.5.13"
 val akkaHttpVersion                 = "10.0.13"
 val akkaHttpCorsVersion             = "0.3.0"
 val akkaPersistenceInMemVersion     = "2.5.1.1"
-val akkaPersistenceCassandraVersion = "0.84"
+val akkaPersistenceCassandraVersion = "0.85"
 val catsVersion                     = "1.1.0"
 val circeVersion                    = "0.9.3"
 val jenaVersion                     = "3.7.0"
@@ -38,13 +38,13 @@ val pureconfigVersion               = "0.9.1"
 val refinedVersion                  = "0.9.0"
 val scalaTestVersion                = "3.0.5"
 val shapelessVersion                = "2.3.3"
-val sourcingVersion                 = "0.10.5"
+val sourcingVersion                 = "0.10.7"
 
 // Nexus dependency versions
-val serviceVersion = "0.10.11"
-val commonsVersion = "0.10.10"
-val iamVersion     = "0.5.16"
-val rdfVersion     = "0.1.1"
+val serviceVersion = "0.10.12"
+val commonsVersion = "0.10.12"
+val iamVersion     = "0.1.18"
+val rdfVersion     = "0.2.0"
 
 // Dependency modules
 lazy val akkaDistributed          = "com.typesafe.akka"       %% "akka-distributed-data"      % akkaVersion

@@ -1,28 +1,23 @@
 package ch.epfl.bluebrain.nexus.admin.service.routes
 
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.model.headers.OAuth2BearerToken
-import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.server.Directives._
-import ch.epfl.bluebrain.nexus.admin.core.CallerCtx._
+import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.admin.core.config.AppConfig
 import ch.epfl.bluebrain.nexus.admin.core.config.AppConfig._
 import ch.epfl.bluebrain.nexus.admin.core.organizations.Organizations
-import ch.epfl.bluebrain.nexus.admin.service.encoders.organization._
 import ch.epfl.bluebrain.nexus.admin.core.resources.Resource
 import ch.epfl.bluebrain.nexus.admin.core.types.Ref
 import ch.epfl.bluebrain.nexus.admin.refined.ld.{Id, Namespace}
 import ch.epfl.bluebrain.nexus.admin.refined.organization.OrganizationReference
-import ch.epfl.bluebrain.nexus.admin.refined.permissions.{
-  HasCreateOrganizations,
-  HasReadOrganizations,
-  HasWriteOrganizations
-}
-import ch.epfl.bluebrain.nexus.iam.client.IamClient
+import ch.epfl.bluebrain.nexus.admin.refined.permissions._
 import ch.epfl.bluebrain.nexus.admin.service.directives.AuthDirectives._
 import ch.epfl.bluebrain.nexus.admin.service.directives.RefinedDirectives._
-import ch.epfl.bluebrain.nexus.service.kamon.directives.TracingDirectives
+import ch.epfl.bluebrain.nexus.admin.service.encoders.organization._
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport.{jsonUnmarshaller, marshallerHttp}
+import ch.epfl.bluebrain.nexus.iam.client.IamClient
+import ch.epfl.bluebrain.nexus.iam.client.types.AuthToken
+import ch.epfl.bluebrain.nexus.service.kamon.directives.TracingDirectives
 import io.circe.Json
 
 import scala.concurrent.Future
@@ -40,7 +35,7 @@ final class OrganizationRoutes(organizations: Organizations[Future])(implicit ia
     idResolvable(r.id.value)
   }
 
-  private def readRoutes(implicit credentials: Option[OAuth2BearerToken]): Route =
+  private def readRoutes(implicit credentials: Option[AuthToken]): Route =
     (segment(of[OrganizationReference]) & pathEndOrSingleSlash) { name =>
       (get & authorizeOn[HasReadOrganizations](name.value)) { implicit perms =>
         parameter('rev.as[Long].?) {
@@ -66,7 +61,7 @@ final class OrganizationRoutes(organizations: Organizations[Future])(implicit ia
 
     }
 
-  private def writeRoutes(implicit credentials: Option[OAuth2BearerToken]): Route =
+  private def writeRoutes(implicit credentials: Option[AuthToken]): Route =
     (segment(of[OrganizationReference]) & pathEndOrSingleSlash) { name =>
       (put & entity(as[Json])) { json =>
         authCaller.apply { implicit caller =>
@@ -99,7 +94,7 @@ final class OrganizationRoutes(organizations: Organizations[Future])(implicit ia
         }
     }
 
-  override protected def combined(implicit credentials: Option[OAuth2BearerToken]): Route =
+  override protected def combined(implicit credentials: Option[AuthToken]): Route =
     readRoutes(credentials) ~ writeRoutes(credentials)
 
   def routes: Route = combinedRoutesFor("orgs")

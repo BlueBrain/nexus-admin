@@ -5,16 +5,11 @@ import java.util.UUID
 import akka.actor.ActorSystem
 import akka.testkit.{DefaultTimeout, TestKit}
 import cats.instances.future._
-import ch.epfl.bluebrain.nexus.admin.core.CallerCtx._
 import ch.epfl.bluebrain.nexus.admin.core.Fault.CommandRejected
 import ch.epfl.bluebrain.nexus.admin.core.TestHelper
 import ch.epfl.bluebrain.nexus.admin.core.config.AppConfig.OrganizationsConfig
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceRejection
-import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceRejection.{
-  IncorrectRevisionProvided,
-  ResourceDoesNotExists,
-  ResourceIsDeprecated
-}
+import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceRejection._
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceState._
 import ch.epfl.bluebrain.nexus.admin.core.types.Ref._
 import ch.epfl.bluebrain.nexus.admin.core.types.RefVersioned
@@ -22,7 +17,6 @@ import ch.epfl.bluebrain.nexus.admin.refined.organization.OrganizationReference
 import ch.epfl.bluebrain.nexus.commons.http.JsonOps._
 import ch.epfl.bluebrain.nexus.commons.shacl.validator.{ImportResolver, ShaclValidator}
 import ch.epfl.bluebrain.nexus.commons.sparql.client.SparqlClient
-import ch.epfl.bluebrain.nexus.commons.types.identity.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.iam.client.Caller.AnonymousCaller
 import ch.epfl.bluebrain.nexus.sourcing.mem.MemoryAggregate
 import ch.epfl.bluebrain.nexus.sourcing.mem.MemoryAggregate._
@@ -47,7 +41,7 @@ class OrganizationsSpec
     with OptionValues
     with CancelAfterFailure {
 
-  private implicit val caller: AnonymousCaller = AnonymousCaller(Anonymous())
+  private implicit val caller = AnonymousCaller
   private implicit val config: OrganizationsConfig =
     OrganizationsConfig(3 seconds, "https://nexus.example.ch/v1/orgs/")
   private implicit val ec                              = system.dispatcher

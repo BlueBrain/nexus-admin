@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.admin.core.CommonRejections.{IllegalParam, Missin
 import ch.epfl.bluebrain.nexus.admin.core.Error._
 import ch.epfl.bluebrain.nexus.admin.core.config.AppConfig._
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceRejection._
-import ch.epfl.bluebrain.nexus.admin.core.{CallerCtx, Error, TestHelper}
+import ch.epfl.bluebrain.nexus.admin.core.{Error, TestHelper}
 import ch.epfl.bluebrain.nexus.admin.ld.Const._
 import ch.epfl.bluebrain.nexus.admin.refined.project._
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport._
@@ -44,7 +44,7 @@ class ProjectRoutesSpec
 
     "create a project" in {
       setUpIamCalls(reference.show)
-      organizations.create(reference.organizationReference, orgValue)(CallerCtx(caller)).futureValue
+      organizations.create(reference.organizationReference, orgValue)(caller).futureValue
 
       Put(s"/projects/${reference.show}", json) ~> addCredentials(cred) ~> route ~> check {
         status shouldEqual StatusCodes.Created
@@ -64,7 +64,7 @@ class ProjectRoutesSpec
 
     "reject the creation of a project without name" in {
       val other = genProjectReference()
-      organizations.create(other.organizationReference, orgValue)(CallerCtx(caller)).futureValue
+      organizations.create(other.organizationReference, orgValue)(caller).futureValue
       setUpIamCalls(other.show)
       Put(s"/projects/${other.show}", genProjectValue().asJson.removeKeys("name")) ~> addCredentials(cred) ~> route ~> check {
         status shouldEqual StatusCodes.BadRequest
@@ -189,7 +189,7 @@ class ProjectRoutesSpec
     "update a project" in {
       setUpIamCalls(refUpdate.show)
 
-      organizations.create(refUpdate.organizationReference, orgUpdateValue)(CallerCtx(caller)).futureValue
+      organizations.create(refUpdate.organizationReference, orgUpdateValue)(caller).futureValue
 
       Put(s"/projects/${refUpdate.show}", json) ~> addCredentials(cred) ~> route ~> check {
         status shouldEqual StatusCodes.Created
@@ -216,7 +216,7 @@ class ProjectRoutesSpec
     "reject the update of a project which does not exists" in {
       val other               = genProjectReference()
       val otherOrgUpdateValue = genOrganizationValue()
-      organizations.create(other.organizationReference, otherOrgUpdateValue)(CallerCtx(caller)).futureValue
+      organizations.create(other.organizationReference, otherOrgUpdateValue)(caller).futureValue
 
       setUpIamCalls(other.show)
       Put(s"/projects/${other.show}?rev=1", json) ~> addCredentials(cred) ~> route ~> check {

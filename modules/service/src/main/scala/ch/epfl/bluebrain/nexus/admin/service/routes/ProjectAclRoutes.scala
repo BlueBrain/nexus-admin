@@ -16,6 +16,7 @@ import ch.epfl.bluebrain.nexus.admin.service.directives.AuthDirectives._
 import ch.epfl.bluebrain.nexus.admin.service.directives.RefinedDirectives._
 import ch.epfl.bluebrain.nexus.admin.service.routes.ProjectAclRoutes.ProjectNotFound
 import ch.epfl.bluebrain.nexus.iam.client.IamClient
+import ch.epfl.bluebrain.nexus.iam.client.types.AuthToken
 import ch.epfl.bluebrain.nexus.service.http.Path
 import ch.epfl.bluebrain.nexus.service.http.Path._
 import ch.epfl.bluebrain.nexus.service.kamon.directives.TracingDirectives
@@ -35,7 +36,7 @@ final class ProjectAclRoutes(projects: Projects[Future], proxy: Proxy)(implicit 
   import tracing._
   private val iamUri = config.iam.baseUri
 
-  protected def combined(implicit credentials: Option[OAuth2BearerToken]): Route =
+  protected def combined(implicit credentials: Option[AuthToken]): Route =
     (projectReference & pathPrefix("acls") & pathEndOrSingleSlash) { name =>
       (exists(name) & parameterMap & extractRequest) { (params, req) =>
         trace(s"${req.method.toString().toLowerCase()}ProjectACL") {
@@ -57,7 +58,7 @@ final class ProjectAclRoutes(projects: Projects[Future], proxy: Proxy)(implicit 
       uri.copy(path = (uri.path: Path) ++ path)
   }
 
-  private def exists(name: ProjectReference)(implicit credentials: Option[OAuth2BearerToken]): Directive0 =
+  private def exists(name: ProjectReference)(implicit credentials: Option[AuthToken]): Directive0 =
     authorizeOn[HasReadProjects](name.show) flatMap { implicit perms =>
       onSuccess(projects.fetch(name)) flatMap {
         case Some(_) => pass
@@ -66,8 +67,8 @@ final class ProjectAclRoutes(projects: Projects[Future], proxy: Proxy)(implicit 
     }
 
   private implicit class RequestSyntax(request: HttpRequest) {
-    def withCred(implicit credentials: Option[OAuth2BearerToken]): HttpRequest =
-      credentials.map(request.addCredentials).getOrElse(request)
+    def withCred(implicit credentials: Option[AuthToken]): HttpRequest =
+      credentials.map(c => request.addCredentials(OAuth2BearerToken(c.value))).getOrElse(request)
   }
 
 }

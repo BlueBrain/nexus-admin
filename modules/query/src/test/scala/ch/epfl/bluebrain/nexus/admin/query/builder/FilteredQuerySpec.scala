@@ -15,11 +15,11 @@ import ch.epfl.bluebrain.nexus.admin.refined.ld.Reference
 import ch.epfl.bluebrain.nexus.admin.refined.permissions.HasReadProjects
 import ch.epfl.bluebrain.nexus.admin.refined.project.ProjectReference
 import ch.epfl.bluebrain.nexus.commons.test.Resources
-import ch.epfl.bluebrain.nexus.commons.types.identity.Identity
+import ch.epfl.bluebrain.nexus.iam.client.types.Identity._
+import ch.epfl.bluebrain.nexus.iam.client.types.Address._
 import ch.epfl.bluebrain.nexus.commons.types.search.{Pagination, Sort, SortList}
 import ch.epfl.bluebrain.nexus.iam.client.types.Permission.Read
 import ch.epfl.bluebrain.nexus.iam.client.types._
-import ch.epfl.bluebrain.nexus.service.http.Path
 import eu.timepit.refined.api.RefType.applyRef
 import eu.timepit.refined.auto._
 import io.circe.Json
@@ -38,8 +38,7 @@ class FilteredQuerySpec extends WordSpecLike with Matchers with Resources with E
   private val bbpprod  = Uri(s"$base/voc/bbp/productionentity/core/")
   private val bbpagent = Uri(s"$base/voc/bbp/agent/core/")
   private val hasRead: HasReadProjects =
-    applyRef[HasReadProjects](FullAccessControlList(
-      (Identity.Anonymous(), Path./, Permissions(Read, Permission("projects/read"))))).toOption.get
+    applyRef[HasReadProjects](FullAccessControlList((Anonymous, /, Permissions(Read, Permission("projects/read"))))).toOption.get
   implicit val idRef: IdResolvable[ProjectReference] = (a: ProjectReference) =>
     IdRef("projects",
           "https://localhost/project/",
