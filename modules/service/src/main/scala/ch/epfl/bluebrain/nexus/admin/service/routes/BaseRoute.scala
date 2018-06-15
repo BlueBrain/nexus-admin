@@ -7,6 +7,7 @@ import akka.http.scaladsl.server.{AuthorizationFailedRejection, Route}
 import ch.epfl.bluebrain.nexus.admin.core.config.AppConfig.PrefixesConfig
 import ch.epfl.bluebrain.nexus.admin.service.handlers.{ExceptionHandling, RejectionHandling}
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport.OrderedKeys
+import ch.epfl.bluebrain.nexus.iam.client.types.AuthToken
 
 /**
   * Provides with a basic template to consume routes, fetching the [[OAuth2BearerToken]]
@@ -16,7 +17,7 @@ import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport.OrderedKeys
   */
 abstract class BaseRoute(implicit prefixes: PrefixesConfig, errorOrderedKeys: OrderedKeys) {
 
-  protected def combined(implicit credentials: Option[OAuth2BearerToken]): Route
+  protected def combined(implicit credentials: Option[AuthToken]): Route
 
   /**
     * Combining ''writeRoutes'' with ''readRoutes'' and ''searchRoutes''
@@ -29,9 +30,9 @@ abstract class BaseRoute(implicit prefixes: PrefixesConfig, errorOrderedKeys: Or
       handleRejections(RejectionHandling.rejectionHandler(prefixes.errorContext, errorOrderedKeys)) {
         pathPrefix(initialPrefix) {
           extractCredentials {
-            case Some(c: OAuth2BearerToken) => combined(Some(c))
-            case Some(_)                    => reject(AuthorizationFailedRejection)
-            case _                          => combined(None)
+            case Some(OAuth2BearerToken(value)) => combined(Some(AuthToken(value)))
+            case Some(_)                        => reject(AuthorizationFailedRejection)
+            case _                              => combined(None)
           }
         }
       }

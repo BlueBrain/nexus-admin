@@ -9,7 +9,6 @@ import ch.epfl.bluebrain.nexus.admin.query.filtering.{Expr, Op}
 import ch.epfl.bluebrain.nexus.admin.refined.organization.OrganizationReference
 import ch.epfl.bluebrain.nexus.admin.refined.project.{ProjectLabel, ProjectReference}
 import ch.epfl.bluebrain.nexus.iam.client.types._
-import ch.epfl.bluebrain.nexus.service.http.Path
 import eu.timepit.refined.api.RefType.applyRef
 import shapeless.{:+:, CNil, Coproduct}
 
@@ -19,7 +18,7 @@ object ResourceRestrictionExpr {
 
   protected type Ids = Root.type :+: ProjectReference :+: CNil
 
-  private implicit def toIds(path: Path): Option[Ids] = path.segments match {
+  private implicit def toIds(path: Address): Option[Ids] = path.segments match {
     case org :: project :: Nil =>
       for {
         orgRef    <- applyRef[OrganizationReference](org).toOption

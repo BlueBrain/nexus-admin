@@ -5,7 +5,7 @@ import akka.http.scaladsl.model.headers.Authorization
 import cats.syntax.show._
 import ch.epfl.bluebrain.nexus.admin.core.Error.classNameOf
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceRejection.ResourceDoesNotExists
-import ch.epfl.bluebrain.nexus.admin.core.{CallerCtx, Error, TestHelper}
+import ch.epfl.bluebrain.nexus.admin.core.{Error, TestHelper}
 import ch.epfl.bluebrain.nexus.admin.ld.Const.{`@context`, `@id`}
 import ch.epfl.bluebrain.nexus.admin.refined.project.ProjectReference
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport._
@@ -30,7 +30,7 @@ class ProjectAclRoutesSpec extends WordSpecLike with Matchers with AdminRoutesTe
 
     "reject when project does not exists" in {
       setUpIamCalls(proj.show)
-      organizations.create(proj.organizationReference, orgValue)(CallerCtx(caller)).futureValue
+      organizations.create(proj.organizationReference, orgValue)(caller).futureValue
 
       Get(s"/projects/${proj.show}/acls") ~> addCredentials(cred) ~> route ~> check {
         status shouldEqual StatusCodes.NotFound

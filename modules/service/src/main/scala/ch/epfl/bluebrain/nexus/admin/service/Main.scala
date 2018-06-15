@@ -7,16 +7,16 @@ import akka.cluster.Cluster
 import akka.event.Logging
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.HttpMethods._
-import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.headers.{BasicHttpCredentials, Location}
 import akka.http.scaladsl.server.Directives.{handleRejections, _}
 import akka.http.scaladsl.server.Route
-import akka.stream.{ActorMaterializer, Materializer}
+import akka.stream.ActorMaterializer
 import cats.instances.future._
 import ch.epfl.bluebrain.nexus.admin.core.config.AppConfig._
 import ch.epfl.bluebrain.nexus.admin.core.config.Settings
 import ch.epfl.bluebrain.nexus.admin.core.organizations.Organizations
 import ch.epfl.bluebrain.nexus.admin.core.projects.Projects
+import ch.epfl.bluebrain.nexus.commons.sparql.client.SparqlCirceSupport.sparqlResultsUnmarshaller
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceEvent
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceState.{next, Eval, Initial}
 import ch.epfl.bluebrain.nexus.admin.service.indexing.ResourceSparqlIndexer
@@ -27,8 +27,6 @@ import ch.epfl.bluebrain.nexus.commons.http.HttpClient._
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport._
 import ch.epfl.bluebrain.nexus.commons.shacl.validator.{ImportResolver, ShaclValidator}
 import ch.epfl.bluebrain.nexus.commons.sparql.client.BlazegraphClient
-import ch.epfl.bluebrain.nexus.commons.types.identity.User
-import ch.epfl.bluebrain.nexus.iam.client.types.FullAccessControlList
 import ch.epfl.bluebrain.nexus.iam.client.{IamClient, IamUri}
 import ch.epfl.bluebrain.nexus.service.http.directives.PrefixDirectives._
 import ch.epfl.bluebrain.nexus.service.http.routes.StaticResourceRoutes
@@ -38,7 +36,6 @@ import ch.megard.akka.http.cors.scaladsl.CorsDirectives.{cors, corsRejectionHand
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 import com.github.jsonldjava.core.DocumentLoader
 import com.typesafe.config.ConfigFactory
-import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.auto._
 import io.circe.{Encoder, Json}
 import kamon.Kamon
@@ -61,12 +58,15 @@ object Main {
     val config             = ConfigFactory.load()
     implicit val appConfig = new Settings(config).appConfig
 
-    implicit val as: ActorSystem               = ActorSystem(appConfig.description.actorSystemName, config)
-    implicit val ec: ExecutionContext          = as.dispatcher
-    implicit val mt: ActorMaterializer         = ActorMaterializer()
-    implicit val cl: UntypedHttpClient[Future] = HttpClient.akkaHttpClient
-    implicit val iamC: IamClient[Future]       = iamClient(appConfig.iam.baseUri)
-    implicit val validator                     = ShaclValidator(ImportResolver.noop[Future])
+    implicit val as: ActorSystem                   = ActorSystem(appConfig.description.actorSystemName, config)
+    implicit val ec: ExecutionContext              = as.dispatcher
+    implicit val mt: ActorMaterializer             = ActorMaterializer()
+    implicit val cl: UntypedHttpClient[Future]     = HttpClient.akkaHttpClient
+    implicit val rs: HttpClient[Future, ResultSet] = HttpClient.withAkkaUnmarshaller[ResultSet]
+    implicit val iamUri                            = IamUri(appConfig.iam.baseUri)
+
+    implicit val iamC: IamClient[Future] = IamClient()
+    implicit val validator               = ShaclValidator(ImportResolver.noop[Future])
 
     val sourcingSettings = SourcingAkkaSettings(journalPluginId = appConfig.persistence.queryJournalPlugin)
 
@@ -84,9 +84,13 @@ object Main {
         ShardingAggregate("organizations", sourcingSettings.copy(passivationTimeout = timeout))(Initial,
                                                                                                 next,
                                                                                                 Eval().apply)
-      val blazegraphClient: BlazegraphClient[Future] = sparqlClient(appConfig.sparql)
-      val organizations: Organizations[Future]       = Organizations(orgAgg, blazegraphClient)
-      val projects                                   = Projects(organizations, projAgg, blazegraphClient)
+      val blazegraphClient: BlazegraphClient[Future] =
+        BlazegraphClient(appConfig.sparql.base,
+                         appConfig.sparql.namespace,
+                         appConfig.sparql.credentials.map(c => BasicHttpCredentials(c.username, c.password)))
+
+      val organizations: Organizations[Future] = Organizations(orgAgg, blazegraphClient)
+      val projects                             = Projects(organizations, projAgg, blazegraphClient)
       val api = uriPrefix(appConfig.http.apiUri)(
         OrganizationRoutes(organizations).routes ~ ProjectRoutes(projects).routes ~ ProjectAclRoutes(
           projects,
@@ -143,38 +147,12 @@ object Main {
     }
   }
 
-  /**
-    * Constructs [[IamClient]] from the provided ''baseIamUri'' and the implicitly available instances
-    *
-    * @param baseIamUri the baseUri for IAM service
-    */
-  private def iamClient(baseIamUri: Uri)(implicit ec: ExecutionContext,
-                                         mt: Materializer,
-                                         cl: UntypedHttpClient[Future]): IamClient[Future] = {
-
-    import ch.epfl.bluebrain.nexus.admin.service.decoders.IdentityJsonLdDecoder._
-    implicit val iamUri = IamUri(baseIamUri)
-    implicit val config = Configuration.default.withDiscriminator("@type")
-    implicit val aclCl  = HttpClient.withAkkaUnmarshaller[FullAccessControlList]
-    implicit val userCl = HttpClient.withAkkaUnmarshaller[User]
-    IamClient()
-  }
-
-  def sparqlClient(config: SparqlConfig)(implicit ec: ExecutionContext,
-                                         mt: ActorMaterializer,
-                                         cl: UntypedHttpClient[Future]): BlazegraphClient[Future] = {
-    import ch.epfl.bluebrain.nexus.commons.sparql.client.SparqlCirceSupport.sparqlResultsUnmarshaller
-    implicit val rsUnmarshaller = HttpClient.withAkkaUnmarshaller[ResultSet]
-    BlazegraphClient(config.base,
-                     config.namespace,
-                     config.credentials.map(c => BasicHttpCredentials(c.username, c.password)))
-  }
-
   private lazy val properties: Map[String, String] = {
     val props = new Properties()
     props.load(getClass.getResourceAsStream("/index.properties"))
     props.asScala.toMap
   }
+
   private def initFunction(blazegraphClient: BlazegraphClient[Future])(
       implicit ec: ExecutionContext): () => Future[Unit] =
     () =>
@@ -182,6 +160,7 @@ object Main {
         case true  => Future.successful(())
         case false => blazegraphClient.createNamespace(properties)
     }
+
   def startProjectsIndexer(blazegraphClient: BlazegraphClient[Future],
                            config: PersistenceConfig)(implicit as: ActorSystem, ec: ExecutionContext): Unit = {
     val indexer      = ResourceSparqlIndexer(blazegraphClient)

@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.admin.client
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.Uri.{Path, Query}
+import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.stream.{ActorMaterializer, Materializer}
@@ -13,8 +13,7 @@ import ch.epfl.bluebrain.nexus.commons.http.HttpClient.UntypedHttpClient
 import ch.epfl.bluebrain.nexus.commons.http.UnexpectedUnsuccessfulHttpResponse
 import ch.epfl.bluebrain.nexus.commons.test.Resources.contentOf
 import ch.epfl.bluebrain.nexus.commons.types.HttpRejection.UnauthorizedAccess
-import ch.epfl.bluebrain.nexus.commons.types.identity.Identity.UserRef
-import ch.epfl.bluebrain.nexus.commons.types.identity.IdentityId
+import ch.epfl.bluebrain.nexus.iam.client.types.Identity.UserRef
 import ch.epfl.bluebrain.nexus.iam.client.types._
 import ch.epfl.bluebrain.nexus.rdf.Iri
 import eu.timepit.refined.auto._
@@ -89,9 +88,8 @@ class AdminClientSpec
       val project = adminClient.getProjectAcls(name, true, false).futureValue
       project.acl shouldEqual List(
         FullAccessControl(
-          UserRef(
-            IdentityId("https://nexus.example.com/v1/realms/bbp-test/users/ca88f6d1-4f71-4fc0-b023-de82b8afdc30")),
-          Path("projectname"),
+          UserRef("bbp-test", "ca88f6d1-4f71-4fc0-b023-de82b8afdc30"),
+          Address("projectname"),
           Permissions(Permission("projects/read"))
         ))
     }

@@ -5,7 +5,6 @@ import java.util.UUID
 
 import cats.MonadError
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.admin.core.CallerCtx
 import ch.epfl.bluebrain.nexus.admin.core.Fault.{CommandRejected, Unexpected}
 import ch.epfl.bluebrain.nexus.admin.core.persistence.PersistenceId
 import ch.epfl.bluebrain.nexus.admin.core.persistence.PersistenceId._
@@ -13,6 +12,7 @@ import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceCommand._
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceRejection._
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceState._
 import ch.epfl.bluebrain.nexus.admin.core.resources.Resources.Agg
+import ch.epfl.bluebrain.nexus.admin.core.syntax.caller._
 import ch.epfl.bluebrain.nexus.admin.core.types.Ref._
 import ch.epfl.bluebrain.nexus.admin.core.types.RefVersioned
 import ch.epfl.bluebrain.nexus.admin.ld.Const.{nxv, rdf, resourceContext}
@@ -24,10 +24,12 @@ import ch.epfl.bluebrain.nexus.admin.refined.ld.Id
 import ch.epfl.bluebrain.nexus.admin.refined.ld.Uri._
 import ch.epfl.bluebrain.nexus.admin.refined.permissions._
 import ch.epfl.bluebrain.nexus.admin.refined.project.ProjectReference
+import ch.epfl.bluebrain.nexus.commons.http.HttpClient
 import ch.epfl.bluebrain.nexus.commons.shacl.validator.ShaclValidatorErr.{CouldNotFindImports, IllegalImportDefinition}
 import ch.epfl.bluebrain.nexus.commons.shacl.validator.{ShaclSchema, ShaclValidator}
 import ch.epfl.bluebrain.nexus.commons.sparql.client.SparqlClient
 import ch.epfl.bluebrain.nexus.commons.types.search.{Pagination, QueryResults}
+import ch.epfl.bluebrain.nexus.iam.client.Caller
 import ch.epfl.bluebrain.nexus.sourcing.Aggregate
 import io.circe.Json
 import journal.Logger
@@ -101,10 +103,10 @@ abstract class Resources[F[_], A: IdResolvable: PersistenceId: TypeFilterExpr](a
     * @return a [[RefVersioned]] instance wrapped in the abstract ''F[_]'' type
     *         if successful, or a [[ch.epfl.bluebrain.nexus.admin.core.Fault]] wrapped within ''F[_]'' otherwise
     */
-  def create(id: A, value: Json)(implicit ctx: CallerCtx): F[RefVersioned[A]] =
+  def create(id: A, value: Json)(implicit caller: Caller): F[RefVersioned[A]] =
     for {
       _ <- validate(id, value)
-      r <- evaluate(CreateResource(id, UUID.randomUUID().toString, ctx.meta, tags + id.persistenceId, value),
+      r <- evaluate(CreateResource(id, UUID.randomUUID().toString, caller.meta, tags + id.persistenceId, value),
                     id.persistenceId,
                     s"Create res '$id'")
     } yield RefVersioned(id, r.rev)
@@ -118,10 +120,10 @@ abstract class Resources[F[_], A: IdResolvable: PersistenceId: TypeFilterExpr](a
     * @return a [[RefVersioned]] instance wrapped in the abstract ''F[_]'' type
     *         if successful, or a [[ch.epfl.bluebrain.nexus.admin.core.Fault]] wrapped within ''F[_]'' otherwise
     */
-  def update(id: A, rev: Long, value: Json)(implicit ctx: CallerCtx): F[RefVersioned[A]] =
+  def update(id: A, rev: Long, value: Json)(implicit caller: Caller): F[RefVersioned[A]] =
     for {
       _ <- validate(id, value)
-      r <- evaluate(UpdateResource(id, rev, ctx.meta, tags + id.persistenceId, value),
+      r <- evaluate(UpdateResource(id, rev, caller.meta, tags + id.persistenceId, value),
                     id.persistenceId,
                     s"Update res '$id'")
     } yield RefVersioned(id, r.rev)
@@ -135,8 +137,8 @@ abstract class Resources[F[_], A: IdResolvable: PersistenceId: TypeFilterExpr](a
     * @return a [[RefVersioned]] instance wrapped in the abstract ''F[_]'' type
     *         if successful, or a [[ch.epfl.bluebrain.nexus.admin.core.Fault]] wrapped within ''F[_]'' otherwise
     */
-  def deprecate(id: A, rev: Long)(implicit ctx: CallerCtx): F[RefVersioned[A]] =
-    evaluate(DeprecateResource(id, rev, ctx.meta, tags + id.persistenceId), id.persistenceId, s"Deprecate res '$id'")
+  def deprecate(id: A, rev: Long)(implicit caller: Caller): F[RefVersioned[A]] =
+    evaluate(DeprecateResource(id, rev, caller.meta, tags + id.persistenceId), id.persistenceId, s"Deprecate res '$id'")
       .map(r => RefVersioned(id, r.rev))
 
   /**
@@ -176,10 +178,12 @@ abstract class Resources[F[_], A: IdResolvable: PersistenceId: TypeFilterExpr](a
     * @param pagination pagination
     * @return  list of resources
     */
-  def list(query: QueryPayload, pagination: Pagination)(implicit acls: HasReadProjects,
-                                                        idRes: IdResolvable[ProjectReference]): F[QueryResults[Id]] = {
+  def list(query: QueryPayload, pagination: Pagination)(
+      implicit acls: HasReadProjects,
+      idRes: IdResolvable[ProjectReference],
+      rs: HttpClient[F, org.apache.jena.query.ResultSet]): F[QueryResults[Id]] = {
     val sparqlQuery = FilteredQuery[A](query, pagination, acls)
-    rsToQueryResults[F](sparqlClient.query(sparqlQuery), query.q.isDefined)
+    rsToQueryResults[F](sparqlClient.queryRs(sparqlQuery), query.q.isDefined)
   }
 
   private def stateAt(persId: String, rev: Long): F[ResourceState] =

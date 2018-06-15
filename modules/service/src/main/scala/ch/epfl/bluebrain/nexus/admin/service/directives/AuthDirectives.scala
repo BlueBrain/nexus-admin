@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.admin.service.directives
 
 import akka.http.javadsl.server.CustomRejection
-import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.directives.FutureDirectives.onComplete
 import akka.http.scaladsl.server.directives.RouteDirectives.reject
@@ -9,11 +8,9 @@ import akka.http.scaladsl.server.{AuthorizationFailedRejection, _}
 import ch.epfl.bluebrain.nexus.admin.core.CommonRejections
 import ch.epfl.bluebrain.nexus.admin.core.CommonRejections.DownstreamServiceError
 import ch.epfl.bluebrain.nexus.admin.service.directives.AuthDirectives._
-import ch.epfl.bluebrain.nexus.iam.client.IamClient
-import ch.epfl.bluebrain.nexus.iam.client.types.FullAccessControlList
-import ch.epfl.bluebrain.nexus.service.http.Path
-import ch.epfl.bluebrain.nexus.iam.client.Caller
 import ch.epfl.bluebrain.nexus.commons.types.HttpRejection.UnauthorizedAccess
+import ch.epfl.bluebrain.nexus.iam.client.{Caller, IamClient}
+import ch.epfl.bluebrain.nexus.iam.client.types.{Address, AuthToken, FullAccessControlList}
 import eu.timepit.refined.api.{RefType, Validate}
 
 import scala.concurrent.Future
@@ -33,7 +30,7 @@ trait AuthDirectives {
     *
     * @return the [[Caller]]
     */
-  def authCaller(implicit iamClient: IamClient[Future], cred: Option[OAuth2BearerToken]): Directive1[Caller] =
+  def authCaller(implicit iamClient: IamClient[Future], cred: Option[AuthToken]): Directive1[Caller] =
     onComplete(iamClient.getCaller(filterGroups = true)).flatMap {
       case Success(caller)             => provide(caller)
       case Failure(UnauthorizedAccess) => reject(AuthorizationFailedRejection)
@@ -56,12 +53,12 @@ final class ApplyRefAuthPartiallyApplied[FTP] {
     * @tparam F the refined wrapper
     * @tparam P the refined type
     */
-  def apply[F[_, _], P](resource: Path)(
+  def apply[F[_, _], P](resource: Address)(
       implicit ev: F[FullAccessControlList, P] =:= FTP,
       rt: RefType[F],
       v: Validate[FullAccessControlList, P],
       client: IamClient[Future],
-      cred: Option[OAuth2BearerToken]
+      cred: Option[AuthToken]
   ): Directive1[FTP] =
     onComplete(client.getAcls(resource, self = true, parents = true)).flatMap {
       case Success(acl) =>
@@ -86,8 +83,8 @@ final class ApplyRefAuthPartiallyApplied[FTP] {
       rt: RefType[F],
       v: Validate[FullAccessControlList, P],
       client: IamClient[Future],
-      cred: Option[OAuth2BearerToken]
-  ): Directive1[FTP] = apply(Path(resource))
+      cred: Option[AuthToken]
+  ): Directive1[FTP] = apply(Address(resource))
 
 }
 object AuthDirectives extends AuthDirectives {
