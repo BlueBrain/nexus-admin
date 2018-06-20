@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.admin.refined.ld.{AliasOrNamespace, Prefix}
 import ch.epfl.bluebrain.nexus.rdf.Iri
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import eu.timepit.refined.auto._
-import io.circe.Decoder
+import io.circe.{Decoder, DecodingFailure}
 import io.circe.generic.semiauto.deriveDecoder
 import io.circe.refined._
 
@@ -21,7 +21,7 @@ import io.circe.refined._
   */
 final case class Project(name: String,
                          prefixMappings: Map[String, AbsoluteIri],
-                         base: String,
+                         base: AbsoluteIri,
                          rev: Long,
                          deprecated: Boolean,
                          uuid: String)
@@ -52,7 +52,8 @@ object Project {
         name <- c.downField(nxv.name.reference.value).as[String]
         lpm  <- c.downField(nxv.prefixMappings.reference.value).as[List[LoosePrefixMapping]]
         mappings = lpm.map(mappingToMapEntry).flatten.toMap
-        base       <- c.downField(nxv.base.reference.value).as[String]
+        baseString <- c.downField(nxv.base.reference.value).as[String]
+        base       <- Iri.absolute(baseString).left.map(err => DecodingFailure(err, c.history))
         rev        <- c.downField(nxv.rev.reference.value).as[Long]
         deprecated <- c.downField(nxv.deprecated.reference.value).as[Boolean]
         uuid       <- c.downField(nxv.uuid.reference.value).as[String]
