@@ -41,7 +41,8 @@ final case class AppConfig(description: DescriptionConfig,
                            prefixes: PrefixesConfig,
                            iam: IamConfig,
                            pagination: PaginationConfig,
-                           order: OrderKeysConfig)
+                           order: OrderKeysConfig,
+                           kafka: KafkaConfig)
 
 object AppConfig {
 
@@ -101,6 +102,8 @@ object AppConfig {
   final case class OrderKeysConfig(responseKeys: List[String]) {
     val keys: OrderedKeys = OrderedKeys(responseKeys)
   }
+
+  final case class KafkaConfig(topics: Set[String])
 
   implicit def prefixesFromImplicit(implicit appConfig: AppConfig): PrefixesConfig = appConfig.prefixes
 

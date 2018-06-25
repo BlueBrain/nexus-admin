@@ -60,6 +60,8 @@ class AppConfigSpec extends WordSpecLike with Matchers with ScalatestRouteTest {
       appConfig.order.keys shouldEqual OrderedKeys(orderConfig.responseKeys)
       implicitly[OrderedKeys] shouldEqual OrderedKeys(orderConfig.responseKeys)
 
+      val kafkaConfig = KafkaConfig(Set("project", "organization"))
+      kafkaConfig shouldEqual appConfig.kafka
     }
   }
 }

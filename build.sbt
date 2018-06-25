@@ -41,7 +41,7 @@ val shapelessVersion                = "2.3.3"
 val sourcingVersion                 = "0.10.7"
 
 // Nexus dependency versions
-val serviceVersion = "0.10.12"
+val serviceVersion = "0.10.13"
 val commonsVersion = "0.10.12"
 val iamVersion     = "0.1.18"
 val rdfVersion     = "0.2.0"
@@ -80,6 +80,7 @@ lazy val serviceHttp       = "ch.epfl.bluebrain.nexus" %% "service-http"        
 lazy val serviceKamon      = "ch.epfl.bluebrain.nexus" %% "service-kamon"         % serviceVersion
 lazy val sourcingAkka      = "ch.epfl.bluebrain.nexus" %% "sourcing-akka"         % sourcingVersion
 lazy val serviceIndexing   = "ch.epfl.bluebrain.nexus" %% "service-indexing"      % serviceVersion
+lazy val serviceKafka      = "ch.epfl.bluebrain.nexus" %% "service-kafka"         % serviceVersion
 lazy val sourcingCore      = "ch.epfl.bluebrain.nexus" %% "sourcing-core"         % sourcingVersion
 lazy val sourcingMem       = "ch.epfl.bluebrain.nexus" %% "sourcing-mem"          % sourcingVersion
 lazy val rdfCore           = "ch.epfl.bluebrain.nexus" %% "rdf-core"              % rdfVersion
@@ -206,6 +207,7 @@ lazy val service = project
       akkaDistributed,
       sparqlClient,
       serviceIndexing,
+      serviceKafka,
       akkaHttpCors,
       akkaPersistenceCassandra,
       serviceKamon,
