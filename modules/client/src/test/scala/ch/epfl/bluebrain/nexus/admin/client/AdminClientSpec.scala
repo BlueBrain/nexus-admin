@@ -18,7 +18,7 @@ import ch.epfl.bluebrain.nexus.iam.client.types._
 import ch.epfl.bluebrain.nexus.rdf.Iri
 import eu.timepit.refined.auto._
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{BeforeAndAfterAll, Matchers, OptionValues, WordSpecLike}
+import org.scalatest._
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
@@ -63,7 +63,7 @@ class AdminClientSpec
       project.deprecated shouldEqual false
       project.rev shouldEqual 3
       project.name shouldEqual "projectname"
-      project.base shouldEqual "http://localhost/v1/resources/"
+      project.base shouldEqual Iri.absolute("http://localhost/v1/resources/").toOption.value
       project.prefixMappings shouldEqual Map(
         "nxv-projectname"    -> Iri.absolute("https://nexus.example.com/vocabs/nexus/core/terms/v0.1.0/").toOption.value,
         "person-projectname" -> Iri.absolute("https://shapes-registry.org/commons/person").toOption.value
