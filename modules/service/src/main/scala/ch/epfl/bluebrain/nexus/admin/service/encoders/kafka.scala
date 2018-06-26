@@ -18,10 +18,11 @@ object kafka {
   private implicit val metaEncoder: Encoder[Meta] = deriveEncoder[Meta]
 
   /**
-    * Constructs explicitly a Circe encoder for resource events to be published to Kafka.
-
+    * Explicitly constructs a Circe encoder for resource events to be published to Kafka.
+    *
     * @param resourceType the resource type literal tag, e.g. "project" or "organization"
     */
+  // TODO: Define and use JSON-LD vocabulary
   def resourceEventEncoder(resourceType: String): Encoder[ResourceEvent] = Encoder.encodeJson.contramap {
     case ResourceCreated(id, uuid, rev, meta, _, value) =>
       Json.obj(

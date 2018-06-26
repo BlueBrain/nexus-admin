@@ -10,6 +10,7 @@ import io.circe.generic.extras.semiauto._
 /**
   * Data types and decoders to process Kafka events published by the admin service.
   */
+// TODO: Define and use JSON-LD vocabulary
 sealed trait KafkaEvent {
   def id: String
   def uuid: String

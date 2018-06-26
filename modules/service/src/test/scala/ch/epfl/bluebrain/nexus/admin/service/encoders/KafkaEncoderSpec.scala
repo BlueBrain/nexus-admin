@@ -16,22 +16,21 @@ class KafkaEncoderSpec extends WordSpecLike with Matchers {
 
   "Kafka events" should {
     "be encoded properly" in {
-      val Right(json) = parser.parse {
-        """
-          |{
-          | "type": "project",
-          | "state": "created",
-          | "id": "https://nexus.example.ch/v1/projects/some-id",
-          | "uuid": "ac9056c7-bedc-461f-8992-d17e994e39de",
-          | "rev": 42,
-          | "meta": {
-          |   "author": {"id": "realms/realm3/users/alice", "type": "UserRef"},
-          |   "instant": "2018-06-25T17:01:06.249Z"
-          | },
-          | "value": {"foo": "bar"}
-          |}
-        """.stripMargin
-      }
+      val json = Json.obj(
+        "type"  -> Json.fromString("project"),
+        "state" -> Json.fromString("created"),
+        "id"    -> Json.fromString("https://nexus.example.ch/v1/projects/some-id"),
+        "uuid"  -> Json.fromString("ac9056c7-bedc-461f-8992-d17e994e39de"),
+        "rev"   -> Json.fromLong(42L),
+        "meta" -> Json.obj(
+          "author" -> Json.obj(
+            "id"   -> Json.fromString("realms/realm3/users/alice"),
+            "type" -> Json.fromString("UserRef")
+          ),
+          "instant" -> Json.fromString("2018-06-25T17:01:06.249Z")
+        ),
+        "value" -> Json.obj("foo" -> Json.fromString("bar"))
+      )
 
       implicit val encoder: Encoder[ResourceEvent] = resourceEventEncoder("project")
 
