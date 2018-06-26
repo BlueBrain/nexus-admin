@@ -10,6 +10,7 @@ import akka.http.scaladsl.model.HttpMethods._
 import akka.http.scaladsl.model.headers.{BasicHttpCredentials, Location}
 import akka.http.scaladsl.server.Directives.{handleRejections, _}
 import akka.http.scaladsl.server.Route
+import akka.kafka.ProducerSettings
 import akka.stream.ActorMaterializer
 import cats.instances.future._
 import ch.epfl.bluebrain.nexus.admin.core.config.AppConfig._
@@ -19,6 +20,7 @@ import ch.epfl.bluebrain.nexus.admin.core.projects.Projects
 import ch.epfl.bluebrain.nexus.commons.sparql.client.SparqlCirceSupport.sparqlResultsUnmarshaller
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceEvent
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceState.{next, Eval, Initial}
+import ch.epfl.bluebrain.nexus.admin.service.encoders.kafka._
 import ch.epfl.bluebrain.nexus.admin.service.indexing.ResourceSparqlIndexer
 import ch.epfl.bluebrain.nexus.admin.service.routes.Proxy.AkkaStream
 import ch.epfl.bluebrain.nexus.admin.service.routes.{OrganizationRoutes, ProjectAclRoutes, ProjectRoutes, StaticRoutes}
@@ -31,6 +33,7 @@ import ch.epfl.bluebrain.nexus.iam.client.{IamClient, IamUri}
 import ch.epfl.bluebrain.nexus.service.http.directives.PrefixDirectives._
 import ch.epfl.bluebrain.nexus.service.http.routes.StaticResourceRoutes
 import ch.epfl.bluebrain.nexus.service.indexer.persistence.SequentialTagIndexer
+import ch.epfl.bluebrain.nexus.service.kafka.KafkaPublisher
 import ch.epfl.bluebrain.nexus.sourcing.akka.{ShardingAggregate, SourcingAkkaSettings}
 import ch.megard.akka.http.cors.scaladsl.CorsDirectives.{cors, corsRejectionHandler}
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
@@ -41,6 +44,7 @@ import io.circe.{Encoder, Json}
 import kamon.Kamon
 import kamon.system.SystemMetrics
 import org.apache.jena.query.ResultSet
+import org.apache.kafka.common.serialization.StringSerializer
 
 import scala.collection.JavaConverters._
 import scala.concurrent.duration._
@@ -112,6 +116,8 @@ object Main {
 
       startProjectsIndexer(blazegraphClient, appConfig.persistence)
 
+      startKafkaIndexers(appConfig.kafka.topics, appConfig.persistence.queryJournalPlugin)
+
       val routes: Route =
         handleRejections(corsRejectionHandler)(cors(corsSettings)(staticRoutes ~ staticResourceRoutes ~ api))
 
@@ -161,8 +167,8 @@ object Main {
         case false => blazegraphClient.createNamespace(properties)
     }
 
-  def startProjectsIndexer(blazegraphClient: BlazegraphClient[Future],
-                           config: PersistenceConfig)(implicit as: ActorSystem, ec: ExecutionContext): Unit = {
+  private def startProjectsIndexer(blazegraphClient: BlazegraphClient[Future],
+                                   config: PersistenceConfig)(implicit as: ActorSystem, ec: ExecutionContext): Unit = {
     val indexer      = ResourceSparqlIndexer(blazegraphClient)
     implicit val enc = Encoder.instance[ResourceEvent](_ => Json.obj())
     SequentialTagIndexer.start[ResourceEvent](initFunction(blazegraphClient),
@@ -172,6 +178,19 @@ object Main {
                                               "project",
                                               "project-to-in-memory")
     ()
+  }
+
+  private def startKafkaIndexers(topics: Set[String], queryJournalPlugin: String)(implicit as: ActorSystem) = {
+    val producerSettings = ProducerSettings(as, new StringSerializer, new StringSerializer)
+    topics.foreach { topic =>
+      implicit val encoder: Encoder[ResourceEvent] = resourceEventEncoder(topic)
+      KafkaPublisher.startTagStream[ResourceEvent](s"${topic}s-to-kafka",
+                                                   queryJournalPlugin,
+                                                   topic,
+                                                   s"kafka-$topic-publisher",
+                                                   producerSettings,
+                                                   topic)
+    }
   }
 }
 // $COVERAGE-ON$
