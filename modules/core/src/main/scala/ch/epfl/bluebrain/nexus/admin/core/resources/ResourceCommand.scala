@@ -26,7 +26,12 @@ object ResourceCommand {
     * @param tags  the tags added to the consequent [[ch.epfl.bluebrain.nexus.admin.core.resources.ResourceEvent]] which might be created as a result of this operation
     * @param value the json payload of the resource
     */
-  final case class CreateResource(id: Id, uuid: String, meta: Meta, tags: Set[String], value: Json)
+  final case class CreateResource(id: Id,
+                                  uuid: String,
+                                  parentUuid: Option[String],
+                                  meta: Meta,
+                                  tags: Set[String],
+                                  value: Json)
       extends ResourceCommand
 
   /**

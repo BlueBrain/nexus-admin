@@ -90,9 +90,9 @@ abstract class Resources[F[_], A: IdResolvable: PersistenceId: TypeFilterExpr](a
     */
   def validateUnlocked(id: A): F[Unit] =
     agg.currentState(id.persistenceId) flatMap {
-      case Initial                      => F.raiseError(CommandRejected(ParentResourceDoesNotExist))
-      case Current(_, _, _, _, _, true) => F.raiseError(CommandRejected(ResourceIsDeprecated))
-      case _                            => F.pure(())
+      case Initial                    => F.raiseError(CommandRejected(ParentResourceDoesNotExist))
+      case c: Current if c.deprecated => F.raiseError(CommandRejected(ResourceIsDeprecated))
+      case _                          => F.pure(())
     }
 
   /**
@@ -106,7 +106,7 @@ abstract class Resources[F[_], A: IdResolvable: PersistenceId: TypeFilterExpr](a
   def create(id: A, value: Json)(implicit caller: Caller): F[RefVersioned[A]] =
     for {
       _ <- validate(id, value)
-      r <- evaluate(CreateResource(id, UUID.randomUUID().toString, caller.meta, tags + id.persistenceId, value),
+      r <- evaluate(CreateResource(id, UUID.randomUUID.toString, None, caller.meta, tags + id.persistenceId, value),
                     id.persistenceId,
                     s"Create res '$id'")
     } yield RefVersioned(id, r.rev)
@@ -192,7 +192,7 @@ abstract class Resources[F[_], A: IdResolvable: PersistenceId: TypeFilterExpr](a
       case (state, _)                   => state
     }
 
-  private def evaluate(cmd: ResourceCommand, persId: String, intent: => String): F[Current] =
+  def evaluate(cmd: ResourceCommand, persId: String, intent: => String): F[Current] =
     F.pure {
       logger.debug(s"$intent: evaluating command '$cmd''")
     } flatMap { _ =>
@@ -211,8 +211,8 @@ abstract class Resources[F[_], A: IdResolvable: PersistenceId: TypeFilterExpr](a
         F.pure(state)
     }
 
-  private implicit def toId(id: A): Id =
-    (id.namespace, id.reference).id
+  private implicit def toId(id: A): Id = (id.namespace, id.reference).id
+
 }
 
 object Resources {

@@ -1,7 +1,7 @@
 package ch.epfl.bluebrain.nexus.admin.core.resources
 
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceCommand._
-import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceEvent.{ResourceCreated, ResourceDeprecated, ResourceUpdated}
+import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceEvent._
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceRejection._
 import ch.epfl.bluebrain.nexus.admin.core.types.Versioned
 import ch.epfl.bluebrain.nexus.admin.refined.ld.Id
@@ -30,7 +30,13 @@ object ResourceState {
     * @param value      the json payload of the resource
     * @param deprecated the deprecation status
     */
-  final case class Current(id: Id, uuid: String, rev: Long, meta: Meta, value: Json, deprecated: Boolean)
+  final case class Current(id: Id,
+                           uuid: String,
+                           parentUuid: Option[String],
+                           rev: Long,
+                           meta: Meta,
+                           value: Json,
+                           deprecated: Boolean)
       extends ResourceState
       with Versioned
 
@@ -45,16 +51,16 @@ object ResourceState {
   def next(state: ResourceState, event: ResourceEvent): ResourceState = {
 
     (state, event: ResourceEvent) match {
-      case (Initial, ResourceCreated(id, uuid, rev, meta, _, value)) =>
-        Current(id, uuid, rev, meta, value, deprecated = false)
+      case (Initial, ResourceCreated(id, uuid, parentUuid, rev, meta, _, value)) =>
+        Current(id, uuid, parentUuid, rev, meta, value, deprecated = false)
       // $COVERAGE-OFF$
       case (Initial, _) => Initial
       // $COVERAGE-ON$
-      case (c @ Current(_, _, _, _, _, true), _) => c
-      case (c, _: ResourceCreated)               => c
-      case (c: Current, ResourceUpdated(_, _, rev, meta, _, value)) =>
+      case (c: Current, _) if c.deprecated => c
+      case (c, _: ResourceCreated)         => c
+      case (c: Current, ResourceUpdated(_, _, _, rev, meta, _, value)) =>
         c.copy(rev = rev, meta = meta, value = value)
-      case (c: Current, ResourceDeprecated(_, _, rev, meta, _)) =>
+      case (c: Current, ResourceDeprecated(_, _, _, rev, meta, _)) =>
         c.copy(rev = rev, meta = meta, deprecated = true)
     }
   }
@@ -63,31 +69,31 @@ object ResourceState {
 
     def createResource(state: ResourceState, c: CreateResource): Either[ResourceRejection, ResourceEvent] =
       state match {
-        case Initial => Right(ResourceCreated(c.id, c.uuid, 1L, c.meta, c.tags, c.value))
+        case Initial => Right(ResourceCreated(c.id, c.uuid, c.parentUuid, 1L, c.meta, c.tags, c.value))
         case _       => Left(ResourceAlreadyExists)
       }
 
     def updateResource(state: ResourceState, c: UpdateResource): Either[ResourceRejection, ResourceEvent] =
       state match {
-        case Initial                                     => Left(ResourceDoesNotExists)
-        case Current(_, _, rev, _, _, _) if rev != c.rev => Left(IncorrectRevisionProvided)
-        case Current(_, _, _, _, _, true)                => Left(ResourceIsDeprecated)
-        case s: Current                                  => updateResourceAfter(s, c)
+        case Initial                                        => Left(ResourceDoesNotExists)
+        case Current(_, _, _, rev, _, _, _) if rev != c.rev => Left(IncorrectRevisionProvided)
+        case s: Current if s.deprecated                     => Left(ResourceIsDeprecated)
+        case s: Current                                     => updateResourceAfter(s, c)
       }
 
     def updateResourceAfter(state: Current, c: UpdateResource): Either[ResourceRejection, ResourceEvent] =
-      Right(ResourceUpdated(state.id, state.uuid, state.rev + 1, c.meta, c.tags, c.value))
+      Right(ResourceUpdated(state.id, state.uuid, state.parentUuid, state.rev + 1, c.meta, c.tags, c.value))
 
     def deprecateResource(state: ResourceState, c: DeprecateResource): Either[ResourceRejection, ResourceEvent] =
       state match {
-        case Initial                                     => Left(ResourceDoesNotExists)
-        case Current(_, _, rev, _, _, _) if rev != c.rev => Left(IncorrectRevisionProvided)
-        case Current(_, _, _, _, _, true)                => Left(ResourceIsDeprecated)
-        case s: Current                                  => deprecateResourceAfter(s, c)
+        case Initial                                        => Left(ResourceDoesNotExists)
+        case Current(_, _, _, rev, _, _, _) if rev != c.rev => Left(IncorrectRevisionProvided)
+        case s: Current if s.deprecated                     => Left(ResourceIsDeprecated)
+        case s: Current                                     => deprecateResourceAfter(s, c)
       }
 
     def deprecateResourceAfter(state: Current, c: DeprecateResource): Either[ResourceRejection, ResourceEvent] =
-      Right(ResourceDeprecated(state.id, state.uuid, state.rev + 1, c.meta, c.tags))
+      Right(ResourceDeprecated(state.id, state.uuid, state.parentUuid, state.rev + 1, c.meta, c.tags))
 
     /**
       * Command evaluation logic for resources; considering a current ''state'' and a command to be evaluated either

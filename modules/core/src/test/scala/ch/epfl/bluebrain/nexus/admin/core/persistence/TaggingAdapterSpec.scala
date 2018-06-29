@@ -27,11 +27,13 @@ class TaggingAdapterSpec extends WordSpecLike with Matchers with Inspectors with
     val meta   = Meta(UserRef("realm", "sub:1234"), Clock.systemUTC.instant())
 
     val mapping = Map(
-      ResourceCreated(id, UUID.randomUUID().toString, 1L, meta, Set("project", "other"), genJson()) -> Set("project",
-                                                                                                           "other"),
-      ResourceUpdated(id, UUID.randomUUID().toString, 2L, meta, Set("project", "one"), genJson()) -> Set("project",
-                                                                                                         "one"),
-      ResourceDeprecated(id, UUID.randomUUID().toString, 3L, meta, Set("project")) -> Set("project")
+      ResourceCreated(id, UUID.randomUUID().toString, None, 1L, meta, Set("project", "other"), genJson()) -> Set(
+        "project",
+        "other"),
+      ResourceUpdated(id, UUID.randomUUID().toString, None, 2L, meta, Set("project", "one"), genJson()) -> Set(
+        "project",
+        "one"),
+      ResourceDeprecated(id, UUID.randomUUID().toString, None, 3L, meta, Set("project")) -> Set("project")
     )
 
     "set the appropriate tags" in {

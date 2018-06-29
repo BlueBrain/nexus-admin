@@ -17,11 +17,11 @@ class KafkaEncoderSpec extends WordSpecLike with Matchers {
   "Kafka events" should {
     "be encoded properly" in {
       val json = Json.obj(
-        "type"  -> Json.fromString("project"),
-        "state" -> Json.fromString("created"),
-        "id"    -> Json.fromString("https://nexus.example.ch/v1/projects/some-id"),
-        "uuid"  -> Json.fromString("ac9056c7-bedc-461f-8992-d17e994e39de"),
-        "rev"   -> Json.fromLong(42L),
+        "type"       -> Json.fromString("ProjectCreated"),
+        "id"         -> Json.fromString("https://nexus.example.ch/v1/projects/some-id"),
+        "uuid"       -> Json.fromString("ac9056c7-bedc-461f-8992-d17e994e39de"),
+        "parentUuid" -> Json.fromString("e42afa69-df96-477c-8c0d-f4617a8eb827"),
+        "rev"        -> Json.fromLong(42L),
         "meta" -> Json.obj(
           "author" -> Json.obj(
             "id"   -> Json.fromString("realms/realm3/users/alice"),
@@ -37,6 +37,7 @@ class KafkaEncoderSpec extends WordSpecLike with Matchers {
       val event: ResourceEvent = ResourceCreated(
         "https://nexus.example.ch/v1/projects/some-id",
         "ac9056c7-bedc-461f-8992-d17e994e39de",
+        Some("e42afa69-df96-477c-8c0d-f4617a8eb827"),
         42L,
         Meta(UserRef("realm3", "alice"), Instant.parse("2018-06-25T17:01:06.249Z")),
         Set("project"),

@@ -1,20 +1,25 @@
 package ch.epfl.bluebrain.nexus.admin.core.projects
 
 import java.time.Clock
+import java.util.UUID
 
 import cats.MonadError
 import cats.syntax.all._
+import ch.epfl.bluebrain.nexus.admin.core.syntax.caller._
 import ch.epfl.bluebrain.nexus.admin.core.config.AppConfig._
 import ch.epfl.bluebrain.nexus.admin.core.organizations.Organizations
 import ch.epfl.bluebrain.nexus.admin.core.persistence.PersistenceId
+import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceCommand.CreateResource
 import ch.epfl.bluebrain.nexus.admin.core.resources.Resources.Agg
 import ch.epfl.bluebrain.nexus.admin.core.resources._
 import ch.epfl.bluebrain.nexus.admin.core.types.Ref._
+import ch.epfl.bluebrain.nexus.admin.core.types.RefVersioned
 import ch.epfl.bluebrain.nexus.admin.ld.Const._
 import ch.epfl.bluebrain.nexus.admin.ld.{IdRef, JsonLD}
 import ch.epfl.bluebrain.nexus.admin.refined.project._
 import ch.epfl.bluebrain.nexus.commons.shacl.validator.ShaclValidator
 import ch.epfl.bluebrain.nexus.commons.sparql.client.SparqlClient
+import ch.epfl.bluebrain.nexus.iam.client.Caller
 import io.circe.Json
 import journal.Logger
 
@@ -36,18 +41,32 @@ class Projects[F[_]](organizations: Organizations[F], agg: Agg[F], sparqlClient:
     persistenceId: PersistenceId[ProjectReference])
     extends Resources[F, ProjectReference](agg, sparqlClient) {
 
-  override def validateUnlocked(id: ProjectReference): F[Unit] = {
+  override def validateUnlocked(id: ProjectReference): F[Unit] =
     for {
       _ <- super.validateUnlocked(id)
       _ <- organizations.validateUnlocked(id.organizationReference)
     } yield ()
 
-  }
   override def validate(id: ProjectReference, value: JsonLD): F[Unit] =
     for {
       _ <- super.validate(id, value)
       _ <- organizations.validateUnlocked(id.organizationReference)
     } yield ()
+
+  override def create(id: ProjectReference, value: Json)(implicit caller: Caller): F[RefVersioned[ProjectReference]] = {
+    for {
+      _       <- validate(id, value)
+      orgUuid <- organizations.fetch(id.organizationReference).map(_.map(_.uuid))
+      r <- evaluate(CreateResource(projectRefToResolvable(config)(id),
+                                   UUID.randomUUID.toString,
+                                   orgUuid,
+                                   caller.meta,
+                                   tags + id.show,
+                                   value),
+                    id.show,
+                    s"Create project '$id'")
+    } yield RefVersioned(id, r.rev)
+  }
 
   override val tags: Set[String] = Set("project")
 

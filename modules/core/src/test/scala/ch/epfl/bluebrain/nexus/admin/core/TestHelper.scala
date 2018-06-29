@@ -34,11 +34,11 @@ trait TestHelper extends Randomness with OptionValues {
   }
 
   def genProjectReference(length: Int = 9): ProjectReference = {
-
     val idPool = Vector.range('a', 'z') ++ Vector.range('0', '9')
     val id     = s"${genString(length = length, idPool)}"
     ProjectReference(genOrgReference(), applyRef[ProjectLabel](id).right.get)
   }
+
   def genOrgReference(length: Int = 9): OrganizationReference = {
     val idPool = Vector.range('a', 'z') ++ Vector.range('0', '9')
     val id     = genString(length = length, idPool)

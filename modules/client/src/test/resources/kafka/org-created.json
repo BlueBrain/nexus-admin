@@ -1,8 +1,8 @@
 {
-  "type": "organization",
-  "state": "created",
+  "type": "OrganizationCreated",
   "id": "https://nexus.example.ch/v1/orgs/some-id",
   "uuid": "cc9056c7-bedc-461f-8992-d17e994e39de",
+  "parentUuid": null,
   "rev": 1,
   "meta": {
     "author": {

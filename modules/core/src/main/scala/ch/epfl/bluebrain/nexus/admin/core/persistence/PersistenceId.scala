@@ -3,8 +3,9 @@ package ch.epfl.bluebrain.nexus.admin.core.persistence
 trait PersistenceId[A] {
 
   /**
-    * Generate persistence id for type [[A]]
-    * @param id id to generate the persitence id for.
+    * Generate persistence id for type [[A]].
+    *
+    * @param id id to generate the persistence id for
     * @return string persistence id
     */
   def persistenceId(id: A): String
