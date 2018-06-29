@@ -34,6 +34,7 @@ val catsVersion                     = "1.1.0"
 val circeVersion                    = "0.9.3"
 val jenaVersion                     = "3.7.0"
 val mockitoVersion                  = "2.18.3"
+val monixVersion                    = "3.0.0-RC1"
 val pureconfigVersion               = "0.9.1"
 val refinedVersion                  = "0.9.0"
 val scalaTestVersion                = "3.0.5"
@@ -54,12 +55,14 @@ lazy val akkaPersistenceCassandra = "com.typesafe.akka"       %% "akka-persisten
 lazy val akkaPersistenceInMem     = "com.github.dnvriend"     %% "akka-persistence-inmemory"  % akkaPersistenceInMemVersion
 lazy val akkaHttpTestKit          = "com.typesafe.akka"       %% "akka-http-testkit"          % akkaHttpVersion
 lazy val akkaTestKit              = "com.typesafe.akka"       %% "akka-testkit"               % akkaVersion
+lazy val akkaSlf4j                = "com.typesafe.akka"       %% "akka-slf4j"                 % akkaVersion
 lazy val catsCore                 = "org.typelevel"           %% "cats-core"                  % catsVersion
 lazy val circeCore                = "io.circe"                %% "circe-core"                 % circeVersion
 lazy val circeJava8               = "io.circe"                %% "circe-java8"                % circeVersion
 lazy val circeRefined             = "io.circe"                %% "circe-refined"              % circeVersion
 lazy val jenaArq                  = "org.apache.jena"         % "jena-arq"                    % jenaVersion
 lazy val mockitoCore              = "org.mockito"             % "mockito-core"                % mockitoVersion
+lazy val monixTail                = "io.monix"                %% "monix-tail"                 % monixVersion
 lazy val pureconfig               = "com.github.pureconfig"   %% "pureconfig"                 % pureconfigVersion
 lazy val shaclValidator           = "ch.epfl.bluebrain.nexus" %% "shacl-validator"            % commonsVersion
 lazy val shapeless                = "com.chuusai"             %% "shapeless"                  % shapelessVersion
@@ -227,9 +230,11 @@ lazy val client = project
     moduleName := "admin-client",
     libraryDependencies ++= Seq(
       akkaHttpCore,
+      akkaSlf4j,
       circeCore,
       circeJava8,
       circeRefined,
+      monixTail,
       akkaHttpTestKit % Test,
       commonsTest     % Test,
       scalaTest       % Test
