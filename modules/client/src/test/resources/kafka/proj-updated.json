@@ -1,0 +1,17 @@
+{
+  "type": "project",
+  "state": "updated",
+  "id": "https://nexus.example.ch/v1/projects/some-id",
+  "uuid": "ac9056c7-bedc-461f-8992-d17e994e39de",
+  "rev": 43,
+  "meta": {
+    "author": {
+      "id": "realms/realm3/users/alice",
+      "type": "UserRef"
+    },
+    "instant": "2018-06-25T17:01:06.249Z"
+  },
+  "value": {
+    "foo": "bar2"
+  }
+}
