@@ -6,7 +6,7 @@ import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
 import akka.stream.Materializer
 import ch.epfl.bluebrain.nexus.admin.client.config.AdminConfig
-import ch.epfl.bluebrain.nexus.admin.client.types.Project
+import ch.epfl.bluebrain.nexus.admin.client.types.{Account, Project}
 import ch.epfl.bluebrain.nexus.admin.refined.project.ProjectReference
 import ch.epfl.bluebrain.nexus.commons.http.HttpClient.UntypedHttpClient
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport.unmarshaller
@@ -17,6 +17,7 @@ import ch.epfl.bluebrain.nexus.iam.client.types.{Address, AuthToken, FullAccessC
 import eu.timepit.refined.auto._
 import io.circe.generic.auto._
 import journal.Logger
+import monix.eval.Task
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -33,7 +34,15 @@ trait AdminClient[F[_]] {
     * @param name        the project name
     * @param credentials the optionally provided [[AuthToken]]
     */
-  def getProject(name: ProjectReference)(implicit credentials: Option[AuthToken]): F[Project]
+  def getProject(name: ProjectReference)(implicit credentials: Option[AuthToken]): F[Option[Project]]
+
+  /**
+    * Retrieves a [[Account]] resource instance.
+    *
+    * @param name        the organization name
+    * @param credentials the optionally provided [[AuthToken]]
+    */
+  def getAccount(name: String)(implicit credentials: Option[AuthToken]): F[Option[Account]]
 
   /**
     * Retrieves ACLs for a given project resource instance.
@@ -44,7 +53,7 @@ trait AdminClient[F[_]] {
     * @param credentials the optionally provided [[AuthToken]]
     */
   def getProjectAcls(name: ProjectReference, parents: Boolean = false, self: Boolean = false)(
-      implicit credentials: Option[AuthToken]): F[FullAccessControlList]
+      implicit credentials: Option[AuthToken]): F[Option[FullAccessControlList]]
 
 }
 
@@ -53,30 +62,37 @@ object AdminClient {
   private val log = Logger[this.type]
 
   /**
-    * Builds an [[AdminClient]] instance from a provided configuration and implicitly available instances of
+    * Builds an [[AdminClient]] instance for the effect type [[Future]] from a provided configuration and implicitly available instances of
     * [[ExecutionContext]], [[Materializer]] and [[UntypedHttpClient]].
     *
     * @param config the provided [[AdminConfig]] instance
     */
-  def apply(config: AdminConfig)(implicit
-                                 ec: ExecutionContext,
-                                 mt: Materializer,
-                                 cl: UntypedHttpClient[Future]): AdminClient[Future] = {
+  def future(config: AdminConfig)(implicit
+                                  ec: ExecutionContext,
+                                  mt: Materializer,
+                                  cl: UntypedHttpClient[Future]): AdminClient[Future] = {
     val projectClient = HttpClient.withAkkaUnmarshaller[Project]
+    val accountClient = HttpClient.withAkkaUnmarshaller[Account]
     val aclsClient    = HttpClient.withAkkaUnmarshaller[FullAccessControlList]
 
     new AdminClient[Future] {
 
-      override def getProject(name: ProjectReference)(implicit credentials: Option[AuthToken]): Future[Project] = {
-        val path = name.organizationReference.value / name.projectLabel
-        projectClient(requestFrom(path)).recoverWith { case e => recover(e, path) }
+      override def getProject(name: ProjectReference)(
+          implicit credentials: Option[AuthToken]): Future[Option[Project]] = {
+        val path = "projects" / name.organizationReference.value / name.projectLabel
+        projectClient(requestFrom(path)).map(Some.apply).recoverWith { case e => recover(e, path) }
+      }
+
+      override def getAccount(name: String)(implicit credentials: Option[AuthToken]): Future[Option[Account]] = {
+        val path = "orgs" / name
+        accountClient(requestFrom(path)).map(Some.apply).recoverWith { case e => recover(e, path) }
       }
 
       override def getProjectAcls(name: ProjectReference, parents: Boolean = false, self: Boolean = false)(
-          implicit credentials: Option[AuthToken]): Future[FullAccessControlList] = {
-        val path  = name.organizationReference.value / name.projectLabel / "acls"
+          implicit credentials: Option[AuthToken]): Future[Option[FullAccessControlList]] = {
+        val path  = "projects" / name.organizationReference.value / name.projectLabel / "acls"
         val query = Query("parents" -> parents.toString, "self" -> self.toString)
-        aclsClient(requestFrom(path, Some(query))).recoverWith { case e => recover(e, path) }
+        aclsClient(requestFrom(path, Some(query))).map(Some.apply).recoverWith { case e => recover(e, path) }
       }
 
       private def requestFrom(path: Address, query: Option[Query] = None)(implicit credentials: Option[AuthToken]) = {
@@ -87,9 +103,12 @@ object AdminClient {
         credentials.map(request.addCredentials(_)).getOrElse(request)
       }
 
-      private def recover(th: Throwable, resource: Address) = th match {
+      private def recover[A](th: Throwable, resource: Address): Future[Option[A]] = th match {
         case UnexpectedUnsuccessfulHttpResponse(HttpResponse(StatusCodes.Unauthorized, _, _, _)) =>
           Future.failed(UnauthorizedAccess)
+        case ur: UnexpectedUnsuccessfulHttpResponse if ur.response.status == StatusCodes.NotFound =>
+          log.info(s"Resource '$resource' not found")
+          Future.successful(None)
         case ur: UnexpectedUnsuccessfulHttpResponse =>
           log.warn(
             s"Received an unexpected response status code '${ur.response.status}' from Admin when attempting to perform and operation on a resource '$resource'")
@@ -105,6 +124,31 @@ object AdminClient {
     }
   }
 
+  /**
+    * Builds an [[AdminClient]] instance for the effect type [[Task]] from a provided configuration and implicitly available instances of
+    * [[ExecutionContext]], [[Materializer]] and [[UntypedHttpClient]].
+    *
+    * @param config the provided [[AdminConfig]]
+    */
+  def task(config: AdminConfig)(implicit
+                                ec: ExecutionContext,
+                                mt: Materializer,
+                                cl: UntypedHttpClient[Future]): AdminClient[Task] = {
+    val underlying = future(config)
+    new AdminClient[Task] {
+
+      override def getProject(name: ProjectReference)(implicit credentials: Option[AuthToken]): Task[Option[Project]] =
+        Task.deferFuture(underlying.getProject(name))
+
+      override def getAccount(name: String)(implicit credentials: Option[AuthToken]): Task[Option[Account]] =
+        Task.deferFuture(underlying.getAccount(name))
+
+      override def getProjectAcls(name: ProjectReference, parents: Boolean, self: Boolean)(
+          implicit credentials: Option[AuthToken]): Task[Option[FullAccessControlList]] =
+        Task.deferFuture(underlying.getProjectAcls(name, parents, self))
+    }
+
+  }
   private implicit def toAkka(token: AuthToken): OAuth2BearerToken = OAuth2BearerToken(token.value)
 
 }
