@@ -211,7 +211,7 @@ abstract class Resources[F[_], A: IdResolvable: PersistenceId: TypeFilterExpr](a
         F.pure(state)
     }
 
-  private implicit def toId(id: A): Id = (id.namespace, id.reference).id
+  protected implicit def toId(id: A): Id = (id.namespace, id.reference).id
 
 }
 

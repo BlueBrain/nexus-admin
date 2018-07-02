@@ -9,6 +9,7 @@ import ch.epfl.bluebrain.nexus.admin.core.syntax.caller._
 import ch.epfl.bluebrain.nexus.admin.core.config.AppConfig._
 import ch.epfl.bluebrain.nexus.admin.core.organizations.Organizations
 import ch.epfl.bluebrain.nexus.admin.core.persistence.PersistenceId
+import ch.epfl.bluebrain.nexus.admin.core.persistence.PersistenceId._
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceCommand.CreateResource
 import ch.epfl.bluebrain.nexus.admin.core.resources.Resources.Agg
 import ch.epfl.bluebrain.nexus.admin.core.resources._
@@ -57,13 +58,8 @@ class Projects[F[_]](organizations: Organizations[F], agg: Agg[F], sparqlClient:
     for {
       _       <- validate(id, value)
       orgUuid <- organizations.fetch(id.organizationReference).map(_.map(_.uuid))
-      r <- evaluate(CreateResource(projectRefToResolvable(config)(id),
-                                   UUID.randomUUID.toString,
-                                   orgUuid,
-                                   caller.meta,
-                                   tags + id.show,
-                                   value),
-                    id.show,
+      r <- evaluate(CreateResource(id, UUID.randomUUID.toString, orgUuid, caller.meta, tags + id.persistenceId, value),
+                    id.persistenceId,
                     s"Create project '$id'")
     } yield RefVersioned(id, r.rev)
   }
