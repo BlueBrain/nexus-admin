@@ -37,18 +37,19 @@ class SerializerSpec extends WordSpecLike with Matchers with Inspectors with Sca
       val value  = genProjectValue()
       val value2 = genProjectValue()
       val uuid   = UUID.randomUUID().toString
+      val uuid2  = UUID.randomUUID().toString
       val results = List(
         DataAndJson(
-          ResourceCreated(projectId, uuid, 1L, meta, tags, value),
-          s"""{"id":"https://bbp.epfl.ch/nexus/projects/projectid","uuid":"$uuid","rev":1,"meta":{"author":{"id":"realms/realm/users/sub:1234","type":"UserRef"},"instant":"${meta.instant}"},"tags":["project"],"value":${value.noSpaces},"type":"ResourceCreated"}"""
+          ResourceCreated(projectId, uuid, Some(uuid2), 1L, meta, tags, value),
+          s"""{"id":"https://bbp.epfl.ch/nexus/projects/projectid","uuid":"$uuid","parentUuid":"$uuid2","rev":1,"meta":{"author":{"id":"realms/realm/users/sub:1234","type":"UserRef"},"instant":"${meta.instant}"},"tags":["project"],"value":${value.noSpaces},"type":"ResourceCreated"}"""
         ),
         DataAndJson(
-          ResourceUpdated(projectId, uuid, 1L, meta, tags, value2),
-          s"""{"id":"https://bbp.epfl.ch/nexus/projects/projectid","uuid":"$uuid","rev":1,"meta":{"author":{"id":"realms/realm/users/sub:1234","type":"UserRef"},"instant":"${meta.instant}"},"tags":["project"],"value":${value2.noSpaces},"type":"ResourceUpdated"}"""
+          ResourceUpdated(projectId, uuid, None, 1L, meta, tags, value2),
+          s"""{"id":"https://bbp.epfl.ch/nexus/projects/projectid","uuid":"$uuid","parentUuid":null,"rev":1,"meta":{"author":{"id":"realms/realm/users/sub:1234","type":"UserRef"},"instant":"${meta.instant}"},"tags":["project"],"value":${value2.noSpaces},"type":"ResourceUpdated"}"""
         ),
         DataAndJson(
-          ResourceDeprecated(projectId, uuid, 1L, meta, tags),
-          s"""{"id":"https://bbp.epfl.ch/nexus/projects/projectid","uuid":"$uuid","rev":1,"meta":{"author":{"id":"realms/realm/users/sub:1234","type":"UserRef"},"instant":"${meta.instant}"},"tags":["project"],"type":"ResourceDeprecated"}"""
+          ResourceDeprecated(projectId, uuid, None, 1L, meta, tags),
+          s"""{"id":"https://bbp.epfl.ch/nexus/projects/projectid","uuid":"$uuid","parentUuid":null,"rev":1,"meta":{"author":{"id":"realms/realm/users/sub:1234","type":"UserRef"},"instant":"${meta.instant}"},"tags":["project"],"type":"ResourceDeprecated"}"""
         )
       )
 

@@ -120,13 +120,10 @@ final class ProjectRoutes(projects: Projects[Future])(implicit iamClient: IamCli
         (pathEndOrSingleSlash & authorizeOn[HasReadProjects](Address.Empty / "*" / "*")) { implicit acls =>
           implicit val projectNamespace = config.projects.namespace
           implicit val projectsResolver: Id => Future[Option[Resource[ProjectReference]]] = { id =>
-            {
-              id.projectReference match {
-                case Some(projId) => projects.fetch(projId)
-                case None         => Future.successful(None)
-              }
+            id.projectReference match {
+              case Some(projId) => projects.fetch(projId)
+              case None         => Future.successful(None)
             }
-
           }
 
           projects

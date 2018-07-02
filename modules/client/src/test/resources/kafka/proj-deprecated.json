@@ -1,8 +1,8 @@
 {
-  "type": "project",
-  "state": "deprecated",
+  "type": "ProjectDeprecated",
   "id": "https://nexus.example.ch/v1/projects/some-id",
   "uuid": "ac9056c7-bedc-461f-8992-d17e994e39de",
+  "parentUuid": "cc9056c7-bedc-461f-8992-d17e994e39de",
   "rev": 44,
   "meta": {
     "author": {
