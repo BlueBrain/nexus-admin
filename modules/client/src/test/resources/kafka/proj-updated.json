@@ -12,6 +12,17 @@
     "instant": "2018-06-25T17:01:06.249Z"
   },
   "value": {
-    "foo": "bar2"
+    "name": "example2",
+    "base": "https://nexus.example.ch",
+    "prefixMappings": [
+      {
+        "prefix": "nxv",
+        "namespace": "https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/"
+      },
+      {
+        "prefix": "shacl",
+        "namespace": "https://bluebrain.github.io/nexus/schemas/shacl"
+      }
+    ]
   }
 }

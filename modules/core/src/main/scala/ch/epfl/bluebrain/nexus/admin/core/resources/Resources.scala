@@ -192,7 +192,7 @@ abstract class Resources[F[_], A: IdResolvable: PersistenceId: TypeFilterExpr](a
       case (state, _)                   => state
     }
 
-  def evaluate(cmd: ResourceCommand, persId: String, intent: => String): F[Current] =
+  protected def evaluate(cmd: ResourceCommand, persId: String, intent: => String): F[Current] =
     F.pure {
       logger.debug(s"$intent: evaluating command '$cmd''")
     } flatMap { _ =>
