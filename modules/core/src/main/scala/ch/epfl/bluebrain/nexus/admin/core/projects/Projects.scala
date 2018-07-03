@@ -54,13 +54,16 @@ class Projects[F[_]](organizations: Organizations[F], agg: Agg[F], sparqlClient:
       _ <- organizations.validateUnlocked(id.organizationReference)
     } yield ()
 
+  override def label(id: ProjectReference): String = id.projectLabel.value
+
   override def create(id: ProjectReference, value: Json)(implicit caller: Caller): F[RefVersioned[ProjectReference]] = {
     for {
       _       <- validate(id, value)
       orgUuid <- organizations.fetch(id.organizationReference).map(_.map(_.uuid))
-      r <- evaluate(CreateResource(id, UUID.randomUUID.toString, orgUuid, caller.meta, tags + id.persistenceId, value),
-                    id.persistenceId,
-                    s"Create project '$id'")
+      r <- evaluate(
+        CreateResource(id, label(id), UUID.randomUUID.toString, orgUuid, caller.meta, tags + id.persistenceId, value),
+        id.persistenceId,
+        s"Create project '$id'")
     } yield RefVersioned(id, r.rev)
   }
 

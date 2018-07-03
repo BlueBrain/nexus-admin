@@ -23,9 +23,27 @@ sealed trait KafkaEvent {
 }
 
 object KafkaEvent {
+
+  /**
+    * @param name the project name
+    * @param base the project base
+    * @param prefixMappings the project prefix mappings
+    */
   final case class ProjectValue(name: String, base: AbsoluteIri, prefixMappings: Map[String, AbsoluteIri])
 
+  /**
+    * A project that has been created.
+    *
+    * @param id         the unique identifier of the project
+    * @param label      the label (segment) of the project
+    * @param uuid       the permanent identifier for the project
+    * @param parentUuid the permanent identifier for the organization
+    * @param rev        the revision number that this event generates
+    * @param meta       the metadata associated to this event
+    * @param value      the payload of the project
+    */
   final case class ProjectCreated(id: String,
+                                  label: String,
                                   uuid: String,
                                   parentUuid: String,
                                   rev: Long,
@@ -33,6 +51,16 @@ object KafkaEvent {
                                   value: ProjectValue)
       extends KafkaEvent
 
+  /**
+    * A project that has been updated.
+    *
+    * @param id         the unique identifier of the project
+    * @param uuid       the permanent identifier for the project
+    * @param parentUuid the permanent identifier for the organization
+    * @param rev        the revision number that this event generates
+    * @param meta       the metadata associated to this event
+    * @param value      the payload of the project
+    */
   final case class ProjectUpdated(id: String,
                                   uuid: String,
                                   parentUuid: String,
@@ -41,17 +69,55 @@ object KafkaEvent {
                                   value: ProjectValue)
       extends KafkaEvent
 
+  /**
+    * A project that has been deprecated.
+    *
+    * @param id         the unique identifier of the project
+    * @param uuid       the permanent identifier for the project
+    * @param parentUuid the permanent identifier for the organization
+    * @param rev        the revision number that this event generates
+    * @param meta       the metadata associated to this event
+    */
   final case class ProjectDeprecated(id: String, uuid: String, parentUuid: String, rev: Long, meta: Meta)
       extends KafkaEvent
 
+  /**
+    * @param name the organization name
+    */
   final case class OrganizationValue(name: String)
 
+  /**
+    * An organization that has been created.
+    *
+    * @param id         the unique identifier of the organization
+    * @param uuid       the permanent identifier for the organization
+    * @param rev        the revision number that this event generates
+    * @param meta       the metadata associated to this event
+    * @param value      the payload of the organization
+    */
   final case class OrganizationCreated(id: String, uuid: String, rev: Long, meta: Meta, value: OrganizationValue)
       extends KafkaEvent
 
+  /**
+    * An organization that has been updated.
+    *
+    * @param id         the unique identifier of the organization
+    * @param uuid       the permanent identifier for the organization
+    * @param rev        the revision number that this event generates
+    * @param meta       the metadata associated to this event
+    * @param value      the payload of the organization
+    */
   final case class OrganizationUpdated(id: String, uuid: String, rev: Long, meta: Meta, value: OrganizationValue)
       extends KafkaEvent
 
+  /**
+    * An organization that has been deprecated.
+    *
+    * @param id         the unique identifier of the organization
+    * @param uuid       the permanent identifier for the organization
+    * @param rev        the revision number that this event generates
+    * @param meta       the metadata associated to this event
+    */
   final case class OrganizationDeprecated(id: String, uuid: String, rev: Long, meta: Meta) extends KafkaEvent
 
   private implicit val config: Configuration = Configuration.default.withDiscriminator("type")

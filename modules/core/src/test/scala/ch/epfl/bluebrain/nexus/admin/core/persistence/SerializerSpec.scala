@@ -34,14 +34,15 @@ class SerializerSpec extends WordSpecLike with Matchers with Inspectors with Sca
     val tags          = Set("project")
 
     "using EventSerializer" should {
+      val label  = "projectid"
       val value  = genProjectValue()
       val value2 = genProjectValue()
       val uuid   = UUID.randomUUID().toString
       val uuid2  = UUID.randomUUID().toString
       val results = List(
         DataAndJson(
-          ResourceCreated(projectId, uuid, Some(uuid2), 1L, meta, tags, value),
-          s"""{"id":"https://bbp.epfl.ch/nexus/projects/projectid","uuid":"$uuid","parentUuid":"$uuid2","rev":1,"meta":{"author":{"id":"realms/realm/users/sub:1234","type":"UserRef"},"instant":"${meta.instant}"},"tags":["project"],"value":${value.noSpaces},"type":"ResourceCreated"}"""
+          ResourceCreated(projectId, label, uuid, Some(uuid2), 1L, meta, tags, value),
+          s"""{"id":"https://bbp.epfl.ch/nexus/projects/projectid","label":"$label","uuid":"$uuid","parentUuid":"$uuid2","rev":1,"meta":{"author":{"id":"realms/realm/users/sub:1234","type":"UserRef"},"instant":"${meta.instant}"},"tags":["project"],"value":${value.noSpaces},"type":"ResourceCreated"}"""
         ),
         DataAndJson(
           ResourceUpdated(projectId, uuid, None, 1L, meta, tags, value2),

@@ -121,7 +121,8 @@ class ProjectsSpec
       projects.create(id, value).futureValue shouldEqual RefVersioned(id, 1L)
       val uuid = projects.fetch(id).futureValue.get.uuid
       projects.update(id, 1L, updatedValue).futureValue shouldEqual RefVersioned(id, 2L)
-      projects.fetch(id).futureValue shouldEqual Some(Resource(id, uuid, 2L, updatedValue, deprecated = false))
+      projects.fetch(id).futureValue shouldEqual Some(
+        Resource(id, id.projectLabel.value, uuid, 2L, updatedValue, deprecated = false))
     }
 
     "deprecate a project" in new Context {
@@ -131,7 +132,8 @@ class ProjectsSpec
       val uuid = projects.fetch(id).futureValue.get.uuid
 
       projects.deprecate(id, 1L).futureValue shouldEqual RefVersioned(id, 2L)
-      projects.fetch(id).futureValue shouldEqual Some(Resource(id, uuid, 2L, value, deprecated = true))
+      projects.fetch(id).futureValue shouldEqual Some(
+        Resource(id, id.projectLabel.value, uuid, 2L, value, deprecated = true))
     }
 
     "fetch old revision of a project" in new Context {
@@ -142,8 +144,10 @@ class ProjectsSpec
       val uuid = projects.fetch(id).futureValue.get.uuid
       projects.update(id, 1L, updatedValue).futureValue shouldEqual RefVersioned(id, 2L)
 
-      projects.fetch(id, 2L).futureValue shouldEqual Some(Resource(id, uuid, 2L, updatedValue, deprecated = false))
-      projects.fetch(id, 1L).futureValue shouldEqual Some(Resource(id, uuid, 1L, value, deprecated = false))
+      projects.fetch(id, 2L).futureValue shouldEqual Some(
+        Resource(id, id.projectLabel.value, uuid, 2L, updatedValue, deprecated = false))
+      projects.fetch(id, 1L).futureValue shouldEqual Some(
+        Resource(id, id.projectLabel.value, uuid, 1L, value, deprecated = false))
 
     }
 

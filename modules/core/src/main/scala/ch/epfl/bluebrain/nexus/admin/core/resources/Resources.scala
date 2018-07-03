@@ -95,6 +95,8 @@ abstract class Resources[F[_], A: IdResolvable: PersistenceId: TypeFilterExpr](a
       case _                          => F.pure(())
     }
 
+  def label(id: A): String
+
   /**
     * Attempts to create a new resource instance.
     *
@@ -106,9 +108,10 @@ abstract class Resources[F[_], A: IdResolvable: PersistenceId: TypeFilterExpr](a
   def create(id: A, value: Json)(implicit caller: Caller): F[RefVersioned[A]] =
     for {
       _ <- validate(id, value)
-      r <- evaluate(CreateResource(id, UUID.randomUUID.toString, None, caller.meta, tags + id.persistenceId, value),
-                    id.persistenceId,
-                    s"Create res '$id'")
+      r <- evaluate(
+        CreateResource(id, label(id), UUID.randomUUID.toString, None, caller.meta, tags + id.persistenceId, value),
+        id.persistenceId,
+        s"Create res '$id'")
     } yield RefVersioned(id, r.rev)
 
   /**
@@ -153,7 +156,7 @@ abstract class Resources[F[_], A: IdResolvable: PersistenceId: TypeFilterExpr](a
   def fetch(id: A): F[Option[Resource[A]]] =
     agg.currentState(id.persistenceId).map {
       case Initial    => None
-      case c: Current => Some(Resource(id, c.uuid, c.rev, c.value, c.deprecated))
+      case c: Current => Some(Resource(id, c.label, c.uuid, c.rev, c.value, c.deprecated))
     }
 
   /**
@@ -168,7 +171,7 @@ abstract class Resources[F[_], A: IdResolvable: PersistenceId: TypeFilterExpr](a
     */
   def fetch(id: A, rev: Long): F[Option[Resource[A]]] =
     stateAt(id.persistenceId, rev).map {
-      case c: Current if c.rev == rev => Some(Resource(id, c.uuid, c.rev, c.value, c.deprecated))
+      case c: Current if c.rev == rev => Some(Resource(id, c.label, c.uuid, c.rev, c.value, c.deprecated))
       case _                          => None
     }
 

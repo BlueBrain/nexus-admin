@@ -22,14 +22,16 @@ object ResourceEvent {
     * Evidence that a resource has been created.
     *
     * @param id         the unique identifier of the resource
+    * @param label      the label (segment) of the resource
     * @param uuid       the permanent identifier for the resource
     * @param parentUuid the permanent identifier for the parent resource, if any
     * @param rev        the revision number that this event generates
     * @param meta       the metadata associated to this event
     * @param tags       the tags added to this event
-    * @param value the json payload of the resource
+    * @param value      the json payload of the resource
     */
   final case class ResourceCreated(id: Id,
+                                   label: String,
                                    uuid: String,
                                    parentUuid: Option[String],
                                    rev: Long,

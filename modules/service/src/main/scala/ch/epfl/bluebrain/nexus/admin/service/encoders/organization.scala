@@ -25,7 +25,7 @@ object organization {
       Json.obj(
         Const.`@id`               -> Json.fromString(s"${organizationNamespace.value}${resource.id.value.value}"),
         Const.`@type`             -> Json.fromString(nxv.Organization.curie.show),
-        nxv.label.reference.value -> Json.fromString(resource.id.value),
+        nxv.label.reference.value -> Json.fromString(resource.label),
         schema.name.reference.value -> Json.fromString(
           ld.value[String](schema.name)
             .getOrElse(throw new IllegalArgumentException(

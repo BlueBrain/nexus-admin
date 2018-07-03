@@ -21,12 +21,14 @@ object ResourceCommand {
     * Command that signals the intent to create a new resource.
     *
     * @param id    the identifier for the resource to be created
+    * @param label the label (segment) of the resource
     * @param uuid  the permanent identifier for the resource
     * @param meta  the metadata associated to this command
     * @param tags  the tags added to the consequent [[ch.epfl.bluebrain.nexus.admin.core.resources.ResourceEvent]] which might be created as a result of this operation
     * @param value the json payload of the resource
     */
   final case class CreateResource(id: Id,
+                                  label: String,
                                   uuid: String,
                                   parentUuid: Option[String],
                                   meta: Meta,

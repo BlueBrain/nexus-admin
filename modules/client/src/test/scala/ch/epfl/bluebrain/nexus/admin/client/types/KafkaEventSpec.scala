@@ -28,7 +28,13 @@ class KafkaEventSpec extends WordSpecLike with Matchers with Inspectors with Res
     val orgUuid     = "cc9056c7-bedc-461f-8992-d17e994e39de"
 
     val list = List(
-      jsonContentOf("/kafka/proj-created.json")    -> ProjectCreated(projId, projUuid, orgUuid, 42L, meta, projCreated),
+      jsonContentOf("/kafka/proj-created.json") -> ProjectCreated(projId,
+                                                                  "some-id",
+                                                                  projUuid,
+                                                                  orgUuid,
+                                                                  42L,
+                                                                  meta,
+                                                                  projCreated),
       jsonContentOf("/kafka/proj-updated.json")    -> ProjectUpdated(projId, projUuid, orgUuid, 43L, meta, projUpdated),
       jsonContentOf("/kafka/proj-deprecated.json") -> ProjectDeprecated(projId, projUuid, orgUuid, 44L, meta),
       jsonContentOf("/kafka/org-created.json")     -> OrganizationCreated(orgId, orgUuid, 1L, meta, orgCreated),

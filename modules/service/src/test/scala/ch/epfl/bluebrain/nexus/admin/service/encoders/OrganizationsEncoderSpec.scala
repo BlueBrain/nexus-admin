@@ -25,7 +25,8 @@ class OrganizationsEncoderSpec extends WordSpecLike with Matchers with TestHelpe
   "Organization" should {
     "encode organization resource as JSON" in {
 
-      val resource = Resource(genOrgReference(), UUID.randomUUID().toString, 1L, genOrganizationValue, false)
+      val ref      = genOrgReference()
+      val resource = Resource(ref, ref.value, UUID.randomUUID().toString, 1L, genOrganizationValue, false)
       resource.asJson shouldEqual Json
         .obj(
           "@id"         -> Json.fromString(s"https://nexus.example.ch/v1/orgs/${resource.id.value.value}"),
