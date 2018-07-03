@@ -10,27 +10,26 @@ import ch.epfl.bluebrain.nexus.admin.core.Fault.CommandRejected
 import ch.epfl.bluebrain.nexus.admin.core.TestHelper
 import ch.epfl.bluebrain.nexus.admin.core.config.AppConfig.{OrganizationsConfig, ProjectsConfig}
 import ch.epfl.bluebrain.nexus.admin.core.organizations.Organizations
-import ch.epfl.bluebrain.nexus.admin.core.resources.{Resource, ResourceRejection}
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceRejection._
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceState._
+import ch.epfl.bluebrain.nexus.admin.core.resources.{Resource, ResourceRejection}
 import ch.epfl.bluebrain.nexus.admin.core.types.Ref._
 import ch.epfl.bluebrain.nexus.admin.core.types.RefVersioned
 import ch.epfl.bluebrain.nexus.admin.query.QueryPayload
 import ch.epfl.bluebrain.nexus.admin.refined.ld.Id
 import ch.epfl.bluebrain.nexus.admin.refined.permissions._
 import ch.epfl.bluebrain.nexus.admin.refined.project._
-import ch.epfl.bluebrain.nexus.commons.http.HttpClient
 import ch.epfl.bluebrain.nexus.commons.http.JsonOps._
-import ch.epfl.bluebrain.nexus.iam.client.types.Permission._
-import ch.epfl.bluebrain.nexus.iam.client.types._
-import ch.epfl.bluebrain.nexus.iam.client.Caller.AnonymousCaller
-import ch.epfl.bluebrain.nexus.iam.client.types.Identity._
 import ch.epfl.bluebrain.nexus.commons.shacl.validator.{ImportResolver, ShaclValidator}
 import ch.epfl.bluebrain.nexus.commons.sparql.client.SparqlClient
 import ch.epfl.bluebrain.nexus.commons.types.search.QueryResult.ScoredQueryResult
 import ch.epfl.bluebrain.nexus.commons.types.search.QueryResults.ScoredQueryResults
 import ch.epfl.bluebrain.nexus.commons.types.search.{Pagination, QueryResult}
+import ch.epfl.bluebrain.nexus.iam.client.Caller.AnonymousCaller
 import ch.epfl.bluebrain.nexus.iam.client.types.Address._
+import ch.epfl.bluebrain.nexus.iam.client.types.Identity._
+import ch.epfl.bluebrain.nexus.iam.client.types.Permission._
+import ch.epfl.bluebrain.nexus.iam.client.types._
 import ch.epfl.bluebrain.nexus.sourcing.mem.MemoryAggregate
 import ch.epfl.bluebrain.nexus.sourcing.mem.MemoryAggregate._
 import eu.timepit.refined.api.RefType.{applyRef, refinedRefType}
@@ -70,7 +69,6 @@ class ProjectsSpec
   private val orgsAggregate                           = MemoryAggregate("organizations")(Initial, next, Eval().apply).toF[Future]
   private val aggProject                              = MemoryAggregate("projects")(Initial, next, Eval().apply).toF[Future]
   private val cl                                      = mock[SparqlClient[Future]]
-  private implicit val rs                             = mock[HttpClient[Future, ResultSet]]
   implicit val shaclValidator: ShaclValidator[Future] = ShaclValidator(ImportResolver.noop[Future])
   private val organizations                           = Organizations(orgsAggregate, cl)
   private val projects                                = Projects(organizations, aggProject, cl)
