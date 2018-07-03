@@ -36,7 +36,9 @@ object Project {
     */
   final case class LoosePrefixMapping(prefix: Prefix, namespace: AliasOrNamespace)
 
-  private def mappingToMapEntry(mapping: LoosePrefixMapping): Option[(String, AbsoluteIri)] = {
+  private[types] implicit val lpmDecoder: Decoder[LoosePrefixMapping] = deriveDecoder[LoosePrefixMapping]
+
+  private[types] def mappingToMapEntry(mapping: LoosePrefixMapping): Option[(String, AbsoluteIri)] = {
     Iri.absolute(mapping.namespace.value) match {
       case Right(iri) => Some((mapping.prefix, iri))
       case Left(_)    => None
@@ -44,14 +46,12 @@ object Project {
 
   }
 
-  implicit def projectDecoder(
-      implicit
-      DLPM: Decoder[LoosePrefixMapping] = deriveDecoder[LoosePrefixMapping]): Decoder[Project] = {
+  implicit val projectDecoder: Decoder[Project] = {
     Decoder.instance { c =>
       for {
         name <- c.downField(nxv.name.reference.value).as[String]
         lpm  <- c.downField(nxv.prefixMappings.reference.value).as[List[LoosePrefixMapping]]
-        mappings = lpm.map(mappingToMapEntry).flatten.toMap
+        mappings = lpm.flatMap(mappingToMapEntry).toMap
         baseString <- c.downField(nxv.base.reference.value).as[String]
         base       <- Iri.absolute(baseString).left.map(err => DecodingFailure(err, c.history))
         rev        <- c.downField(nxv.rev.reference.value).as[Long]
