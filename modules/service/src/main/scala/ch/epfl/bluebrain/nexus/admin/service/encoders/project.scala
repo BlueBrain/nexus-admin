@@ -44,7 +44,7 @@ object project {
       Json.obj(
         Const.`@id`               -> Json.fromString(s"${projectNamespace.value}${resource.id.value.show}"),
         Const.`@type`             -> Json.fromString(nxv.Project.curie.show),
-        nxv.label.reference.value -> Json.fromString(resource.id.value.projectLabel),
+        nxv.label.reference.value -> Json.fromString(resource.label),
         nxv.name.reference.value -> Json.fromString(
           ld.value[String](schema.name)
             .getOrElse(throw new IllegalArgumentException(

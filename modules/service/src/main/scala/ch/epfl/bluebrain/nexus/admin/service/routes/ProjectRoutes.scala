@@ -20,13 +20,11 @@ import ch.epfl.bluebrain.nexus.admin.service.directives.RefinedDirectives._
 import ch.epfl.bluebrain.nexus.admin.service.encoders.RoutesEncoder
 import ch.epfl.bluebrain.nexus.admin.service.encoders.project._
 import ch.epfl.bluebrain.nexus.admin.service.routes.SearchResponse._
-import ch.epfl.bluebrain.nexus.commons.http.HttpClient
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport.{jsonUnmarshaller, marshallerHttp}
 import ch.epfl.bluebrain.nexus.iam.client.IamClient
 import ch.epfl.bluebrain.nexus.iam.client.types.{Address, AuthToken}
 import ch.epfl.bluebrain.nexus.service.kamon.directives.TracingDirectives
 import io.circe.Json
-import org.apache.jena.query.ResultSet
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -38,8 +36,7 @@ import scala.concurrent.{ExecutionContext, Future}
 final class ProjectRoutes(projects: Projects[Future])(implicit iamClient: IamClient[Future],
                                                       ec: ExecutionContext,
                                                       config: AppConfig,
-                                                      tracing: TracingDirectives,
-                                                      rs: HttpClient[Future, ResultSet])
+                                                      tracing: TracingDirectives)
     extends BaseRoute {
 
   import tracing._
@@ -138,8 +135,7 @@ final class ProjectRoutes(projects: Projects[Future])(implicit iamClient: IamCli
 object ProjectRoutes {
   final def apply(projects: Projects[Future])(implicit iamClient: IamClient[Future],
                                               ec: ExecutionContext,
-                                              config: AppConfig,
-                                              rs: HttpClient[Future, ResultSet]): ProjectRoutes = {
+                                              config: AppConfig): ProjectRoutes = {
     implicit val tracing = new TracingDirectives()
     new ProjectRoutes(projects)
   }

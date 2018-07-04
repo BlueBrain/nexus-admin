@@ -24,7 +24,6 @@ import ch.epfl.bluebrain.nexus.admin.refined.ld.Id
 import ch.epfl.bluebrain.nexus.admin.refined.ld.Uri._
 import ch.epfl.bluebrain.nexus.admin.refined.permissions._
 import ch.epfl.bluebrain.nexus.admin.refined.project.ProjectReference
-import ch.epfl.bluebrain.nexus.commons.http.HttpClient
 import ch.epfl.bluebrain.nexus.commons.shacl.validator.ShaclValidatorErr.{CouldNotFindImports, IllegalImportDefinition}
 import ch.epfl.bluebrain.nexus.commons.shacl.validator.{ShaclSchema, ShaclValidator}
 import ch.epfl.bluebrain.nexus.commons.sparql.client.SparqlClient
@@ -95,6 +94,8 @@ abstract class Resources[F[_], A: IdResolvable: PersistenceId: TypeFilterExpr](a
       case _                          => F.pure(())
     }
 
+  def label(id: A): String
+
   /**
     * Attempts to create a new resource instance.
     *
@@ -106,9 +107,10 @@ abstract class Resources[F[_], A: IdResolvable: PersistenceId: TypeFilterExpr](a
   def create(id: A, value: Json)(implicit caller: Caller): F[RefVersioned[A]] =
     for {
       _ <- validate(id, value)
-      r <- evaluate(CreateResource(id, UUID.randomUUID.toString, None, caller.meta, tags + id.persistenceId, value),
-                    id.persistenceId,
-                    s"Create res '$id'")
+      r <- evaluate(
+        CreateResource(id, label(id), UUID.randomUUID.toString, None, caller.meta, tags + id.persistenceId, value),
+        id.persistenceId,
+        s"Create res '$id'")
     } yield RefVersioned(id, r.rev)
 
   /**
@@ -153,7 +155,7 @@ abstract class Resources[F[_], A: IdResolvable: PersistenceId: TypeFilterExpr](a
   def fetch(id: A): F[Option[Resource[A]]] =
     agg.currentState(id.persistenceId).map {
       case Initial    => None
-      case c: Current => Some(Resource(id, c.uuid, c.rev, c.value, c.deprecated))
+      case c: Current => Some(Resource(id, c.label, c.uuid, c.rev, c.value, c.deprecated))
     }
 
   /**
@@ -168,7 +170,7 @@ abstract class Resources[F[_], A: IdResolvable: PersistenceId: TypeFilterExpr](a
     */
   def fetch(id: A, rev: Long): F[Option[Resource[A]]] =
     stateAt(id.persistenceId, rev).map {
-      case c: Current if c.rev == rev => Some(Resource(id, c.uuid, c.rev, c.value, c.deprecated))
+      case c: Current if c.rev == rev => Some(Resource(id, c.label, c.uuid, c.rev, c.value, c.deprecated))
       case _                          => None
     }
 
@@ -178,10 +180,8 @@ abstract class Resources[F[_], A: IdResolvable: PersistenceId: TypeFilterExpr](a
     * @param pagination pagination
     * @return  list of resources
     */
-  def list(query: QueryPayload, pagination: Pagination)(
-      implicit acls: HasReadProjects,
-      idRes: IdResolvable[ProjectReference],
-      rs: HttpClient[F, org.apache.jena.query.ResultSet]): F[QueryResults[Id]] = {
+  def list(query: QueryPayload, pagination: Pagination)(implicit acls: HasReadProjects,
+                                                        idRes: IdResolvable[ProjectReference]): F[QueryResults[Id]] = {
     val sparqlQuery = FilteredQuery[A](query, pagination, acls)
     rsToQueryResults[F](sparqlClient.queryRs(sparqlQuery), query.q.isDefined)
   }

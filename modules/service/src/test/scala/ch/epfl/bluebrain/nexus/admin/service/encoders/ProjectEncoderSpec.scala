@@ -24,7 +24,8 @@ class ProjectEncoderSpec extends WordSpecLike with Matchers with TestHelper {
   "ProjectEncoder" should {
     "encode project resource as JSON" in {
 
-      val resource = Resource(genProjectReference(), UUID.randomUUID().toString, 1L, genProjectValue(), false)
+      val ref      = genProjectReference()
+      val resource = Resource(ref, ref.projectLabel.value, UUID.randomUUID().toString, 1L, genProjectValue(), false)
       resource.asJson shouldEqual Json
         .obj(
           "@id"         -> Json.fromString(s"https://nexus.example.ch/v1/projects/${resource.id.value.show}"),

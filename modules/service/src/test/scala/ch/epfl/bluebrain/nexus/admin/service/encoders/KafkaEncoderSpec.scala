@@ -19,6 +19,7 @@ class KafkaEncoderSpec extends WordSpecLike with Matchers {
       val json = Json.obj(
         "type"       -> Json.fromString("ProjectCreated"),
         "id"         -> Json.fromString("https://nexus.example.ch/v1/projects/some-id"),
+        "label"      -> Json.fromString("some-id"),
         "uuid"       -> Json.fromString("ac9056c7-bedc-461f-8992-d17e994e39de"),
         "parentUuid" -> Json.fromString("e42afa69-df96-477c-8c0d-f4617a8eb827"),
         "rev"        -> Json.fromLong(42L),
@@ -36,6 +37,7 @@ class KafkaEncoderSpec extends WordSpecLike with Matchers {
 
       val event: ResourceEvent = ResourceCreated(
         "https://nexus.example.ch/v1/projects/some-id",
+        "some-id",
         "ac9056c7-bedc-461f-8992-d17e994e39de",
         Some("e42afa69-df96-477c-8c0d-f4617a8eb827"),
         42L,

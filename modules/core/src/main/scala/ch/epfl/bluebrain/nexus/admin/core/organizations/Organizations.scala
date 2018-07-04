@@ -26,6 +26,8 @@ class Organizations[F[_]](agg: Agg[F], sparqlClient: SparqlClient[F])(
     persistenceId: PersistenceId[OrganizationReference])
     extends Resources[F, OrganizationReference](agg, sparqlClient) {
 
+  override def label(id: OrganizationReference): String = id.value
+
   override val tags: Set[String] = Set("organization")
 
   override val resourceType: IdRef = nxv.Organization

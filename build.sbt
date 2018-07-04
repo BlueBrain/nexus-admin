@@ -33,7 +33,7 @@ val akkaPersistenceCassandraVersion = "0.85"
 val catsVersion                     = "1.1.0"
 val circeVersion                    = "0.9.3"
 val jenaVersion                     = "3.7.0"
-val mockitoVersion                  = "2.18.3"
+val mockitoVersion                  = "2.19.0"
 val monixVersion                    = "3.0.0-RC1"
 val pureconfigVersion               = "0.9.1"
 val refinedVersion                  = "0.9.0"
@@ -43,9 +43,9 @@ val sourcingVersion                 = "0.10.7"
 
 // Nexus dependency versions
 val serviceVersion = "0.10.13"
-val commonsVersion = "0.10.12"
-val iamVersion     = "0.1.18"
-val rdfVersion     = "0.2.0"
+val commonsVersion = "0.10.15"
+val iamVersion     = "0.1.20"
+val rdfVersion     = "0.2.3"
 
 // Dependency modules
 lazy val akkaDistributed          = "com.typesafe.akka"       %% "akka-distributed-data"      % akkaVersion
