@@ -74,7 +74,7 @@ lazy val refinedPureConfig = "eu.timepit" %% "refined-pureconfig" % refinedVersi
 
 // Nexus dependency modules
 lazy val commonsQueryTypes = "ch.epfl.bluebrain.nexus" %% "commons-query-types"   % commonsVersion
-lazy val commonsHttp           = "ch.epfl.bluebrain.nexus" %% "commons-http"            % commonsVersion
+lazy val commonsHttp       = "ch.epfl.bluebrain.nexus" %% "commons-http"          % commonsVersion
 lazy val commonsSchemas    = "ch.epfl.bluebrain.nexus" %% "commons-schemas"       % commonsVersion
 lazy val commonsTest       = "ch.epfl.bluebrain.nexus" %% "commons-test"          % commonsVersion
 lazy val iamClient         = "ch.epfl.bluebrain.nexus" %% "iam-client"            % iamVersion
@@ -148,8 +148,8 @@ lazy val ld = project
       jenaArq,
       shapeless,
       commonsHttp % Test,
-      scalaTest % Test,
-      slf4j     % Test
+      scalaTest   % Test,
+      slf4j       % Test
     )
   )
 
