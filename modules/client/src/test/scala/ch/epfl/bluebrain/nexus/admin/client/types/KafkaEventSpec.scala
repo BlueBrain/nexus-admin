@@ -44,8 +44,13 @@ class KafkaEventSpec extends WordSpecLike with Matchers with Inspectors with Res
                                                                   projUpdated),
       jsonContentOf("/kafka/proj-deprecated.json") -> ProjectDeprecated(projId, projUuid, orgUuid, 44L, meta),
       jsonContentOf("/kafka/org-created.json")     -> OrganizationCreated(orgId, "some", orgUuid, 1L, meta, orgCreated),
-      jsonContentOf("/kafka/org-updated.json")     -> OrganizationUpdated(orgId, orgUuid, 2L, meta, orgUpdated),
-      jsonContentOf("/kafka/org-deprecated.json")  -> OrganizationDeprecated(orgId, orgUuid, 3L, meta)
+      jsonContentOf("/kafka/org-updated.json") -> OrganizationUpdated(orgId,
+                                                                      "some-other",
+                                                                      orgUuid,
+                                                                      2L,
+                                                                      meta,
+                                                                      orgUpdated),
+      jsonContentOf("/kafka/org-deprecated.json") -> OrganizationDeprecated(orgId, orgUuid, 3L, meta)
     )
 
     "be decoded properly" in {

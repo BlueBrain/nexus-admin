@@ -2,6 +2,7 @@
   "type": "OrganizationUpdated",
   "id": "https://nexus.example.ch/v1/orgs/some-id",
   "uuid": "cc9056c7-bedc-461f-8992-d17e994e39de",
+  "label": "some-other",
   "rev": 2,
   "meta": {
     "author": {

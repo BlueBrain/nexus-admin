@@ -110,12 +110,18 @@ object KafkaEvent {
     * An organization that has been updated.
     *
     * @param id         the unique identifier of the organization
+    * @param label      the label (segment) of the organization
     * @param uuid       the permanent identifier for the organization
     * @param rev        the revision number that this event generates
     * @param meta       the metadata associated to this event
     * @param value      the payload of the organization
     */
-  final case class OrganizationUpdated(id: String, uuid: String, rev: Long, meta: Meta, value: OrganizationValue)
+  final case class OrganizationUpdated(id: String,
+                                       label: String,
+                                       uuid: String,
+                                       rev: Long,
+                                       meta: Meta,
+                                       value: OrganizationValue)
       extends KafkaEvent
 
   /**
