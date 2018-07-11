@@ -28,7 +28,7 @@ import org.scalatest.{EitherValues, Matchers, TryValues, WordSpecLike}
 class FilteredQuerySpec extends WordSpecLike with Matchers with Resources with EitherValues with TryValues {
 
   private val base              = "http://localhost/v0"
-  private val nexusBaseVoc: Uri = s"https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/"
+  private val nexusBaseVoc: Uri = s"https://bluebrain.github.io/nexus/vocabulary/"
   private val replacements =
     Map(Pattern.quote("{{base-uri}}") -> base, Pattern.quote("{{vocab}}") -> nexusBaseVoc.toString())
   private val context = jsonContentOf("/query/search_context.json", replacements)
@@ -59,7 +59,7 @@ class FilteredQuerySpec extends WordSpecLike with Matchers with Resources with E
              |  WHERE {
              |
              |
-             |?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/Project> .
+             |?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://bluebrain.github.io/nexus/vocabulary/Project> .
              |
              |
              |
@@ -94,7 +94,7 @@ class FilteredQuerySpec extends WordSpecLike with Matchers with Resources with E
         val filter                = filterJson.as[Filter].right.value
         val expectedWhere =
           s"""
-             |?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/Project> .
+             |?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://bluebrain.github.io/nexus/vocabulary/Project> .
              |?s <${nexusBaseVoc}schema>/<${nexusBaseVoc}schemaGroup> <http://localhost/v0/bbp/experiment/subject> .
              |?s <${prov}wasDerivedFrom> <http://localhost/v0/bbp/experiment/subject/v0.1.0/073b4529-83a8-4776-a5a7-676624bfad90> .
              |?s <${nexusBaseVoc}rev> ?var_1 .
@@ -177,7 +177,7 @@ class FilteredQuerySpec extends WordSpecLike with Matchers with Resources with E
              |?matchedValue bds:rank ?pos .
              |FILTER ( !isBlank(?s) )
              |
-             |?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/Project> .
+             |?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://bluebrain.github.io/nexus/vocabulary/Project> .
              |?s <${nexusBaseVoc}schema>/<${nexusBaseVoc}schemaGroup> <http://localhost/v0/bbp/experiment/subject> .
              |?s <${prov}wasDerivedFrom> <http://localhost/v0/bbp/experiment/subject/v0.1.0/073b4529-83a8-4776-a5a7-676624bfad90> .
              |?s <${nexusBaseVoc}rev> ?var_1 .
@@ -253,7 +253,7 @@ class FilteredQuerySpec extends WordSpecLike with Matchers with Resources with E
              |
              |<$thisId> ?p ?s .
              |
-             |?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/Project> .
+             |?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://bluebrain.github.io/nexus/vocabulary/Project> .
              |?s <${nexusBaseVoc}schema>/<${nexusBaseVoc}schemaGroup> <http://localhost/v0/bbp/experiment/subject> .
              |?s <${prov}wasDerivedFrom> <http://localhost/v0/bbp/experiment/subject/v0.1.0/073b4529-83a8-4776-a5a7-676624bfad90> .
              |?s <${nexusBaseVoc}rev> ?var_1 .
@@ -329,7 +329,7 @@ class FilteredQuerySpec extends WordSpecLike with Matchers with Resources with E
              |
              |?s ?p <$thisId> .
              |
-             |?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/Project> .
+             |?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://bluebrain.github.io/nexus/vocabulary/Project> .
              |?s <${nexusBaseVoc}schema>/<${nexusBaseVoc}schemaGroup> <http://localhost/v0/bbp/experiment/subject> .
              |?s <${prov}wasDerivedFrom> <http://localhost/v0/bbp/experiment/subject/v0.1.0/073b4529-83a8-4776-a5a7-676624bfad90> .
              |?s <${nexusBaseVoc}rev> ?var_1 .
@@ -397,7 +397,7 @@ class FilteredQuerySpec extends WordSpecLike with Matchers with Resources with E
       "filter with variables" in {
         val orgExprAncestors =
           ComparisonExpr(Eq,
-                         UriPath("https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/organization"),
+                         UriPath("https://bluebrain.github.io/nexus/vocabulary/organization"),
                          UriTerm("http://localhost/v0/org"))
 
         val domExpr1 = ComparisonExpr(Eq, SubjectPath, UriTerm(Uri("http://localhost/v0/org/dom")))
@@ -414,10 +414,10 @@ class FilteredQuerySpec extends WordSpecLike with Matchers with Resources with E
             |  WHERE {
             |
             |
-            |?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/Project> .
+            |?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://bluebrain.github.io/nexus/vocabulary/Project> .
             |
             |
-            |OPTIONAL { ?s <https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/organization> ?var_1 . }
+            |OPTIONAL { ?s <https://bluebrain.github.io/nexus/vocabulary/organization> ?var_1 . }
             |FILTER ( ?s = <http://localhost/v0/org/dom> || ?s = <http://localhost/v0/org/dom2> || ?var_1 = <http://localhost/v0/org> )
             |
             |

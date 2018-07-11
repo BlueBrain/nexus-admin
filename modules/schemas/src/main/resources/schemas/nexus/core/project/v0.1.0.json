@@ -4,7 +4,7 @@
       "@id": "http://schema.org/distribution"
     },
     "id": "@id",
-    "nxv": "https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/",
+    "nxv": "https://bluebrain.github.io/nexus/vocabulary/",
     "type": "@type",
     "links": {
       "@id": "nxv:links"

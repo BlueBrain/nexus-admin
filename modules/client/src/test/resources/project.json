@@ -2,6 +2,7 @@
   "@context": "https://nexus.example.com/v1/contexts/nexus/core/resource/v0.1.0",
   "@id": "http://localhost/v1/projects/orgname/projectname",
   "@type": "nxv:Project",
+  "label": "proj",
   "name": "projectname",
   "prefixMappings": [
     {

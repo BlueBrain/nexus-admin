@@ -17,7 +17,7 @@ class KafkaEventSpec extends WordSpecLike with Matchers with Inspectors with Res
     val meta     = Meta(UserRef("realm3", "alice"), Instant.parse("2018-06-25T17:01:06.249Z"))
     val base     = Iri.url("https://nexus.example.ch").right.value
     val mappings = Map(
-      "nxv"   -> Iri.url("https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/").right.value,
+      "nxv"   -> Iri.url("https://bluebrain.github.io/nexus/vocabulary/").right.value,
       "shacl" -> Iri.url("https://bluebrain.github.io/nexus/schemas/shacl").right.value
     )
     val orgCreated  = OrganizationValue("bbp")

@@ -96,7 +96,12 @@ object KafkaEvent {
     * @param meta       the metadata associated to this event
     * @param value      the payload of the organization
     */
-  final case class OrganizationCreated(id: String, label: String, uuid: String, rev: Long, meta: Meta, value: OrganizationValue)
+  final case class OrganizationCreated(id: String,
+                                       label: String,
+                                       uuid: String,
+                                       rev: Long,
+                                       meta: Meta,
+                                       value: OrganizationValue)
       extends KafkaEvent
 
   /**

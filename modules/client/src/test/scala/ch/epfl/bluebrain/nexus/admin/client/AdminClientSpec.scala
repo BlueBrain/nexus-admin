@@ -63,7 +63,13 @@ class AdminClientSpec
       )
       val rBase = Iri.absolute("http://localhost/v1/resources/").toOption.value
       val uuid  = "350df698-6813-11e8-adc0-fa7ae01bbebc"
-      adminClient.getProject(account, name).futureValue.value shouldEqual Project(name, pm, rBase, 3L, false, uuid)
+      adminClient.getProject(account, name).futureValue.value shouldEqual Project(name,
+                                                                                  "proj",
+                                                                                  pm,
+                                                                                  rBase,
+                                                                                  3L,
+                                                                                  false,
+                                                                                  uuid)
     }
 
     "return ACLs from upstream for an existing project" in {

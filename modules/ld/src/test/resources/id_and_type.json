@@ -1,7 +1,7 @@
 {
   "@context": {
     "dcterms": "http://purl.org/dc/terms/",
-    "nxv": "https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/",
+    "nxv": "https://bluebrain.github.io/nexus/vocabulary/",
     "owl": "http://www.w3.org/2002/07/owl#",
     "prov": "http://www.w3.org/ns/prov#",
     "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
@@ -48,7 +48,7 @@
     "id": "@id",
     "type": "@type",
     "_links": {
-      "@id": "https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/_links"
+      "@id": "https://bluebrain.github.io/nexus/vocabulary/_links"
     }
   },
   "id": "https://bbp-nexus.epfl.ch/dev/v0/contexts/nexus/core/distribution/v0.1.0",

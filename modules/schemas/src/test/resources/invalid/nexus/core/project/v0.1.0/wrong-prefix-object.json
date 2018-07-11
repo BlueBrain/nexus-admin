@@ -1,6 +1,6 @@
 {
   "@context": {
-    "nxv": "https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/",
+    "nxv": "https://bluebrain.github.io/nexus/vocabulary/",
     "name": {
       "@id": "nxv:name"
     },
@@ -30,8 +30,8 @@
   "description": "{desc}",
   "prefixMappings": [
     {
-      "prefix": {"nxv":"https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/"},
-      "namespace": "https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/"
+      "prefix": {"nxv":"https://bluebrain.github.io/nexus/vocabulary/"},
+      "namespace": "https://bluebrain.github.io/nexus/vocabulary/"
     },
     {
       "prefix": {"persons":"https://shapes-registry.org/commons/person"},
