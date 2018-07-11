@@ -7,14 +7,12 @@ import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
 import akka.stream.Materializer
 import ch.epfl.bluebrain.nexus.admin.client.config.AdminConfig
 import ch.epfl.bluebrain.nexus.admin.client.types.{Account, Project}
-import ch.epfl.bluebrain.nexus.admin.refined.project.ProjectReference
 import ch.epfl.bluebrain.nexus.commons.http.HttpClient.UntypedHttpClient
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport.unmarshaller
 import ch.epfl.bluebrain.nexus.commons.http.{HttpClient, UnexpectedUnsuccessfulHttpResponse}
 import ch.epfl.bluebrain.nexus.commons.types.HttpRejection.UnauthorizedAccess
 import ch.epfl.bluebrain.nexus.iam.client.types.Address._
 import ch.epfl.bluebrain.nexus.iam.client.types.{Address, AuthToken, FullAccessControlList}
-import eu.timepit.refined.auto._
 import io.circe.generic.auto._
 import journal.Logger
 import monix.eval.Task
@@ -31,10 +29,11 @@ trait AdminClient[F[_]] {
   /**
     * Retrieves a [[Project]] resource instance.
     *
-    * @param name        the project name
+    * @param account     the organization label
+    * @param project     the project label
     * @param credentials the optionally provided [[AuthToken]]
     */
-  def getProject(name: ProjectReference)(implicit credentials: Option[AuthToken]): F[Option[Project]]
+  def getProject(account: String, project: String)(implicit credentials: Option[AuthToken]): F[Option[Project]]
 
   /**
     * Retrieves a [[Account]] resource instance.
@@ -47,12 +46,13 @@ trait AdminClient[F[_]] {
   /**
     * Retrieves ACLs for a given project resource instance.
     *
-    * @param name        the project name
+    * @param account     the organization label
+    * @param project     the project label
     * @param parents     matches only the provided project ''path'' (false) or the parents also (true)
     * @param self        matches only the caller ''identities'' (false) or any identity which has the right own access (true)
     * @param credentials the optionally provided [[AuthToken]]
     */
-  def getProjectAcls(name: ProjectReference, parents: Boolean = false, self: Boolean = false)(
+  def getProjectAcls(account: String, project: String, parents: Boolean = false, self: Boolean = false)(
       implicit credentials: Option[AuthToken]): F[Option[FullAccessControlList]]
 
 }
@@ -77,9 +77,9 @@ object AdminClient {
 
     new AdminClient[Future] {
 
-      override def getProject(name: ProjectReference)(
+      override def getProject(account: String, project: String)(
           implicit credentials: Option[AuthToken]): Future[Option[Project]] = {
-        val path = "projects" / name.organizationReference.value / name.projectLabel
+        val path = "projects" / account / project
         projectClient(requestFrom(path)).map(Some.apply).recoverWith { case e => recover(e, path) }
       }
 
@@ -88,9 +88,9 @@ object AdminClient {
         accountClient(requestFrom(path)).map(Some.apply).recoverWith { case e => recover(e, path) }
       }
 
-      override def getProjectAcls(name: ProjectReference, parents: Boolean = false, self: Boolean = false)(
+      override def getProjectAcls(account: String, project: String, parents: Boolean = false, self: Boolean = false)(
           implicit credentials: Option[AuthToken]): Future[Option[FullAccessControlList]] = {
-        val path  = "projects" / name.organizationReference.value / name.projectLabel / "acls"
+        val path  = "projects" / account / project / "acls"
         val query = Query("parents" -> parents.toString, "self" -> self.toString)
         aclsClient(requestFrom(path, Some(query))).map(Some.apply).recoverWith { case e => recover(e, path) }
       }
@@ -137,15 +137,16 @@ object AdminClient {
     val underlying = future(config)
     new AdminClient[Task] {
 
-      override def getProject(name: ProjectReference)(implicit credentials: Option[AuthToken]): Task[Option[Project]] =
-        Task.deferFuture(underlying.getProject(name))
+      override def getProject(account: String, project: String)(
+          implicit credentials: Option[AuthToken]): Task[Option[Project]] =
+        Task.deferFuture(underlying.getProject(account, project))
 
       override def getAccount(name: String)(implicit credentials: Option[AuthToken]): Task[Option[Account]] =
         Task.deferFuture(underlying.getAccount(name))
 
-      override def getProjectAcls(name: ProjectReference, parents: Boolean, self: Boolean)(
+      override def getProjectAcls(account: String, project: String, parents: Boolean, self: Boolean)(
           implicit credentials: Option[AuthToken]): Task[Option[FullAccessControlList]] =
-        Task.deferFuture(underlying.getProjectAcls(name, parents, self))
+        Task.deferFuture(underlying.getProjectAcls(account, project, parents, self))
     }
 
   }

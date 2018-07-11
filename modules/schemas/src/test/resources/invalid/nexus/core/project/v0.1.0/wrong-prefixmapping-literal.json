@@ -1,6 +1,6 @@
 {
   "@context": {
-    "nxv": "https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/",
+    "nxv": "https://bluebrain.github.io/nexus/vocabulary/",
     "name": {
       "@id": "nxv:name"
     },
@@ -28,7 +28,7 @@
   "@type": "nxv:Project",
   "name": "{name}",
   "description": "{desc}",
-  "prefixMappings": "nxv:https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/",
+  "prefixMappings": "nxv:https://bluebrain.github.io/nexus/vocabulary/",
   "config": {
     "maxAttachmentSize": 10
   },

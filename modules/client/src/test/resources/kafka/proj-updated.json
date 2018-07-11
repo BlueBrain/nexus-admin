@@ -1,6 +1,7 @@
 {
   "type": "ProjectUpdated",
   "id": "https://nexus.example.ch/v1/projects/some-id",
+  "label": "some-other-id",
   "uuid": "ac9056c7-bedc-461f-8992-d17e994e39de",
   "parentUuid": "cc9056c7-bedc-461f-8992-d17e994e39de",
   "rev": 43,
@@ -17,7 +18,7 @@
     "prefixMappings": [
       {
         "prefix": "nxv",
-        "namespace": "https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/"
+        "namespace": "https://bluebrain.github.io/nexus/vocabulary/"
       },
       {
         "prefix": "shacl",

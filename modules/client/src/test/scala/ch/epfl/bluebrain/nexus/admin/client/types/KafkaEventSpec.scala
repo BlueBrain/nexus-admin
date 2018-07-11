@@ -17,7 +17,7 @@ class KafkaEventSpec extends WordSpecLike with Matchers with Inspectors with Res
     val meta     = Meta(UserRef("realm3", "alice"), Instant.parse("2018-06-25T17:01:06.249Z"))
     val base     = Iri.url("https://nexus.example.ch").right.value
     val mappings = Map(
-      "nxv"   -> Iri.url("https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/").right.value,
+      "nxv"   -> Iri.url("https://bluebrain.github.io/nexus/vocabulary/").right.value,
       "shacl" -> Iri.url("https://bluebrain.github.io/nexus/schemas/shacl").right.value
     )
     val orgCreated  = OrganizationValue("bbp")
@@ -35,11 +35,22 @@ class KafkaEventSpec extends WordSpecLike with Matchers with Inspectors with Res
                                                                   42L,
                                                                   meta,
                                                                   projCreated),
-      jsonContentOf("/kafka/proj-updated.json")    -> ProjectUpdated(projId, projUuid, orgUuid, 43L, meta, projUpdated),
+      jsonContentOf("/kafka/proj-updated.json") -> ProjectUpdated(projId,
+                                                                  "some-other-id",
+                                                                  projUuid,
+                                                                  orgUuid,
+                                                                  43L,
+                                                                  meta,
+                                                                  projUpdated),
       jsonContentOf("/kafka/proj-deprecated.json") -> ProjectDeprecated(projId, projUuid, orgUuid, 44L, meta),
-      jsonContentOf("/kafka/org-created.json")     -> OrganizationCreated(orgId, orgUuid, 1L, meta, orgCreated),
-      jsonContentOf("/kafka/org-updated.json")     -> OrganizationUpdated(orgId, orgUuid, 2L, meta, orgUpdated),
-      jsonContentOf("/kafka/org-deprecated.json")  -> OrganizationDeprecated(orgId, orgUuid, 3L, meta)
+      jsonContentOf("/kafka/org-created.json")     -> OrganizationCreated(orgId, "some", orgUuid, 1L, meta, orgCreated),
+      jsonContentOf("/kafka/org-updated.json") -> OrganizationUpdated(orgId,
+                                                                      "some-other",
+                                                                      orgUuid,
+                                                                      2L,
+                                                                      meta,
+                                                                      orgUpdated),
+      jsonContentOf("/kafka/org-deprecated.json") -> OrganizationDeprecated(orgId, orgUuid, 3L, meta)
     )
 
     "be decoded properly" in {

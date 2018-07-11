@@ -19,7 +19,7 @@ import ch.epfl.bluebrain.nexus.admin.query.QueryPayload
 import ch.epfl.bluebrain.nexus.admin.refined.ld.Id
 import ch.epfl.bluebrain.nexus.admin.refined.permissions._
 import ch.epfl.bluebrain.nexus.admin.refined.project._
-import ch.epfl.bluebrain.nexus.commons.http.JsonOps._
+import ch.epfl.bluebrain.nexus.commons.http.syntax.circe._
 import ch.epfl.bluebrain.nexus.commons.shacl.validator.{ImportResolver, ShaclValidator}
 import ch.epfl.bluebrain.nexus.commons.sparql.client.SparqlClient
 import ch.epfl.bluebrain.nexus.commons.types.search.QueryResult.ScoredQueryResult
@@ -237,8 +237,8 @@ class ProjectsSpec
                             |?matchedValue bds:rank ?pos .
                             |FILTER ( !isBlank(?s) )
                             |
-                            |?s <https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/_published> ?var_1 .
-                            |?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/Project> .
+                            |?s <https://bluebrain.github.io/nexus/vocabulary/_published> ?var_1 .
+                            |?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://bluebrain.github.io/nexus/vocabulary/Project> .
                             |FILTER ( ?var_1 = true )
                             |
                             |
@@ -300,8 +300,8 @@ class ProjectsSpec
            |?matchedValue bds:rank ?pos .
            |FILTER ( !isBlank(?s) )
            |
-           |?s <https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/_published> ?var_1 .
-           |?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/Project> .
+           |?s <https://bluebrain.github.io/nexus/vocabulary/_published> ?var_1 .
+           |?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://bluebrain.github.io/nexus/vocabulary/Project> .
            |FILTER ( ?var_1 = true )
            |
            |

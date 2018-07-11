@@ -50,7 +50,7 @@ object Const extends Resources {
   }
 
   //noinspection TypeAnnotation
-  object nxv extends IdRefBuilder("nxv", "https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/") {
+  object nxv extends IdRefBuilder("nxv", "https://bluebrain.github.io/nexus/vocabulary/") {
     val name           = build("name")
     val uuid           = build("_uuid")
     val base           = build("base")

@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.admin.service.encoders
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceEvent
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceEvent._
 import ch.epfl.bluebrain.nexus.admin.refined.ld.Id
-import ch.epfl.bluebrain.nexus.commons.http.JsonOps._
+import ch.epfl.bluebrain.nexus.commons.http.syntax.circe._
 import ch.epfl.bluebrain.nexus.commons.types.identity.Identity._
 import ch.epfl.bluebrain.nexus.commons.types.Meta
 import ch.epfl.bluebrain.nexus.service.kafka.key.Key

@@ -1,6 +1,6 @@
 {
   "@context": {
-    "nxv": "https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/",
+    "nxv": "https://bluebrain.github.io/nexus/vocabulary/",
     "name": {
       "@id": "nxv:name"
     },
@@ -30,7 +30,7 @@
   "description": "{desc}",
   "prefixMappings": [
     {
-      "namespace": "https://bbp-nexus.epfl.ch/vocabs/nexus/core/terms/v0.1.0/"
+      "namespace": "https://bluebrain.github.io/nexus/vocabulary/"
     },
     {
       "prefix": "persons",

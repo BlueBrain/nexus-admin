@@ -31,7 +31,7 @@ class TaggingAdapterSpec extends WordSpecLike with Matchers with Inspectors with
       ResourceCreated(id, label, UUID.randomUUID().toString, None, 1L, meta, Set("project", "other"), genJson()) -> Set(
         "project",
         "other"),
-      ResourceUpdated(id, UUID.randomUUID().toString, None, 2L, meta, Set("project", "one"), genJson()) -> Set(
+      ResourceUpdated(id, label, UUID.randomUUID().toString, None, 2L, meta, Set("project", "one"), genJson()) -> Set(
         "project",
         "one"),
       ResourceDeprecated(id, UUID.randomUUID().toString, None, 3L, meta, Set("project")) -> Set("project")
