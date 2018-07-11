@@ -13,7 +13,7 @@ import ch.epfl.bluebrain.nexus.admin.core.{Error, TestHelper}
 import ch.epfl.bluebrain.nexus.admin.ld.Const._
 import ch.epfl.bluebrain.nexus.admin.refined.project._
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport._
-import ch.epfl.bluebrain.nexus.commons.http.JsonOps._
+import ch.epfl.bluebrain.nexus.commons.http.syntax.circe._
 import ch.epfl.bluebrain.nexus.commons.http.RdfMediaTypes
 import ch.epfl.bluebrain.nexus.commons.types.HttpRejection.UnauthorizedAccess
 import eu.timepit.refined.auto._

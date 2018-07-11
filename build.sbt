@@ -42,10 +42,10 @@ val shapelessVersion                = "2.3.3"
 val sourcingVersion                 = "0.10.7"
 
 // Nexus dependency versions
-val serviceVersion = "0.10.13"
-val commonsVersion = "0.10.15"
-val iamVersion     = "0.1.20"
-val rdfVersion     = "0.2.3"
+val serviceVersion = "0.10.14"
+val commonsVersion = "0.10.16"
+val iamVersion     = "0.1.21"
+val rdfVersion     = "0.2.7"
 
 // Dependency modules
 lazy val akkaDistributed          = "com.typesafe.akka"       %% "akka-distributed-data"      % akkaVersion
@@ -74,6 +74,7 @@ lazy val refinedPureConfig = "eu.timepit" %% "refined-pureconfig" % refinedVersi
 
 // Nexus dependency modules
 lazy val commonsQueryTypes = "ch.epfl.bluebrain.nexus" %% "commons-query-types"   % commonsVersion
+lazy val commonsHttp           = "ch.epfl.bluebrain.nexus" %% "commons-http"            % commonsVersion
 lazy val commonsSchemas    = "ch.epfl.bluebrain.nexus" %% "commons-schemas"       % commonsVersion
 lazy val commonsTest       = "ch.epfl.bluebrain.nexus" %% "commons-test"          % commonsVersion
 lazy val iamClient         = "ch.epfl.bluebrain.nexus" %% "iam-client"            % iamVersion
@@ -146,6 +147,7 @@ lazy val ld = project
       commonsTest,
       jenaArq,
       shapeless,
+      commonsHttp % Test,
       scalaTest % Test,
       slf4j     % Test
     )

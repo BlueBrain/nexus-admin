@@ -4,11 +4,12 @@ import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.admin.ld.Const._
 import ch.epfl.bluebrain.nexus.admin.ld.JsonLD.{EmptyCursor, EmptyEffectBuilder, GraphCursor}
 import ch.epfl.bluebrain.nexus.admin.refined.ld._
+import ch.epfl.bluebrain.nexus.commons.http.syntax.circe._
 import ch.epfl.bluebrain.nexus.commons.test.Resources
 import eu.timepit.refined.auto._
 import io.circe.Json
 import org.scalatest.{Inspectors, Matchers, OptionValues, WordSpecLike}
-import ch.epfl.bluebrain.nexus.commons.http.JsonOps._
+
 class JsonLDSpec extends WordSpecLike with Matchers with Resources with OptionValues with Inspectors {
 
   "A JsonLD" should {
