@@ -59,8 +59,8 @@ object ResourceState {
       // $COVERAGE-ON$
       case (c: Current, _) if c.deprecated => c
       case (c, _: ResourceCreated)         => c
-      case (c: Current, ResourceUpdated(_, _, _, rev, meta, _, value)) =>
-        c.copy(rev = rev, meta = meta, value = value)
+      case (c: Current, ResourceUpdated(_, label, _, _, rev, meta, _, value)) =>
+        c.copy(label = label, rev = rev, meta = meta, value = value)
       case (c: Current, ResourceDeprecated(_, _, _, rev, meta, _)) =>
         c.copy(rev = rev, meta = meta, deprecated = true)
     }
@@ -83,7 +83,7 @@ object ResourceState {
       }
 
     def updateResourceAfter(state: Current, c: UpdateResource): Either[ResourceRejection, ResourceEvent] =
-      Right(ResourceUpdated(state.id, state.uuid, state.parentUuid, state.rev + 1, c.meta, c.tags, c.value))
+      Right(ResourceUpdated(state.id, c.label, state.uuid, state.parentUuid, state.rev + 1, c.meta, c.tags, c.value))
 
     def deprecateResource(state: ResourceState, c: DeprecateResource): Either[ResourceRejection, ResourceEvent] =
       state match {

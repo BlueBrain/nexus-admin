@@ -40,12 +40,13 @@ object ResourceCommand {
     * Command that signals the intent to update a resource payload.
     *
     * @param id    the identifier for the resource to be created
+    * @param label the label (segment) of the resource
     * @param rev   the last known revision of the resource
     * @param meta  the metadata associated to this command
     * @param tags  the tags added to the consequent [[ch.epfl.bluebrain.nexus.admin.core.resources.ResourceEvent]] which might be created as a result of this operation
     * @param value the json payload of the resource
     */
-  final case class UpdateResource(id: Id, rev: Long, meta: Meta, tags: Set[String], value: Json)
+  final case class UpdateResource(id: Id, label: String, rev: Long, meta: Meta, tags: Set[String], value: Json)
       extends ResourceCommand
       with Versioned
 

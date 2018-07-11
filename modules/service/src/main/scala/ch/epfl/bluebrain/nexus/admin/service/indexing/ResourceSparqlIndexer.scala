@@ -25,8 +25,8 @@ class ResourceSparqlIndexer[F[_]](client: SparqlClient[F]) {
       val createdAt = Json.obj(nxv.createdAtTime.value -> meta.instant.jsonLd)
       val data      = value deepMerge buildMeta(id, uuid, rev, meta, label = Some(label)) deepMerge createdAt deepMerge resourceContext
       client.replace(id.value, data)
-    case ResourceUpdated(id, uuid, _, rev, meta, _, value) =>
-      val data = value deepMerge buildMeta(id, uuid, rev, meta) deepMerge resourceContext
+    case ResourceUpdated(id, label, uuid, _, rev, meta, _, value) =>
+      val data = value deepMerge buildMeta(id, uuid, rev, meta, label = Some(label)) deepMerge resourceContext
       client.patch(id.value, data, PatchStrategy.removeButPredicates(Set(nxv.createdAtTime.value, nxv.label.value)))
     case ResourceDeprecated(id, uuid, _, rev, meta, _) =>
       val deprecated = Json.obj(nxv.deprecated.value -> Json.fromBoolean(true))

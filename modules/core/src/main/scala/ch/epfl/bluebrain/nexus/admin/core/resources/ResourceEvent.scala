@@ -44,6 +44,7 @@ object ResourceEvent {
     * Evidence that a resource has been updated.
     *
     * @param id         the unique identifier of the resource
+    * @param label      the label (segment) of the resource
     * @param uuid       the permanent identifier for the resource
     * @param parentUuid the permanent identifier for the parent resource, if any
     * @param rev        the revision number that this event generates
@@ -52,6 +53,7 @@ object ResourceEvent {
     * @param value the new json payload of the resource
     */
   final case class ResourceUpdated(id: Id,
+                                   label: String,
                                    uuid: String,
                                    parentUuid: Option[String],
                                    rev: Long,

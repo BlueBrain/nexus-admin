@@ -125,7 +125,7 @@ abstract class Resources[F[_], A: IdResolvable: PersistenceId: TypeFilterExpr](a
   def update(id: A, rev: Long, value: Json)(implicit caller: Caller): F[RefVersioned[A]] =
     for {
       _ <- validate(id, value)
-      r <- evaluate(UpdateResource(id, rev, caller.meta, tags + id.persistenceId, value),
+      r <- evaluate(UpdateResource(id, label(id), rev, caller.meta, tags + id.persistenceId, value),
                     id.persistenceId,
                     s"Update res '$id'")
     } yield RefVersioned(id, r.rev)
