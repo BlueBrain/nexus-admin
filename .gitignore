@@ -6,9 +6,12 @@
 *.exe
 *.o
 *.so
+native
 
 # Maven / SBT / Ant target #
 target/
+.bloop
+project/.bloop
 
 # IDE
 .settings
@@ -31,12 +34,12 @@ target/
 *.rar
 *.tar
 *.zip
-*.dylib
 
 # Logs and databases #
 ######################
 *.log.*
 *.sqlite
+**/data.mdb
 
 # OS generated files #
 ######################
@@ -51,7 +54,5 @@ Thumbs.db
 # Blazegraph generated files #
 ##############################
 bigdata.jnl
+blazegraph.jnl
 rules.log
-
-# libsigar downloads
-native/

@@ -29,9 +29,7 @@ class IdSpec extends WordSpecLike with Matchers with Randomness with Inspectors 
         "a/b/c/?asdas",
         "#$%^&*()",
         ""
-      ) ++ List.fill(100)(s"https://${genString(5, pool)}.local/${genString(5, pool)}/") ++ List
-        .fill(100)(s"https://${genString(5, pool)}.local/${genString(5, pool)}/${genString(5, pool)}#") ++ List
-        .fill(100)(s"https://${genString(5, pool)}.local/${genString(5, pool)}?${genString(5, pool)}")
+      )
 
       forAll(incorrect) { el =>
         val value = applyRef[Id](el)

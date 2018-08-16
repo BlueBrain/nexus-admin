@@ -1,16 +1,13 @@
 package ch.epfl.bluebrain.nexus.admin.refined
 
-import akka.http.scaladsl.model.Uri.Path.Segment
-import akka.http.scaladsl.model.Uri.Query
-import akka.http.scaladsl.model.{Uri => AkkaUri}
 import ch.epfl.bluebrain.nexus.admin.refined.ld.{AliasOrNamespacePredicate, Uri}
+import ch.epfl.bluebrain.nexus.rdf.Iri
+import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
 import eu.timepit.refined._
 import eu.timepit.refined.api.Inference.==>
 import eu.timepit.refined.api.RefType._
 import eu.timepit.refined.api.{Inference, Refined, Validate}
 import eu.timepit.refined.string.MatchesRegex
-
-import scala.util.Try
 
 @SuppressWarnings(Array("EmptyCaseClass"))
 object ld extends LdInferences with TypeableInstances {
@@ -44,30 +41,43 @@ object ld extends LdInferences with TypeableInstances {
 
   object Uri {
     private[ld] def unsafeDecompose(s: String): (Namespace, Reference) = {
-      val uri = AkkaUri(s)
-      if (!uri.isAbsolute) throw new IllegalArgumentException()
-      else
-        uri.query() match {
-          case Query.Empty =>
-            uri.fragment match {
-              case Some(fragment) if !fragment.isEmpty =>
-                val value: Namespace     = refinedRefType.unsafeWrap(s"${uri.withoutFragment}#")
-                val reference: Reference = refinedRefType.unsafeWrap(fragment)
-                value -> reference
-              case Some(_) => throw new IllegalArgumentException(s"The uri '$uri' contains an empty fragment")
-              case _ =>
-                uri.path.reverse match {
-                  case Segment(head, tail) =>
-                    val value: Namespace     = refinedRefType.unsafeWrap(uri.copy(path = tail.reverse).toString())
-                    val reference: Reference = refinedRefType.unsafeWrap(head)
-                    value -> reference
-                  case _ =>
-                    throw new IllegalArgumentException(s"The uri '$uri' contains has an invalid path '${uri.path}'")
-                }
-            }
-          case _ =>
-            throw new IllegalArgumentException(s"The uri '$uri' contains a query parameter '${uri.queryString()}'")
-        }
+      Iri.absolute(s) match {
+        case Right(url: Iri.Url) =>
+          url.query match {
+            case None =>
+              url.fragment match {
+                case Some(fragment) if fragment.value.nonEmpty =>
+                  val value: Namespace     = refinedRefType.unsafeWrap(url.copy(fragment = None).asString)
+                  val reference: Reference = refinedRefType.unsafeWrap(fragment.value)
+                  value -> reference
+                case Some(_) => throw new IllegalArgumentException(s"The URL '$url' contains an empty fragment")
+                case None =>
+                  url.path match {
+                    case Slash(Segment(head, tail)) =>
+                      val value: Namespace     = refinedRefType.unsafeWrap(url.copy(path = tail).asString)
+                      val reference: Reference = refinedRefType.unsafeWrap(head)
+                      value -> reference
+                    case Segment(head, tail) =>
+                      val value: Namespace     = refinedRefType.unsafeWrap(url.copy(path = tail).asString)
+                      val reference: Reference = refinedRefType.unsafeWrap(head)
+                      value -> reference
+                    case _ =>
+                      throw new IllegalArgumentException(s"The URL '$url' contains has an invalid path '${url.path}'")
+                  }
+              }
+            case Some(query) =>
+              throw new IllegalArgumentException(s"The URL '$url' contains a query parameter '${query.asString}'")
+          }
+        case Right(urn: Iri.Urn) =>
+          urn.fragment match {
+            case Some(fragment) if fragment.value.nonEmpty =>
+              val value: Namespace     = refinedRefType.unsafeWrap(urn.copy(fragment = None).asString)
+              val reference: Reference = refinedRefType.unsafeWrap(fragment.value)
+              value -> reference
+            case _ => throw new IllegalArgumentException(s"The URN '$urn' contains an empty fragment")
+          }
+        case Left(_) => throw new IllegalArgumentException(s"$s is not an IRI")
+      }
     }
 
     private[ld] def unsafeDecompose(s: String, namespace: Namespace): (Namespace, Reference) = {
@@ -120,24 +130,8 @@ object ld extends LdInferences with TypeableInstances {
   final case class PrefixUri()
 
   object PrefixUri {
-    final implicit def prefixUriValidate: Validate.Plain[String, PrefixUri] = {
-      def validPrefix(s: String): Boolean = {
-        akkaUri(s)
-          .map { uri =>
-            uri.query() match {
-              case Query.Empty =>
-                uri.fragment match {
-                  case Some(fragment) => fragment.isEmpty
-                  case None           => uri.path.endsWithSlash
-                }
-              case _ => false
-            }
-          }
-          .getOrElse(false)
-      }
-
-      Validate.fromPredicate(s => validPrefix(s), s => s"ValidPrefixUri($s)", PrefixUri())
-    }
+    final implicit def prefixUriValidate: Validate.Plain[String, PrefixUri] =
+      Validate.fromPredicate(s => Iri.absolute(s).isRight, s => s"ValidPrefixUri($s)", PrefixUri())
   }
 
   final case class AliasOrNamespacePredicate()
@@ -156,15 +150,10 @@ object ld extends LdInferences with TypeableInstances {
 
   object IRelativeRef {
     // TODO: support curie references defined as '"//" iauthority ipath-abempty'
-    final implicit def iRelativeRefValidate: Validate.Plain[String, IRelativeRef] = {
-      def validIRelativeRef(s: String): Boolean =
-        akkaUri(s"http://localhost/$s").map(_ => true).getOrElse(false)
-
-      Validate.fromPredicate(s => validIRelativeRef(s), s => s"ValidIRelativeRef($s)", IRelativeRef())
-    }
+    final implicit def iRelativeRefValidate: Validate.Plain[String, IRelativeRef] =
+      Validate.fromPredicate(s => Iri.relative(s).isRight, s => s"ValidIRelativeRef($s)", IRelativeRef())
   }
 
-  private[ld] def akkaUri(s: String): Try[AkkaUri] = Try(AkkaUri(s)).filter(_.isAbsolute)
 }
 
 trait LdInferences {
