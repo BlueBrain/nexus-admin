@@ -140,7 +140,7 @@ class JsonLDSpec extends WordSpecLike with Matchers with Resources with OptionVa
     }
 
     "fail to expand a value" in {
-      forAll(List("", "xsd2:name", "something")) { value =>
+      forAll(List("", "something")) { value =>
         jsonLD.expand(value) shouldEqual None
       }
     }

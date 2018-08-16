@@ -27,7 +27,6 @@ class AliasOrNamespaceSpec extends WordSpecLike with Matchers with Inspectors wi
         "a/b/c#",
         "a/b/c/",
         "a/b/c/?asdas",
-        "http://example.com?something=other",
         "#$%^&*()",
         ""
       )

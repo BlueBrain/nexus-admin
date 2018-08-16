@@ -23,10 +23,6 @@ class NamespaceSpec extends WordSpecLike with Matchers with Inspectors with Rand
     }
     "fail to construct" in {
       val incorrect = List(
-        "http://schema.org",
-        "http://schema.org?q=some",
-        "http://schema.org/one",
-        "http://schema.org/one#two",
         "../a",
         "a/b/c#",
         "a/b/c/",

@@ -13,7 +13,9 @@
     "instant": "2018-06-25T17:01:06.249Z"
   },
   "value": {
+    "@context": "http://schema.org/",
     "name": "example",
+    "description": "some optional description that should be ignored",
     "base": "https://nexus.example.ch",
     "prefixMappings": [
       {
@@ -23,6 +25,10 @@
       {
         "prefix": "shacl",
         "namespace": "https://bluebrain.github.io/nexus/schemas/shacl"
+      },
+      {
+        "prefix": "schema",
+        "namespace": "http://schema.org/"
       }
     ]
   }

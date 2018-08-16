@@ -23,6 +23,10 @@
       {
         "prefix": "shacl",
         "namespace": "https://bluebrain.github.io/nexus/schemas/shacl"
+      },
+      {
+        "prefix": "schema",
+        "namespace": "http://schema.org/"
       }
     ]
   }
