@@ -131,7 +131,7 @@ object ld extends LdInferences with TypeableInstances {
 
   object PrefixUri {
     final implicit def prefixUriValidate: Validate.Plain[String, PrefixUri] =
-      Validate.fromPredicate(isAbsoluteIri, s => s"ValidPrefixUri($s)", PrefixUri())
+      Validate.fromPredicate(s => Iri.absolute(s).isRight, s => s"ValidPrefixUri($s)", PrefixUri())
   }
 
   final case class AliasOrNamespacePredicate()
@@ -151,10 +151,9 @@ object ld extends LdInferences with TypeableInstances {
   object IRelativeRef {
     // TODO: support curie references defined as '"//" iauthority ipath-abempty'
     final implicit def iRelativeRefValidate: Validate.Plain[String, IRelativeRef] =
-      Validate.fromPredicate(s => isAbsoluteIri(s"http://localhost/$s"), s => s"ValidIRelativeRef($s)", IRelativeRef())
+      Validate.fromPredicate(s => Iri.relative(s).isRight, s => s"ValidIRelativeRef($s)", IRelativeRef())
   }
 
-  private[ld] def isAbsoluteIri(s: String): Boolean = Iri.absolute(s).isRight
 }
 
 trait LdInferences {

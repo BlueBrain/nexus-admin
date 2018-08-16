@@ -44,7 +44,7 @@ val sourcingVersion             = "0.10.7"
 val serviceVersion = "0.10.14"
 val commonsVersion = "0.10.16"
 val iamVersion     = "0.10.23"
-val rdfVersion     = "0.2.16"
+val rdfVersion     = "0.2.17"
 
 // Dependency modules
 lazy val akkaDistributed      = "com.typesafe.akka"       %% "akka-distributed-data"     % akkaVersion
