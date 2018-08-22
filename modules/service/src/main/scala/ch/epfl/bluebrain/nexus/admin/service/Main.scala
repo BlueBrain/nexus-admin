@@ -27,7 +27,6 @@ import ch.epfl.bluebrain.nexus.admin.service.routes.{OrganizationRoutes, Project
 import ch.epfl.bluebrain.nexus.commons.http.HttpClient
 import ch.epfl.bluebrain.nexus.commons.http.HttpClient._
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport._
-import ch.epfl.bluebrain.nexus.commons.shacl.validator.{ImportResolver, ShaclValidator}
 import ch.epfl.bluebrain.nexus.commons.sparql.client.BlazegraphClient
 import ch.epfl.bluebrain.nexus.iam.client.{IamClient, IamUri}
 import ch.epfl.bluebrain.nexus.service.http.directives.PrefixDirectives._
@@ -70,7 +69,6 @@ object Main {
     implicit val iamUri                            = IamUri(appConfig.iam.baseUri)
 
     implicit val iamC: IamClient[Future] = IamClient()
-    implicit val validator               = ShaclValidator(ImportResolver.noop[Future])
 
     val sourcingSettings = SourcingAkkaSettings(journalPluginId = appConfig.persistence.queryJournalPlugin)
 
@@ -161,11 +159,7 @@ object Main {
 
   private def initFunction(blazegraphClient: BlazegraphClient[Future])(
       implicit ec: ExecutionContext): () => Future[Unit] =
-    () =>
-      blazegraphClient.namespaceExists.flatMap {
-        case true  => Future.successful(())
-        case false => blazegraphClient.createNamespace(properties)
-    }
+    () => blazegraphClient.createNamespaceIfNotExist(properties).map(_ => ())
 
   private def startProjectsIndexer(blazegraphClient: BlazegraphClient[Future],
                                    config: PersistenceConfig)(implicit as: ActorSystem, ec: ExecutionContext): Unit = {

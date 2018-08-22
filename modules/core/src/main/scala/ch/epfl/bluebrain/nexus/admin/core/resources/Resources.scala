@@ -24,11 +24,14 @@ import ch.epfl.bluebrain.nexus.admin.refined.ld.Id
 import ch.epfl.bluebrain.nexus.admin.refined.ld.Uri._
 import ch.epfl.bluebrain.nexus.admin.refined.permissions._
 import ch.epfl.bluebrain.nexus.admin.refined.project.ProjectReference
-import ch.epfl.bluebrain.nexus.commons.shacl.validator.ShaclValidatorErr.{CouldNotFindImports, IllegalImportDefinition}
-import ch.epfl.bluebrain.nexus.commons.shacl.validator.{ShaclSchema, ShaclValidator}
+import ch.epfl.bluebrain.nexus.commons.shacl.topquadrant.ShaclEngine
 import ch.epfl.bluebrain.nexus.commons.sparql.client.SparqlClient
 import ch.epfl.bluebrain.nexus.commons.types.search.{Pagination, QueryResults}
 import ch.epfl.bluebrain.nexus.iam.client.Caller
+import ch.epfl.bluebrain.nexus.rdf.Graph
+import ch.epfl.bluebrain.nexus.rdf.circe.JenaModel.JenaModelErr
+import ch.epfl.bluebrain.nexus.rdf.syntax.circe._
+import ch.epfl.bluebrain.nexus.rdf.syntax.jena._
 import ch.epfl.bluebrain.nexus.sourcing.Aggregate
 import io.circe.Json
 import journal.Logger
@@ -48,13 +51,12 @@ abstract class Resources[F[_], A: IdResolvable: PersistenceId: TypeFilterExpr](a
                                                                                sparqlClient: SparqlClient[F])(
     implicit
     F: MonadError[F, Throwable],
-    validator: ShaclValidator[F],
     logger: Logger,
     clock: Clock) {
 
   def resourceType: IdRef
 
-  def resourceSchema: Json
+  def resourceSchema: Graph
 
   /**
     * Certain validation to perform on the payload.
@@ -66,15 +68,23 @@ abstract class Resources[F[_], A: IdResolvable: PersistenceId: TypeFilterExpr](a
   def validate(id: A, value: JsonLD): F[Unit] = {
     value.appendContext(resourceContext).add(rdf.tpe, resourceType).add(nxv.label, id.value).apply() match {
       case Some(merged) =>
-        validator(ShaclSchema(resourceSchema), merged)
-          .flatMap { report =>
-            if (report.conforms) F.pure(())
-            else F.raiseError[Unit](CommandRejected(ShapeConstraintViolations(report.result.map(_.reason))))
-          }
-          .recoverWith {
-            case CouldNotFindImports(missing)     => F.raiseError(CommandRejected(MissingImportsViolation(missing)))
-            case IllegalImportDefinition(missing) => F.raiseError(CommandRejected(IllegalImportsViolation(missing)))
-          }
+        merged.json.asGraph match {
+          case Right(graph) =>
+            ShaclEngine(graph.asJenaModel, resourceSchema.asJenaModel, validateShapes = false, reportDetails = false) match {
+              case Some(report) =>
+                if (report.isValid()) {
+                  F.pure(())
+                } else {
+                  F.raiseError(CommandRejected(ResourceValidationError))
+                }
+              case None =>
+                F.raiseError(CommandRejected(ResourceValidationError))
+            }
+          case Left(JenaModelErr.InvalidJsonLD(message)) =>
+            F.raiseError(CommandRejected(InvalidJsonLD(message)))
+          case Left(JenaModelErr.Unexpected(message)) =>
+            F.raiseError(Unexpected(message))
+        }
       case None => F.raiseError(Unexpected(s"Could not add @type to the payload '${value.json}'"))
     }
   }
@@ -176,6 +186,7 @@ abstract class Resources[F[_], A: IdResolvable: PersistenceId: TypeFilterExpr](a
 
   /**
     * List resources which meet criteria specified by query and pagination parameters
+    *
     * @param query      query specifying criteria for resources to return
     * @param pagination pagination
     * @return  list of resources

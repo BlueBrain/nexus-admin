@@ -68,7 +68,7 @@ class ProjectRoutesSpec
       setUpIamCalls(other.show)
       Put(s"/projects/${other.show}", genProjectValue().asJson.removeKeys("name")) ~> addCredentials(cred) ~> route ~> check {
         status shouldEqual StatusCodes.BadRequest
-        responseAs[Error].code shouldEqual classNameOf[ShapeConstraintViolations.type]
+        responseAs[Error].code shouldEqual classNameOf[ResourceValidationError.type]
       }
     }
 
@@ -209,7 +209,7 @@ class ProjectRoutesSpec
       val json = jsonUpdate.removeKeys("name")
       Put(s"/projects/${refUpdate.show}?rev=2", json) ~> addCredentials(cred) ~> route ~> check {
         status shouldEqual StatusCodes.BadRequest
-        responseAs[Error].code shouldEqual classNameOf[ShapeConstraintViolations.type]
+        responseAs[Error].code shouldEqual classNameOf[ResourceValidationError.type]
       }
     }
 
