@@ -70,12 +70,12 @@ abstract class Resources[F[_], A: IdResolvable: PersistenceId: TypeFilterExpr](a
       case Some(merged) =>
         merged.json.asGraph match {
           case Right(graph) =>
-            ShaclEngine(graph.asJenaModel, resourceSchema.asJenaModel, validateShapes = false, reportDetails = false) match {
+            ShaclEngine(graph.asJenaModel, resourceSchema.asJenaModel, validateShapes = false, reportDetails = true) match {
               case Some(report) =>
                 if (report.isValid()) {
                   F.pure(())
                 } else {
-                  F.raiseError(CommandRejected(ResourceValidationError))
+                  F.raiseError(CommandRejected(ResourceValidationFailed(report.json)))
                 }
               case None =>
                 F.raiseError(CommandRejected(ResourceValidationError))

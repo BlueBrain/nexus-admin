@@ -60,14 +60,15 @@ object ExceptionHandling {
     */
   private implicit val resourceStatusFrom: StatusFrom[ResourceRejection] =
     StatusFrom {
-      case IncorrectRevisionProvided  => Conflict
-      case ResourceAlreadyExists      => Conflict
-      case ResourceDoesNotExists      => NotFound
-      case ParentResourceDoesNotExist => NotFound
-      case ResourceIsDeprecated       => BadRequest
-      case ResourceValidationError    => BadRequest
-      case _: InvalidJsonLD           => BadRequest
-      case _: WrappedRejection        => BadRequest
+      case IncorrectRevisionProvided   => Conflict
+      case ResourceAlreadyExists       => Conflict
+      case ResourceDoesNotExists       => NotFound
+      case ParentResourceDoesNotExist  => NotFound
+      case ResourceIsDeprecated        => BadRequest
+      case ResourceValidationError     => BadRequest
+      case _: ResourceValidationFailed => BadRequest
+      case _: InvalidJsonLD            => BadRequest
+      case _: WrappedRejection         => BadRequest
     }
 
   private implicit val commonFrom: StatusFrom[CommonRejections] =

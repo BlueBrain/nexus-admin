@@ -57,6 +57,13 @@ class OrganizationRoutesSpec
       }
     }
 
+    "reject the creation of an organization without a name" in {
+      Put(s"/orgs/${id.value}", Json.obj()) ~> addCredentials(cred) ~> route ~> check {
+        status shouldEqual StatusCodes.BadRequest
+        responseAs[ValidationError].code shouldEqual classNameOf[ResourceValidationFailed.type]
+      }
+    }
+
     "return not found for missing project" in {
       val other = genOrgReference()
       setUpIamCalls(other.value)
@@ -128,5 +135,7 @@ class OrganizationRoutesSpec
     }
 
   }
+
+  case class ValidationError(code: String, report: Json, `@context`: String)
 
 }

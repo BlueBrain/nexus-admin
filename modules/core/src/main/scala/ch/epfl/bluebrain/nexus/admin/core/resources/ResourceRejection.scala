@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.admin.core.resources
 
 import ch.epfl.bluebrain.nexus.admin.core.CommonRejections
 import ch.epfl.bluebrain.nexus.commons.types.Rejection
+import io.circe.Json
 
 /**
   * Enumeration type for rejections returned when attempting to evaluate commands.
@@ -11,9 +12,16 @@ sealed trait ResourceRejection extends Rejection
 object ResourceRejection {
 
   /**
-    * Signals an error during the SHACL validation of a resource payload.
+    * Signals a non-specific error during the SHACL validation of a resource payload.
     */
   final case object ResourceValidationError extends ResourceRejection
+
+  /**
+    * Signals an error during the SHACL validation of a resource payload.
+    *
+    * @param report the detailed validation report output
+    */
+  final case class ResourceValidationFailed(report: Json) extends ResourceRejection
 
   /**
     * Signals an error while parsing a JSON-LD payload.
