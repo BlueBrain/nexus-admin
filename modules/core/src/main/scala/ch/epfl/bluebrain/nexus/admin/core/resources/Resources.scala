@@ -75,7 +75,7 @@ abstract class Resources[F[_], A: IdResolvable: PersistenceId: TypeFilterExpr](a
                 if (report.isValid()) {
                   F.pure(())
                 } else {
-                  F.raiseError(CommandRejected(ResourceValidationFailed(report.json)))
+                  F.raiseError(CommandRejected(ResourceValidationFailed(report)))
                 }
               case None =>
                 F.raiseError(CommandRejected(ResourceValidationError))

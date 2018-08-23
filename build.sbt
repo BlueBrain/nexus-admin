@@ -42,7 +42,7 @@ val sourcingVersion             = "0.10.7"
 
 // Nexus dependency versions
 val serviceVersion = "0.10.14"
-val commonsVersion = "0.10.20"
+val commonsVersion = "0.10.21"
 val iamVersion     = "0.10.23"
 val rdfVersion     = "0.2.18"
 
