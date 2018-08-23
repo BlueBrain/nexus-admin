@@ -8,9 +8,10 @@ import akka.stream.{ActorMaterializer, Materializer}
 import akka.testkit.TestKit
 import ch.epfl.bluebrain.nexus.admin.client.config.AdminConfig
 import ch.epfl.bluebrain.nexus.admin.client.types.{Account, Project}
+import ch.epfl.bluebrain.nexus.commons.http.syntax.circe._
 import ch.epfl.bluebrain.nexus.commons.http.HttpClient.UntypedHttpClient
 import ch.epfl.bluebrain.nexus.commons.http.UnexpectedUnsuccessfulHttpResponse
-import ch.epfl.bluebrain.nexus.commons.test.Resources.contentOf
+import ch.epfl.bluebrain.nexus.commons.test.Resources._
 import ch.epfl.bluebrain.nexus.commons.types.HttpRejection.UnauthorizedAccess
 import ch.epfl.bluebrain.nexus.iam.client.types.Identity.UserRef
 import ch.epfl.bluebrain.nexus.iam.client.types._
@@ -66,6 +67,31 @@ class AdminClientSpec
       adminClient.getProject(account, name).futureValue.value shouldEqual Project(name,
                                                                                   "proj",
                                                                                   pm,
+                                                                                  rBase,
+                                                                                  3L,
+                                                                                  false,
+                                                                                  uuid)
+    }
+
+    "decode a project without prefix mappings from upstream" in {
+      val name    = "projectname"
+      val account = "orgname"
+      val mockedResponse = Future.successful(
+        HttpResponse(
+          entity = HttpEntity(ContentTypes.`application/json`,
+                              jsonContentOf("/project.json").removeKeys("prefixMappings").noSpaces),
+          status = StatusCodes.OK
+        ))
+      implicit val credentials: Option[AuthToken] = Some(AuthToken("validToken"))
+      implicit val cl: UntypedHttpClient[Future] =
+        mockedClient(base.copy(path = base.path / "projects" / account / name), credentials, mockedResponse)
+      val adminClient = AdminClient.future(config)
+
+      val rBase = Iri.absolute("http://localhost/v1/resources/").toOption.value
+      val uuid  = "350df698-6813-11e8-adc0-fa7ae01bbebc"
+      adminClient.getProject(account, name).futureValue.value shouldEqual Project(name,
+                                                                                  "proj",
+                                                                                  Map.empty,
                                                                                   rBase,
                                                                                   3L,
                                                                                   false,

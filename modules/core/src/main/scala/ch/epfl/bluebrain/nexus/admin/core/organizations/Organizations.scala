@@ -11,9 +11,8 @@ import ch.epfl.bluebrain.nexus.admin.core.types.Ref._
 import ch.epfl.bluebrain.nexus.admin.ld.Const.{nxv, organizationSchema}
 import ch.epfl.bluebrain.nexus.admin.ld.IdRef
 import ch.epfl.bluebrain.nexus.admin.refined.organization.OrganizationReference
-import ch.epfl.bluebrain.nexus.commons.shacl.validator.ShaclValidator
 import ch.epfl.bluebrain.nexus.commons.sparql.client.SparqlClient
-import io.circe.Json
+import ch.epfl.bluebrain.nexus.rdf.Graph
 import journal.Logger
 
 class Organizations[F[_]](agg: Agg[F], sparqlClient: SparqlClient[F])(
@@ -21,7 +20,6 @@ class Organizations[F[_]](agg: Agg[F], sparqlClient: SparqlClient[F])(
     F: MonadError[F, Throwable],
     logger: Logger,
     clock: Clock,
-    validator: ShaclValidator[F],
     config: OrganizationsConfig,
     persistenceId: PersistenceId[OrganizationReference])
     extends Resources[F, OrganizationReference](agg, sparqlClient) {
@@ -32,7 +30,7 @@ class Organizations[F[_]](agg: Agg[F], sparqlClient: SparqlClient[F])(
 
   override val resourceType: IdRef = nxv.Organization
 
-  override val resourceSchema: Json = organizationSchema
+  override val resourceSchema: Graph = organizationSchema
 }
 
 object Organizations {
@@ -43,7 +41,6 @@ object Organizations {
 
   def apply[F[_]](agg: Agg[F], sparqlClient: SparqlClient[F])(implicit
                                                               F: MonadError[F, Throwable],
-                                                              validator: ShaclValidator[F],
                                                               config: OrganizationsConfig): Organizations[F] = {
 
     implicit val logger: Logger = Logger[this.type]

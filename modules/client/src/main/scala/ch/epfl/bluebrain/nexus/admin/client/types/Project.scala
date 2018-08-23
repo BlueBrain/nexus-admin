@@ -53,7 +53,7 @@ object Project {
       for {
         name  <- c.downField(nxv.name.reference.value).as[String]
         label <- c.downField(nxv.label.reference.value).as[String]
-        lpm   <- c.downField(nxv.prefixMappings.reference.value).as[List[LoosePrefixMapping]]
+        lpm      = c.downField(nxv.prefixMappings.reference.value).as[List[LoosePrefixMapping]].getOrElse(List.empty)
         mappings = lpm.flatMap(mappingToMapEntry).toMap
         baseString <- c.downField(nxv.base.reference.value).as[String]
         base       <- Iri.absolute(baseString).left.map(err => DecodingFailure(err, c.history))

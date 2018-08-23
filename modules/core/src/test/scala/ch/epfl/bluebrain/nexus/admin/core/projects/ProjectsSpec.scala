@@ -20,7 +20,6 @@ import ch.epfl.bluebrain.nexus.admin.refined.ld.Id
 import ch.epfl.bluebrain.nexus.admin.refined.permissions._
 import ch.epfl.bluebrain.nexus.admin.refined.project._
 import ch.epfl.bluebrain.nexus.commons.http.syntax.circe._
-import ch.epfl.bluebrain.nexus.commons.shacl.validator.{ImportResolver, ShaclValidator}
 import ch.epfl.bluebrain.nexus.commons.sparql.client.SparqlClient
 import ch.epfl.bluebrain.nexus.commons.types.search.QueryResult.ScoredQueryResult
 import ch.epfl.bluebrain.nexus.commons.types.search.QueryResults.ScoredQueryResults
@@ -65,13 +64,12 @@ class ProjectsSpec
     ProjectsConfig(3 seconds, "https://nexus.example.ch/v1/projects/", 100000L)
   private implicit val orgConfig: OrganizationsConfig =
     OrganizationsConfig(3 seconds, "https://nexus.example.ch/v1/orgs/")
-  private implicit val ex                             = system.dispatcher
-  private val orgsAggregate                           = MemoryAggregate("organizations")(Initial, next, Eval().apply).toF[Future]
-  private val aggProject                              = MemoryAggregate("projects")(Initial, next, Eval().apply).toF[Future]
-  private val cl                                      = mock[SparqlClient[Future]]
-  implicit val shaclValidator: ShaclValidator[Future] = ShaclValidator(ImportResolver.noop[Future])
-  private val organizations                           = Organizations(orgsAggregate, cl)
-  private val projects                                = Projects(organizations, aggProject, cl)
+  private implicit val ex   = system.dispatcher
+  private val orgsAggregate = MemoryAggregate("organizations")(Initial, next, Eval().apply).toF[Future]
+  private val aggProject    = MemoryAggregate("projects")(Initial, next, Eval().apply).toF[Future]
+  private val cl            = mock[SparqlClient[Future]]
+  private val organizations = Organizations(orgsAggregate, cl)
+  private val projects      = Projects(organizations, aggProject, cl)
 
   override implicit val patienceConfig: PatienceConfig =
     PatienceConfig(5 seconds, 100 milliseconds)
@@ -103,7 +101,7 @@ class ProjectsSpec
       organizations.create(id.organizationReference, orgValue).futureValue
       val rej =
         projects.create(id, value.asJson.removeKeys("name")).failed.futureValue.asInstanceOf[CommandRejected].rejection
-      rej shouldBe a[ResourceRejection.ShapeConstraintViolations]
+      rej shouldBe a[ResourceRejection.ResourceValidationFailed]
     }
 
     "prevent creating a project with organization that doesn't exist " in new Context {

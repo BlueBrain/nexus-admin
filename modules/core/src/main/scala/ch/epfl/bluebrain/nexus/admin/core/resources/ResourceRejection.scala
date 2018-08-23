@@ -1,20 +1,34 @@
 package ch.epfl.bluebrain.nexus.admin.core.resources
 
 import ch.epfl.bluebrain.nexus.admin.core.CommonRejections
+import ch.epfl.bluebrain.nexus.commons.shacl.topquadrant.ValidationReport
 import ch.epfl.bluebrain.nexus.commons.types.Rejection
 
 /**
   * Enumeration type for rejections returned when attempting to evaluate commands.
   */
 sealed trait ResourceRejection extends Rejection
+
 object ResourceRejection {
 
   /**
-    * Signals the failure to perform a resource modification due to payload shape constraint violations.
-    *
-    * @param violations the collections of violations that have occurred
+    * Signals a non-specific error during the SHACL validation of a resource payload.
     */
-  final case class ShapeConstraintViolations(violations: List[String]) extends ResourceRejection
+  final case object ResourceValidationError extends ResourceRejection
+
+  /**
+    * Signals an error during the SHACL validation of a resource payload.
+    *
+    * @param report the validation report output
+    */
+  final case class ResourceValidationFailed(report: ValidationReport) extends ResourceRejection
+
+  /**
+    * Signals an error while parsing a JSON-LD payload.
+    *
+    * @param message human readable error details
+    */
+  final case class InvalidJsonLD(message: String) extends ResourceRejection
 
   /**
     * Signals that a resource cannot be created because one with the same identifier already exists.
@@ -47,19 +61,5 @@ object ResourceRejection {
     * @param rejection the underlying rejections that was triggered
     */
   final case class WrappedRejection(rejection: CommonRejections) extends ResourceRejection
-
-  /**
-    * Signals the failure to perform a schema modification due to payload missing imports.
-    *
-    * @param imports the collections of imports that are not accepted
-    */
-  final case class MissingImportsViolation(imports: Set[String]) extends ResourceRejection
-
-  /**
-    * Signals the failure to perform a schema modification due to payload illegal imports.
-    *
-    * @param imports the collections of imports that are not accepted
-    */
-  final case class IllegalImportsViolation(imports: Set[String]) extends ResourceRejection
 
 }

@@ -3,8 +3,9 @@ package ch.epfl.bluebrain.nexus.admin.ld
 import java.util.regex.Pattern.quote
 
 import ch.epfl.bluebrain.nexus.commons.test.Resources
+import ch.epfl.bluebrain.nexus.rdf.Graph
+import ch.epfl.bluebrain.nexus.rdf.syntax.circe._
 import eu.timepit.refined.auto._
-import io.circe.Json
 
 // $COVERAGE-OFF$
 object Const extends Resources {
@@ -29,10 +30,17 @@ object Const extends Resources {
 
   val resourceContext: JsonLD = jsonContentOf("/resource-context.json").mapObject(_.remove("@id"))
 
-  val projectSchema: Json =
-    jsonContentOf("/schemas/nexus/core/project/v0.1.0.json", Map(quote("{{base}}") -> "https://bbp-nexus.epfl.ch"))
-  val organizationSchema: Json =
-    jsonContentOf("/schemas/nexus/core/organization/v0.1.0.json", Map(quote("{{base}}") -> "https://bbp-nexus.epfl.ch"))
+  val projectSchema: Graph =
+    jsonContentOf("/schemas/nexus/core/project/v0.1.0.json", Map(quote("{{base}}") -> "https://bbp-nexus.epfl.ch")).asGraph match {
+      case Right(g) => g
+      case Left(e)  => throw new Exception(s"Couldn't load project schema: $e")
+    }
+
+  val organizationSchema: Graph =
+    jsonContentOf("/schemas/nexus/core/organization/v0.1.0.json", Map(quote("{{base}}") -> "https://bbp-nexus.epfl.ch")).asGraph match {
+      case Right(g) => g
+      case Left(e)  => throw new Exception(s"Couldn't load organization schema: $e")
+    }
 
   //noinspection TypeAnnotation
   object rdf extends IdRefBuilder("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#") {

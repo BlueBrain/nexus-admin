@@ -12,7 +12,6 @@ import ch.epfl.bluebrain.nexus.admin.core.projects.Projects
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceState.{next, Eval, Initial}
 import ch.epfl.bluebrain.nexus.commons.http.HttpClient
 import ch.epfl.bluebrain.nexus.commons.http.HttpClient.UntypedHttpClient
-import ch.epfl.bluebrain.nexus.commons.shacl.validator.{ImportResolver, ShaclValidator}
 import ch.epfl.bluebrain.nexus.commons.sparql.client.SparqlClient
 import ch.epfl.bluebrain.nexus.iam.client.types.Identity._
 import ch.epfl.bluebrain.nexus.iam.client.types.Address._
@@ -73,9 +72,6 @@ trait AdminRoutesTestHelper extends WordSpecLike with ScalatestRouteTest with Mo
     when(cl.getCaller(filterGroups = true)).thenReturn(Future.successful(caller))
     when(cl.getAcls(Address(path), parents = true, self = true)).thenReturn(Future.successful(acl))
   }
-
-  private[routes] implicit def shaclValidator: ShaclValidator[Future] =
-    ShaclValidator(ImportResolver.noop[Future])
 
   private[routes] implicit val rs: HttpClient[Future, ResultSet] = {
     implicit val ucl: UntypedHttpClient[Future] = HttpClient.akkaHttpClient

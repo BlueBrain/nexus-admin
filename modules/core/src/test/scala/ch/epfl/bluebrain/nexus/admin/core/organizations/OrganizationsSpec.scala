@@ -8,14 +8,11 @@ import cats.instances.future._
 import ch.epfl.bluebrain.nexus.admin.core.Fault.CommandRejected
 import ch.epfl.bluebrain.nexus.admin.core.TestHelper
 import ch.epfl.bluebrain.nexus.admin.core.config.AppConfig.OrganizationsConfig
-import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceRejection
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceRejection._
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceState._
 import ch.epfl.bluebrain.nexus.admin.core.types.Ref._
 import ch.epfl.bluebrain.nexus.admin.core.types.RefVersioned
 import ch.epfl.bluebrain.nexus.admin.refined.organization.OrganizationReference
-import ch.epfl.bluebrain.nexus.commons.http.syntax.circe._
-import ch.epfl.bluebrain.nexus.commons.shacl.validator.{ImportResolver, ShaclValidator}
 import ch.epfl.bluebrain.nexus.commons.sparql.client.SparqlClient
 import ch.epfl.bluebrain.nexus.iam.client.Caller.AnonymousCaller
 import ch.epfl.bluebrain.nexus.sourcing.mem.MemoryAggregate
@@ -44,11 +41,10 @@ class OrganizationsSpec
   private implicit val caller = AnonymousCaller
   private implicit val config: OrganizationsConfig =
     OrganizationsConfig(3 seconds, "https://nexus.example.ch/v1/orgs/")
-  private implicit val ec                              = system.dispatcher
-  private val orgsAggregate                            = MemoryAggregate("organizations")(Initial, next, Eval().apply).toF[Future]
-  private val cl                                       = mock[SparqlClient[Future]]
-  implicit val schaclValidator: ShaclValidator[Future] = ShaclValidator(ImportResolver.noop[Future])
-  private val organizations                            = Organizations(orgsAggregate, cl)
+  private implicit val ec   = system.dispatcher
+  private val orgsAggregate = MemoryAggregate("organizations")(Initial, next, Eval().apply).toF[Future]
+  private val cl            = mock[SparqlClient[Future]]
+  private val organizations = Organizations(orgsAggregate, cl)
 
   override implicit val patienceConfig: PatienceConfig = PatienceConfig(5 seconds, 100 milliseconds)
 
@@ -68,12 +64,13 @@ class OrganizationsSpec
     }
 
     "prevent creating an organization without a name" in new Context {
+      val noname = Json.obj()
       organizations
-        .create(id, value.removeKeys("name"))
+        .create(id, noname)
         .failed
         .futureValue
         .asInstanceOf[CommandRejected]
-        .rejection shouldBe a[ResourceRejection.ShapeConstraintViolations]
+        .rejection shouldBe a[ResourceValidationFailed]
     }
     "update an organization" in new Context {
       organizations.create(id, value).futureValue shouldEqual RefVersioned(id, 1L)
