@@ -101,7 +101,7 @@ class ProjectsSpec
       organizations.create(id.organizationReference, orgValue).futureValue
       val rej =
         projects.create(id, value.asJson.removeKeys("name")).failed.futureValue.asInstanceOf[CommandRejected].rejection
-      rej shouldEqual ResourceRejection.ResourceValidationError
+      rej shouldBe a[ResourceRejection.ResourceValidationFailed]
     }
 
     "prevent creating a project with organization that doesn't exist " in new Context {

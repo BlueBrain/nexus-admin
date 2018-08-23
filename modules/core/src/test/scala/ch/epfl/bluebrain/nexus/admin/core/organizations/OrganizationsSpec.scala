@@ -70,7 +70,7 @@ class OrganizationsSpec
         .failed
         .futureValue
         .asInstanceOf[CommandRejected]
-        .rejection shouldEqual ResourceValidationError
+        .rejection shouldBe a[ResourceValidationFailed]
     }
     "update an organization" in new Context {
       organizations.create(id, value).futureValue shouldEqual RefVersioned(id, 1L)
