@@ -103,7 +103,8 @@ lazy val docs = project
     paradoxProperties in Compile ++= Map("extref.service.base_url" -> "../"),
     target in (Compile, paradox) := (resourceManaged in Compile).value / "docs",
     resourceGenerators in Compile += {
-      (paradox in Compile).map { parent => (parent ** "*").get
+      (paradox in Compile).map { parent =>
+        (parent ** "*").get
       }.taskValue
     }
   )
