@@ -38,6 +38,7 @@ class Projects[F[_]](organizations: Organizations[F], agg: Agg[F], sparqlClient:
     logger: Logger,
     clock: Clock,
     config: ProjectsConfig,
+    persConfig: PersistenceConfig,
     persistenceId: PersistenceId[ProjectReference])
     extends Resources[F, ProjectReference](agg, sparqlClient) {
 
@@ -66,7 +67,7 @@ class Projects[F[_]](organizations: Organizations[F], agg: Agg[F], sparqlClient:
     } yield RefVersioned(id, r.rev)
   }
 
-  override val tags: Set[String] = Set("project")
+  override val tags: Set[String] = Set("project", persConfig.defaultTag)
 
   override val resourceType: IdRef = nxv.Project
 
@@ -85,15 +86,18 @@ object Projects {
     * Constructs a new ''Projects'' instance that bundles operations that can be performed against projects using the
     * underlying persistence abstraction.
     *
-    * @param organizations  organizations operation bundle
-    * @param agg    the aggregate definition
-    * @param F      a MonadError typeclass instance for ''F[_]''
-    * @param config the project specific settings
+    * @param organizations organizations operation bundle
+    * @param agg           the aggregate definition
+    * @param F             a MonadError typeclass instance for ''F[_]''
+    * @param config        the project specific settings
+    * @param persConfig    the persistence specific settings
     * @tparam F the monadic effect type
     */
   final def apply[F[_]](organizations: Organizations[F], agg: Agg[F], sparqlClient: SparqlClient[F])(
       implicit F: MonadError[F, Throwable],
-      config: ProjectsConfig): Projects[F] = {
+      config: ProjectsConfig,
+      persConfig: PersistenceConfig,
+  ): Projects[F] = {
     implicit val logger: Logger = Logger[this.type]
     new Projects[F](organizations, agg, sparqlClient)
   }

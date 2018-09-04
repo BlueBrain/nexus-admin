@@ -21,12 +21,13 @@ class Organizations[F[_]](agg: Agg[F], sparqlClient: SparqlClient[F])(
     logger: Logger,
     clock: Clock,
     config: OrganizationsConfig,
+    persConfig: PersistenceConfig,
     persistenceId: PersistenceId[OrganizationReference])
     extends Resources[F, OrganizationReference](agg, sparqlClient) {
 
   override def label(id: OrganizationReference): String = id.value
 
-  override val tags: Set[String] = Set("organization")
+  override val tags: Set[String] = Set("organization", persConfig.defaultTag)
 
   override val resourceType: IdRef = nxv.Organization
 
@@ -41,7 +42,8 @@ object Organizations {
 
   def apply[F[_]](agg: Agg[F], sparqlClient: SparqlClient[F])(implicit
                                                               F: MonadError[F, Throwable],
-                                                              config: OrganizationsConfig): Organizations[F] = {
+                                                              config: OrganizationsConfig,
+                                                              persConfig: PersistenceConfig): Organizations[F] = {
 
     implicit val logger: Logger = Logger[this.type]
     new Organizations[F](agg, sparqlClient)

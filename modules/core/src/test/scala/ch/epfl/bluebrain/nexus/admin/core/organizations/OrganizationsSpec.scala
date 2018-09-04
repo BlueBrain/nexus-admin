@@ -7,7 +7,7 @@ import akka.testkit.{DefaultTimeout, TestKit}
 import cats.instances.future._
 import ch.epfl.bluebrain.nexus.admin.core.Fault.CommandRejected
 import ch.epfl.bluebrain.nexus.admin.core.TestHelper
-import ch.epfl.bluebrain.nexus.admin.core.config.AppConfig.OrganizationsConfig
+import ch.epfl.bluebrain.nexus.admin.core.config.AppConfig.{OrganizationsConfig, PersistenceConfig}
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceRejection._
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceState._
 import ch.epfl.bluebrain.nexus.admin.core.types.Ref._
@@ -41,6 +41,8 @@ class OrganizationsSpec
   private implicit val caller = AnonymousCaller
   private implicit val config: OrganizationsConfig =
     OrganizationsConfig(3 seconds, "https://nexus.example.ch/v1/orgs/")
+  private implicit val persConfig: PersistenceConfig =
+    PersistenceConfig("cassandra-journal", "cassandra-snapshot-store", "cassandra-query-journal", "event")
   private implicit val ec   = system.dispatcher
   private val orgsAggregate = MemoryAggregate("organizations")(Initial, next, Eval().apply).toF[Future]
   private val cl            = mock[SparqlClient[Future]]

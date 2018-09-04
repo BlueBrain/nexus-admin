@@ -17,10 +17,8 @@ import ch.epfl.bluebrain.nexus.admin.core.config.AppConfig._
 import ch.epfl.bluebrain.nexus.admin.core.config.Settings
 import ch.epfl.bluebrain.nexus.admin.core.organizations.Organizations
 import ch.epfl.bluebrain.nexus.admin.core.projects.Projects
-import ch.epfl.bluebrain.nexus.commons.sparql.client.SparqlCirceSupport.sparqlResultsUnmarshaller
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceEvent
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceState.{next, Eval, Initial}
-import ch.epfl.bluebrain.nexus.admin.service.encoders.kafka._
 import ch.epfl.bluebrain.nexus.admin.service.indexing.ResourceSparqlIndexer
 import ch.epfl.bluebrain.nexus.admin.service.routes.Proxy.AkkaStream
 import ch.epfl.bluebrain.nexus.admin.service.routes.{OrganizationRoutes, ProjectAclRoutes, ProjectRoutes, StaticRoutes}
@@ -28,6 +26,7 @@ import ch.epfl.bluebrain.nexus.commons.http.HttpClient
 import ch.epfl.bluebrain.nexus.commons.http.HttpClient._
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport._
 import ch.epfl.bluebrain.nexus.commons.sparql.client.BlazegraphClient
+import ch.epfl.bluebrain.nexus.commons.sparql.client.SparqlCirceSupport.sparqlResultsUnmarshaller
 import ch.epfl.bluebrain.nexus.iam.client.{IamClient, IamUri}
 import ch.epfl.bluebrain.nexus.service.http.directives.PrefixDirectives._
 import ch.epfl.bluebrain.nexus.service.http.routes.StaticResourceRoutes
@@ -38,7 +37,6 @@ import ch.megard.akka.http.cors.scaladsl.CorsDirectives.{cors, corsRejectionHand
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 import com.github.jsonldjava.core.DocumentLoader
 import com.typesafe.config.ConfigFactory
-import io.circe.generic.extras.auto._
 import io.circe.{Encoder, Json}
 import kamon.Kamon
 import kamon.system.SystemMetrics
@@ -114,7 +112,9 @@ object Main {
 
       startProjectsIndexer(blazegraphClient, appConfig.persistence)
 
-      startKafkaIndexers(appConfig.kafka.topics, appConfig.persistence.queryJournalPlugin)
+      startKafkaIndexer(appConfig.kafka.topic,
+                        appConfig.persistence.queryJournalPlugin,
+                        appConfig.persistence.defaultTag)
 
       val routes: Route =
         handleRejections(corsRejectionHandler)(cors(corsSettings)(staticRoutes ~ staticResourceRoutes ~ api))
@@ -159,7 +159,7 @@ object Main {
 
   private def initFunction(blazegraphClient: BlazegraphClient[Future])(
       implicit ec: ExecutionContext): () => Future[Unit] =
-    () => blazegraphClient.createNamespaceIfNotExist(properties).map(_ => ())
+    () => blazegraphClient.createNamespace(properties).map(_ => ())
 
   private def startProjectsIndexer(blazegraphClient: BlazegraphClient[Future],
                                    config: PersistenceConfig)(implicit as: ActorSystem, ec: ExecutionContext): Unit = {
@@ -174,17 +174,16 @@ object Main {
     ()
   }
 
-  private def startKafkaIndexers(topics: Set[String], queryJournalPlugin: String)(implicit as: ActorSystem) = {
+  private def startKafkaIndexer(topic: String, queryJournalPlugin: String, tag: String)(implicit as: ActorSystem) = {
+    import ch.epfl.bluebrain.nexus.admin.service.encoders.kafka._
     val producerSettings = ProducerSettings(as, new StringSerializer, new StringSerializer)
-    topics.foreach { topic =>
-      implicit val encoder: Encoder[ResourceEvent] = resourceEventEncoder(topic)
-      KafkaPublisher.startTagStream[ResourceEvent](s"${topic}s-to-kafka",
-                                                   queryJournalPlugin,
-                                                   topic,
-                                                   s"kafka-$topic-publisher",
-                                                   producerSettings,
-                                                   topic)
-    }
+    KafkaPublisher.startTagStream[ResourceEvent](s"${topic}-to-kafka",
+                                                 queryJournalPlugin,
+                                                 tag,
+                                                 s"kafka-$topic-publisher",
+                                                 producerSettings,
+                                                 topic)
+
   }
 }
 // $COVERAGE-ON$

@@ -76,7 +76,10 @@ object AppConfig {
   }
   final case class SparqlCredentials(username: String, password: String)
 
-  final case class PersistenceConfig(journalPlugin: String, snapshotStorePlugin: String, queryJournalPlugin: String)
+  final case class PersistenceConfig(journalPlugin: String,
+                                     snapshotStorePlugin: String,
+                                     queryJournalPlugin: String,
+                                     defaultTag: String)
 
   final case class OrgConfig(name: String)
 
@@ -103,7 +106,7 @@ object AppConfig {
     val keys: OrderedKeys = OrderedKeys(responseKeys)
   }
 
-  final case class KafkaConfig(topics: Set[String])
+  final case class KafkaConfig(topic: String)
 
   implicit def prefixesFromImplicit(implicit appConfig: AppConfig): PrefixesConfig = appConfig.prefixes
 
@@ -111,7 +114,8 @@ object AppConfig {
 
   implicit def descriptionFromImplicit(implicit appConfig: AppConfig): DescriptionConfig = appConfig.description
 
-  implicit def projectsConfigFromImplicit(implicit appConfig: AppConfig): ProjectsConfig = appConfig.projects
+  implicit def projectsConfigFromImplicit(implicit appConfig: AppConfig): ProjectsConfig       = appConfig.projects
+  implicit def persistenceConfigFromImplicit(implicit appConfig: AppConfig): PersistenceConfig = appConfig.persistence
   implicit def organizationsConfigFromImplicit(implicit appConfig: AppConfig): OrganizationsConfig =
     appConfig.organizations
 

@@ -21,27 +21,28 @@ object kafka {
 
   private implicit val metaEncoder: Encoder[Meta] = deriveEncoder[Meta]
 
+  private def prefix(event: ResourceEvent): String =
+    if (event.parentUuid.isDefined) "Project" else "Organization"
+
   /**
     * Explicitly constructs a Circe encoder for resource events to be published to Kafka.
     *
-    * @param resourceType the resource type literal tag, e.g. "project" or "organization"
     */
-  def resourceEventEncoder(resourceType: String): Encoder[ResourceEvent] = {
-    val prefix      = resourceType.capitalize
+  implicit val resourceEventEncoder: Encoder[ResourceEvent] = {
     val baseEncoder = deriveEncoder[ResourceEvent]
     Encoder.encodeJson.contramap[ResourceEvent] {
       case rc: ResourceCreated =>
         baseEncoder(rc)
           .removeKeys("tags")
-          .deepMerge(Json.obj("type" -> Json.fromString(s"${prefix}Created")))
+          .deepMerge(Json.obj("type" -> Json.fromString(s"${prefix(rc)}Created")))
       case ru: ResourceUpdated =>
         baseEncoder(ru)
           .removeKeys("tags")
-          .deepMerge(Json.obj("type" -> Json.fromString(s"${prefix}Updated")))
+          .deepMerge(Json.obj("type" -> Json.fromString(s"${prefix(ru)}Updated")))
       case rd: ResourceDeprecated =>
         baseEncoder(rd)
           .removeKeys("tags")
-          .deepMerge(Json.obj("type" -> Json.fromString(s"${prefix}Deprecated")))
+          .deepMerge(Json.obj("type" -> Json.fromString(s"${prefix(rd)}Deprecated")))
     }
   }
 
