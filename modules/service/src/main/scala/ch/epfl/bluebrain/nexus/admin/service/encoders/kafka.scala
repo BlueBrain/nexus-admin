@@ -46,5 +46,7 @@ object kafka {
     }
   }
 
-  implicit val resourceEventKey: Key[ResourceEvent] = Key.key(_.uuid)
+  implicit val resourceEventKey: Key[ResourceEvent] = Key.key { e =>
+    e.parentUuid.getOrElse(e.uuid)
+  }
 }
