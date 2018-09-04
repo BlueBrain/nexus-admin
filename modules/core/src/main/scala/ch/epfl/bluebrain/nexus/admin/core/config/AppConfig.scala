@@ -114,7 +114,8 @@ object AppConfig {
 
   implicit def descriptionFromImplicit(implicit appConfig: AppConfig): DescriptionConfig = appConfig.description
 
-  implicit def projectsConfigFromImplicit(implicit appConfig: AppConfig): ProjectsConfig = appConfig.projects
+  implicit def projectsConfigFromImplicit(implicit appConfig: AppConfig): ProjectsConfig       = appConfig.projects
+  implicit def persistenceConfigFromImplicit(implicit appConfig: AppConfig): PersistenceConfig = appConfig.persistence
   implicit def organizationsConfigFromImplicit(implicit appConfig: AppConfig): OrganizationsConfig =
     appConfig.organizations
 

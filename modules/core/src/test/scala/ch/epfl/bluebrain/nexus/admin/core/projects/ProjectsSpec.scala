@@ -8,7 +8,7 @@ import cats.instances.future._
 import cats.syntax.show._
 import ch.epfl.bluebrain.nexus.admin.core.Fault.CommandRejected
 import ch.epfl.bluebrain.nexus.admin.core.TestHelper
-import ch.epfl.bluebrain.nexus.admin.core.config.AppConfig.{OrganizationsConfig, ProjectsConfig}
+import ch.epfl.bluebrain.nexus.admin.core.config.AppConfig.{OrganizationsConfig, PersistenceConfig, ProjectsConfig}
 import ch.epfl.bluebrain.nexus.admin.core.organizations.Organizations
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceRejection._
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceState._
@@ -64,6 +64,8 @@ class ProjectsSpec
     ProjectsConfig(3 seconds, "https://nexus.example.ch/v1/projects/", 100000L)
   private implicit val orgConfig: OrganizationsConfig =
     OrganizationsConfig(3 seconds, "https://nexus.example.ch/v1/orgs/")
+  private implicit val persConfig: PersistenceConfig =
+    PersistenceConfig("cassandra-journal", "cassandra-snapshot-store", "cassandra-query-journal", "event")
   private implicit val ex   = system.dispatcher
   private val orgsAggregate = MemoryAggregate("organizations")(Initial, next, Eval().apply).toF[Future]
   private val aggProject    = MemoryAggregate("projects")(Initial, next, Eval().apply).toF[Future]
