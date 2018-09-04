@@ -12,6 +12,7 @@ sealed trait ResourceEvent extends Product with Serializable with Versioned {
 
   def id: Id
   def uuid: String
+  def parentUuid: Option[String]
   def meta: Meta
   def tags: Set[String]
 }

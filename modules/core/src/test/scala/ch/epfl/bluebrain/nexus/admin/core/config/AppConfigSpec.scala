@@ -34,7 +34,8 @@ class AppConfigSpec extends WordSpecLike with Matchers with ScalatestRouteTest {
 
       appConfig.persistence shouldEqual PersistenceConfig("cassandra-journal",
                                                           "cassandra-snapshot-store",
-                                                          "cassandra-query-journal")
+                                                          "cassandra-query-journal",
+                                                          "event")
 
       val projectConfig = ProjectsConfig(10 minutes, "http://127.0.0.1:8080/v1/projects/", 100000L)
       appConfig.projects shouldEqual projectConfig
@@ -60,7 +61,7 @@ class AppConfigSpec extends WordSpecLike with Matchers with ScalatestRouteTest {
       appConfig.order.keys shouldEqual OrderedKeys(orderConfig.responseKeys)
       implicitly[OrderedKeys] shouldEqual OrderedKeys(orderConfig.responseKeys)
 
-      val kafkaConfig = KafkaConfig(Set("project", "organization"))
+      val kafkaConfig = KafkaConfig("admin-events")
       kafkaConfig shouldEqual appConfig.kafka
     }
   }
