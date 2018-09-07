@@ -26,15 +26,15 @@ scalafmt: {
 
 // Dependency versions
 val akkaVersion                 = "2.5.16"
-val akkaHttpVersion             = "10.1.4"
+val akkaHttpVersion             = "10.1.5"
 val akkaHttpCorsVersion         = "0.3.0"
 val akkaPersistenceInMemVersion = "2.5.1.1"
-val catsVersion                 = "1.2.0"
+val catsVersion                 = "1.3.1"
 val circeVersion                = "0.9.3"
-val jenaVersion                 = "3.7.0"
+val jenaVersion                 = "3.8.0"
 val mockitoVersion              = "2.21.0"
 val monixVersion                = "3.0.0-RC1"
-val pureconfigVersion           = "0.9.1"
+val pureconfigVersion           = "0.9.2"
 val refinedVersion              = "0.9.2"
 val scalaTestVersion            = "3.0.5"
 val shapelessVersion            = "2.3.3"
@@ -42,7 +42,7 @@ val sourcingVersion             = "0.10.7"
 
 // Nexus dependency versions
 val serviceVersion = "0.10.15"
-val commonsVersion = "0.10.26"
+val commonsVersion = "0.10.27"
 val iamVersion     = "0.10.23"
 val rdfVersion     = "0.2.18"
 

@@ -3,12 +3,18 @@ package ch.epfl.bluebrain.nexus.admin.core.projects
 import java.util
 
 import akka.actor.ActorSystem
+import akka.http.scaladsl.model.Uri
 import akka.testkit.{DefaultTimeout, TestKit}
 import cats.instances.future._
 import cats.syntax.show._
 import ch.epfl.bluebrain.nexus.admin.core.Fault.CommandRejected
 import ch.epfl.bluebrain.nexus.admin.core.TestHelper
-import ch.epfl.bluebrain.nexus.admin.core.config.AppConfig.{OrganizationsConfig, PersistenceConfig, ProjectsConfig}
+import ch.epfl.bluebrain.nexus.admin.core.config.AppConfig.{
+  HttpConfig,
+  OrganizationsConfig,
+  PersistenceConfig,
+  ProjectsConfig
+}
 import ch.epfl.bluebrain.nexus.admin.core.organizations.Organizations
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceRejection._
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceState._
@@ -66,6 +72,9 @@ class ProjectsSpec
     OrganizationsConfig(3 seconds, "https://nexus.example.ch/v1/orgs/")
   private implicit val persConfig: PersistenceConfig =
     PersistenceConfig("cassandra-journal", "cassandra-snapshot-store", "cassandra-query-journal", "event")
+  private implicit val httpConfig: HttpConfig =
+    HttpConfig("127.0.0.1", 8080, "v1", Uri("http://127.0.0.1:8080"))
+
   private implicit val ex   = system.dispatcher
   private val orgsAggregate = MemoryAggregate("organizations")(Initial, next, Eval().apply).toF[Future]
   private val aggProject    = MemoryAggregate("projects")(Initial, next, Eval().apply).toF[Future]
@@ -96,7 +105,19 @@ class ProjectsSpec
       proj.deprecated shouldEqual false
       proj.rev shouldEqual 1L
       proj.value shouldEqual value
+    }
 
+    "create a new project without base" in new Context {
+      organizations.create(id.organizationReference, orgValue).futureValue
+      projects.create(id, value.removeKeys("base")).futureValue shouldEqual RefVersioned(id, 1L)
+
+      val proj = projects.fetch(id).futureValue.get
+      proj.id.value shouldEqual id
+      proj.uuid should fullyMatch regex """[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"""
+      proj.deprecated shouldEqual false
+      proj.rev shouldEqual 1L
+      proj.value shouldEqual (value deepMerge Json.obj(
+        "base" -> Json.fromString(s"${httpConfig.apiUri}/${id.organizationReference.value}/${id.projectLabel.value}/")))
     }
 
     "prevent creating a project without a name" in new Context {

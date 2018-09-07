@@ -5,7 +5,6 @@ import java.util.UUID
 
 import cats.MonadError
 import cats.syntax.all._
-import ch.epfl.bluebrain.nexus.admin.core.syntax.caller._
 import ch.epfl.bluebrain.nexus.admin.core.config.AppConfig._
 import ch.epfl.bluebrain.nexus.admin.core.organizations.Organizations
 import ch.epfl.bluebrain.nexus.admin.core.persistence.PersistenceId
@@ -13,14 +12,18 @@ import ch.epfl.bluebrain.nexus.admin.core.persistence.PersistenceId._
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceCommand.CreateResource
 import ch.epfl.bluebrain.nexus.admin.core.resources.Resources.Agg
 import ch.epfl.bluebrain.nexus.admin.core.resources._
+import ch.epfl.bluebrain.nexus.admin.core.syntax.caller._
 import ch.epfl.bluebrain.nexus.admin.core.types.Ref._
 import ch.epfl.bluebrain.nexus.admin.core.types.RefVersioned
 import ch.epfl.bluebrain.nexus.admin.ld.Const._
+import ch.epfl.bluebrain.nexus.admin.ld.JsonLD._
 import ch.epfl.bluebrain.nexus.admin.ld.{IdRef, JsonLD}
 import ch.epfl.bluebrain.nexus.admin.refined.project._
 import ch.epfl.bluebrain.nexus.commons.sparql.client.SparqlClient
 import ch.epfl.bluebrain.nexus.iam.client.Caller
 import ch.epfl.bluebrain.nexus.rdf.Graph
+import ch.epfl.bluebrain.nexus.service.http.Path._
+import ch.epfl.bluebrain.nexus.service.http.UriOps._
 import io.circe.Json
 import journal.Logger
 
@@ -39,6 +42,7 @@ class Projects[F[_]](organizations: Organizations[F], agg: Agg[F], sparqlClient:
     clock: Clock,
     config: ProjectsConfig,
     persConfig: PersistenceConfig,
+    http: HttpConfig,
     persistenceId: PersistenceId[ProjectReference])
     extends Resources[F, ProjectReference](agg, sparqlClient) {
 
@@ -56,16 +60,33 @@ class Projects[F[_]](organizations: Organizations[F], agg: Agg[F], sparqlClient:
 
   override def label(id: ProjectReference): String = id.projectLabel.value
 
+  private def addBaseIfNotPresent(id: ProjectReference, value: Json): Json = {
+    lazy val baseUri = http.apiUri.append(id.organizationReference.value / id.projectLabel.value).toString() + "/"
+    value.hcursor.get[String](nxv.base.reference.value) match {
+      case Left(_) => value deepMerge Json.obj(nxv.base.reference.value -> Json.fromString(baseUri))
+      case _       => value
+    }
+  }
+
   override def create(id: ProjectReference, value: Json)(implicit caller: Caller): F[RefVersioned[ProjectReference]] = {
+    val finalJson = addBaseIfNotPresent(id, value)
     for {
-      _       <- validate(id, value)
+      _       <- validate(id, finalJson)
       orgUuid <- organizations.fetch(id.organizationReference).map(_.map(_.uuid))
-      r <- evaluate(
-        CreateResource(id, label(id), UUID.randomUUID.toString, orgUuid, caller.meta, tags + id.persistenceId, value),
-        id.persistenceId,
-        s"Create project '$id'")
+      r <- evaluate(CreateResource(id,
+                                   label(id),
+                                   UUID.randomUUID.toString,
+                                   orgUuid,
+                                   caller.meta,
+                                   tags + id.persistenceId,
+                                   finalJson),
+                    id.persistenceId,
+                    s"Create project '$id'")
     } yield RefVersioned(id, r.rev)
   }
+
+  override def update(id: ProjectReference, rev: Long, value: Json)(implicit caller: Caller) =
+    super.update(id, rev, addBaseIfNotPresent(id, value))
 
   override val tags: Set[String] = Set("project", persConfig.defaultTag)
 
@@ -97,6 +118,7 @@ object Projects {
       implicit F: MonadError[F, Throwable],
       config: ProjectsConfig,
       persConfig: PersistenceConfig,
+      http: HttpConfig,
   ): Projects[F] = {
     implicit val logger: Logger = Logger[this.type]
     new Projects[F](organizations, agg, sparqlClient)
