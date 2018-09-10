@@ -12,7 +12,7 @@ import scala.util.Try
 
 object organization extends OrganizationInferences {
 
-  type OrganizationReferencePredicate = MatchesRegex[W.`"[a-zA-Z0-9-_]{3,16}"`.T]
+  type OrganizationReferencePredicate = MatchesRegex[W.`"[a-zA-Z0-9-_]{3,32}"`.T]
   type OrganizationReference          = String Refined OrganizationReferencePredicate
 
   type OrganizationId = Id Refined OrganizationUri

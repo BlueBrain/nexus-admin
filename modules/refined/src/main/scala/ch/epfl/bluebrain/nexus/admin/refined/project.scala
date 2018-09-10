@@ -12,7 +12,7 @@ import eu.timepit.refined.string.MatchesRegex
 
 object project extends ProjectInferences {
 
-  type ProjectLabelPredicate = MatchesRegex[W.`"[a-zA-Z0-9-_]{3,16}"`.T]
+  type ProjectLabelPredicate = MatchesRegex[W.`"[a-zA-Z0-9-_]{3,32}"`.T]
   type ProjectLabel          = String Refined ProjectLabelPredicate
 
   case class ProjectReference(organizationReference: OrganizationReference, projectLabel: ProjectLabel)
@@ -28,7 +28,7 @@ object project extends ProjectInferences {
     */
   implicit class ProjectReferenceSyntax(value: Id) {
 
-    private val projectReferencePattern = "([a-zA-Z0-9-_]{3,16})/([a-zA-Z0-9-_]{3,16})".r
+    private val projectReferencePattern = "([a-zA-Z0-9-_]{3,32})/([a-zA-Z0-9-_]{3,32})".r
 
     /**
       * Try to extract [[ProjectReference]] from [[Id]]

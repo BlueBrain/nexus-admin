@@ -30,7 +30,7 @@ class OrganizationIdSpec extends WordSpecLike with Matchers with Randomness with
     }
 
     "fail to construct when organization reference is not valid" in {
-      val invalidOrganizationReference = genString(17)
+      val invalidOrganizationReference = genString(34)
       val invalidId                    = applyRef[Id](s"https://nexus.example.com/orgs/$invalidOrganizationReference").toOption.get
       applyRef[OrganizationId](invalidId).left.value shouldEqual s"ValidConvertibleOrganizationUri predicate failed: $invalidOrganizationReference in ${invalidId.value} is not a valid OrganizationReference"
 
