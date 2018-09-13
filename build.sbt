@@ -41,10 +41,10 @@ val shapelessVersion            = "2.3.3"
 val sourcingVersion             = "0.10.7"
 
 // Nexus dependency versions
-val serviceVersion = "0.10.15"
+val serviceVersion = "0.10.16"
 val commonsVersion = "0.10.27"
 val iamVersion     = "0.10.24"
-val rdfVersion     = "0.2.18"
+val rdfVersion     = "0.2.19"
 
 // Dependency modules
 lazy val akkaDistributed      = "com.typesafe.akka"       %% "akka-distributed-data"       % akkaVersion
