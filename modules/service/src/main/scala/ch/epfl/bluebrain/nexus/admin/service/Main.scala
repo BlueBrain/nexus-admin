@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.admin.service
 
+import java.nio.file.Paths
 import java.util.Properties
 
 import akka.actor.{ActorSystem, AddressFromURIString}
@@ -36,7 +37,7 @@ import ch.epfl.bluebrain.nexus.sourcing.akka.{ShardingAggregate, SourcingAkkaSet
 import ch.megard.akka.http.cors.scaladsl.CorsDirectives.{cors, corsRejectionHandler}
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 import com.github.jsonldjava.core.DocumentLoader
-import com.typesafe.config.ConfigFactory
+import com.typesafe.config.{Config, ConfigFactory}
 import io.circe.{Encoder, Json}
 import kamon.Kamon
 import kamon.system.SystemMetrics
@@ -52,13 +53,27 @@ import scala.util.{Failure, Success}
 // $COVERAGE-OFF$
 object Main {
 
-  @SuppressWarnings(Array("UnusedMethodParameter"))
-  def main(args: Array[String]): Unit = {
+  def loadConfig(): Config = {
+    val cfg = sys.env.get("ADMIN_CONFIG_FILE") orElse sys.props.get("admin.config.file") map { str =>
+      val file = Paths.get(str).toAbsolutePath.toFile
+      ConfigFactory.parseFile(file)
+    } getOrElse ConfigFactory.empty()
+    (cfg withFallback ConfigFactory.load()).resolve()
+  }
+
+  def setupMonitoring(config: Config): Unit = {
+    Kamon.reconfigure(config)
     SystemMetrics.startCollecting()
     Kamon.loadReportersFromConfig()
-    val config             = ConfigFactory.load()
-    implicit val appConfig = new Settings(config).appConfig
+  }
 
+  @SuppressWarnings(Array("UnusedMethodParameter"))
+  def main(args: Array[String]): Unit = {
+    val config = loadConfig()
+
+    setupMonitoring(config)
+
+    implicit val appConfig                         = new Settings(config).appConfig
     implicit val as: ActorSystem                   = ActorSystem(appConfig.description.actorSystemName, config)
     implicit val ec: ExecutionContext              = as.dispatcher
     implicit val mt: ActorMaterializer             = ActorMaterializer()
