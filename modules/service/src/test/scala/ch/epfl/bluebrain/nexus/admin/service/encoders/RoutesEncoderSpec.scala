@@ -8,7 +8,6 @@ import org.scalatest.{Matchers, WordSpecLike}
 import eu.timepit.refined.api.RefType.applyRef
 import io.circe.{Encoder, Json, Printer}
 import io.circe.syntax._
-import io.circe.refined._
 
 class RoutesEncoderSpec extends WordSpecLike with Matchers with Randomness {
 

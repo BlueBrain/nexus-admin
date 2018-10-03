@@ -37,7 +37,7 @@ final class OrganizationRoutes(organizations: Organizations[Future])(implicit ia
 
   private def readRoutes(implicit credentials: Option[AuthToken]): Route =
     (segment(of[OrganizationReference]) & pathEndOrSingleSlash) { name =>
-      (get & authorizeOn[HasReadOrganizations](name.value)) { implicit perms =>
+      (get & authorizeOn[HasReadOrganizations](name.value)) { _ =>
         parameter('rev.as[Long].?) {
           case Some(rev) =>
             trace("getOrgRev") {
@@ -67,13 +67,13 @@ final class OrganizationRoutes(organizations: Organizations[Future])(implicit ia
         authCaller.apply { implicit caller =>
           parameter('rev.as[Long].?) {
             case Some(rev) =>
-              (trace("updateProject") & authorizeOn[HasWriteOrganizations](name.value)) { implicit perms =>
+              (trace("updateProject") & authorizeOn[HasWriteOrganizations](name.value)) { _ =>
                 onSuccess(organizations.update(name, rev, json)) { ref =>
                   complete(StatusCodes.OK -> ref)
                 }
               }
             case None =>
-              (trace("createProject") & authorizeOn[HasCreateOrganizations](name.value)) { implicit perms =>
+              (trace("createProject") & authorizeOn[HasCreateOrganizations](name.value)) { _ =>
                 onSuccess(organizations.create(name, json)) { ref =>
                   complete(StatusCodes.Created -> ref)
                 }
@@ -84,7 +84,7 @@ final class OrganizationRoutes(organizations: Organizations[Future])(implicit ia
         delete {
           parameter('rev.as[Long]) { rev =>
             authCaller.apply { implicit caller =>
-              (trace("deprecateProject") & authorizeOn[HasWriteOrganizations](name.value)) { implicit perms =>
+              (trace("deprecateProject") & authorizeOn[HasWriteOrganizations](name.value)) { _ =>
                 onSuccess(organizations.deprecate(name, rev)) { ref =>
                   complete(StatusCodes.OK -> ref)
                 }
