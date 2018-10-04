@@ -92,23 +92,6 @@ lazy val akkaHttpCors      = "ch.megard"               %% "akka-http-cors"      
 
 // Projects
 
-lazy val docs = project
-  .in(file("docs"))
-  .enablePlugins(ParadoxPlugin)
-  .settings(common)
-  .settings(
-    name                         := "admin-docs",
-    moduleName                   := "admin-docs",
-    paradoxTheme                 := Some(builtinParadoxTheme("generic")),
-    paradoxProperties in Compile ++= Map("extref.service.base_url" -> "../"),
-    target in (Compile, paradox) := (resourceManaged in Compile).value / "docs",
-    resourceGenerators in Compile += {
-      (paradox in Compile).map { parent =>
-        (parent ** "*").get
-      }.taskValue
-    }
-  )
-
 lazy val refinements = project
   .in(file("modules/refined"))
   .settings(
@@ -204,7 +187,7 @@ lazy val core = project
 lazy val service = project
   .in(file("modules/service"))
   .enablePlugins(ServicePackagingPlugin)
-  .dependsOn(core % testAndCompile, docs)
+  .dependsOn(core % testAndCompile)
   .settings(
     common,
     commonTestSettings,
@@ -252,7 +235,7 @@ lazy val root = project
     moduleName            := "admin",
     coverageFailOnMinimum := false
   )
-  .aggregate(docs, refinements, ld, query, core, service, client, schemas)
+  .aggregate(refinements, ld, query, core, service, client, schemas)
 
 /* ********************************************************
  ******************** Grouped Settings ********************
