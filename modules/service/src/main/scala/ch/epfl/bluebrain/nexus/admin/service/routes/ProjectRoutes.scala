@@ -53,7 +53,7 @@ final class ProjectRoutes(projects: Projects[Future])(implicit iamClient: IamCli
   import encoders._
   private def readRoutes(implicit credentials: Option[AuthToken]): Route =
     (projectReference & pathEndOrSingleSlash) { name =>
-      (get & authorizeOn[HasReadProjects](name.show)) { implicit perms =>
+      (get & authorizeOn[HasReadProjects](name.show)) { _ =>
         parameter('rev.as[Long].?) {
           case Some(rev) =>
             trace("getProjectRev") {
@@ -79,13 +79,13 @@ final class ProjectRoutes(projects: Projects[Future])(implicit iamClient: IamCli
         authCaller.apply { implicit caller =>
           parameter('rev.as[Long].?) {
             case Some(rev) =>
-              (trace("updateProject") & authorizeOn[HasWriteProjects](name.show)) { implicit perms =>
+              (trace("updateProject") & authorizeOn[HasWriteProjects](name.show)) { _ =>
                 onSuccess(projects.update(name, rev, json)) { ref =>
                   complete(StatusCodes.OK -> ref)
                 }
               }
             case None =>
-              (trace("createProject") & authorizeOn[HasCreateProjects](name.show)) { implicit perms =>
+              (trace("createProject") & authorizeOn[HasCreateProjects](name.show)) { _ =>
                 onSuccess(projects.create(name, json)) { ref =>
                   complete(StatusCodes.Created -> ref)
                 }
@@ -96,7 +96,7 @@ final class ProjectRoutes(projects: Projects[Future])(implicit iamClient: IamCli
         delete {
           parameter('rev.as[Long]) { rev =>
             authCaller.apply { implicit caller =>
-              (trace("deprecateProject") & authorizeOn[HasWriteProjects](name.show)) { implicit perms =>
+              (trace("deprecateProject") & authorizeOn[HasWriteProjects](name.show)) { _ =>
                 onSuccess(projects.deprecate(name, rev)) { ref =>
                   complete(StatusCodes.OK -> ref)
                 }

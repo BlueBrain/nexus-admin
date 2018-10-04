@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.admin.service.routes
 
-import akka.http.scaladsl.model.headers.{`Content-Type`, Location}
-import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
+import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import ch.epfl.bluebrain.nexus.admin.core.config.AppConfig.DescriptionConfig
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport._
@@ -20,20 +19,6 @@ class StaticRoutesSpec extends WordSpecLike with Matchers with ScalatestRouteTes
         status shouldEqual StatusCodes.OK
         responseAs[Json] shouldEqual Json.obj("name"    -> Json.fromString(descConfig.name),
                                               "version" -> Json.fromString(descConfig.version))
-      }
-    }
-
-    "redirect docs/admin to docs/admin/" in {
-      Get("/docs/admin") ~> routes ~> check {
-        status shouldEqual StatusCodes.MovedPermanently
-        response.header[Location].value.uri.path.toString shouldEqual "/docs/admin/"
-      }
-    }
-
-    "return documentation/" in {
-      Get("/docs/admin/") ~> routes ~> check {
-        status shouldEqual StatusCodes.OK
-        response.header[`Content-Type`].value.contentType shouldEqual ContentTypes.`text/html(UTF-8)`
       }
     }
   }

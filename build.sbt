@@ -25,26 +25,26 @@ scalafmt: {
  */
 
 // Dependency versions
-val akkaVersion                 = "2.5.16"
+val akkaVersion                 = "2.5.17"
 val akkaHttpVersion             = "10.1.5"
-val akkaHttpCorsVersion         = "0.3.0"
+val akkaHttpCorsVersion         = "0.3.1"
 val akkaPersistenceInMemVersion = "2.5.1.1"
 val catsVersion                 = "1.3.1"
-val circeVersion                = "0.9.3"
+val circeVersion                = "0.10.0"
 val jenaVersion                 = "3.8.0"
-val mockitoVersion              = "2.21.0"
+val mockitoVersion              = "2.22.0"
 val monixVersion                = "3.0.0-RC1"
 val pureconfigVersion           = "0.9.2"
 val refinedVersion              = "0.9.2"
 val scalaTestVersion            = "3.0.5"
 val shapelessVersion            = "2.3.3"
-val sourcingVersion             = "0.10.7"
 
 // Nexus dependency versions
-val serviceVersion = "0.10.16"
-val commonsVersion = "0.10.27"
-val iamVersion     = "0.10.24"
-val rdfVersion     = "0.2.19"
+val serviceVersion  = "0.10.17"
+val sourcingVersion = "0.10.8"
+val commonsVersion  = "0.10.31"
+val iamVersion      = "0.10.27"
+val rdfVersion      = "0.2.21"
 
 // Dependency modules
 lazy val akkaDistributed      = "com.typesafe.akka"       %% "akka-distributed-data"       % akkaVersion
@@ -91,23 +91,6 @@ lazy val rdfJena           = "ch.epfl.bluebrain.nexus" %% "rdf-jena"            
 lazy val akkaHttpCors      = "ch.megard"               %% "akka-http-cors"        % akkaHttpCorsVersion
 
 // Projects
-
-lazy val docs = project
-  .in(file("docs"))
-  .enablePlugins(ParadoxPlugin)
-  .settings(common)
-  .settings(
-    name                         := "admin-docs",
-    moduleName                   := "admin-docs",
-    paradoxTheme                 := Some(builtinParadoxTheme("generic")),
-    paradoxProperties in Compile ++= Map("extref.service.base_url" -> "../"),
-    target in (Compile, paradox) := (resourceManaged in Compile).value / "docs",
-    resourceGenerators in Compile += {
-      (paradox in Compile).map { parent =>
-        (parent ** "*").get
-      }.taskValue
-    }
-  )
 
 lazy val refinements = project
   .in(file("modules/refined"))
@@ -204,7 +187,7 @@ lazy val core = project
 lazy val service = project
   .in(file("modules/service"))
   .enablePlugins(ServicePackagingPlugin)
-  .dependsOn(core % testAndCompile, docs)
+  .dependsOn(core % testAndCompile)
   .settings(
     common,
     commonTestSettings,
@@ -252,7 +235,7 @@ lazy val root = project
     moduleName            := "admin",
     coverageFailOnMinimum := false
   )
-  .aggregate(docs, refinements, ld, query, core, service, client, schemas)
+  .aggregate(refinements, ld, query, core, service, client, schemas)
 
 /* ********************************************************
  ******************** Grouped Settings ********************
