@@ -15,7 +15,7 @@ import akka.kafka.ProducerSettings
 import akka.stream.ActorMaterializer
 import cats.instances.future._
 import ch.epfl.bluebrain.nexus.admin.core.config.AppConfig._
-import ch.epfl.bluebrain.nexus.admin.core.config.Settings
+import ch.epfl.bluebrain.nexus.admin.core.config.{AppConfig, Settings}
 import ch.epfl.bluebrain.nexus.admin.core.organizations.Organizations
 import ch.epfl.bluebrain.nexus.admin.core.projects.Projects
 import ch.epfl.bluebrain.nexus.admin.core.resources.ResourceEvent
@@ -31,7 +31,7 @@ import ch.epfl.bluebrain.nexus.commons.sparql.client.SparqlCirceSupport.sparqlRe
 import ch.epfl.bluebrain.nexus.iam.client.{IamClient, IamUri}
 import ch.epfl.bluebrain.nexus.service.http.directives.PrefixDirectives._
 import ch.epfl.bluebrain.nexus.service.http.routes.StaticResourceRoutes
-import ch.epfl.bluebrain.nexus.service.indexer.persistence.SequentialTagIndexer
+import ch.epfl.bluebrain.nexus.service.indexer.persistence.{IndexerConfig, SequentialTagIndexer}
 import ch.epfl.bluebrain.nexus.service.kafka.KafkaPublisher
 import ch.epfl.bluebrain.nexus.sourcing.akka.{ShardingAggregate, SourcingAkkaSettings}
 import ch.megard.akka.http.cors.scaladsl.CorsDirectives.{cors, corsRejectionHandler}
@@ -41,12 +41,13 @@ import com.typesafe.config.{Config, ConfigFactory}
 import io.circe.{Encoder, Json}
 import kamon.Kamon
 import kamon.system.SystemMetrics
+import monix.eval.Task
 import org.apache.jena.query.ResultSet
 import org.apache.kafka.common.serialization.StringSerializer
-
+import monix.execution.Scheduler.Implicits.global
 import scala.collection.JavaConverters._
 import scala.concurrent.duration._
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.{Await, Future}
 import scala.util.{Failure, Success}
 
 //noinspection TypeAnnotation
@@ -75,7 +76,6 @@ object Main {
 
     implicit val appConfig                         = new Settings(config).appConfig
     implicit val as: ActorSystem                   = ActorSystem(appConfig.description.actorSystemName, config)
-    implicit val ec: ExecutionContext              = as.dispatcher
     implicit val mt: ActorMaterializer             = ActorMaterializer()
     implicit val cl: UntypedHttpClient[Future]     = HttpClient.akkaHttpClient
     implicit val rs: HttpClient[Future, ResultSet] = HttpClient.withAkkaUnmarshaller[ResultSet]
@@ -125,7 +125,7 @@ object Main {
         .withAllowedMethods(List(GET, PUT, POST, DELETE, OPTIONS, HEAD))
         .withExposedHeaders(List(Location.name))
 
-      startProjectsIndexer(blazegraphClient, appConfig.persistence)
+      startProjectsIndexer(blazegraphClient, appConfig)
 
       startKafkaIndexer(appConfig.kafka.topic,
                         appConfig.persistence.queryJournalPlugin,
@@ -172,33 +172,42 @@ object Main {
     props.asScala.toMap
   }
 
-  private def initFunction(blazegraphClient: BlazegraphClient[Future])(
-      implicit ec: ExecutionContext): () => Future[Unit] =
+  private def initFunction(blazegraphClient: BlazegraphClient[Future]): () => Future[Unit] =
     () => blazegraphClient.createNamespace(properties).map(_ => ())
 
-  private def startProjectsIndexer(blazegraphClient: BlazegraphClient[Future],
-                                   config: PersistenceConfig)(implicit as: ActorSystem, ec: ExecutionContext): Unit = {
+  private def startProjectsIndexer(blazegraphClient: BlazegraphClient[Future], config: AppConfig)(
+      implicit as: ActorSystem): Unit = {
     val indexer      = ResourceSparqlIndexer(blazegraphClient)
     implicit val enc = Encoder.instance[ResourceEvent](_ => Json.obj())
-    SequentialTagIndexer.start[ResourceEvent](initFunction(blazegraphClient),
-                                              e => indexer.index(e),
-                                              "projects-to-3s",
-                                              config.queryJournalPlugin,
-                                              "project",
-                                              "project-to-in-memory")
+
+    SequentialTagIndexer.start(
+      IndexerConfig.builder
+        .name("projects-to-3s")
+        .tag("project")
+        .plugin(config.persistence.queryJournalPlugin)
+        .retry(config.indexing.retry.maxCount, config.indexing.retry.strategy)
+        .batch(config.indexing.batch, config.indexing.batchTimeout)
+        .init(initFunction(blazegraphClient))
+        .index((l: List[ResourceEvent]) =>
+          Task.sequence(l.removeDupIds.map(e => Task.deferFuture(indexer.index(e)))).map(_ => ()).runAsync)
+        .build)
     ()
   }
 
   private def startKafkaIndexer(topic: String, queryJournalPlugin: String, tag: String)(implicit as: ActorSystem) = {
     import ch.epfl.bluebrain.nexus.admin.service.encoders.kafka._
     val producerSettings = ProducerSettings(as, new StringSerializer, new StringSerializer)
-    KafkaPublisher.startTagStream[ResourceEvent](s"${topic}-to-kafka",
-                                                 queryJournalPlugin,
-                                                 tag,
-                                                 s"kafka-$topic-publisher",
-                                                 producerSettings,
-                                                 topic)
+    KafkaPublisher.startTagStream[ResourceEvent](queryJournalPlugin, tag, s"${topic}-to-kafka", producerSettings, topic)
+  }
 
+  private implicit class EventsSyntax(private val events: List[ResourceEvent]) extends AnyVal {
+
+    /**
+      * Remove events with duplicated ''id''. In case of duplication found, the last event is kept and the previous removed.
+      *
+      * @return a new list of [[ResourceEvent]] without duplicated ids.
+      */
+    def removeDupIds: List[ResourceEvent] = events.groupBy(_.id).values.map(_.lastOption).flatten.toList
   }
 }
 // $COVERAGE-ON$

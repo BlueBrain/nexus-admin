@@ -31,7 +31,7 @@ val akkaHttpCorsVersion         = "0.3.1"
 val akkaPersistenceInMemVersion = "2.5.1.1"
 val catsVersion                 = "1.3.1"
 val circeVersion                = "0.10.0"
-val jenaVersion                 = "3.8.0"
+val jenaVersion                 = "3.9.0"
 val mockitoVersion              = "2.23.0"
 val monixVersion                = "3.0.0-RC1"
 val pureconfigVersion           = "0.9.2"
@@ -40,11 +40,11 @@ val scalaTestVersion            = "3.0.5"
 val shapelessVersion            = "2.3.3"
 
 // Nexus dependency versions
-val serviceVersion  = "0.10.17"
+val serviceVersion  = "0.10.18"
 val sourcingVersion = "0.10.8"
 val commonsVersion  = "0.10.35"
 val iamVersion      = "0.10.27"
-val rdfVersion      = "0.2.21"
+val rdfVersion      = "0.2.23"
 
 // Dependency modules
 lazy val akkaDistributed      = "com.typesafe.akka"       %% "akka-distributed-data"       % akkaVersion
@@ -171,6 +171,7 @@ lazy val core = project
       pureconfig,
       refinedPureConfig,
       serialization,
+      serviceIndexing,
       rdfJena,
       shaclValidator,
       sourcingCore,
