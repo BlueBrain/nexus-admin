@@ -64,7 +64,7 @@ pipeline {
                 checkout scm
                 sh 'sbt releaseEarly universal:packageZipTarball'
                 sh "mv modules/service/target/universal/admin-service-*.tgz ./admin-service.tgz"
-                sh "oc start-build admin-build --from-file=admin-service.tgz --follow"
+                sh "oc start-build admin-build --from-file=admin-service.tgz --wait"
                 sh "oc scale statefulset admin --replicas=0 --namespace=bbp-nexus-dev"
                 sleep 10
                 wait(ENDPOINT, false)
@@ -83,8 +83,11 @@ pipeline {
                 checkout scm
                 sh 'sbt releaseEarly universal:packageZipTarball'
                 sh "mv modules/service/target/universal/admin-service-*.tgz ./admin-service.tgz"
-                sh "oc start-build admin-build --from-file=admin-service.tgz --follow"
+                echo "Pushing to internal image registry..."
+                sh "oc start-build admin-build --from-file=admin-service.tgz --wait"
                 openshiftTag srcStream: 'admin', srcTag: 'latest', destStream: 'admin', destTag: version.substring(1), verbose: 'false'
+                echo "Pushing to Docker Hub..."
+                sh "oc start-build nexus-admin-build --from-file=admin-service.tgz --wait"
             }
         }
         stage("Report Coverage") {
