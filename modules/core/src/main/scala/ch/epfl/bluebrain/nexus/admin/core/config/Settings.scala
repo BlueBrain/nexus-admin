@@ -46,7 +46,8 @@ class Settings(config: Config) extends Extension {
     loadConfigOrThrow[IamConfig](config, "app.iam"),
     loadConfigOrThrow[PaginationConfig](config, "app.pagination"),
     loadConfigOrThrow[OrderKeysConfig](config, "app.order"),
-    loadConfigOrThrow[KafkaConfig](config, "app.kafka")
+    loadConfigOrThrow[KafkaConfig](config, "app.kafka"),
+    loadConfigOrThrow[IndexingConfig](config, "app.indexing")
   )
 
 }

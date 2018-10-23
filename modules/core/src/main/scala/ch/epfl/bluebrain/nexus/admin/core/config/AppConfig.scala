@@ -9,6 +9,8 @@ import ch.epfl.bluebrain.nexus.commons.http.ContextUri
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport.OrderedKeys
 import ch.epfl.bluebrain.nexus.service.http.Path
 import ch.epfl.bluebrain.nexus.commons.types.search.Pagination
+import ch.epfl.bluebrain.nexus.service.indexer.retryer._
+import ch.epfl.bluebrain.nexus.service.indexer.retryer.RetryStrategy._
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.numeric.{NonNegative, Positive}
 
@@ -28,6 +30,8 @@ import scala.concurrent.duration.{Duration, FiniteDuration}
   * @param iam         the IAM connection settings
   * @param pagination  the routes pagination settings
   * @param order       the ordering of the JSON keys on the response payload
+  * @param kafka       the kafka configuration
+  * @param indexing    the indexing configuration
   */
 final case class AppConfig(description: DescriptionConfig,
                            instance: InstanceConfig,
@@ -42,7 +46,8 @@ final case class AppConfig(description: DescriptionConfig,
                            iam: IamConfig,
                            pagination: PaginationConfig,
                            order: OrderKeysConfig,
-                           kafka: KafkaConfig)
+                           kafka: KafkaConfig,
+                           indexing: IndexingConfig)
 
 object AppConfig {
 
@@ -107,6 +112,26 @@ object AppConfig {
   }
 
   final case class KafkaConfig(topic: String)
+
+  /**
+    * Retry configuration with Exponential backoff
+    *
+    * @param maxCount     the maximum number of times an index function is retried
+    * @param maxDuration  the maximum amount of time to wait between two retries
+    * @param randomFactor the jitter added between retries
+    */
+  final case class Retry(maxCount: Int, maxDuration: FiniteDuration, randomFactor: Double) {
+    val strategy: RetryStrategy = Backoff(maxDuration, randomFactor)
+  }
+
+  /**
+    * Indexing configuration
+    *
+    * @param batch        the maximum number of events taken on each batch
+    * @param batchTimeout the maximum amount of time to wait for the number of events to be taken on each batch
+    * @param retry        the retry configuration when indexing failures
+    */
+  final case class IndexingConfig(batch: Int, batchTimeout: FiniteDuration, retry: Retry)
 
   implicit def prefixesFromImplicit(implicit appConfig: AppConfig): PrefixesConfig = appConfig.prefixes
 
