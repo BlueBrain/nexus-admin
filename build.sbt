@@ -25,241 +25,94 @@ scalafmt: {
  */
 
 // Dependency versions
-val akkaVersion                 = "2.5.17"
-val akkaHttpVersion             = "10.1.5"
-val akkaHttpCorsVersion         = "0.3.1"
-val akkaPersistenceInMemVersion = "2.5.1.1"
-val catsVersion                 = "1.3.1"
-val circeVersion                = "0.10.0"
-val jenaVersion                 = "3.9.0"
-val mockitoVersion              = "2.23.0"
-val monixVersion                = "3.0.0-RC1"
-val pureconfigVersion           = "0.9.2"
-val refinedVersion              = "0.9.2"
-val scalaTestVersion            = "3.0.5"
-val shapelessVersion            = "2.3.3"
+val rdfVersion                 = "0.2.26"
+val commonsVersion             = "0.10.37"
+val serviceVersion             = "0.10.19"
+val sourcingVersion            = "0.12.0"
+val akkaVersion                = "2.5.18"
+val akkaCorsVersion            = "0.3.1"
+val akkaHttpVersion            = "10.1.5"
+val akkaPersistenceCassVersion = "0.91"
+val catsVersion                = "1.4.0"
+val circeVersion               = "0.10.0"
+val journalVersion             = "3.0.19"
+val logbackVersion             = "1.2.3"
+val mockitoVersion             = "1.0.1"
+val pureconfigVersion          = "0.9.2"
+val scalaTestVersion           = "3.0.5"
+val kryoVersion                = "0.5.2"
 
-// Nexus dependency versions
-val serviceVersion  = "0.10.18"
-val sourcingVersion = "0.10.8"
-val commonsVersion  = "0.10.35"
-val iamVersion      = "0.10.27"
-val rdfVersion      = "0.2.23"
+// Dependencies modules
+lazy val rdfJena             = "ch.epfl.bluebrain.nexus" %% "rdf-jena"                   % rdfVersion
+lazy val rdfCirce            = "ch.epfl.bluebrain.nexus" %% "rdf-circe"                  % rdfVersion
+lazy val rdfNexus            = "ch.epfl.bluebrain.nexus" %% "rdf-nexus"                  % rdfVersion
+lazy val serviceIndexing     = "ch.epfl.bluebrain.nexus" %% "service-indexing"           % serviceVersion
+lazy val serviceKamon        = "ch.epfl.bluebrain.nexus" %% "service-kamon"              % serviceVersion
+lazy val serviceHttp         = "ch.epfl.bluebrain.nexus" %% "service-http"               % serviceVersion
+lazy val serviceKafka        = "ch.epfl.bluebrain.nexus" %% "service-kafka"              % serviceVersion
+lazy val sourcingAkka        = "ch.epfl.bluebrain.nexus" %% "sourcing-akka"              % sourcingVersion
+lazy val commonTest          = "ch.epfl.bluebrain.nexus" %% "commons-test"               % commonsVersion
+lazy val akkaCluster         = "com.typesafe.akka"       %% "akka-cluster"               % akkaVersion
+lazy val akkaHttp            = "com.typesafe.akka"       %% "akka-http"                  % akkaHttpVersion
+lazy val akkaHttpCors        = "ch.megard"               %% "akka-http-cors"             % akkaCorsVersion
+lazy val akkaHttpTestKit     = "com.typesafe.akka"       %% "akka-http-testkit"          % akkaHttpVersion
+lazy val akkaPersistenceCass = "com.typesafe.akka"       %% "akka-persistence-cassandra" % akkaPersistenceCassVersion
+lazy val akkaSlf4j           = "com.typesafe.akka"       %% "akka-slf4j"                 % akkaVersion
+lazy val akkaStream          = "com.typesafe.akka"       %% "akka-stream"                % akkaVersion
+lazy val catsCore            = "org.typelevel"           %% "cats-core"                  % catsVersion
+lazy val circeCore           = "io.circe"                %% "circe-core"                 % circeVersion
+lazy val journalCore         = "io.verizon.journal"      %% "core"                       % journalVersion
+lazy val mockito             = "org.mockito"             %% "mockito-scala"              % mockitoVersion
+lazy val logbackClassic      = "ch.qos.logback"          % "logback-classic"             % logbackVersion
+lazy val pureconfig          = "com.github.pureconfig"   %% "pureconfig"                 % pureconfigVersion
+lazy val scalaTest           = "org.scalatest"           %% "scalatest"                  % scalaTestVersion
+lazy val kryo                = "com.github.romix.akka"   %% "akka-kryo-serialization"    % kryoVersion
 
-// Dependency modules
-lazy val akkaDistributed      = "com.typesafe.akka"       %% "akka-distributed-data"       % akkaVersion
-lazy val akkaHttpCore         = "com.typesafe.akka"       %% "akka-http-core"              % akkaHttpVersion
-lazy val akkaPersistence      = "com.typesafe.akka"       %% "akka-persistence"            % akkaVersion
-lazy val akkaPersistenceInMem = "com.github.dnvriend"     %% "akka-persistence-inmemory"   % akkaPersistenceInMemVersion
-lazy val akkaHttpTestKit      = "com.typesafe.akka"       %% "akka-http-testkit"           % akkaHttpVersion
-lazy val akkaTestKit          = "com.typesafe.akka"       %% "akka-testkit"                % akkaVersion
-lazy val akkaSlf4j            = "com.typesafe.akka"       %% "akka-slf4j"                  % akkaVersion
-lazy val catsCore             = "org.typelevel"           %% "cats-core"                   % catsVersion
-lazy val circeCore            = "io.circe"                %% "circe-core"                  % circeVersion
-lazy val circeJava8           = "io.circe"                %% "circe-java8"                 % circeVersion
-lazy val circeRefined         = "io.circe"                %% "circe-refined"               % circeVersion
-lazy val jenaArq              = "org.apache.jena"         % "jena-arq"                     % jenaVersion
-lazy val mockitoCore          = "org.mockito"             % "mockito-core"                 % mockitoVersion
-lazy val monixTail            = "io.monix"                %% "monix-tail"                  % monixVersion
-lazy val pureconfig           = "com.github.pureconfig"   %% "pureconfig"                  % pureconfigVersion
-lazy val shaclValidator       = "ch.epfl.bluebrain.nexus" %% "shacl-topquadrant-validator" % commonsVersion
-lazy val shapeless            = "com.chuusai"             %% "shapeless"                   % shapelessVersion
-lazy val scalaTest            = "org.scalatest"           %% "scalatest"                   % scalaTestVersion
-lazy val slf4j                = "com.typesafe.akka"       %% "akka-slf4j"                  % akkaVersion
-
-lazy val refined           = "eu.timepit" %% "refined"            % refinedVersion
-lazy val refinedPureConfig = "eu.timepit" %% "refined-pureconfig" % refinedVersion
-
-// Nexus dependency modules
-lazy val commonsQueryTypes = "ch.epfl.bluebrain.nexus" %% "commons-query-types"   % commonsVersion
-lazy val commonsHttp       = "ch.epfl.bluebrain.nexus" %% "commons-http"          % commonsVersion
-lazy val commonsSchemas    = "ch.epfl.bluebrain.nexus" %% "commons-schemas"       % commonsVersion
-lazy val commonsTest       = "ch.epfl.bluebrain.nexus" %% "commons-test"          % commonsVersion
-lazy val iamClient         = "ch.epfl.bluebrain.nexus" %% "iam-client"            % iamVersion
-lazy val sparqlClient      = "ch.epfl.bluebrain.nexus" %% "sparql-client"         % commonsVersion
-lazy val serialization     = "ch.epfl.bluebrain.nexus" %% "service-serialization" % serviceVersion
-lazy val serviceHttp       = "ch.epfl.bluebrain.nexus" %% "service-http"          % serviceVersion
-lazy val serviceKamon      = "ch.epfl.bluebrain.nexus" %% "service-kamon"         % serviceVersion
-lazy val sourcingAkka      = "ch.epfl.bluebrain.nexus" %% "sourcing-akka"         % sourcingVersion
-lazy val serviceIndexing   = "ch.epfl.bluebrain.nexus" %% "service-indexing"      % serviceVersion
-lazy val serviceKafka      = "ch.epfl.bluebrain.nexus" %% "service-kafka"         % serviceVersion
-lazy val sourcingCore      = "ch.epfl.bluebrain.nexus" %% "sourcing-core"         % sourcingVersion
-lazy val sourcingMem       = "ch.epfl.bluebrain.nexus" %% "sourcing-mem"          % sourcingVersion
-lazy val rdfCore           = "ch.epfl.bluebrain.nexus" %% "rdf-core"              % rdfVersion
-lazy val rdfCirce          = "ch.epfl.bluebrain.nexus" %% "rdf-circe"             % rdfVersion
-lazy val rdfJena           = "ch.epfl.bluebrain.nexus" %% "rdf-jena"              % rdfVersion
-lazy val akkaHttpCors      = "ch.megard"               %% "akka-http-cors"        % akkaHttpCorsVersion
-
-// Projects
-
-lazy val refinements = project
-  .in(file("modules/refined"))
+lazy val admin = project
+  .in(file("."))
+  .settings(testSettings, buildInfoSettings)
+  .enablePlugins(BuildInfoPlugin, ServicePackagingPlugin)
   .settings(
-    commonTestSettings,
-    name                := "admin-refined",
-    moduleName          := "admin-refined",
-    coverageEnabled     := false,
-    libraryDependencies ++= Seq(iamClient, rdfCore, refined, serviceHttp, commonsTest % Test, scalaTest % Test)
-  )
-
-lazy val schemas = project
-  .in(file("modules/schemas"))
-  .enablePlugins(WorkbenchPlugin, BuildInfoPlugin)
-  .disablePlugins(ScapegoatSbtPlugin, DocumentationPlugin)
-  .settings(
-    common,
-    name                  := "admin-schemas",
-    moduleName            := "admin-schemas",
-    coverageFailOnMinimum := false,
+    name       := "admin",
+    moduleName := "admin",
     libraryDependencies ++= Seq(
-      commonsSchemas
-    )
-  )
-
-lazy val ld = project
-  .dependsOn(refinements, schemas)
-  .in(file("modules/ld"))
-  .settings(
-    commonTestSettings,
-    name       := "admin-ld",
-    moduleName := "admin-ld",
-    libraryDependencies ++= Seq(
-      catsCore,
-      circeCore,
-      rdfCore,
       rdfCirce,
-      commonsTest,
-      jenaArq,
-      shapeless,
-      commonsHttp % Test,
-      scalaTest   % Test,
-      slf4j       % Test
-    )
-  )
-
-lazy val query = project
-  .in(file("modules/query"))
-  .dependsOn(ld)
-  .settings(
-    commonTestSettings,
-    name       := "admin-query",
-    moduleName := "admin-query",
-    libraryDependencies ++= Seq(
-      commonsQueryTypes,
-      scalaTest   % Test,
-      commonsTest % Test,
-      slf4j       % Test
-    )
-  )
-
-lazy val core = project
-  .in(file("modules/core"))
-  .enablePlugins(BuildInfoPlugin)
-  .dependsOn(query)
-  .settings(
-    common,
-    commonTestSettings,
-    buildInfoSettings,
-    name       := "admin-core",
-    moduleName := "admin-core",
-    libraryDependencies ++= Seq(
-      akkaPersistence,
-      sparqlClient,
-      circeJava8,
-      circeRefined,
-      commonsQueryTypes,
-      pureconfig,
-      refinedPureConfig,
-      serialization,
-      serviceIndexing,
       rdfJena,
-      shaclValidator,
-      sourcingCore,
-      akkaDistributed      % Test,
-      akkaHttpTestKit      % Test,
-      akkaPersistenceInMem % Test,
-      mockitoCore          % Test,
-      scalaTest            % Test,
-      sourcingMem          % Test,
-      slf4j                % Test
-    )
-  )
-
-lazy val service = project
-  .in(file("modules/service"))
-  .enablePlugins(ServicePackagingPlugin)
-  .dependsOn(core % testAndCompile)
-  .settings(
-    common,
-    commonTestSettings,
-    name       := "admin-service",
-    moduleName := "admin-service",
-    libraryDependencies ++= Seq(
-      akkaDistributed,
-      sparqlClient,
+      rdfNexus,
       serviceIndexing,
       serviceKafka,
-      akkaHttpCors,
-      serviceKamon,
       sourcingAkka,
-      slf4j,
-      akkaTestKit % Test,
-      mockitoCore % Test
-    )
-  )
-
-lazy val client = project
-  .in(file("modules/client"))
-  .dependsOn(ld)
-  .settings(
-    commonTestSettings,
-    name       := "admin-client",
-    moduleName := "admin-client",
-    libraryDependencies ++= Seq(
-      akkaHttpCore,
+      akkaHttp,
+      akkaHttpCors,
+      akkaPersistenceCass,
+      akkaStream,
       akkaSlf4j,
+      akkaCluster,
+      catsCore,
       circeCore,
-      circeJava8,
-      circeRefined,
-      monixTail,
+      journalCore,
+      kryo,
+      logbackClassic,
+      pureconfig,
+      serviceKamon,
+      serviceHttp,
       akkaHttpTestKit % Test,
-      commonsTest     % Test,
-      scalaTest       % Test
+      commonTest      % Test,
+      mockito         % Test,
+      scalaTest       % Test,
     )
   )
 
-lazy val root = project
-  .in(file("."))
-  .settings(noPublish)
-  .settings(
-    name                  := "admin",
-    moduleName            := "admin",
-    coverageFailOnMinimum := false
-  )
-  .aggregate(refinements, ld, query, core, service, client, schemas)
-
-/* ********************************************************
- ******************** Grouped Settings ********************
- **********************************************************/
-
-lazy val common = Seq(resolvers += Resolver.bintrayRepo("bogdanromanx", "maven"))
-
-lazy val noPublish = Seq(
-  publishLocal    := {},
-  publish         := {},
-  publishArtifact := false
-)
-
-lazy val testAndCompile = "test->test;compile->compile"
-
-lazy val commonTestSettings = Seq(
+lazy val testSettings = Seq(
   Test / testOptions       += Tests.Argument(TestFrameworks.ScalaTest, "-o", "-u", "target/test-reports"),
   Test / fork              := true,
   Test / parallelExecution := false // workaround for jena initialization
 )
 
-lazy val buildInfoSettings =
-  Seq(buildInfoKeys := Seq[BuildInfoKey](version), buildInfoPackage := "ch.epfl.bluebrain.nexus.admin.core.config")
+lazy val buildInfoSettings = Seq(
+  buildInfoKeys    := Seq[BuildInfoKey](version),
+  buildInfoPackage := "ch.epfl.bluebrain.nexus.admin.config"
+)
 
 inThisBuild(
   List(
