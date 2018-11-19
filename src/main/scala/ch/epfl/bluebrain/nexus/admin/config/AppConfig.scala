@@ -101,16 +101,6 @@ object AppConfig {
     */
   final case class IndexingConfig(batch: Int, batchTimeout: FiniteDuration, retry: Retry)
 
-  //  val iriResolution = Map(
-  //    tagCtxUri         -> tagCtx,
-  //    resourceCtxUri    -> resourceCtx,
-  //    shaclCtxUri       -> shaclCtx,
-  //    resolverCtxUri    -> resolverCtx,
-  //    viewCtxUri        -> viewCtx,
-  //    resolverSchemaUri -> resolverSchema,
-  //    viewSchemaUri     -> viewSchema
-  //  )
-
   val orderedKeys = OrderedKeys(
     List(
       "@context",

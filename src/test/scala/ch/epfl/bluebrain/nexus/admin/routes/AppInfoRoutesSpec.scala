@@ -47,7 +47,8 @@ class AppInfoRoutesSpec
       cassandra.check shouldReturn Future.successful(Inaccessible)
       Get("/health") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
-        responseAs[Json] shouldEqual Json.obj("cluster" -> Json.fromString("inaccessible"), "cassandra" -> Json.fromString("inaccessible"))
+        responseAs[Json] shouldEqual Json.obj("cluster"   -> Json.fromString("inaccessible"),
+                                              "cassandra" -> Json.fromString("inaccessible"))
       }
     }
   }

@@ -25,7 +25,7 @@ scalafmt: {
  */
 
 // Dependency versions
-val rdfVersion                 = "0.2.26"
+val rdfVersion                 = "0.2.27"
 val commonsVersion             = "0.10.37"
 val serviceVersion             = "0.10.19"
 val sourcingVersion            = "0.12.0"
@@ -43,30 +43,31 @@ val scalaTestVersion           = "3.0.5"
 val kryoVersion                = "0.5.2"
 
 // Dependencies modules
-lazy val rdfJena             = "ch.epfl.bluebrain.nexus" %% "rdf-jena"                   % rdfVersion
-lazy val rdfCirce            = "ch.epfl.bluebrain.nexus" %% "rdf-circe"                  % rdfVersion
-lazy val rdfNexus            = "ch.epfl.bluebrain.nexus" %% "rdf-nexus"                  % rdfVersion
-lazy val serviceIndexing     = "ch.epfl.bluebrain.nexus" %% "service-indexing"           % serviceVersion
-lazy val serviceKamon        = "ch.epfl.bluebrain.nexus" %% "service-kamon"              % serviceVersion
-lazy val serviceHttp         = "ch.epfl.bluebrain.nexus" %% "service-http"               % serviceVersion
-lazy val serviceKafka        = "ch.epfl.bluebrain.nexus" %% "service-kafka"              % serviceVersion
-lazy val sourcingAkka        = "ch.epfl.bluebrain.nexus" %% "sourcing-akka"              % sourcingVersion
-lazy val commonTest          = "ch.epfl.bluebrain.nexus" %% "commons-test"               % commonsVersion
-lazy val akkaCluster         = "com.typesafe.akka"       %% "akka-cluster"               % akkaVersion
-lazy val akkaHttp            = "com.typesafe.akka"       %% "akka-http"                  % akkaHttpVersion
-lazy val akkaHttpCors        = "ch.megard"               %% "akka-http-cors"             % akkaCorsVersion
-lazy val akkaHttpTestKit     = "com.typesafe.akka"       %% "akka-http-testkit"          % akkaHttpVersion
-lazy val akkaPersistenceCass = "com.typesafe.akka"       %% "akka-persistence-cassandra" % akkaPersistenceCassVersion
-lazy val akkaSlf4j           = "com.typesafe.akka"       %% "akka-slf4j"                 % akkaVersion
-lazy val akkaStream          = "com.typesafe.akka"       %% "akka-stream"                % akkaVersion
-lazy val catsCore            = "org.typelevel"           %% "cats-core"                  % catsVersion
-lazy val circeCore           = "io.circe"                %% "circe-core"                 % circeVersion
-lazy val journalCore         = "io.verizon.journal"      %% "core"                       % journalVersion
-lazy val mockito             = "org.mockito"             %% "mockito-scala"              % mockitoVersion
-lazy val logbackClassic      = "ch.qos.logback"          % "logback-classic"             % logbackVersion
-lazy val pureconfig          = "com.github.pureconfig"   %% "pureconfig"                 % pureconfigVersion
-lazy val scalaTest           = "org.scalatest"           %% "scalatest"                  % scalaTestVersion
-lazy val kryo                = "com.github.romix.akka"   %% "akka-kryo-serialization"    % kryoVersion
+lazy val rdfJena             = "ch.epfl.bluebrain.nexus" %% "rdf-jena"                    % rdfVersion
+lazy val rdfCirce            = "ch.epfl.bluebrain.nexus" %% "rdf-circe"                   % rdfVersion
+lazy val rdfNexus            = "ch.epfl.bluebrain.nexus" %% "rdf-nexus"                   % rdfVersion
+lazy val serviceIndexing     = "ch.epfl.bluebrain.nexus" %% "service-indexing"            % serviceVersion
+lazy val serviceKamon        = "ch.epfl.bluebrain.nexus" %% "service-kamon"               % serviceVersion
+lazy val serviceHttp         = "ch.epfl.bluebrain.nexus" %% "service-http"                % serviceVersion
+lazy val serviceKafka        = "ch.epfl.bluebrain.nexus" %% "service-kafka"               % serviceVersion
+lazy val sourcingAkka        = "ch.epfl.bluebrain.nexus" %% "sourcing-akka"               % sourcingVersion
+lazy val shaclValidator      = "ch.epfl.bluebrain.nexus" %% "shacl-topquadrant-validator" % commonsVersion
+lazy val commonTest          = "ch.epfl.bluebrain.nexus" %% "commons-test"                % commonsVersion
+lazy val akkaCluster         = "com.typesafe.akka"       %% "akka-cluster"                % akkaVersion
+lazy val akkaHttp            = "com.typesafe.akka"       %% "akka-http"                   % akkaHttpVersion
+lazy val akkaHttpCors        = "ch.megard"               %% "akka-http-cors"              % akkaCorsVersion
+lazy val akkaHttpTestKit     = "com.typesafe.akka"       %% "akka-http-testkit"           % akkaHttpVersion
+lazy val akkaPersistenceCass = "com.typesafe.akka"       %% "akka-persistence-cassandra"  % akkaPersistenceCassVersion
+lazy val akkaSlf4j           = "com.typesafe.akka"       %% "akka-slf4j"                  % akkaVersion
+lazy val akkaStream          = "com.typesafe.akka"       %% "akka-stream"                 % akkaVersion
+lazy val catsCore            = "org.typelevel"           %% "cats-core"                   % catsVersion
+lazy val circeCore           = "io.circe"                %% "circe-core"                  % circeVersion
+lazy val journalCore         = "io.verizon.journal"      %% "core"                        % journalVersion
+lazy val mockito             = "org.mockito"             %% "mockito-scala"               % mockitoVersion
+lazy val logbackClassic      = "ch.qos.logback"          % "logback-classic"              % logbackVersion
+lazy val pureconfig          = "com.github.pureconfig"   %% "pureconfig"                  % pureconfigVersion
+lazy val scalaTest           = "org.scalatest"           %% "scalatest"                   % scalaTestVersion
+lazy val kryo                = "com.github.romix.akka"   %% "akka-kryo-serialization"     % kryoVersion
 
 lazy val admin = project
   .in(file("."))
@@ -76,26 +77,27 @@ lazy val admin = project
     name       := "admin",
     moduleName := "admin",
     libraryDependencies ++= Seq(
-      rdfCirce,
-      rdfJena,
-      rdfNexus,
-      serviceIndexing,
-      serviceKafka,
-      sourcingAkka,
+      akkaCluster,
       akkaHttp,
       akkaHttpCors,
       akkaPersistenceCass,
-      akkaStream,
       akkaSlf4j,
-      akkaCluster,
+      akkaStream,
       catsCore,
       circeCore,
       journalCore,
-      kryo,
       logbackClassic,
+      kryo,
       pureconfig,
-      serviceKamon,
+      rdfCirce,
+      rdfJena,
+      rdfNexus,
+      shaclValidator,
+      serviceIndexing,
       serviceHttp,
+      serviceKafka,
+      serviceKamon,
+      sourcingAkka,
       akkaHttpTestKit % Test,
       commonTest      % Test,
       mockito         % Test,
@@ -106,7 +108,8 @@ lazy val admin = project
 lazy val testSettings = Seq(
   Test / testOptions       += Tests.Argument(TestFrameworks.ScalaTest, "-o", "-u", "target/test-reports"),
   Test / fork              := true,
-  Test / parallelExecution := false // workaround for jena initialization
+  Test / parallelExecution := false, // workaround for jena initialization
+  coverageFailOnMinimum    := false,
 )
 
 lazy val buildInfoSettings = Seq(
