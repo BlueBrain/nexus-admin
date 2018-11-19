@@ -2,7 +2,6 @@ package ch.epfl.bluebrain.nexus.admin.config
 
 import akka.actor.{ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
 import akka.http.scaladsl.model.Uri
-import ch.epfl.bluebrain.nexus.admin.config.AppConfig._
 import com.typesafe.config.Config
 import pureconfig.ConvertHelpers.catchReadError
 import pureconfig.{loadConfigOrThrow, ConfigConvert}
@@ -19,13 +18,7 @@ class Settings(config: Config) extends Extension {
   private implicit val uriConverter: ConfigConvert[Uri] =
     ConfigConvert.viaString[Uri](catchReadError(s => Uri(s)), _.toString)
 
-  val appConfig = AppConfig(
-    loadConfigOrThrow[Description](config, "app.description"),
-    loadConfigOrThrow[HttpConfig](config, "app.http"),
-    loadConfigOrThrow[ClusterConfig](config, "app.cluster"),
-    loadConfigOrThrow[PersistenceConfig](config, "app.persistence"),
-    loadConfigOrThrow[IndexingConfig](config, "app.indexing")
-  )
+  val appConfig: AppConfig = loadConfigOrThrow[AppConfig](config, "app")
 }
 
 object Settings extends ExtensionId[Settings] with ExtensionIdProvider {

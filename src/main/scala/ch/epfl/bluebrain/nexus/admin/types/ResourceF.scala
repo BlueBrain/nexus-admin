@@ -4,8 +4,8 @@ import java.time.Instant
 
 import ch.epfl.bluebrain.nexus.admin.config.Contexts._
 import ch.epfl.bluebrain.nexus.admin.config.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.admin.marshallers.instances._
 import ch.epfl.bluebrain.nexus.commons.types.identity.Identity
+import ch.epfl.bluebrain.nexus.rdf.instances._
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import io.circe.syntax._
 import io.circe.{Encoder, Json}

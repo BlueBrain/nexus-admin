@@ -3,8 +3,8 @@ package ch.epfl.bluebrain.nexus.admin.marshallers
 import akka.http.scaladsl.marshalling.GenericMarshallers.eitherMarshaller
 import akka.http.scaladsl.marshalling._
 import akka.http.scaladsl.model.MediaTypes.`application/json`
-import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.StatusCodes._
+import akka.http.scaladsl.model._
 import ch.epfl.bluebrain.nexus.admin.CommonRejection
 import ch.epfl.bluebrain.nexus.admin.CommonRejection.DownstreamServiceError
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig.orderedKeys
@@ -15,8 +15,6 @@ import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport.OrderedKeys
 import ch.epfl.bluebrain.nexus.commons.http.RdfMediaTypes._
 import ch.epfl.bluebrain.nexus.commons.http.syntax.circe._
 import ch.epfl.bluebrain.nexus.commons.types.HttpRejection
-import ch.epfl.bluebrain.nexus.rdf.Iri
-import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.syntax.circe.context._
 import ch.epfl.bluebrain.nexus.service.http.directives.StatusFrom
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport
@@ -29,26 +27,16 @@ import scala.collection.immutable.Seq
 
 object instances extends FailFastCirceSupport {
 
-  private val rejectionConfig: Configuration = Configuration.default.withDiscriminator("code")
+  private implicit val rejectionConfig: Configuration = Configuration.default.withDiscriminator("code")
 
-  implicit val absoluteIriEncoder: Encoder[AbsoluteIri] = Encoder.encodeString.contramap(_.asString)
-
-  implicit val absoluteIriDecoder: Decoder[AbsoluteIri] = Decoder.decodeString.emap(Iri.absolute)
-
-  implicit val resourceRejectionEncoder: Encoder[ResourceRejection] = {
-    implicit val config = rejectionConfig
+  implicit val resourceRejectionEncoder: Encoder[ResourceRejection] =
     deriveEncoder[ResourceRejection].mapJson(_ addContext errorCtxUri)
-  }
 
-  implicit val commonRejectionEncoder: Encoder[CommonRejection] = {
-    implicit val config = rejectionConfig
+  implicit val commonRejectionEncoder: Encoder[CommonRejection] =
     deriveEncoder[CommonRejection].mapJson(_ addContext errorCtxUri)
-  }
 
-  implicit val httpRejectionEncoder: Encoder[HttpRejection] = {
-    implicit val config = rejectionConfig
+  implicit val httpRejectionEncoder: Encoder[HttpRejection] =
     deriveEncoder[HttpRejection].mapJson(_ addContext errorCtxUri)
-  }
 
   override def unmarshallerContentTypes: Seq[ContentTypeRange] =
     List(`application/json`, `application/ld+json`, `application/sparql-results+json`)
@@ -106,7 +94,7 @@ object instances extends FailFastCirceSupport {
     Marshaller.oneOf(marshallers: _*)
   }
 
-  implicit val rejectionStatusCode: StatusFrom[ResourceRejection] = {
+  implicit val rejectionStatusCode: StatusFrom[ResourceRejection] = StatusFrom {
     case IncorrectRevisionProvided   => Conflict
     case ResourceAlreadyExists       => Conflict
     case ResourceDoesNotExists       => NotFound
@@ -118,7 +106,7 @@ object instances extends FailFastCirceSupport {
     case _: WrappedRejection         => BadRequest
   }
 
-  implicit val commonStatusCode: StatusFrom[CommonRejection] = {
+  implicit val commonStatusCode: StatusFrom[CommonRejection] = StatusFrom {
     case _: DownstreamServiceError => InternalServerError
     case _                         => BadRequest
   }
