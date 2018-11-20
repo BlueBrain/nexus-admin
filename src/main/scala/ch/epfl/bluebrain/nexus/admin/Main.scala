@@ -13,7 +13,6 @@ import akka.http.scaladsl.server.Route
 import akka.stream.ActorMaterializer
 import ch.epfl.bluebrain.nexus.admin.config.Settings
 import ch.epfl.bluebrain.nexus.admin.routes._
-import ch.epfl.bluebrain.nexus.service.http.routes.StaticResourceRoutes
 import ch.megard.akka.http.cors.scaladsl.CorsDirectives.{cors, corsRejectionHandler}
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 import com.github.jsonldjava.core.DocumentLoader
@@ -21,8 +20,8 @@ import com.typesafe.config.{Config, ConfigFactory}
 import kamon.Kamon
 import kamon.system.SystemMetrics
 
-import scala.concurrent.{Await, ExecutionContext}
 import scala.concurrent.duration._
+import scala.concurrent.{Await, ExecutionContext}
 import scala.util.{Failure, Success}
 
 //noinspection TypeAnnotation
@@ -71,21 +70,11 @@ object Main {
     val serviceDescription = AppInfoRoutes(appConfig.description,
                                            ClusterHealthChecker(cluster),
                                            CassandraHealthChecker(appConfig.persistence)).routes
-    val staticResourceRoutes = new StaticResourceRoutes(
-      Map(
-        "/contexts/resource"    -> "/resource-context.json",
-        "/contexts/filter"      -> "/filter-context.json",
-        "/schemas/project"      -> "/schemas/nexus/core/project/v0.1.0.json",
-        "/schemas/organization" -> "/schemas/nexus/core/organization/v0.1.0.json"
-      ),
-      "static",
-      appConfig.http.apiUri
-    ).routes
     val corsSettings = CorsSettings.defaultSettings
       .withAllowedMethods(List(GET, PUT, POST, DELETE, OPTIONS, HEAD))
       .withExposedHeaders(List(Location.name))
     val routes: Route =
-      handleRejections(corsRejectionHandler)(cors(corsSettings)(serviceDescription ~ staticResourceRoutes))
+      handleRejections(corsRejectionHandler)(cors(corsSettings)(serviceDescription))
 
     cluster.registerOnMemberUp {
       logger.info("==== Cluster is Live ====")
