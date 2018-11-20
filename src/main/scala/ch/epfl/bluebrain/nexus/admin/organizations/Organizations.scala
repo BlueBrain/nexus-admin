@@ -11,6 +11,6 @@ class Organizations[F[_]] {
 
   def create(organization: Organization)(implicit caller: Identity): F[OrganizationMetaOrRejection]            = ???
   def update(organization: Organization, rev: Long)(implicit caller: Identity): F[OrganizationMetaOrRejection] = ???
-  def deprecate(id: UUID, rev: Long)(implicit caller: Identity): F[OrganizationMetaOrRejection]              = ???
+  def deprecate(id: UUID, rev: Long)(implicit caller: Identity): F[OrganizationMetaOrRejection]                = ???
 
 }
