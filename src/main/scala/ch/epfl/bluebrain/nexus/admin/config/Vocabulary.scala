@@ -41,8 +41,9 @@ object Vocabulary {
     val score         = Metadata("score")
     val uuid          = Metadata("uuid")
 
-    //Resource types
-    val Organization = withSuffix("Organization").value
+    // Resource types
+    val Project: IriNode      = withSuffix("Project")
+    val Organization: IriNode = withSuffix("Organization")
   }
 
   /**

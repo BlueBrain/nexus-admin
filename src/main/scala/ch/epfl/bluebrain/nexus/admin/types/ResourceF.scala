@@ -14,14 +14,16 @@ import io.circe.{Encoder, Json}
 /**
   * The metadata information for any resource in the service
   *
-  * @param id        the id of the resource
-  * @param rev       the revision
-  * @param types     the types of the resource
-  * @param createdAt the creation date of the resource
-  * @param createdBy the identity that created the resource
-  * @param updatedAt the last update date of the resource
-  * @param updatedBy the identity that performed the last update to the resource
-  * @param value     the resource value
+  * @param id         the id of the resource
+  * @param uuid       the permanent internal identifier of the resource
+  * @param rev        the revision
+  * @param deprecated the deprecation status
+  * @param types      the types of the resource
+  * @param createdAt  the creation date of the resource
+  * @param createdBy  the identity that created the resource
+  * @param updatedAt  the last update date of the resource
+  * @param updatedBy  the identity that performed the last update to the resource
+  * @param value      the resource value
   */
 final case class ResourceF[A](
     id: AbsoluteIri,
@@ -58,9 +60,9 @@ object ResourceF {
     * Constructs a [[ResourceF]] where the value is of type Unit
     *
     * @param id         the identifier of the resource
-    * @param uuid         the permanent internal of the resource
+    * @param uuid       the permanent internal identifier of the resource
     * @param rev        the revision of the resource
-    * @param deprecated the deprecation of the resource
+    * @param deprecated the deprecation status
     * @param types      the types of the resource
     * @param createdAt  the instant when the resource was created
     * @param createdBy  the identity that created the resource
@@ -87,8 +89,8 @@ object ResourceF {
           "@context"            -> Json.arr(resourceCtxUri.asJson, adminCtxUri.asJson),
           "@id"                 -> id.asJson,
           "@type"               -> Json.arr(types.map(t => Json.fromString(lastSegment(t).getOrElse(t.asString))).toSeq: _*),
-          nxv.rev.prefix        -> Json.fromLong(rev),
           nxv.uuid.prefix       -> Json.fromString(uuid.toString),
+          nxv.rev.prefix        -> Json.fromLong(rev),
           nxv.deprecated.prefix -> Json.fromBoolean(deprecated),
           nxv.createdBy.prefix  -> createdBy.id.asJson,
           nxv.updatedBy.prefix  -> updatedBy.id.asJson,
