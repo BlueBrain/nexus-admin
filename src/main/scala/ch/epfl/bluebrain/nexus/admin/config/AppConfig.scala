@@ -5,6 +5,8 @@ import akka.http.scaladsl.model.Uri.Path
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport.OrderedKeys
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig._
 import ch.epfl.bluebrain.nexus.admin.config.Vocabulary._
+import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
+import ch.epfl.bluebrain.nexus.rdf.syntax.node.unsafe._
 import ch.epfl.bluebrain.nexus.service.indexer.retryer.RetryStrategy
 import ch.epfl.bluebrain.nexus.service.indexer.retryer.RetryStrategy.Backoff
 import ch.epfl.bluebrain.nexus.service.kamon.directives.TracingDirectives
@@ -36,12 +38,12 @@ object AppConfig {
   final case class Description(name: String) {
 
     /**
-      * @return the version of the service
+      * The service version
       */
     val version: String = BuildInfo.version
 
     /**
-      * @return the full name of the service (name + version)
+      * The full name of the service (name + version)
       */
     val fullName: String = s"$name-${version.replaceAll("\\W", "-")}"
 
@@ -56,7 +58,16 @@ object AppConfig {
     * @param publicUri  public URI of the service
     */
   final case class HttpConfig(interface: String, port: Int, prefix: String, publicUri: Uri) {
+
+    /**
+      * The base API URI i.e. publicUri + prefix.
+      */
     val apiUri: Uri = publicUri.copy(path = publicUri.path ++ Path(prefix))
+
+    /**
+      * The base IRI for all resource IDs.
+      */
+    val baseIri: AbsoluteIri = url"$apiUri".value
   }
 
   /**
