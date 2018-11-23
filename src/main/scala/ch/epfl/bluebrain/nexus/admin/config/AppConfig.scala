@@ -2,9 +2,9 @@ package ch.epfl.bluebrain.nexus.admin.config
 
 import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.Uri.Path
-import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport.OrderedKeys
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig._
 import ch.epfl.bluebrain.nexus.admin.config.Vocabulary._
+import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport.OrderedKeys
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.syntax.node.unsafe._
 import ch.epfl.bluebrain.nexus.service.indexer.retryer.RetryStrategy
@@ -68,6 +68,11 @@ object AppConfig {
       * The base IRI for all resource IDs.
       */
     val baseIri: AbsoluteIri = url"$apiUri".value
+
+    /**
+      * The base API IRI i.e. publicUri + prefix.
+      */
+    val apiIri: AbsoluteIri = url"$apiUri".value
   }
 
   /**
@@ -137,5 +142,7 @@ object AppConfig {
     ))
 
   val tracing = new TracingDirectives()
+
+  implicit def toHttp(implicit appConfig: AppConfig): HttpConfig = appConfig.http
 
 }
