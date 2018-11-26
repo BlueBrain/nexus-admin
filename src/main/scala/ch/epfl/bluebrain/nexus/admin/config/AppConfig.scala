@@ -69,10 +69,6 @@ object AppConfig {
       */
     val baseIri: AbsoluteIri = url"$apiUri".value
 
-    /**
-      * The base API IRI i.e. publicUri + prefix.
-      */
-    val apiIri: AbsoluteIri = url"$apiUri".value
   }
 
   /**
@@ -142,7 +138,5 @@ object AppConfig {
     ))
 
   val tracing = new TracingDirectives()
-
-  implicit def toHttp(implicit appConfig: AppConfig): HttpConfig = appConfig.http
 
 }
