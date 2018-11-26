@@ -5,21 +5,22 @@ import java.util.UUID
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import cats.Monad
+import cats.MonadError
 import cats.effect.ConcurrentEffect
 import cats.syntax.functor._
+import cats.syntax.flatMap._
+import ch.epfl.bluebrain.nexus.admin.CommonRejection.UnexpectedState
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.admin.index.Index
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectCommand._
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectRejection._
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectState._
-import ch.epfl.bluebrain.nexus.commons.types.Meta
 import ch.epfl.bluebrain.nexus.commons.types.identity.Identity
 import ch.epfl.bluebrain.nexus.sourcing.Aggregate
 import ch.epfl.bluebrain.nexus.sourcing.akka._
 
-class Projects[F[_]](agg: Agg[F], index: Index)(implicit F: Monad[F], http: HttpConfig, clock: Clock) {
+class Projects[F[_]](agg: Agg[F], index: Index)(implicit F: MonadError[F, Throwable], http: HttpConfig, clock: Clock) {
 
   /**
     * Creates a project.
@@ -35,7 +36,7 @@ class Projects[F[_]](agg: Agg[F], index: Index)(implicit F: Monad[F], http: Http
         index.getProject(label) match {
           case None =>
             val projectId = UUID.randomUUID
-            val command   = CreateProject(projectId, org.id, label, description, Meta(caller, clock.instant))
+            val command   = CreateProject(projectId, org.id, label, description, clock.instant, caller)
             eval(projectId.toString, command)
           case Some(_) => F.pure(Left(ProjectAlreadyExists))
         }
@@ -56,7 +57,7 @@ class Projects[F[_]](agg: Agg[F], index: Index)(implicit F: Monad[F], http: Http
         if (project.deprecated) F.pure(Left(ProjectIsDeprecated))
         else
           eval(project.id.toString,
-               UpdateProject(project.id, project.label, description, project.rev, Meta(caller, clock.instant)))
+               UpdateProject(project.id, project.label, description, project.rev, clock.instant, caller))
       case None => F.pure(Left(ProjectDoesNotExists))
     }
 
@@ -72,7 +73,7 @@ class Projects[F[_]](agg: Agg[F], index: Index)(implicit F: Monad[F], http: Http
     index.getProject(label) match {
       case Some(project) =>
         if (project.deprecated) F.pure(Left(ProjectIsDeprecated))
-        else eval(project.id.toString, DeprecateProject(project.id, rev, Meta(caller, clock.instant)))
+        else eval(project.id.toString, DeprecateProject(project.id, rev, clock.instant, caller))
       case None => F.pure(Left(ProjectDoesNotExists))
     }
 
@@ -102,7 +103,7 @@ class Projects[F[_]](agg: Agg[F], index: Index)(implicit F: Monad[F], http: Http
       }
       .map {
         case c: Current if c.rev == rev => Right(c.toResource)
-        case _: Current                 => Left(IncorrectRevisionProvided)
+        case _: Current                 => Left(IncorrectRev(rev))
         case Initial                    => Left(ProjectDoesNotExists)
       }
   }
@@ -110,10 +111,10 @@ class Projects[F[_]](agg: Agg[F], index: Index)(implicit F: Monad[F], http: Http
   private def eval(id: String, command: ProjectCommand): F[ProjectMetaOrRejection] =
     agg
       .evaluateS(id, command)
-      .map {
-        case Right(c: Current) => Right(c.toResourceMetaData)
-        case Left(rejection)   => Left(rejection)
-        case Right(Initial)    => Left(UnexpectedState)
+      .flatMap {
+        case Right(c: Current) => F.pure(Right(c.toResourceMetaData))
+        case Left(rejection)   => F.pure(Left(rejection))
+        case Right(Initial)    => F.raiseError(UnexpectedState)
       }
 }
 

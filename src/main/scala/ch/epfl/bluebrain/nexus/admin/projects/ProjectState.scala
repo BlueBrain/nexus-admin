@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.admin.projects
 
+import java.time.Instant
 import java.util.UUID
 
 import cats.effect.Async
@@ -8,7 +9,7 @@ import ch.epfl.bluebrain.nexus.admin.projects.ProjectCommand._
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectEvent._
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectRejection._
 import ch.epfl.bluebrain.nexus.admin.types.{ResourceF, ResourceMetadata}
-import ch.epfl.bluebrain.nexus.commons.types.Meta
+import ch.epfl.bluebrain.nexus.commons.types.identity.Identity
 
 sealed trait ProjectState extends Product with Serializable
 
@@ -27,7 +28,8 @@ object ProjectState {
     * @param label        the label (segment) of the resource
     * @param description  an optional project description
     * @param rev          the selected revision number
-    * @param meta         the metadata associated to this resource
+    * @param instant      the timestamp associated with this state
+    * @param subject      the identity associated with this state
     * @param deprecated   the deprecation status
     */
   final case class Current(id: UUID,
@@ -35,7 +37,8 @@ object ProjectState {
                            label: ProjectLabel,
                            description: Option[String],
                            rev: Long,
-                           meta: Meta,
+                           instant: Instant,
+                           subject: Identity,
                            deprecated: Boolean)
       extends ProjectState {
 
@@ -45,14 +48,14 @@ object ProjectState {
                 rev,
                 deprecated,
                 types,
-                meta.instant,
-                meta.author,
-                meta.instant,
-                meta.author,
+                instant,
+                subject,
+                instant,
+                subject,
                 SimpleProject(label.value, description))
 
     def toResourceMetaData(implicit http: HttpConfig): ResourceMetadata =
-      ResourceF.unit(label.toIri, id, rev, deprecated, types, meta.instant, meta.author, meta.instant, meta.author)
+      ResourceF.unit(label.toIri, id, rev, deprecated, types, instant, subject, instant, subject)
   }
 
   /**
@@ -63,52 +66,49 @@ object ProjectState {
     * @param event the emitted event
     * @return the next state
     */
-  def next(state: ProjectState, event: ProjectEvent): ProjectState = {
-
-    (state, event: ProjectEvent) match {
-      case (Initial, ProjectCreated(id, org, label, rev, meta, value)) =>
-        Current(id, org, label, rev, meta, value, deprecated = false)
-      // $COVERAGE-OFF$
-      case (Initial, _) => Initial
-      // $COVERAGE-ON$
-      case (c: Current, _) if c.deprecated => c
-      case (c, _: ProjectCreated)          => c
-      case (c: Current, ProjectUpdated(_, label, desc, rev, meta)) =>
-        c.copy(label = label, description = desc, rev = rev, meta = meta)
-      case (c: Current, ProjectDeprecated(_, rev, meta)) =>
-        c.copy(rev = rev, meta = meta, deprecated = true)
-    }
+  def next(state: ProjectState, event: ProjectEvent): ProjectState = (state, event) match {
+    case (Initial, ProjectCreated(id, org, label, rev, instant, subject, value)) =>
+      Current(id, org, label, rev, instant, subject, value, deprecated = false)
+    // $COVERAGE-OFF$
+    case (Initial, _) => Initial
+    // $COVERAGE-ON$
+    case (c: Current, _) if c.deprecated => c
+    case (c, _: ProjectCreated)          => c
+    case (c: Current, ProjectUpdated(_, label, desc, rev, instant, subject)) =>
+      c.copy(label = label, description = desc, rev = rev, instant = instant, subject = subject)
+    case (c: Current, ProjectDeprecated(_, rev, instant, subject)) =>
+      c.copy(rev = rev, instant = instant, subject = subject, deprecated = true)
   }
 
-  object Eval {
+  private[projects] object Eval {
 
-    def createProject(state: ProjectState, c: CreateProject): Either[ProjectRejection, ProjectEvent] =
+    private def createProject(state: ProjectState, c: CreateProject): Either[ProjectRejection, ProjectEvent] =
       state match {
-        case Initial => Right(ProjectCreated(c.id, c.organization, c.label, c.description, 1L, c.meta))
+        case Initial => Right(ProjectCreated(c.id, c.organization, c.label, c.description, 1L, c.instant, c.subject))
         case _       => Left(ProjectAlreadyExists)
       }
 
-    def updateProject(state: ProjectState, c: UpdateProject): Either[ProjectRejection, ProjectEvent] =
+    private def updateProject(state: ProjectState, c: UpdateProject): Either[ProjectRejection, ProjectEvent] =
       state match {
         case Initial                      => Left(ProjectDoesNotExists)
-        case s: Current if s.rev != c.rev => Left(IncorrectRevisionProvided)
+        case s: Current if s.rev != c.rev => Left(IncorrectRev(c.rev))
         case s: Current if s.deprecated   => Left(ProjectIsDeprecated)
         case s: Current                   => updateProjectAfter(s, c)
       }
 
-    def updateProjectAfter(state: Current, c: UpdateProject): Either[ProjectRejection, ProjectEvent] =
-      Right(ProjectUpdated(state.id, c.label, c.description, state.rev + 1, c.meta))
+    private def updateProjectAfter(state: Current, c: UpdateProject): Either[ProjectRejection, ProjectEvent] =
+      Right(ProjectUpdated(state.id, c.label, c.description, state.rev + 1, c.instant, c.subject))
 
-    def deprecateProject(state: ProjectState, c: DeprecateProject): Either[ProjectRejection, ProjectEvent] =
+    private def deprecateProject(state: ProjectState, c: DeprecateProject): Either[ProjectRejection, ProjectEvent] =
       state match {
         case Initial                      => Left(ProjectDoesNotExists)
-        case s: Current if s.rev != c.rev => Left(IncorrectRevisionProvided)
+        case s: Current if s.rev != c.rev => Left(IncorrectRev(c.rev))
         case s: Current if s.deprecated   => Left(ProjectIsDeprecated)
         case s: Current                   => deprecateProjectAfter(s, c)
       }
 
-    def deprecateProjectAfter(state: Current, c: DeprecateProject): Either[ProjectRejection, ProjectEvent] =
-      Right(ProjectDeprecated(state.id, state.rev + 1, c.meta))
+    private def deprecateProjectAfter(state: Current, c: DeprecateProject): Either[ProjectRejection, ProjectEvent] =
+      Right(ProjectDeprecated(state.id, state.rev + 1, c.instant, c.subject))
 
     /**
       * Command evaluation logic for projects; considering a current ''state'' and a command to be evaluated either

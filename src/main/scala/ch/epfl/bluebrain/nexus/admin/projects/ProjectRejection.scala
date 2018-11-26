@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.admin.projects
 
-import ch.epfl.bluebrain.nexus.admin.CommonRejection
 import ch.epfl.bluebrain.nexus.commons.types.Rejection
 
 sealed trait ProjectRejection extends Rejection
@@ -36,19 +35,9 @@ object ProjectRejection {
 
   /**
     * Signals that a project update cannot be performed due to an incorrect revision provided.
-    */
-  final case object IncorrectRevisionProvided extends ProjectRejection
-
-  /**
-    * Signals that an unexpected state was encountered performing a project action.
-    */
-  final case object UnexpectedState extends ProjectRejection
-
-  /**
-    * Signals any other rejection which gets defined out of this scope.
     *
-    * @param rejection the underlying rejections that was triggered
+    * @param rev the provided revision
     */
-  final case class WrappedRejection(rejection: CommonRejection) extends ProjectRejection
+  final case class IncorrectRev(rev: Long) extends ProjectRejection
 
 }

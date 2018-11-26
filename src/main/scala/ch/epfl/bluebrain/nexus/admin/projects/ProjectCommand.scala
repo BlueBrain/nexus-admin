@@ -1,14 +1,26 @@
 package ch.epfl.bluebrain.nexus.admin.projects
 
+import java.time.Instant
 import java.util.UUID
 
-import ch.epfl.bluebrain.nexus.commons.types.Meta
+import ch.epfl.bluebrain.nexus.commons.types.identity.Identity
 
 sealed trait ProjectCommand extends Product with Serializable {
 
+  /**
+    * @return the permanent identifier for the project
+    */
   def id: UUID
 
-  def meta: Meta
+  /**
+    * @return the timestamp associated to this command
+    */
+  def instant: Instant
+
+  /**
+    * @return the identity associated to this command
+    */
+  def subject: Identity
 }
 
 object ProjectCommand {
@@ -20,13 +32,15 @@ object ProjectCommand {
     * @param organization the permanent identifier for the parent organization
     * @param label        the label (segment) of the project
     * @param description  an optional project description
-    * @param meta         the metadata associated to this command
+    * @param instant      the timestamp associated to this command
+    * @param subject      the identity associated to this command
     */
   final case class CreateProject(id: UUID,
                                  organization: UUID,
                                  label: ProjectLabel,
                                  description: Option[String],
-                                 meta: Meta)
+                                 instant: Instant,
+                                 subject: Identity)
       extends ProjectCommand
 
   /**
@@ -36,17 +50,24 @@ object ProjectCommand {
     * @param label       the label (segment) of the resource
     * @param description an optional project description
     * @param rev         the last known revision of the project
-    * @param meta        the metadata associated to this command
+    * @param instant     the timestamp associated to this command
+    * @param subject     the identity associated to this command
     */
-  final case class UpdateProject(id: UUID, label: ProjectLabel, description: Option[String], rev: Long, meta: Meta)
+  final case class UpdateProject(id: UUID,
+                                 label: ProjectLabel,
+                                 description: Option[String],
+                                 rev: Long,
+                                 instant: Instant,
+                                 subject: Identity)
       extends ProjectCommand
 
   /**
     * Command that signals the intent to deprecate a project.
     *
-    * @param id    the permanent identifier for the project
-    * @param rev   the last known revision of the project
-    * @param meta  the metadata associated to this command
+    * @param id      the permanent identifier for the project
+    * @param rev     the last known revision of the project
+    * @param instant the timestamp associated to this command
+    * @param subject the identity associated to this command
     */
-  final case class DeprecateProject(id: UUID, rev: Long, meta: Meta) extends ProjectCommand
+  final case class DeprecateProject(id: UUID, rev: Long, instant: Instant, subject: Identity) extends ProjectCommand
 }

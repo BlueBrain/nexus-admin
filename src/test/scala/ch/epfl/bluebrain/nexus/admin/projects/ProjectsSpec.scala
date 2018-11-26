@@ -103,7 +103,9 @@ class ProjectsSpec extends WordSpecLike with IdiomaticMockitoFixture with Matche
       updated.createdBy shouldEqual caller
       updated.updatedBy shouldEqual caller
 
-      projects.update(label, None)(caller).unsafeRunSync().left.value shouldEqual IncorrectRevisionProvided
+      index.getProject(label) shouldReturn Some(project.copy(id = created.uuid, rev = 2L))
+      val updated2 = projects.update(label, None)(caller).unsafeRunSync().right.value
+      updated2.rev shouldEqual 3L
     }
 
     "deprecate a project" in new Context {
@@ -121,7 +123,7 @@ class ProjectsSpec extends WordSpecLike with IdiomaticMockitoFixture with Matche
       deprecated.createdBy shouldEqual caller
       deprecated.updatedBy shouldEqual caller
 
-      projects.deprecate(label, 42L)(caller).unsafeRunSync().left.value shouldEqual IncorrectRevisionProvided
+      projects.deprecate(label, 42L)(caller).unsafeRunSync().left.value shouldEqual IncorrectRev(42L)
     }
 
     "fetch a project" in new Context {
@@ -161,7 +163,7 @@ class ProjectsSpec extends WordSpecLike with IdiomaticMockitoFixture with Matche
       fetched.updatedBy shouldEqual caller
       fetched.value shouldEqual SimpleProject(label.value, Some("New description"))
 
-      projects.fetch(created.uuid, 4L).unsafeRunSync().left.value shouldEqual IncorrectRevisionProvided
+      projects.fetch(created.uuid, 4L).unsafeRunSync().left.value shouldEqual IncorrectRev(4L)
       projects.fetch(UUID.randomUUID, 4L).unsafeRunSync().left.value shouldEqual ProjectDoesNotExists
     }
   }
