@@ -1,7 +1,5 @@
 package ch.epfl.bluebrain.nexus.admin.organizations
 
-import java.util.UUID
-
 import ch.epfl.bluebrain.nexus.commons.types.Rejection
 
 sealed trait OrganizationRejection extends Rejection
@@ -22,9 +20,3 @@ case object OrganizationDoesNotExist extends OrganizationRejection
   * @param providedRev  provided revision
   */
 final case class IncorrectRevisionProvided(latestRev: Long, providedRev: Long) extends OrganizationRejection
-
-/**
-  * Organization was in unexpected state
-  * @param id ID of the organization.
-  */
-final case class OrganizationUnexpectedState(id: UUID) extends OrganizationRejection

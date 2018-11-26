@@ -5,11 +5,12 @@ import java.util.UUID
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
-import cats.Monad
+import cats.MonadError
 import cats.effect.ConcurrentEffect
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.admin.exceptions.UnexpectedState
 import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationCommand._
 import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationState._
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF
@@ -20,7 +21,7 @@ import ch.epfl.bluebrain.nexus.sourcing.akka.{AkkaAggregate, AkkaSourcingConfig,
 /**
   * Organizations operations bundle
   */
-class Organizations[F[_]](agg: Agg[F])(implicit F: Monad[F], clock: Clock, http: HttpConfig) {
+class Organizations[F[_]](agg: Agg[F])(implicit F: MonadError[F, Throwable], clock: Clock, http: HttpConfig) {
 
   /**
     * Create an organization.
@@ -82,12 +83,11 @@ class Organizations[F[_]](agg: Agg[F])(implicit F: Monad[F], clock: Clock, http:
   private def evaluate(cmd: OrganizationCommand): F[OrganizationMetaOrRejection] =
     agg
       .evaluateS(cmd.id.toString, cmd)
-      .map(
-        _.flatMap {
-          case c: Current => Right(c.toResourceMetadata)
-          case Initial    => Left(OrganizationUnexpectedState(cmd.id))
-        }
-      )
+      .flatMap {
+        case Right(c: Current) => F.pure(Right(c.toResourceMetadata))
+        case Right(Initial)    => F.raiseError(new UnexpectedState(cmd.id.toString))
+        case Left(rejection)   => F.pure(Left(rejection))
+      }
 
   private def stateToResource(state: OrganizationState): Option[ResourceF[Organization]] = state match {
     case Initial    => None
