@@ -1,5 +1,7 @@
 package ch.epfl.bluebrain.nexus.admin.organizations
+
 import java.time.Instant
+import java.util.UUID
 
 import ch.epfl.bluebrain.nexus.commons.types.identity.Identity
 
@@ -30,11 +32,16 @@ object OrganizationEvent {
     * Event representing organization creation.
     *
     * @param organization the representation of the organization
+    * @param uuid         the permanent identifier of the organization
     * @param rev          the revision to create
     * @param instant      the instant when this event was created
     * @param subject      the subject which created this event
     */
-  final case class OrganizationCreated(organization: Organization, rev: Long, instant: Instant, subject: Identity)
+  final case class OrganizationCreated(organization: Organization,
+                                       uuid: UUID,
+                                       rev: Long,
+                                       instant: Instant,
+                                       subject: Identity)
       extends OrganizationEvent
 
   /**

@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.admin.organizations
 import java.time.Instant
+import java.util.UUID
 
 import cats.effect.Async
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig.HttpConfig
@@ -24,7 +25,8 @@ object OrganizationState {
   /**
     * Initial organization state.
     *
-    * @param organization
+    * @param organization the organization representation
+    * @param uuid         the permanent identifier of the organization
     * @param rev          the organization revision
     * @param deprecated   the deprecation status of the organization
     * @param createdAt    the instant when the organization was created
@@ -33,6 +35,7 @@ object OrganizationState {
     * @param updatedBy    the identity that last updated the organization
     */
   final case class Current(organization: Organization,
+                           uuid: UUID,
                            rev: Long,
                            deprecated: Boolean,
                            createdAt: Instant,
@@ -43,6 +46,7 @@ object OrganizationState {
 
     def toResource(implicit http: HttpConfig): ResourceF[Organization] =
       ResourceF(http.baseIri + "orgs" + organization.label,
+                uuid,
                 rev,
                 deprecated,
                 Set(nxv.Organization),
@@ -54,6 +58,7 @@ object OrganizationState {
 
     def toResourceMetadata(implicit http: HttpConfig): ResourceMetadata =
       ResourceF.unit(http.baseIri + "orgs" + organization.label,
+                     uuid,
                      rev,
                      deprecated,
                      Set(nxv.Organization),
@@ -65,8 +70,8 @@ object OrganizationState {
   }
 
   def next(state: OrganizationState, ev: OrganizationEvent): OrganizationState = (state, ev) match {
-    case (Initial, OrganizationCreated(org, 1L, instant, identity)) =>
-      Current(org, 1L, deprecated = false, instant, instant, identity, identity)
+    case (Initial, OrganizationCreated(org, uuid, 1L, instant, identity)) =>
+      Current(org, uuid, 1L, deprecated = false, instant, instant, identity, identity)
 
     case (c: Current, OrganizationUpdated(org, rev, instant, subject)) =>
       c.copy(organization = org, rev = rev, updatedAt = instant, updatedBy = subject)
@@ -81,7 +86,7 @@ object OrganizationState {
     val F = implicitly[Async[F]]
 
     def create(c: CreateOrganization): EventOrRejection = state match {
-      case Initial if c.rev == 0L => Right(OrganizationCreated(c.organization, rev = 1L, c.instant, c.subject))
+      case Initial if c.rev == 0L => Right(OrganizationCreated(c.organization, c.id, rev = 1L, c.instant, c.subject))
       case Initial                => Left(IncorrectRevisionProvided(0L, c.rev))
       case _                      => Left(OrganizationAlreadyExists)
     }
