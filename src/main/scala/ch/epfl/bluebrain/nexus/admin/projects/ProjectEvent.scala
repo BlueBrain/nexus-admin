@@ -43,7 +43,7 @@ object ProjectEvent {
     */
   final case class ProjectCreated(id: UUID,
                                   organization: UUID,
-                                  label: ProjectLabel,
+                                  label: String,
                                   description: Option[String],
                                   rev: Long,
                                   instant: Instant,
@@ -61,7 +61,7 @@ object ProjectEvent {
     * @param subject     the identity associated to this event
     */
   final case class ProjectUpdated(id: UUID,
-                                  label: ProjectLabel,
+                                  label: String,
                                   description: Option[String],
                                   rev: Long,
                                   instant: Instant,

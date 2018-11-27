@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.admin.index
 import java.util.UUID
 
 import ch.epfl.bluebrain.nexus.admin.organizations.Organization
-import ch.epfl.bluebrain.nexus.admin.projects.{Project, ProjectLabel}
+import ch.epfl.bluebrain.nexus.admin.projects.Project
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF
 
 /**
@@ -48,9 +48,10 @@ trait Index {
   def getProject(id: UUID): Option[ResourceF[Project]]
 
   /**
-    * @param label the project label
+    * @param project      the project label
+    * @param organization the organization label
     * @return the corresponding project resource, if any
     */
-  def getProject(label: ProjectLabel): Option[ResourceF[Project]]
+  def getProject(organization: String, project: String): Option[ResourceF[Project]]
 
 }

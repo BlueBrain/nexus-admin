@@ -4,11 +4,9 @@ import java.time.Instant
 import java.util.UUID
 
 import cats.effect.Async
-import ch.epfl.bluebrain.nexus.admin.config.AppConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectCommand._
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectEvent._
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectRejection._
-import ch.epfl.bluebrain.nexus.admin.types.{ResourceF, ResourceMetadata}
 import ch.epfl.bluebrain.nexus.commons.types.identity.Identity
 
 sealed trait ProjectState extends Product with Serializable
@@ -23,7 +21,7 @@ object ProjectState {
   /**
     * State used for all resources that have been created and later possibly updated or deprecated.
     *
-    * @param id           the permanent identifier for the resource
+    * @param id           the permanent identifier for the project
     * @param organization the permanent identifier of the parent organization
     * @param label        the label (segment) of the resource
     * @param description  an optional project description
@@ -34,29 +32,13 @@ object ProjectState {
     */
   final case class Current(id: UUID,
                            organization: UUID,
-                           label: ProjectLabel,
+                           label: String,
                            description: Option[String],
                            rev: Long,
                            instant: Instant,
                            subject: Identity,
                            deprecated: Boolean)
-      extends ProjectState {
-
-    def toResource(implicit http: HttpConfig): ResourceF[SimpleProject] =
-      ResourceF(label.toIri,
-                id,
-                rev,
-                deprecated,
-                types,
-                instant,
-                subject,
-                instant,
-                subject,
-                SimpleProject(label.value, description))
-
-    def toResourceMetaData(implicit http: HttpConfig): ResourceMetadata =
-      ResourceF.unit(label.toIri, id, rev, deprecated, types, instant, subject, instant, subject)
-  }
+      extends ProjectState
 
   /**
     * State transition function for resources; considering a current state (the ''state'' argument) and an emitted

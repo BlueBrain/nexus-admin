@@ -26,7 +26,7 @@ scalafmt: {
 
 // Dependency versions
 val rdfVersion                 = "0.2.28"
-val commonsVersion             = "0.10.37"
+val commonsVersion             = "0.10.39"
 val serviceVersion             = "0.10.20"
 val sourcingVersion            = "0.12.0"
 val akkaVersion                = "2.5.18"
@@ -67,7 +67,6 @@ lazy val journalCore         = "io.verizon.journal"      %% "core"              
 lazy val mockito             = "org.mockito"             %% "mockito-scala"               % mockitoVersion
 lazy val logbackClassic      = "ch.qos.logback"          % "logback-classic"              % logbackVersion
 lazy val pureconfig          = "com.github.pureconfig"   %% "pureconfig"                  % pureconfigVersion
-lazy val scalaTest           = "org.scalatest"           %% "scalatest"                   % scalaTestVersion
 lazy val kryo                = "com.github.romix.akka"   %% "akka-kryo-serialization"     % kryoVersion
 
 lazy val admin = project
@@ -102,8 +101,7 @@ lazy val admin = project
       sourcingAkka,
       akkaHttpTestKit % Test,
       commonTest      % Test,
-      mockito         % Test,
-      scalaTest       % Test,
+      mockito         % Test
     )
   )
 

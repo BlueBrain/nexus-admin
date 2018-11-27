@@ -37,7 +37,7 @@ object ProjectCommand {
     */
   final case class CreateProject(id: UUID,
                                  organization: UUID,
-                                 label: ProjectLabel,
+                                 label: String,
                                  description: Option[String],
                                  instant: Instant,
                                  subject: Identity)
@@ -54,7 +54,7 @@ object ProjectCommand {
     * @param subject     the identity associated to this command
     */
   final case class UpdateProject(id: UUID,
-                                 label: ProjectLabel,
+                                 label: String,
                                  description: Option[String],
                                  rev: Long,
                                  instant: Instant,

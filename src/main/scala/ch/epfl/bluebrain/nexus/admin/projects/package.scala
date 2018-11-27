@@ -8,9 +8,10 @@ import ch.epfl.bluebrain.nexus.sourcing.Aggregate
 package object projects {
   val types: Set[AbsoluteIri] = Set(nxv.Project.value)
 
-  type Agg[F[_]]                  = Aggregate[F, String, ProjectEvent, ProjectState, ProjectCommand, ProjectRejection]
+  type Agg[F[_]] = Aggregate[F, String, ProjectEvent, ProjectState, ProjectCommand, ProjectRejection]
+
   type EventOrRejection           = Either[ProjectRejection, ProjectEvent]
-  type ProjectResourceOrRejection = Either[ProjectRejection, ResourceF[SimpleProject]]
+  type ProjectResourceOrRejection = Either[ProjectRejection, ResourceF[Project]]
   type ProjectMetaOrRejection     = Either[ProjectRejection, ResourceF[Unit]]
 
 }

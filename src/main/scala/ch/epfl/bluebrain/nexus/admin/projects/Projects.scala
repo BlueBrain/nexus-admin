@@ -7,8 +7,8 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import cats.MonadError
 import cats.effect.ConcurrentEffect
-import cats.syntax.functor._
 import cats.syntax.flatMap._
+import cats.syntax.functor._
 import ch.epfl.bluebrain.nexus.admin.CommonRejection.UnexpectedState
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig.HttpConfig
@@ -16,28 +16,35 @@ import ch.epfl.bluebrain.nexus.admin.index.Index
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectCommand._
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectRejection._
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectState._
+import ch.epfl.bluebrain.nexus.admin.types.ResourceF
 import ch.epfl.bluebrain.nexus.commons.types.identity.Identity
 import ch.epfl.bluebrain.nexus.sourcing.Aggregate
 import ch.epfl.bluebrain.nexus.sourcing.akka._
 
+/**
+  * The projects operations bundle.
+  *
+  * @param agg   an aggregate instance for projects
+  * @param index the project and organization labels index
+  * @tparam F    the effect type
+  */
 class Projects[F[_]](agg: Agg[F], index: Index)(implicit F: MonadError[F, Throwable], http: HttpConfig, clock: Clock) {
 
   /**
     * Creates a project.
     *
-    * @param label       the project label (segment)
-    * @param description an optional description
-    * @param caller      an implicitly available caller
+    * @param project the project
+    * @param caller  an implicitly available caller
     * @return project the created project resource metadata if the operation was successful, a rejection otherwise
     */
-  def create(label: ProjectLabel, description: Option[String])(implicit caller: Identity): F[ProjectMetaOrRejection] =
-    index.getOrganization(label.organization) match {
+  def create(project: Project)(implicit caller: Identity): F[ProjectMetaOrRejection] =
+    index.getOrganization(project.organization) match {
       case Some(org) =>
-        index.getProject(label) match {
+        index.getProject(project.organization, project.label) match {
           case None =>
             val projectId = UUID.randomUUID
-            val command   = CreateProject(projectId, org.id, label, description, clock.instant, caller)
-            eval(projectId.toString, command)
+            val command   = CreateProject(projectId, org.uuid, project.label, project.description, clock.instant, caller)
+            eval(projectId, command)
           case Some(_) => F.pure(Left(ProjectAlreadyExists))
         }
       case None => F.pure(Left(OrganizationDoesNotExist))
@@ -46,46 +53,45 @@ class Projects[F[_]](agg: Agg[F], index: Index)(implicit F: MonadError[F, Throwa
   /**
     * Updates a project.
     *
-    * @param label       the project label (segment)
-    * @param description an optional description
-    * @param caller      an implicitly available caller
+    * @param project the project
+    * @param caller  an implicitly available caller
     * @return the updated project resource metadata if the operation was successful, a rejection otherwise
     */
-  def update(label: ProjectLabel, description: Option[String])(implicit caller: Identity): F[ProjectMetaOrRejection] =
-    index.getProject(label) match {
-      case Some(project) =>
-        if (project.deprecated) F.pure(Left(ProjectIsDeprecated))
+  def update(project: Project)(implicit caller: Identity): F[ProjectMetaOrRejection] =
+    index.getProject(project.organization, project.label) match {
+      case Some(resource) =>
+        if (resource.deprecated) F.pure(Left(ProjectIsDeprecated))
         else
-          eval(project.id.toString,
-               UpdateProject(project.id, project.label, description, project.rev, clock.instant, caller))
+          eval(resource.uuid,
+               UpdateProject(resource.uuid, project.label, project.description, resource.rev, clock.instant, caller))
       case None => F.pure(Left(ProjectDoesNotExists))
     }
 
   /**
     * Deprecates a project.
     *
-    * @param label   the project label (segment)
+    * @param project the project
     * @param rev     the project revision
     * @param caller  an implicitly available caller
     * @return the deprecated project resource metadata if the operation was successful, a rejection otherwise
     */
-  def deprecate(label: ProjectLabel, rev: Long)(implicit caller: Identity): F[ProjectMetaOrRejection] =
-    index.getProject(label) match {
-      case Some(project) =>
-        if (project.deprecated) F.pure(Left(ProjectIsDeprecated))
-        else eval(project.id.toString, DeprecateProject(project.id, rev, clock.instant, caller))
+  def deprecate(project: Project, rev: Long)(implicit caller: Identity): F[ProjectMetaOrRejection] =
+    index.getProject(project.organization, project.label) match {
+      case Some(resource) =>
+        if (resource.deprecated) F.pure(Left(ProjectIsDeprecated))
+        else eval(resource.uuid, DeprecateProject(resource.uuid, rev, clock.instant, caller))
       case None => F.pure(Left(ProjectDoesNotExists))
     }
 
   /**
     * Fetches a project from the aggregate.
     *
-    * @param id the project permanent identifier
+    * @param uuid the project permanent identifier
     * @return Some(project) if found, None otherwise
     */
-  def fetch(id: UUID): F[ProjectResourceOrRejection] = agg.currentState(id.toString).map {
-    case c: Current => Right(c.toResource)
-    case Initial    => Left(ProjectDoesNotExists)
+  def fetch(uuid: UUID): F[Option[ResourceF[Project]]] = agg.currentState(uuid.toString).map {
+    case c: Current => toResource(c).toOption
+    case Initial    => None
   }
 
   /**
@@ -93,7 +99,7 @@ class Projects[F[_]](agg: Agg[F], index: Index)(implicit F: MonadError[F, Throwa
     *
     * @param id the project permanent identifier
     * @param rev the project revision
-    * @return Some(project) if found, None otherwise
+    * @return the project if found, a rejection otherwise
     */
   def fetch(id: UUID, rev: Long): F[ProjectResourceOrRejection] = {
     agg
@@ -102,26 +108,47 @@ class Projects[F[_]](agg: Agg[F], index: Index)(implicit F: MonadError[F, Throwa
         case (state, event)                          => ProjectState.next(state, event)
       }
       .map {
-        case c: Current if c.rev == rev => Right(c.toResource)
+        case c: Current if c.rev == rev => toResource(c)
         case _: Current                 => Left(IncorrectRev(rev))
         case Initial                    => Left(ProjectDoesNotExists)
       }
   }
 
-  private def eval(id: String, command: ProjectCommand): F[ProjectMetaOrRejection] =
+  private def eval(id: UUID, command: ProjectCommand): F[ProjectMetaOrRejection] =
     agg
-      .evaluateS(id, command)
+      .evaluateS(id.toString, command)
       .flatMap {
-        case Right(c: Current) => F.pure(Right(c.toResourceMetaData))
+        case Right(c: Current) => F.pure(toResourceMetaData(c))
         case Left(rejection)   => F.pure(Left(rejection))
         case Right(Initial)    => F.raiseError(UnexpectedState)
       }
+
+  private def toResource(c: Current): ProjectResourceOrRejection = index.getOrganization(c.organization) match {
+    case Some(org) =>
+      val iri = http.projectsIri + org.value.label + c.label
+      Right(
+        ResourceF(iri,
+                  c.id,
+                  c.rev,
+                  c.deprecated,
+                  types,
+                  c.instant,
+                  c.subject,
+                  c.instant,
+                  c.subject,
+                  Project(c.label, org.value.label, c.description)))
+    case None =>
+      Left(OrganizationDoesNotExist)
+  }
+
+  private def toResourceMetaData(c: Current): ProjectMetaOrRejection = toResource(c).map(_.discard)
+
 }
 
 object Projects {
 
   /**
-    * Constructs a [[ch.epfl.bluebrain.nexus.admin.projects.Projects]] operation bundle.
+    * Constructs a [[ch.epfl.bluebrain.nexus.admin.projects.Projects]] operations bundle.
     *
     * @param index           the project and organization label index
     * @param appConfig       the application configuration
