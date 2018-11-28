@@ -69,6 +69,11 @@ object AppConfig {
       */
     val baseIri: AbsoluteIri = url"$apiUri".value
 
+    /**
+      * The base IRI for organizations
+      */
+    val orgsBaseIri: AbsoluteIri = baseIri + "orgs"
+
   }
 
   /**

@@ -25,13 +25,13 @@ object OrganizationState {
   /**
     * Initial organization state.
     *
-    * @param id         the permanent identifier of the organization
+    * @param id           the permanent identifier of the organization
     * @param rev          the organization revision
     * @param organization the organization representation
     * @param deprecated   the deprecation status of the organization
     * @param createdAt    the instant when the organization was created
-    * @param updatedAt    the instant when the organization was last updated
     * @param createdBy    the identity that created the organization
+    * @param updatedAt    the instant when the organization was last updated
     * @param updatedBy    the identity that last updated the organization
     */
   final case class Current(id: UUID,
@@ -39,8 +39,8 @@ object OrganizationState {
                            organization: Organization,
                            deprecated: Boolean,
                            createdAt: Instant,
-                           updatedAt: Instant,
                            createdBy: Identity,
+                           updatedAt: Instant,
                            updatedBy: Identity)
       extends OrganizationState {
 
@@ -51,7 +51,7 @@ object OrganizationState {
       * @return [[Organization]] wrapped in [[ResourceF]]
       */
     def toResource(implicit http: HttpConfig): ResourceF[Organization] =
-      ResourceF(http.baseIri + "orgs" + organization.label,
+      ResourceF(http.orgsBaseIri + organization.label,
                 id,
                 rev,
                 deprecated,
@@ -64,11 +64,12 @@ object OrganizationState {
 
     /**
       * Convert the state into [[ResourceMetadata]]
+      *
       * @param   http implicitly available [[HttpConfig]]
       * @return [[ResourceMetadata]] for the [[Organization]]
       */
     def toResourceMetadata(implicit http: HttpConfig): ResourceMetadata =
-      ResourceF.unit(http.baseIri + "orgs" + organization.label,
+      ResourceF.unit(http.orgsBaseIri + organization.label,
                      id,
                      rev,
                      deprecated,

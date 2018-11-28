@@ -31,9 +31,9 @@ object OrganizationEvent {
   /**
     * Event representing organization creation.
     *
-    * @param organization the representation of the organization
     * @param id           the permanent identifier of the organization
     * @param rev          the revision to create
+    * @param organization the representation of the organization
     * @param instant      the instant when this event was created
     * @param subject      the subject which created this event
     */
