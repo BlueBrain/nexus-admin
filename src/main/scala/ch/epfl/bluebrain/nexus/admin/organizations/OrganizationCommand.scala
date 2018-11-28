@@ -1,4 +1,5 @@
 package ch.epfl.bluebrain.nexus.admin.organizations
+
 import java.time.Instant
 import java.util.UUID
 
@@ -35,14 +36,14 @@ object OrganizationCommand {
   /**
     * An intent to create an organization.
     * @param id           ID of the organization
-    * @param organization representation of the organization
     * @param rev          the revision to create
+    * @param organization representation of the organization
     * @param instant      the instant when this command was created
     * @param subject      the subject which created this command.
     */
   final case class CreateOrganization(id: UUID,
-                                      organization: Organization,
                                       rev: Long,
+                                      organization: Organization,
                                       instant: Instant,
                                       subject: Identity)
       extends OrganizationCommand
@@ -51,14 +52,14 @@ object OrganizationCommand {
     * An intent to create an organization.
     *
     * @param id           ID of the organization
-    * @param organization representation of the organization
     * @param rev          the revision to update
+    * @param organization representation of the organization
     * @param instant      the instant when this command was created
     * @param subject      the subject which created this command.
     */
   final case class UpdateOrganization(id: UUID,
-                                      organization: Organization,
                                       rev: Long,
+                                      organization: Organization,
                                       instant: Instant,
                                       subject: Identity)
       extends OrganizationCommand

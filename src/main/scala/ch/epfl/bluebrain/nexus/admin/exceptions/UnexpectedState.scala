@@ -1,4 +1,5 @@
 package ch.epfl.bluebrain.nexus.admin.exceptions
+
 import ch.epfl.bluebrain.nexus.commons.types.Err
 
 /**
@@ -6,4 +7,4 @@ import ch.epfl.bluebrain.nexus.commons.types.Err
   * @param id ID of the resource
   */
 @SuppressWarnings(Array("IncorrectlyNamedExceptions"))
-class UnexpectedState(id: String) extends Err(s"Unexpected resource state for resource with ID $id")
+final case class UnexpectedState(id: String) extends Err(s"Unexpected resource state for resource with ID $id")

@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.admin.config.AppConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.admin.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.admin.index.Index
 import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationState._
+import ch.epfl.bluebrain.nexus.admin.organizations.Organizations._
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF
 import ch.epfl.bluebrain.nexus.commons.test.Randomness
 import ch.epfl.bluebrain.nexus.commons.types.identity.Identity

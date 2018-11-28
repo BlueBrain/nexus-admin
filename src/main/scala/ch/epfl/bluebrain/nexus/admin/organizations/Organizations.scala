@@ -6,13 +6,16 @@ import java.util.UUID
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import cats.MonadError
-import cats.effect.ConcurrentEffect
+import cats.effect.{Async, ConcurrentEffect}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.admin.exceptions.UnexpectedState
 import ch.epfl.bluebrain.nexus.admin.index.Index
 import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationCommand._
+import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationEvent._
+import ch.epfl.bluebrain.nexus.admin.organizations.Organizations.next
+import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationRejection._
 import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationState._
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF
 import ch.epfl.bluebrain.nexus.commons.types.identity.Identity
@@ -35,7 +38,7 @@ class Organizations[F[_]](agg: Agg[F], index: Index)(implicit F: MonadError[F, T
     */
   def create(organization: Organization)(implicit caller: Identity): F[OrganizationMetaOrRejection] =
     index.getOrganization(organization.label) match {
-      case None    => evaluate(CreateOrganization(UUID.randomUUID(), organization, rev = 0L, clock.instant(), caller))
+      case None    => evaluate(CreateOrganization(UUID.randomUUID(), rev = 0L, organization, clock.instant(), caller))
       case Some(_) => F.pure(Left(OrganizationAlreadyExists))
     }
 
@@ -51,7 +54,7 @@ class Organizations[F[_]](agg: Agg[F], index: Index)(implicit F: MonadError[F, T
   def update(label: String, organization: Organization, rev: Long)(
       implicit caller: Identity): F[OrganizationMetaOrRejection] =
     index.getOrganization(label) match {
-      case Some(org) => evaluate(UpdateOrganization(org.uuid, organization, rev, clock.instant(), caller))
+      case Some(org) => evaluate(UpdateOrganization(org.uuid, rev, organization, clock.instant(), caller))
       case None      => F.pure(Left(OrganizationDoesNotExist))
     }
 
@@ -129,7 +132,7 @@ object Organizations {
         Initial,
         next,
         evaluate[F],
-        PassivationStrategy.immediately[OrganizationState, OrganizationCommand],
+        PassivationStrategy.never[OrganizationState, OrganizationCommand],
         RetryStrategy.never,
         sc,
         ac.cluster.shards
@@ -137,4 +140,48 @@ object Organizations {
 
     aggF.map(new Organizations(_, index))
   }
+
+  private[organizations] def next(state: OrganizationState, ev: OrganizationEvent): OrganizationState =
+    (state, ev) match {
+      case (Initial, OrganizationCreated(uuid, 1L, org, instant, identity)) =>
+        Current(uuid, 1L, org, deprecated = false, instant, instant, identity, identity)
+
+      case (c: Current, OrganizationUpdated(rev, org, instant, subject)) =>
+        c.copy(rev = rev, organization = org, updatedAt = instant, updatedBy = subject)
+
+      case (c: Current, OrganizationDeprecated(rev, instant, subject)) =>
+        c.copy(rev = rev, deprecated = true, updatedAt = instant, updatedBy = subject)
+
+      case (_, _) => Initial
+    }
+
+  private[organizations] def evaluate[F[_]: Async](state: OrganizationState,
+                                                   command: OrganizationCommand): F[EventOrRejection] = {
+    val F = implicitly[Async[F]]
+
+    def create(c: CreateOrganization): EventOrRejection = state match {
+      case Initial if c.rev == 0L => Right(OrganizationCreated(c.id, rev = 1L, c.organization, c.instant, c.subject))
+      case Initial                => Left(IncorrectRev(0L, c.rev))
+      case _                      => Left(OrganizationAlreadyExists)
+    }
+
+    def update(c: UpdateOrganization): EventOrRejection = state match {
+      case Initial                      => Left(OrganizationDoesNotExist)
+      case s: Current if c.rev == s.rev => Right(OrganizationUpdated(c.rev + 1, c.organization, c.instant, c.subject))
+      case s: Current                   => Left(IncorrectRev(s.rev, c.rev))
+    }
+
+    def deprecate(c: DeprecateOrganization): EventOrRejection = state match {
+      case Initial                      => Left(OrganizationDoesNotExist)
+      case s: Current if c.rev == s.rev => Right(OrganizationDeprecated(c.rev + 1, c.instant, c.subject))
+      case s: Current                   => Left(IncorrectRev(s.rev, c.rev))
+    }
+
+    command match {
+      case c: CreateOrganization    => F.pure(create(c))
+      case c: UpdateOrganization    => F.pure(update(c))
+      case c: DeprecateOrganization => F.pure(deprecate(c))
+    }
+  }
+
 }
