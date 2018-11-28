@@ -6,6 +6,7 @@ import cats.effect.{ContextShift, IO}
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.admin.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.admin.index.Index
+import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationRejection._
 import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationState._
 import ch.epfl.bluebrain.nexus.admin.organizations.Organizations._
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF
@@ -170,7 +171,7 @@ class OrganizationsSpec
       val updatedOrg = organization.copy(description = genString())
 
       index.getOrganization(organization.label) shouldReturn Some(metadata.map(_ => organization))
-      orgs.update(updatedOrg.label, updatedOrg, 2L).unsafeRunSync() shouldEqual Left(IncorrectRevisionProvided(1L, 2L))
+      orgs.update(updatedOrg.label, updatedOrg, 2L).unsafeRunSync() shouldEqual Left(IncorrectRev(1L, 2L))
     }
 
     "reject deprecation when revision is incorrect" in {
@@ -180,7 +181,7 @@ class OrganizationsSpec
       val metadata = orgs.create(organization).unsafeRunSync().right.value
 
       index.getOrganization(organization.label) shouldReturn Some(metadata.map(_ => organization))
-      orgs.deprecate(organization.label, 2L).unsafeRunSync() shouldEqual Left(IncorrectRevisionProvided(1L, 2L))
+      orgs.deprecate(organization.label, 2L).unsafeRunSync() shouldEqual Left(IncorrectRev(1L, 2L))
 
     }
 
