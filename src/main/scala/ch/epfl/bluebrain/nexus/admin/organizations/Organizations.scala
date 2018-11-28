@@ -83,6 +83,7 @@ class Organizations[F[_]](agg: Agg[F], index: Index)(implicit F: MonadError[F, T
 
   /**
     * Fetch an organization by revision
+    *
     * @param label  label of the organization to fetch
     * @param rev    revision to fetch
     * @return       organization and metadata if it exists, None otherwise
@@ -144,7 +145,7 @@ object Organizations {
   private[organizations] def next(state: OrganizationState, ev: OrganizationEvent): OrganizationState =
     (state, ev) match {
       case (Initial, OrganizationCreated(uuid, 1L, org, instant, identity)) =>
-        Current(uuid, 1L, org, deprecated = false, instant, instant, identity, identity)
+        Current(uuid, 1L, org, deprecated = false, instant, identity, instant, identity)
 
       case (c: Current, OrganizationUpdated(rev, org, instant, subject)) =>
         c.copy(rev = rev, organization = org, updatedAt = instant, updatedBy = subject)
