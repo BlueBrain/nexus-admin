@@ -37,12 +37,13 @@ val catsVersion                = "1.4.0"
 val circeVersion               = "0.10.0"
 val journalVersion             = "3.0.19"
 val logbackVersion             = "1.2.3"
-val mockitoVersion             = "1.0.1"
+val mockitoVersion             = "1.0.4"
 val pureconfigVersion          = "0.9.2"
 val scalaTestVersion           = "3.0.5"
 val kryoVersion                = "0.5.2"
 
 // Dependencies modules
+lazy val rdfAkka             = "ch.epfl.bluebrain.nexus" %% "rdf-akka"                    % rdfVersion
 lazy val rdfJena             = "ch.epfl.bluebrain.nexus" %% "rdf-jena"                    % rdfVersion
 lazy val rdfCirce            = "ch.epfl.bluebrain.nexus" %% "rdf-circe"                   % rdfVersion
 lazy val rdfNexus            = "ch.epfl.bluebrain.nexus" %% "rdf-nexus"                   % rdfVersion
@@ -89,6 +90,7 @@ lazy val admin = project
       logbackClassic,
       kryo,
       pureconfig,
+      rdfAkka,
       rdfCirce,
       rdfJena,
       rdfNexus,

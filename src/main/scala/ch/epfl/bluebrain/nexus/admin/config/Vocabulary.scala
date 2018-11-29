@@ -40,6 +40,9 @@ object Vocabulary {
     val maxScore      = Metadata("maxScore")
     val score         = Metadata("score")
     val uuid          = Metadata("uuid")
+
+    //Resource types
+    val Organization = withSuffix("Organization").value
   }
 
   /**
