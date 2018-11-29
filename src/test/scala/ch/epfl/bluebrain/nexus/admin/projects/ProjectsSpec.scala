@@ -86,14 +86,26 @@ class ProjectsSpec
 
     "not update a project if it's deprecated" in new Context {
       index.getOrganization("org") shouldReturn Some(organization)
-      index.getProject("org", "proj") shouldReturn Some(project.copy(deprecated = true))
+      index.getOrganization(orgId) shouldReturn Some(organization)
+      index.getProject("org", "proj") shouldReturn None
+      val created = projects.create(proj)(caller).accepted
+      index.getProject("org", "proj") shouldReturn Some(project.copy(uuid = created.uuid))
+      val deprecated = projects.deprecate(proj, 1L)(caller).accepted
+      index.getProject("org", "proj") shouldReturn Some(
+        project.copy(uuid = deprecated.uuid, rev = 2L, deprecated = true))
       projects.update(proj)(caller).rejected[ProjectRejection] shouldEqual ProjectIsDeprecated
     }
 
     "not deprecate a project if it's already deprecated" in new Context {
       index.getOrganization("org") shouldReturn Some(organization)
-      index.getProject("org", "proj") shouldReturn Some(project.copy(deprecated = true))
-      projects.deprecate(proj, 1L)(caller).rejected[ProjectRejection] shouldEqual ProjectIsDeprecated
+      index.getOrganization(orgId) shouldReturn Some(organization)
+      index.getProject("org", "proj") shouldReturn None
+      val created = projects.create(proj)(caller).accepted
+      index.getProject("org", "proj") shouldReturn Some(project.copy(uuid = created.uuid))
+      val deprecated = projects.deprecate(proj, 1L)(caller).accepted
+      index.getProject("org", "proj") shouldReturn Some(
+        project.copy(uuid = deprecated.uuid, rev = 2L, deprecated = true))
+      projects.deprecate(proj, 2L)(caller).rejected[ProjectRejection] shouldEqual ProjectIsDeprecated
     }
 
     "create a project" in new Context {

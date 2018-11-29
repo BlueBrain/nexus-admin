@@ -60,10 +60,8 @@ class Projects[F[_]](agg: Agg[F], index: Index)(implicit F: MonadError[F, Throwa
   def update(project: Project)(implicit caller: Identity): F[ProjectMetaOrRejection] =
     index.getProject(project.organization, project.label) match {
       case Some(resource) =>
-        if (resource.deprecated) F.pure(Left(ProjectIsDeprecated))
-        else
-          eval(resource.uuid,
-               UpdateProject(resource.uuid, project.label, project.description, resource.rev, clock.instant, caller))
+        eval(resource.uuid,
+             UpdateProject(resource.uuid, project.label, project.description, resource.rev, clock.instant, caller))
       case None => F.pure(Left(ProjectDoesNotExists))
     }
 
@@ -78,10 +76,19 @@ class Projects[F[_]](agg: Agg[F], index: Index)(implicit F: MonadError[F, Throwa
   def deprecate(project: Project, rev: Long)(implicit caller: Identity): F[ProjectMetaOrRejection] =
     index.getProject(project.organization, project.label) match {
       case Some(resource) =>
-        if (resource.deprecated) F.pure(Left(ProjectIsDeprecated))
-        else eval(resource.uuid, DeprecateProject(resource.uuid, rev, clock.instant, caller))
+        eval(resource.uuid, DeprecateProject(resource.uuid, rev, clock.instant, caller))
       case None => F.pure(Left(ProjectDoesNotExists))
     }
+
+  /**
+    * Fetches a project from the index.
+    *
+    * @param organization the organization label
+    * @param label        the project label
+    * @return Some(project) if found, None otherwise
+    */
+  def fetch(organization: String, label: String): F[Option[ResourceF[Project]]] =
+    F.pure(index.getProject(organization, label))
 
   /**
     * Fetches a project from the aggregate.
