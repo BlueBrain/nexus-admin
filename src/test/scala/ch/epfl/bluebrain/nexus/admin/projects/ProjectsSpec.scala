@@ -36,8 +36,8 @@ class ProjectsSpec
 
   private val index = mock[Index]
 
-  private val aggF: IO[Aggregate[IO, String, ProjectEvent, ProjectState, ProjectCommand, ProjectRejection]] =
-    Aggregate.inMemoryF("projects-in-memory", ProjectState.Initial, ProjectState.next, ProjectState.Eval.apply[IO])
+  private val aggF: IO[Agg[IO]] =
+    Aggregate.inMemoryF("projects-in-memory", ProjectState.Initial, Projects.next, Projects.Eval.apply[IO])
 
   private val projects = aggF.map(agg => new Projects[IO](agg, index)).unsafeRunSync()
 
@@ -129,8 +129,7 @@ class ProjectsSpec
       index.getProject("org", "proj") shouldReturn None
       val created = projects.create(proj)(caller).accepted
       index.getProject("org", "proj") shouldReturn Some(project.copy(uuid = created.uuid))
-      val updated =
-        projects.update(proj.copy(description = Some("New description")))(caller).accepted
+      val updated = projects.update(proj.copy(description = Some("New description")))(caller).accepted
       updated.id shouldEqual iri
       updated.rev shouldEqual 2L
       updated.deprecated shouldEqual false

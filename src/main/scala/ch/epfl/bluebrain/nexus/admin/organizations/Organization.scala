@@ -1,5 +1,4 @@
 package ch.epfl.bluebrain.nexus.admin.organizations
-import java.util.UUID
 
 /**
   * Representation of an organization.

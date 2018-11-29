@@ -6,19 +6,19 @@ import java.util.UUID
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import cats.MonadError
-import cats.effect.ConcurrentEffect
+import cats.effect.{Async, ConcurrentEffect}
 import cats.syntax.flatMap._
 import cats.syntax.functor._
-import ch.epfl.bluebrain.nexus.admin.CommonRejection.UnexpectedState
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.admin.exceptions.UnexpectedState
 import ch.epfl.bluebrain.nexus.admin.index.Index
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectCommand._
+import ch.epfl.bluebrain.nexus.admin.projects.ProjectEvent.{ProjectCreated, ProjectDeprecated, ProjectUpdated}
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectRejection._
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectState._
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF
 import ch.epfl.bluebrain.nexus.commons.types.identity.Identity
-import ch.epfl.bluebrain.nexus.sourcing.Aggregate
 import ch.epfl.bluebrain.nexus.sourcing.akka._
 
 /**
@@ -112,7 +112,7 @@ class Projects[F[_]](agg: Agg[F], index: Index)(implicit F: MonadError[F, Throwa
     agg
       .foldLeft[ProjectState](id.toString, Initial) {
         case (state: Current, _) if state.rev == rev => state
-        case (state, event)                          => ProjectState.next(state, event)
+        case (state, event)                          => Projects.next(state, event)
       }
       .map {
         case c: Current if c.rev == rev => toResource(c)
@@ -127,7 +127,7 @@ class Projects[F[_]](agg: Agg[F], index: Index)(implicit F: MonadError[F, Throwa
       .flatMap {
         case Right(c: Current) => F.pure(toResourceMetaData(c))
         case Left(rejection)   => F.pure(Left(rejection))
-        case Right(Initial)    => F.raiseError(UnexpectedState)
+        case Right(Initial)    => F.raiseError(UnexpectedState(id.toString))
       }
 
   private def toResource(c: Current): ProjectResourceOrRejection = index.getOrganization(c.organization) match {
@@ -168,17 +168,88 @@ object Projects {
       mt: ActorMaterializer): F[Projects[F]] = {
     implicit val http: HttpConfig = appConfig.http
     implicit val clock: Clock     = Clock.systemUTC
-    val aggF: F[Aggregate[F, String, ProjectEvent, ProjectState, ProjectCommand, ProjectRejection]] =
+    val aggF: F[Agg[F]] =
       AkkaAggregate.shardedF(
         "projects",
         ProjectState.Initial,
-        ProjectState.next,
-        ProjectState.Eval.apply[F],
+        next,
+        Eval.apply[F],
         PassivationStrategy.immediately,
         RetryStrategy.never,
         sourcingConfig,
         appConfig.cluster.shards
       )
     aggF.map(agg => new Projects(agg, index))
+  }
+
+  /**
+    * State transition function for resources; considering a current state (the ''state'' argument) and an emitted
+    * ''event'' it computes the next state.
+    *
+    * @param state the current state
+    * @param event the emitted event
+    * @return the next state
+    */
+  private[projects] def next(state: ProjectState, event: ProjectEvent): ProjectState = (state, event) match {
+    case (Initial, ProjectCreated(id, org, label, rev, instant, subject, value)) =>
+      Current(id, org, label, rev, instant, subject, value, deprecated = false)
+    // $COVERAGE-OFF$
+    case (Initial, _) => Initial
+    // $COVERAGE-ON$
+    case (c: Current, _) if c.deprecated => c
+    case (c, _: ProjectCreated)          => c
+    case (c: Current, ProjectUpdated(_, label, desc, rev, instant, subject)) =>
+      c.copy(label = label, description = desc, rev = rev, instant = instant, subject = subject)
+    case (c: Current, ProjectDeprecated(_, rev, instant, subject)) =>
+      c.copy(rev = rev, instant = instant, subject = subject, deprecated = true)
+  }
+
+  private[projects] object Eval {
+
+    private def createProject(state: ProjectState, c: CreateProject): Either[ProjectRejection, ProjectEvent] =
+      state match {
+        case Initial => Right(ProjectCreated(c.id, c.organization, c.label, c.description, 1L, c.instant, c.subject))
+        case _       => Left(ProjectAlreadyExists)
+      }
+
+    private def updateProject(state: ProjectState, c: UpdateProject): Either[ProjectRejection, ProjectEvent] =
+      state match {
+        case Initial                      => Left(ProjectDoesNotExists)
+        case s: Current if s.rev != c.rev => Left(IncorrectRev(c.rev))
+        case s: Current if s.deprecated   => Left(ProjectIsDeprecated)
+        case s: Current                   => updateProjectAfter(s, c)
+      }
+
+    private def updateProjectAfter(state: Current, c: UpdateProject): Either[ProjectRejection, ProjectEvent] =
+      Right(ProjectUpdated(state.id, c.label, c.description, state.rev + 1, c.instant, c.subject))
+
+    private def deprecateProject(state: ProjectState, c: DeprecateProject): Either[ProjectRejection, ProjectEvent] =
+      state match {
+        case Initial                      => Left(ProjectDoesNotExists)
+        case s: Current if s.rev != c.rev => Left(IncorrectRev(c.rev))
+        case s: Current if s.deprecated   => Left(ProjectIsDeprecated)
+        case s: Current                   => deprecateProjectAfter(s, c)
+      }
+
+    private def deprecateProjectAfter(state: Current, c: DeprecateProject): Either[ProjectRejection, ProjectEvent] =
+      Right(ProjectDeprecated(state.id, state.rev + 1, c.instant, c.subject))
+
+    /**
+      * Command evaluation logic for projects; considering a current ''state'' and a command to be evaluated either
+      * reject the command or emit a new event that characterizes the change for an aggregate.
+      *
+      * @param state the current state
+      * @param cmd   the command to be evaluated
+      * @return either a rejection or the event emitted
+      */
+    final def apply[F[_]](state: ProjectState, cmd: ProjectCommand)(
+        implicit F: Async[F]): F[Either[ProjectRejection, ProjectEvent]] = {
+
+      cmd match {
+        case c: CreateProject    => F.pure(createProject(state, c))
+        case c: UpdateProject    => F.pure(updateProject(state, c))
+        case c: DeprecateProject => F.pure(deprecateProject(state, c))
+      }
+    }
   }
 }

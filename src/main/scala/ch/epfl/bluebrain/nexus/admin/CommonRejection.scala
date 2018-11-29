@@ -39,10 +39,4 @@ object CommonRejection {
   @SuppressWarnings(Array("IncorrectlyNamedExceptions"))
   final case class MissingParameter(override val message: String) extends Err(message) with CommonRejection
 
-  /**
-    * Signals that an unexpected state was encountered from the aggregate.
-    */
-  @SuppressWarnings(Array("IncorrectlyNamedExceptions"))
-  final case object UnexpectedState extends Err("Encountered unexpected state") with CommonRejection
-
 }
