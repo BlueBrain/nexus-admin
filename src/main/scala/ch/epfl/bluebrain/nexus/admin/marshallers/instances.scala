@@ -9,8 +9,7 @@ import ch.epfl.bluebrain.nexus.admin.CommonRejection
 import ch.epfl.bluebrain.nexus.admin.CommonRejection.DownstreamServiceError
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig.orderedKeys
 import ch.epfl.bluebrain.nexus.admin.config.Contexts._
-import ch.epfl.bluebrain.nexus.admin.resources.ResourceRejection
-import ch.epfl.bluebrain.nexus.admin.resources.ResourceRejection._
+import ch.epfl.bluebrain.nexus.admin.projects.ProjectRejection
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport.OrderedKeys
 import ch.epfl.bluebrain.nexus.commons.http.RdfMediaTypes._
 import ch.epfl.bluebrain.nexus.commons.http.syntax.circe._
@@ -29,8 +28,8 @@ object instances extends FailFastCirceSupport {
 
   private implicit val rejectionConfig: Configuration = Configuration.default.withDiscriminator("code")
 
-  implicit val resourceRejectionEncoder: Encoder[ResourceRejection] =
-    deriveEncoder[ResourceRejection].mapJson(_ addContext errorCtxUri)
+  implicit val resourceRejectionEncoder: Encoder[ProjectRejection] =
+    deriveEncoder[ProjectRejection].mapJson(_ addContext errorCtxUri)
 
   implicit val commonRejectionEncoder: Encoder[CommonRejection] =
     deriveEncoder[CommonRejection].mapJson(_ addContext errorCtxUri)
@@ -94,16 +93,13 @@ object instances extends FailFastCirceSupport {
     Marshaller.oneOf(marshallers: _*)
   }
 
-  implicit val rejectionStatusCode: StatusFrom[ResourceRejection] = StatusFrom {
-    case IncorrectRevisionProvided   => Conflict
-    case ResourceAlreadyExists       => Conflict
-    case ResourceDoesNotExists       => NotFound
-    case ParentResourceDoesNotExist  => NotFound
-    case ResourceIsDeprecated        => BadRequest
-    case ResourceValidationError     => BadRequest
-    case _: ResourceValidationFailed => BadRequest
-    case _: InvalidJsonLD            => BadRequest
-    case _: WrappedRejection         => BadRequest
+  implicit val rejectionStatusCode: StatusFrom[ProjectRejection] = StatusFrom {
+    case _: ProjectRejection.IncorrectRev          => Conflict
+    case ProjectRejection.ProjectAlreadyExists     => Conflict
+    case ProjectRejection.ProjectDoesNotExists     => NotFound
+    case ProjectRejection.OrganizationDoesNotExist => NotFound
+    case ProjectRejection.ProjectIsDeprecated      => BadRequest
+    case _: ProjectRejection.InvalidProjectFormat  => BadRequest
   }
 
   implicit val commonStatusCode: StatusFrom[CommonRejection] = StatusFrom {

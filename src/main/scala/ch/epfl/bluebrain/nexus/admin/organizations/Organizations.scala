@@ -19,7 +19,6 @@ import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationRejection._
 import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationState._
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF
 import ch.epfl.bluebrain.nexus.commons.types.identity.Identity
-import ch.epfl.bluebrain.nexus.sourcing.Aggregate
 import ch.epfl.bluebrain.nexus.sourcing.akka.{AkkaAggregate, AkkaSourcingConfig, PassivationStrategy, RetryStrategy}
 
 /**
@@ -126,8 +125,7 @@ object Organizations {
                                                   as: ActorSystem,
                                                   mt: ActorMaterializer): F[Organizations[F]] = {
     implicit val http: HttpConfig = ac.http
-    val aggF
-      : F[Aggregate[F, String, OrganizationEvent, OrganizationState, OrganizationCommand, OrganizationRejection]] =
+    val aggF: F[Agg[F]] =
       AkkaAggregate.sharded(
         "organizations",
         Initial,
@@ -156,9 +154,8 @@ object Organizations {
       case (_, _) => Initial
     }
 
-  private[organizations] def evaluate[F[_]: Async](state: OrganizationState,
-                                                   command: OrganizationCommand): F[EventOrRejection] = {
-    val F = implicitly[Async[F]]
+  private[organizations] def evaluate[F[_]](state: OrganizationState, command: OrganizationCommand)(
+      implicit F: Async[F]): F[EventOrRejection] = {
 
     def create(c: CreateOrganization): EventOrRejection = state match {
       case Initial if c.rev == 0L => Right(OrganizationCreated(c.id, rev = 1L, c.organization, c.instant, c.subject))

@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.admin.index
 import java.util.UUID
 
 import ch.epfl.bluebrain.nexus.admin.organizations.Organization
-import ch.epfl.bluebrain.nexus.admin.projects.{Project, ProjectLabel}
+import ch.epfl.bluebrain.nexus.admin.projects.Project
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF
 
 import scala.collection.mutable
@@ -17,7 +17,7 @@ class InMemoryIndex extends Index {
   private val organizationLabels = mutable.HashMap.empty[String, UUID]
 
   private val projects      = mutable.HashMap.empty[UUID, ResourceF[Project]]
-  private val projectLabels = mutable.HashMap.empty[ProjectLabel, UUID]
+  private val projectLabels = mutable.HashMap.empty[(String, String), UUID]
 
   override def updateOrganization(organization: ResourceF[Organization]): Boolean = {
     val update = organizations.contains(organization.uuid)
@@ -29,7 +29,7 @@ class InMemoryIndex extends Index {
   override def updateProject(project: ResourceF[Project]): Boolean = {
     val update = projects.contains(project.uuid)
     projects.update(project.uuid, project)
-    projectLabels.update(project.value.label, project.uuid)
+    projectLabels.update((project.value.organization, project.value.label), project.uuid)
     update
   }
 
@@ -42,6 +42,6 @@ class InMemoryIndex extends Index {
   override def getProject(id: UUID): Option[ResourceF[Project]] =
     projects.get(id)
 
-  override def getProject(label: ProjectLabel): Option[ResourceF[Project]] =
-    projectLabels.get(label).flatMap(getProject)
+  override def getProject(organization: String, project: String): Option[ResourceF[Project]] =
+    projectLabels.get((organization, project)).flatMap(getProject)
 }

@@ -35,14 +35,12 @@ class OrganizationsSpec
   private implicit val identity              = Identity.Anonymous()
   private val instant                        = clock.instant()
 
-  val aggF
-    : IO[Aggregate[IO, String, OrganizationEvent, OrganizationState, OrganizationCommand, OrganizationRejection]] =
-    Aggregate.inMemory[IO, String]("organizations", Initial, next, evaluate[IO])
+  val aggF: IO[Agg[IO]] = Aggregate.inMemory[IO, String]("organizations", Initial, next, evaluate[IO])
 
   val index = mock[Index]
   val orgs  = aggF.map(new Organizations(_, index)).unsafeRunSync()
 
-  "Organizations API" should {
+  "Organizations operations bundle" should {
 
     "create and fetch organizations " in {
       val organization = Organization(genString(), genString())
@@ -56,7 +54,7 @@ class OrganizationsSpec
       metadata.rev shouldEqual 1L
 
       metadata.deprecated shouldEqual false
-      metadata.types shouldEqual Set(nxv.Organization)
+      metadata.types shouldEqual Set(nxv.Organization.value)
       metadata.createdAt shouldEqual instant
       metadata.createdBy shouldEqual identity
       metadata.updatedAt shouldEqual instant
@@ -90,7 +88,7 @@ class OrganizationsSpec
         metadata.uuid,
         2L,
         false,
-        Set(nxv.Organization),
+        Set(nxv.Organization.value),
         instant,
         identity,
         instant,
@@ -107,7 +105,7 @@ class OrganizationsSpec
         metadata.uuid,
         2L,
         false,
-        Set(nxv.Organization),
+        Set(nxv.Organization.value),
         instant,
         identity,
         instant,
@@ -153,7 +151,7 @@ class OrganizationsSpec
         metadata.uuid,
         1L,
         false,
-        Set(nxv.Organization),
+        Set(nxv.Organization.value),
         instant,
         identity,
         instant,
