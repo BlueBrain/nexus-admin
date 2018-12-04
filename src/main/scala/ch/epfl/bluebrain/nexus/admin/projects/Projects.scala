@@ -7,11 +7,11 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import cats.MonadError
 import cats.effect.{Async, ConcurrentEffect}
-import cats.implicits._
-
+import cats.syntax.flatMap._
+import cats.syntax.functor._
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig.HttpConfig
-import ch.epfl.bluebrain.nexus.admin.exceptions.UnexpectedState
+import ch.epfl.bluebrain.nexus.admin.exceptions.AdminError.UnexpectedState
 import ch.epfl.bluebrain.nexus.admin.index.Index
 import ch.epfl.bluebrain.nexus.admin.organizations.Organizations
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectCommand._
@@ -58,6 +58,7 @@ class Projects[F[_]](agg: Agg[F], index: Index[F], organizations: Organizations[
     * Updates a project.
     *
     * @param project the project
+    * @param rev     the project revision
     * @param caller  an implicitly available caller
     * @return the updated project resource metadata if the operation was successful, a rejection otherwise
     */
@@ -105,6 +106,20 @@ class Projects[F[_]](agg: Agg[F], index: Index[F], organizations: Organizations[
     case c: Current => toResource(c).map(_.toOption)
     case Initial    => F.pure(None)
   }
+
+  /**
+    * Fetches a specific revision of a project from the aggregate.
+    *
+    * @param organization the organization label
+    * @param label        the project label
+    * @param rev          the project revision
+    * @return the project if found, a rejection otherwise
+    */
+  def fetch(organization: String, label: String, rev: Long): F[ProjectResourceOrRejection] =
+    index.getProject(organization, label) match {
+      case Some(project) => fetch(project.uuid, rev)
+      case None => F.pure(Left(ProjectDoesNotExists))
+    }
 
   /**
     * Fetches a specific revision of a project from the aggregate.

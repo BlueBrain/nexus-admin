@@ -1,5 +1,8 @@
 package ch.epfl.bluebrain.nexus.admin.organizations
 
+import io.circe.{Decoder, Encoder}
+import io.circe.generic.semiauto._
+
 /**
   * Representation of an organization.
   *
@@ -7,3 +10,10 @@ package ch.epfl.bluebrain.nexus.admin.organizations
   * @param description  the description of the organization
   */
 final case class Organization(label: String, description: String)
+
+object Organization {
+
+  implicit val organizationEncoder: Encoder[Organization] = deriveEncoder[Organization]
+
+  implicit val organizationDecoder: Decoder[Organization] = deriveDecoder[Organization]
+}

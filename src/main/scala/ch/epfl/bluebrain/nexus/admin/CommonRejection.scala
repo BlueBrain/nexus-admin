@@ -13,7 +13,7 @@ object CommonRejection {
     * Signals the inability to convert the requested query parameter.
     */
   @SuppressWarnings(Array("IncorrectlyNamedExceptions"))
-  final case class IllegalParam(override val message: String) extends Err(message) with CommonRejection
+  final case class IllegalParameter(override val message: String) extends Err(message) with CommonRejection
 
   /**
     * Signals the inability to convert the requested payload.

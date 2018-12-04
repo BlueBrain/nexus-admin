@@ -9,6 +9,7 @@ import ch.epfl.bluebrain.nexus.admin.CommonRejection
 import ch.epfl.bluebrain.nexus.admin.CommonRejection.DownstreamServiceError
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig.orderedKeys
 import ch.epfl.bluebrain.nexus.admin.config.Contexts._
+import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationRejection
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectRejection
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport.OrderedKeys
 import ch.epfl.bluebrain.nexus.commons.http.RdfMediaTypes._
@@ -27,6 +28,9 @@ import scala.collection.immutable.Seq
 object instances extends FailFastCirceSupport {
 
   private implicit val rejectionConfig: Configuration = Configuration.default.withDiscriminator("code")
+
+  implicit val organizationRejectionEncoder: Encoder[OrganizationRejection] =
+    deriveEncoder[OrganizationRejection].mapJson(_ addContext errorCtxUri)
 
   implicit val resourceRejectionEncoder: Encoder[ProjectRejection] =
     deriveEncoder[ProjectRejection].mapJson(_ addContext errorCtxUri)
@@ -91,6 +95,13 @@ object instances extends FailFastCirceSupport {
       }
     }
     Marshaller.oneOf(marshallers: _*)
+  }
+
+  implicit val organizationStatusCode: StatusFrom[OrganizationRejection] = StatusFrom {
+    case _: OrganizationRejection.IncorrectRev              => Conflict
+    case OrganizationRejection.OrganizationAlreadyExists    => Conflict
+    case OrganizationRejection.OrganizationDoesNotExist     => NotFound
+    case _: OrganizationRejection.InvalidOrganizationFormat => BadRequest
   }
 
   implicit val rejectionStatusCode: StatusFrom[ProjectRejection] = StatusFrom {

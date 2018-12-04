@@ -5,6 +5,13 @@ sealed trait OrganizationRejection extends Product with Serializable
 object OrganizationRejection {
 
   /**
+    * Signals an error while decoding an organization JSON payload.
+    *
+    * @param message human readable error details
+    */
+  final case class InvalidOrganizationFormat(message: String) extends OrganizationRejection
+
+  /**
     * Signals the the organization already exists.
     */
   final case object OrganizationAlreadyExists extends OrganizationRejection
@@ -20,4 +27,5 @@ object OrganizationRejection {
     * @param provided  provided revision
     */
   final case class IncorrectRev(latest: Long, provided: Long) extends OrganizationRejection
+
 }

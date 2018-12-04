@@ -25,8 +25,9 @@ scalafmt: {
  */
 
 // Dependency versions
-val rdfVersion                 = "0.2.28"
+val rdfVersion                 = "0.2.29"
 val commonsVersion             = "0.10.39"
+val iamVersion                 = "0.10.27"
 val serviceVersion             = "0.10.21"
 val sourcingVersion            = "0.12.0"
 val akkaVersion                = "2.5.18"
@@ -47,15 +48,15 @@ lazy val rdfAkka             = "ch.epfl.bluebrain.nexus" %% "rdf-akka"          
 lazy val rdfJena             = "ch.epfl.bluebrain.nexus" %% "rdf-jena"                    % rdfVersion
 lazy val rdfCirce            = "ch.epfl.bluebrain.nexus" %% "rdf-circe"                   % rdfVersion
 lazy val rdfNexus            = "ch.epfl.bluebrain.nexus" %% "rdf-nexus"                   % rdfVersion
+lazy val iamClient           = "ch.epfl.bluebrain.nexus" %% "iam-client"                  % iamVersion
 lazy val serviceIndexing     = "ch.epfl.bluebrain.nexus" %% "service-indexing"            % serviceVersion
 lazy val serviceKamon        = "ch.epfl.bluebrain.nexus" %% "service-kamon"               % serviceVersion
 lazy val serviceHttp         = "ch.epfl.bluebrain.nexus" %% "service-http"                % serviceVersion
 lazy val serviceKafka        = "ch.epfl.bluebrain.nexus" %% "service-kafka"               % serviceVersion
-lazy val serviceTest         = "ch.epfl.bluebrain.nexus" %% "service-test"                % serviceVersion
 lazy val sourcingAkka        = "ch.epfl.bluebrain.nexus" %% "sourcing-akka"               % sourcingVersion
 lazy val shaclValidator      = "ch.epfl.bluebrain.nexus" %% "shacl-topquadrant-validator" % commonsVersion
-lazy val commonQueryTypes    = "ch.epfl.bluebrain.nexus" %% "commons-query-types"         % commonsVersion
 lazy val commonTest          = "ch.epfl.bluebrain.nexus" %% "commons-test"                % commonsVersion
+lazy val commonQueryTypes    = "ch.epfl.bluebrain.nexus" %% "commons-query-types"         % commonsVersion
 lazy val akkaCluster         = "com.typesafe.akka"       %% "akka-cluster"                % akkaVersion
 lazy val akkaHttp            = "com.typesafe.akka"       %% "akka-http"                   % akkaHttpVersion
 lazy val akkaHttpCors        = "ch.megard"               %% "akka-http-cors"              % akkaCorsVersion
@@ -88,6 +89,7 @@ lazy val admin = project
       catsCore,
       circeCore,
       commonQueryTypes,
+      iamClient,
       journalCore,
       logbackClassic,
       kryo,

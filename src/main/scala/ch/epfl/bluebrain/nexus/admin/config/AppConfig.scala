@@ -5,6 +5,7 @@ import akka.http.scaladsl.model.Uri.Path
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig._
 import ch.epfl.bluebrain.nexus.admin.config.Vocabulary._
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport.OrderedKeys
+import ch.epfl.bluebrain.nexus.commons.types.search.Pagination
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.syntax.node.unsafe._
 import ch.epfl.bluebrain.nexus.service.indexer.retryer.RetryStrategy
@@ -122,6 +123,19 @@ object AppConfig {
     * @param retry        the retry configuration when indexing failures
     */
   final case class IndexingConfig(batch: Int, batchTimeout: FiniteDuration, retry: Retry)
+
+  /**
+    * Pagination configuration
+    *
+    * @param from    the default offset
+    * @param size    the default results size
+    * @param maxSize the maximum results size
+    */
+  final case class PaginationConfig(from: Long,
+                                    size: Int,
+                                    maxSize: Int) {
+    val default: Pagination = Pagination(from, size)
+  }
 
   val orderedKeys = OrderedKeys(
     List(

@@ -10,7 +10,7 @@ import cats.effect.{Async, ConcurrentEffect}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig.HttpConfig
-import ch.epfl.bluebrain.nexus.admin.exceptions.UnexpectedState
+import ch.epfl.bluebrain.nexus.admin.exceptions.AdminError.UnexpectedState
 import ch.epfl.bluebrain.nexus.admin.index.Index
 import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationCommand._
 import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationEvent._

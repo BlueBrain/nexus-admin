@@ -203,6 +203,9 @@ class ProjectsSpec
       fetched.updatedBy shouldEqual caller
       fetched.value shouldEqual proj
 
+      index.getProject("org", "proj") shouldReturn Some(project.copy(uuid = fetched.uuid))
+      projects.fetch("org", "proj").some shouldEqual fetched
+
       projects.fetch(UUID.randomUUID).ioValue shouldEqual None
     }
 
@@ -225,6 +228,9 @@ class ProjectsSpec
       fetched.createdBy shouldEqual caller
       fetched.updatedBy shouldEqual caller
       fetched.value.description shouldEqual Some("New description")
+
+      index.getProject("org", "proj") shouldReturn Some(project.copy(uuid = fetched.uuid))
+      projects.fetch("org", "proj", 1L).accepted shouldEqual fetched.copy(rev = 1L, value = proj)
 
       projects.fetch(created.uuid, 4L).rejected[ProjectRejection] shouldEqual IncorrectRev(4L)
       projects.fetch(UUID.randomUUID, 4L).rejected[ProjectRejection] shouldEqual ProjectDoesNotExists

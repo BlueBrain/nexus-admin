@@ -89,7 +89,7 @@ object ResourceF {
         Json.obj(
           "@context"            -> Json.arr(resourceCtxUri.asJson, adminCtxUri.asJson),
           "@id"                 -> id.asJson,
-          "@type"               -> Json.arr(types.map(t => Json.fromString(lastSegment(t).getOrElse(t.asString))).toSeq: _*),
+          "@type"               -> Json.arr(types.map(t => Json.fromString(t.path.lastSegment.getOrElse(t.asString))).toSeq: _*),
           nxv.uuid.prefix       -> Json.fromString(uuid.toString),
           nxv.rev.prefix        -> Json.fromLong(rev),
           nxv.deprecated.prefix -> Json.fromBoolean(deprecated),
@@ -100,10 +100,9 @@ object ResourceF {
         )
     }
 
-  private def lastSegment(iri: AbsoluteIri): Option[String] =
-    iri.path.head match {
-      case segment: String => Some(segment)
-      case _               => None
+  implicit def resourceEncoder[A](implicit encoder: Encoder[A]): Encoder[ResourceF[A]] =
+    Encoder.encodeJson.contramap { resource =>
+      resourceMetaEncoder(resource.discard).deepMerge(encoder(resource.value))
     }
 
   implicit def clock[A]: Clock[ResourceF[A]] = { (_: Long, value: ResourceF[A]) =>
