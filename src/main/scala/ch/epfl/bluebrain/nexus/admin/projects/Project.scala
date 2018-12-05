@@ -7,4 +7,10 @@ package ch.epfl.bluebrain.nexus.admin.projects
   * @param organization the organization label
   * @param description  an optional description
   */
-final case class Project(label: String, organization: String, description: Option[String])
+final case class Project(label: String, organization: String, description: Option[String]) {
+
+  /**
+    * @return full label for the project (including organization).
+    */
+  def fullLabel: String = s"$organization/$label"
+}

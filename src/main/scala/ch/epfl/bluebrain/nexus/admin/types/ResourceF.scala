@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.admin.types
 import java.time.Instant
 import java.util.UUID
 
+import akka.cluster.ddata.LWWRegister.Clock
 import ch.epfl.bluebrain.nexus.admin.config.Contexts._
 import ch.epfl.bluebrain.nexus.admin.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.commons.types.identity.Identity
@@ -104,4 +105,8 @@ object ResourceF {
       case segment: String => Some(segment)
       case _               => None
     }
+
+  implicit def clock[A]: Clock[ResourceF[A]] = { (_: Long, value: ResourceF[A]) =>
+    value.rev
+  }
 }

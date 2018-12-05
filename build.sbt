@@ -51,8 +51,10 @@ lazy val serviceIndexing     = "ch.epfl.bluebrain.nexus" %% "service-indexing"  
 lazy val serviceKamon        = "ch.epfl.bluebrain.nexus" %% "service-kamon"               % serviceVersion
 lazy val serviceHttp         = "ch.epfl.bluebrain.nexus" %% "service-http"                % serviceVersion
 lazy val serviceKafka        = "ch.epfl.bluebrain.nexus" %% "service-kafka"               % serviceVersion
+lazy val serviceTest         = "ch.epfl.bluebrain.nexus" %% "service-test"                % serviceVersion
 lazy val sourcingAkka        = "ch.epfl.bluebrain.nexus" %% "sourcing-akka"               % sourcingVersion
 lazy val shaclValidator      = "ch.epfl.bluebrain.nexus" %% "shacl-topquadrant-validator" % commonsVersion
+lazy val commonQueryTypes    = "ch.epfl.bluebrain.nexus" %% "commons-query-types"         % commonsVersion
 lazy val commonTest          = "ch.epfl.bluebrain.nexus" %% "commons-test"                % commonsVersion
 lazy val akkaCluster         = "com.typesafe.akka"       %% "akka-cluster"                % akkaVersion
 lazy val akkaHttp            = "com.typesafe.akka"       %% "akka-http"                   % akkaHttpVersion
@@ -85,6 +87,7 @@ lazy val admin = project
       akkaStream,
       catsCore,
       circeCore,
+      commonQueryTypes,
       journalCore,
       logbackClassic,
       kryo,
@@ -101,7 +104,8 @@ lazy val admin = project
       sourcingAkka,
       akkaHttpTestKit % Test,
       commonTest      % Test,
-      mockito         % Test
+      mockito         % Test,
+      serviceTest     % Test
     )
   )
 
