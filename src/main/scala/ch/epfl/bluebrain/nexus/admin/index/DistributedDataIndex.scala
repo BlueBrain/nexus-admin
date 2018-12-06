@@ -22,6 +22,12 @@ import ch.epfl.bluebrain.nexus.commons.types.search.Pagination
 import scala.collection.SortedSet
 import scala.concurrent.duration.FiniteDuration
 
+/**
+  * Index implementation based on Akka Distributed Data.
+  *
+  * @param askTimeout         actor ask timeout
+  * @param consistencyTimeout distributed data the consistency timeout
+  */
 class DistributedDataIndex[F[_]](askTimeout: Timeout, consistencyTimeout: FiniteDuration)(implicit as: ActorSystem,
                                                                                           F: Async[F])
     extends Index[F] {
@@ -60,7 +66,7 @@ class DistributedDataIndex[F[_]](askTimeout: Timeout, consistencyTimeout: Finite
   override def updateProject(project: ResourceF[Project]): F[Boolean] = {
 
     def unwrapUuid(orgOpt: Option[ResourceF[Organization]]) = orgOpt match {
-      case None      => F.raiseError(UnexpectedState(project.uuid.toString)))
+      case None      => F.raiseError(UnexpectedState(project.uuid.toString))
       case Some(org) => F.pure(org.uuid)
     }
 
@@ -138,7 +144,7 @@ class DistributedDataIndex[F[_]](askTimeout: Timeout, consistencyTimeout: Finite
   private def update(update: Update[_], action: String): F[Unit] = {
     IO.fromFuture(IO(replicator ? update)).to[F].flatMap {
       case UpdateSuccess(_, _) =>
-        F.pure(())
+        F.unit
       case UpdateTimeout(LWWRegisterKey(_), _) =>
         F.raiseError(new RetriableErr(s"Distributed cache update timed out while performing action '$action'"))
       case ModifyFailure(LWWRegisterKey(_), _, cause, _) =>
@@ -170,6 +176,12 @@ class DistributedDataIndex[F[_]](askTimeout: Timeout, consistencyTimeout: Finite
 
 object DistributedDataIndex {
 
+  /**
+    * Create an instance of [[DistributedDataIndex]]
+    *
+    * @param askTimeout         actor ask timeout
+    * @param consistencyTimeout distributed data the consistency timeout
+    */
   def apply[F[_]](askTimeout: Timeout, consistencyTimeout: FiniteDuration)(implicit as: ActorSystem,
                                                                            F: Async[F]): DistributedDataIndex[F] =
     new DistributedDataIndex(askTimeout, consistencyTimeout)

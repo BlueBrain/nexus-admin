@@ -8,6 +8,7 @@ import akka.stream.ActorMaterializer
 import cats.MonadError
 import cats.effect.{Async, ConcurrentEffect}
 import cats.implicits._
+
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.admin.exceptions.UnexpectedState

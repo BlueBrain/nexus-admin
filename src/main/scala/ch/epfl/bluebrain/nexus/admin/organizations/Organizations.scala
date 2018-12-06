@@ -166,10 +166,10 @@ object Organizations {
       case (Initial, OrganizationCreated(uuid, 1L, org, instant, identity)) =>
         Current(uuid, 1L, org, deprecated = false, instant, identity, instant, identity)
 
-      case (c: Current, OrganizationUpdated(rev, org, instant, subject)) =>
+      case (c: Current, OrganizationUpdated(_, rev, org, instant, subject)) =>
         c.copy(rev = rev, organization = org, updatedAt = instant, updatedBy = subject)
 
-      case (c: Current, OrganizationDeprecated(rev, instant, subject)) =>
+      case (c: Current, OrganizationDeprecated(_, rev, instant, subject)) =>
         c.copy(rev = rev, deprecated = true, updatedAt = instant, updatedBy = subject)
 
       case (_, _) => Initial
@@ -185,14 +185,15 @@ object Organizations {
     }
 
     def update(c: UpdateOrganization): EventOrRejection = state match {
-      case Initial                      => Left(OrganizationDoesNotExist)
-      case s: Current if c.rev == s.rev => Right(OrganizationUpdated(c.rev + 1, c.organization, c.instant, c.subject))
-      case s: Current                   => Left(IncorrectRev(s.rev, c.rev))
+      case Initial => Left(OrganizationDoesNotExist)
+      case s: Current if c.rev == s.rev =>
+        Right(OrganizationUpdated(c.id, c.rev + 1, c.organization, c.instant, c.subject))
+      case s: Current => Left(IncorrectRev(s.rev, c.rev))
     }
 
     def deprecate(c: DeprecateOrganization): EventOrRejection = state match {
       case Initial                      => Left(OrganizationDoesNotExist)
-      case s: Current if c.rev == s.rev => Right(OrganizationDeprecated(c.rev + 1, c.instant, c.subject))
+      case s: Current if c.rev == s.rev => Right(OrganizationDeprecated(c.id, c.rev + 1, c.instant, c.subject))
       case s: Current                   => Left(IncorrectRev(s.rev, c.rev))
     }
 
