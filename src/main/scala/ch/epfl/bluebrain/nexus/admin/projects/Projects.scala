@@ -7,12 +7,13 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import cats.MonadError
 import cats.effect.{Async, ConcurrentEffect}
-import cats.syntax.flatMap._
-import cats.syntax.functor._
+import cats.implicits._
+
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.admin.exceptions.UnexpectedState
 import ch.epfl.bluebrain.nexus.admin.index.Index
+import ch.epfl.bluebrain.nexus.admin.organizations.Organizations
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectCommand._
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectEvent.{ProjectCreated, ProjectDeprecated, ProjectUpdated}
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectRejection._
@@ -28,7 +29,10 @@ import ch.epfl.bluebrain.nexus.sourcing.akka._
   * @param index the project and organization labels index
   * @tparam F    the effect type
   */
-class Projects[F[_]](agg: Agg[F], index: Index)(implicit F: MonadError[F, Throwable], http: HttpConfig, clock: Clock) {
+class Projects[F[_]](agg: Agg[F], index: Index[F], organizations: Organizations[F])(
+    implicit F: MonadError[F, Throwable],
+    http: HttpConfig,
+    clock: Clock) {
 
   /**
     * Creates a project.
@@ -38,13 +42,13 @@ class Projects[F[_]](agg: Agg[F], index: Index)(implicit F: MonadError[F, Throwa
     * @return project the created project resource metadata if the operation was successful, a rejection otherwise
     */
   def create(project: Project)(implicit caller: Identity): F[ProjectMetaOrRejection] =
-    index.getOrganization(project.organization) match {
+    index.getOrganization(project.organization).flatMap {
       case Some(org) =>
-        index.getProject(project.organization, project.label) match {
+        index.getProject(project.organization, project.label).flatMap {
           case None =>
             val projectId = UUID.randomUUID
             val command   = CreateProject(projectId, org.uuid, project.label, project.description, clock.instant, caller)
-            eval(projectId, command)
+            evaluateAndUpdateIndex(command, project)
           case Some(_) => F.pure(Left(ProjectAlreadyExists))
         }
       case None => F.pure(Left(OrganizationDoesNotExist))
@@ -58,10 +62,11 @@ class Projects[F[_]](agg: Agg[F], index: Index)(implicit F: MonadError[F, Throwa
     * @return the updated project resource metadata if the operation was successful, a rejection otherwise
     */
   def update(project: Project)(implicit caller: Identity): F[ProjectMetaOrRejection] =
-    index.getProject(project.organization, project.label) match {
+    index.getProject(project.organization, project.label).flatMap {
       case Some(resource) =>
-        eval(resource.uuid,
-             UpdateProject(resource.uuid, project.label, project.description, resource.rev, clock.instant, caller))
+        evaluateAndUpdateIndex(
+          UpdateProject(resource.uuid, project.label, project.description, resource.rev, clock.instant, caller),
+          project)
       case None => F.pure(Left(ProjectDoesNotExists))
     }
 
@@ -74,9 +79,9 @@ class Projects[F[_]](agg: Agg[F], index: Index)(implicit F: MonadError[F, Throwa
     * @return the deprecated project resource metadata if the operation was successful, a rejection otherwise
     */
   def deprecate(project: Project, rev: Long)(implicit caller: Identity): F[ProjectMetaOrRejection] =
-    index.getProject(project.organization, project.label) match {
+    index.getProject(project.organization, project.label).flatMap {
       case Some(resource) =>
-        eval(resource.uuid, DeprecateProject(resource.uuid, rev, clock.instant, caller))
+        evaluateAndUpdateIndex(DeprecateProject(resource.uuid, rev, clock.instant, caller), resource.value)
       case None => F.pure(Left(ProjectDoesNotExists))
     }
 
@@ -88,7 +93,7 @@ class Projects[F[_]](agg: Agg[F], index: Index)(implicit F: MonadError[F, Throwa
     * @return Some(project) if found, None otherwise
     */
   def fetch(organization: String, label: String): F[Option[ResourceF[Project]]] =
-    F.pure(index.getProject(organization, label))
+    index.getProject(organization, label)
 
   /**
     * Fetches a project from the aggregate.
@@ -96,9 +101,9 @@ class Projects[F[_]](agg: Agg[F], index: Index)(implicit F: MonadError[F, Throwa
     * @param uuid the project permanent identifier
     * @return Some(project) if found, None otherwise
     */
-  def fetch(uuid: UUID): F[Option[ResourceF[Project]]] = agg.currentState(uuid.toString).map {
-    case c: Current => toResource(c).toOption
-    case Initial    => None
+  def fetch(uuid: UUID): F[Option[ResourceF[Project]]] = agg.currentState(uuid.toString).flatMap {
+    case c: Current => toResource(c).map(_.toOption)
+    case Initial    => F.pure(None)
   }
 
   /**
@@ -114,23 +119,30 @@ class Projects[F[_]](agg: Agg[F], index: Index)(implicit F: MonadError[F, Throwa
         case (state: Current, _) if state.rev == rev => state
         case (state, event)                          => Projects.next(state, event)
       }
-      .map {
+      .flatMap {
         case c: Current if c.rev == rev => toResource(c)
-        case _: Current                 => Left(IncorrectRev(rev))
-        case Initial                    => Left(ProjectDoesNotExists)
+        case _: Current                 => F.pure(Left(IncorrectRev(rev)))
+        case Initial                    => F.pure(Left(ProjectDoesNotExists))
       }
   }
 
-  private def eval(id: UUID, command: ProjectCommand): F[ProjectMetaOrRejection] =
+  private def eval(command: ProjectCommand): F[ProjectMetaOrRejection] =
     agg
-      .evaluateS(id.toString, command)
+      .evaluateS(command.id.toString, command)
       .flatMap {
-        case Right(c: Current) => F.pure(toResourceMetaData(c))
+        case Right(c: Current) => toResourceMetaData(c)
         case Left(rejection)   => F.pure(Left(rejection))
-        case Right(Initial)    => F.raiseError(UnexpectedState(id.toString))
+        case Right(Initial)    => F.raiseError(UnexpectedState(command.id.toString))
       }
 
-  private def toResource(c: Current): ProjectResourceOrRejection = index.getOrganization(c.organization) match {
+  private def evaluateAndUpdateIndex(command: ProjectCommand, project: Project): F[ProjectMetaOrRejection] =
+    eval(command).flatMap {
+      case Right(metadata) =>
+        index.updateProject(metadata.map(_ => project)) *> F.pure(Right(metadata))
+      case Left(rej) => F.pure(Left(rej))
+    }
+
+  private def toResource(c: Current): F[ProjectResourceOrRejection] = organizations.fetch(c.organization).map {
     case Some(org) =>
       val iri = http.projectsIri + org.value.label + c.label
       Right(
@@ -148,7 +160,7 @@ class Projects[F[_]](agg: Agg[F], index: Index)(implicit F: MonadError[F, Throwa
       Left(OrganizationDoesNotExist)
   }
 
-  private def toResourceMetaData(c: Current): ProjectMetaOrRejection = toResource(c).map(_.discard)
+  private def toResourceMetaData(c: Current): F[ProjectMetaOrRejection] = toResource(c).map(_.map(_.discard))
 
 }
 
@@ -163,9 +175,11 @@ object Projects {
     * @tparam F              a [[cats.effect.ConcurrentEffect]] instance
     * @return the operations bundle in an ''F'' context.
     */
-  def apply[F[_]: ConcurrentEffect](index: Index, appConfig: AppConfig, sourcingConfig: AkkaSourcingConfig)(
-      implicit as: ActorSystem,
-      mt: ActorMaterializer): F[Projects[F]] = {
+  def apply[F[_]: ConcurrentEffect](
+      index: Index[F],
+      organizations: Organizations[F],
+      appConfig: AppConfig,
+      sourcingConfig: AkkaSourcingConfig)(implicit as: ActorSystem, mt: ActorMaterializer): F[Projects[F]] = {
     implicit val http: HttpConfig = appConfig.http
     implicit val clock: Clock     = Clock.systemUTC
     val aggF: F[Agg[F]] =
@@ -179,7 +193,7 @@ object Projects {
         sourcingConfig,
         appConfig.cluster.shards
       )
-    aggF.map(agg => new Projects(agg, index))
+    aggF.map(agg => new Projects(agg, index, organizations))
   }
 
   /**

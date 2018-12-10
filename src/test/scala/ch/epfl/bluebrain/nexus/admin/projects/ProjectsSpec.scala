@@ -7,13 +7,15 @@ import cats.effect.{ContextShift, IO}
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.admin.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.admin.index.Index
-import ch.epfl.bluebrain.nexus.admin.organizations.Organization
+import ch.epfl.bluebrain.nexus.admin.organizations.{Organization, Organizations}
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectRejection._
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF
 import ch.epfl.bluebrain.nexus.commons.test.io.{IOEitherValues, IOOptionValues}
 import ch.epfl.bluebrain.nexus.commons.types.identity.Identity.UserRef
 import ch.epfl.bluebrain.nexus.rdf.syntax.node.unsafe._
 import ch.epfl.bluebrain.nexus.sourcing.Aggregate
+import org.mockito.Mockito.{reset, times, verify}
+import org.mockito.captor.ArgCaptor
 import org.mockito.integrations.scalatest.IdiomaticMockitoFixture
 import org.scalatest._
 
@@ -34,12 +36,13 @@ class ProjectsSpec
   private val instant               = Instant.now
   private implicit val clock: Clock = Clock.fixed(instant, ZoneId.systemDefault)
 
-  private val index = mock[Index]
+  private val index = mock[Index[IO]]
+  private val orgs  = mock[Organizations[IO]]
 
   private val aggF: IO[Agg[IO]] =
     Aggregate.inMemoryF("projects-in-memory", ProjectState.Initial, Projects.next, Projects.Eval.apply[IO])
 
-  private val projects = aggF.map(agg => new Projects[IO](agg, index)).unsafeRunSync()
+  private val projects = aggF.map(agg => new Projects[IO](agg, index, orgs)).unsafeRunSync()
 
   trait Context {
     val types  = Set(nxv.Project.value)
@@ -67,52 +70,55 @@ class ProjectsSpec
   "The Projects operations bundle" should {
 
     "not create a project if it already exists" in new Context {
-      index.getOrganization("org") shouldReturn Some(organization)
-      index.getProject("org", "proj") shouldReturn Some(project)
+      index.getOrganization("org") shouldReturn IO.pure(Some(organization))
+      index.getProject("org", "proj") shouldReturn IO.pure(Some(project))
       projects.create(proj)(caller).rejected[ProjectRejection] shouldEqual ProjectAlreadyExists
     }
 
     "not update a project if it doesn't exists" in new Context {
-      index.getOrganization("org") shouldReturn Some(organization)
-      index.getProject("org", "proj") shouldReturn None
+      index.getOrganization("org") shouldReturn IO.pure(Some(organization))
+      index.getProject("org", "proj") shouldReturn IO.pure(None)
       projects.update(proj)(caller).rejected[ProjectRejection] shouldEqual ProjectDoesNotExists
     }
 
     "not deprecate a project if it doesn't exists" in new Context {
-      index.getOrganization("org") shouldReturn Some(organization)
-      index.getProject("org", "proj") shouldReturn None
+      index.getOrganization("org") shouldReturn IO.pure(Some(organization))
+      index.getProject("org", "proj") shouldReturn IO.pure(None)
       projects.deprecate(proj, 1L)(caller).rejected[ProjectRejection] shouldEqual ProjectDoesNotExists
     }
 
     "not update a project if it's deprecated" in new Context {
-      index.getOrganization("org") shouldReturn Some(organization)
-      index.getOrganization(orgId) shouldReturn Some(organization)
-      index.getProject("org", "proj") shouldReturn None
+
+      index.getOrganization("org") shouldReturn IO.pure(Some(organization))
+      orgs.fetch(orgId) shouldReturn IO.pure(Some(organization))
+      index.getProject("org", "proj") shouldReturn IO.pure(None)
+      index.updateProject(any[ResourceF[Project]]) shouldReturn IO.pure(true)
       val created = projects.create(proj)(caller).accepted
-      index.getProject("org", "proj") shouldReturn Some(project.copy(uuid = created.uuid))
+      index.getProject("org", "proj") shouldReturn IO.pure(Some(project.copy(uuid = created.uuid)))
       val deprecated = projects.deprecate(proj, 1L)(caller).accepted
-      index.getProject("org", "proj") shouldReturn Some(
-        project.copy(uuid = deprecated.uuid, rev = 2L, deprecated = true))
+      index.getProject("org", "proj") shouldReturn IO.pure(
+        Some(project.copy(uuid = deprecated.uuid, rev = 2L, deprecated = true)))
       projects.update(proj)(caller).rejected[ProjectRejection] shouldEqual ProjectIsDeprecated
     }
 
     "not deprecate a project if it's already deprecated" in new Context {
-      index.getOrganization("org") shouldReturn Some(organization)
-      index.getOrganization(orgId) shouldReturn Some(organization)
-      index.getProject("org", "proj") shouldReturn None
+      index.getOrganization("org") shouldReturn IO.pure(Some(organization))
+      orgs.fetch(orgId) shouldReturn IO.pure(Some(organization))
+      index.getProject("org", "proj") shouldReturn IO.pure(None)
       val created = projects.create(proj)(caller).accepted
-      index.getProject("org", "proj") shouldReturn Some(project.copy(uuid = created.uuid))
+      index.getProject("org", "proj") shouldReturn IO.pure(Some(project.copy(uuid = created.uuid)))
       val deprecated = projects.deprecate(proj, 1L)(caller).accepted
-      index.getProject("org", "proj") shouldReturn Some(
-        project.copy(uuid = deprecated.uuid, rev = 2L, deprecated = true))
+      index.getProject("org", "proj") shouldReturn IO.pure(
+        Some(project.copy(uuid = deprecated.uuid, rev = 2L, deprecated = true)))
       projects.deprecate(proj, 2L)(caller).rejected[ProjectRejection] shouldEqual ProjectIsDeprecated
     }
 
     "create a project" in new Context {
-      index.getOrganization("org") shouldReturn Some(organization)
-      index.getOrganization(orgId) shouldReturn Some(organization)
-      index.getProject("org", "proj") shouldReturn None
+      index.getOrganization("org") shouldReturn IO.pure(Some(organization))
+      orgs.fetch(orgId) shouldReturn IO.pure(Some(organization))
+      index.getProject("org", "proj") shouldReturn IO.pure(None)
       val created = projects.create(proj)(caller).accepted
+
       created.id shouldEqual iri
       created.rev shouldEqual 1L
       created.deprecated shouldEqual false
@@ -121,15 +127,23 @@ class ProjectsSpec
       created.updatedAt shouldEqual instant
       created.createdBy shouldEqual caller
       created.updatedBy shouldEqual caller
+      verify(index).updateProject(eqTo(created.map(_ => proj)))
     }
 
     "update a project" in new Context {
-      index.getOrganization("org") shouldReturn Some(organization)
-      index.getOrganization(orgId) shouldReturn Some(organization)
-      index.getProject("org", "proj") shouldReturn None
+      reset(index)
+      index.getOrganization("org") shouldReturn IO.pure(Some(organization))
+      orgs.fetch(orgId) shouldReturn IO.pure(Some(organization))
+      index.getProject("org", "proj") shouldReturn IO.pure(None)
+      index.updateProject(any[ResourceF[Project]]) shouldReturn IO.pure(true)
+
+      val captor  = ArgCaptor[ResourceF[Project]]
       val created = projects.create(proj)(caller).accepted
-      index.getProject("org", "proj") shouldReturn Some(project.copy(uuid = created.uuid))
-      val updated = projects.update(proj.copy(description = Some("New description")))(caller).accepted
+
+      index.getProject("org", "proj") shouldReturn IO.pure(Some(project.copy(uuid = created.uuid)))
+
+      val updatedProject = proj.copy(description = Some("New description"))
+      val updated        = projects.update(updatedProject)(caller).accepted
       updated.id shouldEqual iri
       updated.rev shouldEqual 2L
       updated.deprecated shouldEqual false
@@ -139,17 +153,27 @@ class ProjectsSpec
       updated.createdBy shouldEqual caller
       updated.updatedBy shouldEqual caller
 
-      index.getProject("org", "proj") shouldReturn Some(project.copy(uuid = created.uuid, rev = 2L))
-      val updated2 = projects.update(proj.copy(description = None))(caller).accepted
+      index.getProject("org", "proj") shouldReturn IO.pure(
+        Some(project.copy(uuid = created.uuid, rev = 2L, value = updatedProject)))
+
+      val updatedProject2 = proj.copy(description = None)
+
+      val updated2 = projects.update(updatedProject2)(caller).accepted
+
       updated2.rev shouldEqual 3L
+      verify(index, times(3)).updateProject(captor.capture)
+
+      captor.values shouldEqual List(created.map(_ => proj),
+                                     updated.map(_ => updatedProject),
+                                     updated2.map(_ => updatedProject2))
     }
 
     "deprecate a project" in new Context {
-      index.getOrganization("org") shouldReturn Some(organization)
-      index.getOrganization(orgId) shouldReturn Some(organization)
-      index.getProject("org", "proj") shouldReturn None
+      index.getOrganization("org") shouldReturn IO.pure(Some(organization))
+      orgs.fetch(orgId) shouldReturn IO.pure(Some(organization))
+      index.getProject("org", "proj") shouldReturn IO.pure(None)
       val created = projects.create(proj)(caller).accepted
-      index.getProject("org", "proj") shouldReturn Some(project.copy(uuid = created.uuid))
+      index.getProject("org", "proj") shouldReturn IO.pure(Some(project.copy(uuid = created.uuid)))
       val deprecated = projects.deprecate(proj, 1L)(caller).accepted
       deprecated.id shouldEqual iri
       deprecated.rev shouldEqual 2L
@@ -164,9 +188,9 @@ class ProjectsSpec
     }
 
     "fetch a project" in new Context {
-      index.getOrganization("org") shouldReturn Some(organization)
-      index.getOrganization(orgId) shouldReturn Some(organization)
-      index.getProject("org", "proj") shouldReturn None
+      index.getOrganization("org") shouldReturn IO.pure(Some(organization))
+      orgs.fetch(orgId) shouldReturn IO.pure(Some(organization))
+      index.getProject("org", "proj") shouldReturn IO.pure(None)
       val created = projects.create(proj)(caller).accepted
       val fetched = projects.fetch(created.uuid).some
       fetched.id shouldEqual iri
@@ -183,13 +207,13 @@ class ProjectsSpec
     }
 
     "fetch a project at a given revision" in new Context {
-      index.getOrganization("org") shouldReturn Some(organization)
-      index.getOrganization(orgId) shouldReturn Some(organization)
-      index.getProject("org", "proj") shouldReturn None
+      index.getOrganization("org") shouldReturn IO.pure(Some(organization))
+      orgs.fetch(orgId) shouldReturn IO.pure(Some(organization))
+      index.getProject("org", "proj") shouldReturn IO.pure(None)
       val created = projects.create(proj)(caller).accepted
-      index.getProject("org", "proj") shouldReturn Some(project.copy(uuid = created.uuid))
+      index.getProject("org", "proj") shouldReturn IO.pure(Some(project.copy(uuid = created.uuid)))
       projects.update(proj.copy(description = Some("New description")))(caller).accepted
-      index.getProject("org", "proj") shouldReturn Some(project.copy(uuid = created.uuid, rev = 2L))
+      index.getProject("org", "proj") shouldReturn IO.pure(Some(project.copy(uuid = created.uuid, rev = 2L)))
       projects.update(proj.copy(description = Some("Another description")))(caller).accepted
       val fetched = projects.fetch(created.uuid, 2L).accepted
       fetched.id shouldEqual iri

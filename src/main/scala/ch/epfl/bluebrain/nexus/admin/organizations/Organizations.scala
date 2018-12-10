@@ -14,9 +14,9 @@ import ch.epfl.bluebrain.nexus.admin.exceptions.UnexpectedState
 import ch.epfl.bluebrain.nexus.admin.index.Index
 import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationCommand._
 import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationEvent._
-import ch.epfl.bluebrain.nexus.admin.organizations.Organizations.next
 import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationRejection._
 import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationState._
+import ch.epfl.bluebrain.nexus.admin.organizations.Organizations.next
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF
 import ch.epfl.bluebrain.nexus.commons.types.identity.Identity
 import ch.epfl.bluebrain.nexus.sourcing.akka.{AkkaAggregate, AkkaSourcingConfig, PassivationStrategy, RetryStrategy}
@@ -24,9 +24,9 @@ import ch.epfl.bluebrain.nexus.sourcing.akka.{AkkaAggregate, AkkaSourcingConfig,
 /**
   * Organizations operations bundle
   */
-class Organizations[F[_]](agg: Agg[F], index: Index)(implicit F: MonadError[F, Throwable],
-                                                     clock: Clock,
-                                                     http: HttpConfig) {
+class Organizations[F[_]](agg: Agg[F], index: Index[F])(implicit F: MonadError[F, Throwable],
+                                                        clock: Clock,
+                                                        http: HttpConfig) {
 
   /**
     * Create an organization.
@@ -36,8 +36,10 @@ class Organizations[F[_]](agg: Agg[F], index: Index)(implicit F: MonadError[F, T
     * @return             metadata about the organization
     */
   def create(organization: Organization)(implicit caller: Identity): F[OrganizationMetaOrRejection] =
-    index.getOrganization(organization.label) match {
-      case None    => evaluate(CreateOrganization(UUID.randomUUID(), rev = 0L, organization, clock.instant(), caller))
+    index.getOrganization(organization.label).flatMap {
+      case None =>
+        evaluateAndUpdateIndex(CreateOrganization(UUID.randomUUID(), rev = 0L, organization, clock.instant(), caller),
+                               organization)
       case Some(_) => F.pure(Left(OrganizationAlreadyExists))
     }
 
@@ -52,9 +54,10 @@ class Organizations[F[_]](agg: Agg[F], index: Index)(implicit F: MonadError[F, T
     */
   def update(label: String, organization: Organization, rev: Long)(
       implicit caller: Identity): F[OrganizationMetaOrRejection] =
-    index.getOrganization(label) match {
-      case Some(org) => evaluate(UpdateOrganization(org.uuid, rev, organization, clock.instant(), caller))
-      case None      => F.pure(Left(OrganizationDoesNotExist))
+    index.getOrganization(label).flatMap {
+      case Some(org) =>
+        evaluateAndUpdateIndex(UpdateOrganization(org.uuid, rev, organization, clock.instant(), caller), organization)
+      case None => F.pure(Left(OrganizationDoesNotExist))
     }
 
   /**
@@ -66,9 +69,10 @@ class Organizations[F[_]](agg: Agg[F], index: Index)(implicit F: MonadError[F, T
     * @return       metadata about the organization
     */
   def deprecate(label: String, rev: Long)(implicit caller: Identity): F[OrganizationMetaOrRejection] =
-    index.getOrganization(label) match {
-      case Some(org) => evaluate(DeprecateOrganization(org.uuid, rev, clock.instant(), caller))
-      case None      => F.pure(Left(OrganizationDoesNotExist))
+    index.getOrganization(label).flatMap {
+      case Some(org) =>
+        evaluateAndUpdateIndex(DeprecateOrganization(org.uuid, rev, clock.instant(), caller), org.value)
+      case None => F.pure(Left(OrganizationDoesNotExist))
     }
 
   /**
@@ -78,7 +82,7 @@ class Organizations[F[_]](agg: Agg[F], index: Index)(implicit F: MonadError[F, T
     * @return       organization and metadata if it exists, None otherwise
     */
   def fetch(label: String): F[Option[ResourceF[Organization]]] =
-    F.pure(index.getOrganization(label))
+    index.getOrganization(label)
 
   /**
     * Fetch an organization by revision
@@ -88,7 +92,7 @@ class Organizations[F[_]](agg: Agg[F], index: Index)(implicit F: MonadError[F, T
     * @return       organization and metadata if it exists, None otherwise
     */
   def fetch(label: String, rev: Long): F[Option[ResourceF[Organization]]] =
-    index.getOrganization(label) match {
+    index.getOrganization(label).flatMap {
       case Some(org) =>
         agg
           .foldLeft[OrganizationState](org.uuid.toString, Initial) {
@@ -99,14 +103,31 @@ class Organizations[F[_]](agg: Agg[F], index: Index)(implicit F: MonadError[F, T
       case None => F.pure(None)
     }
 
+  /**
+    * Fetch organization by UUID.
+    *
+    * @param  id of the organization.
+    * @return organization and metadata if it exists, None otherwise
+    */
+  def fetch(id: UUID): F[Option[ResourceF[Organization]]] =
+    agg.currentState(id.toString).map(stateToResource)
+
   private def evaluate(cmd: OrganizationCommand): F[OrganizationMetaOrRejection] =
     agg
       .evaluateS(cmd.id.toString, cmd)
       .flatMap {
         case Right(c: Current) => F.pure(Right(c.toResourceMetadata))
-        case Right(Initial)    => F.raiseError(new UnexpectedState(cmd.id.toString))
+        case Right(Initial)    => F.raiseError(UnexpectedState(cmd.id.toString))
         case Left(rejection)   => F.pure(Left(rejection))
       }
+
+  private def evaluateAndUpdateIndex(command: OrganizationCommand,
+                                     organization: Organization): F[OrganizationMetaOrRejection] =
+    evaluate(command).flatMap {
+      case Right(metadata) =>
+        index.updateOrganization(metadata.map(_ => organization)) *> F.pure(Right(metadata))
+      case Left(rej) => F.pure(Left(rej))
+    }
 
   private def stateToResource(state: OrganizationState): Option[ResourceF[Organization]] = state match {
     case Initial    => None
@@ -117,13 +138,13 @@ class Organizations[F[_]](agg: Agg[F], index: Index)(implicit F: MonadError[F, T
 object Organizations {
 
   /**
-    * Construct ''Organization'' wrapped on an ''F'' type based on akka clustered [[Aggregate]].
+    * Construct ''Organization'' wrapped on an ''F'' type based on akka clustered [[Agg]].
     */
-  def apply[F[_]: ConcurrentEffect](index: Index)(implicit cl: Clock = Clock.systemUTC(),
-                                                  ac: AppConfig,
-                                                  sc: AkkaSourcingConfig,
-                                                  as: ActorSystem,
-                                                  mt: ActorMaterializer): F[Organizations[F]] = {
+  def apply[F[_]: ConcurrentEffect](index: Index[F])(implicit cl: Clock = Clock.systemUTC(),
+                                                     ac: AppConfig,
+                                                     sc: AkkaSourcingConfig,
+                                                     as: ActorSystem,
+                                                     mt: ActorMaterializer): F[Organizations[F]] = {
     implicit val http: HttpConfig = ac.http
     val aggF: F[Agg[F]] =
       AkkaAggregate.sharded(
@@ -145,10 +166,10 @@ object Organizations {
       case (Initial, OrganizationCreated(uuid, 1L, org, instant, identity)) =>
         Current(uuid, 1L, org, deprecated = false, instant, identity, instant, identity)
 
-      case (c: Current, OrganizationUpdated(rev, org, instant, subject)) =>
+      case (c: Current, OrganizationUpdated(_, rev, org, instant, subject)) =>
         c.copy(rev = rev, organization = org, updatedAt = instant, updatedBy = subject)
 
-      case (c: Current, OrganizationDeprecated(rev, instant, subject)) =>
+      case (c: Current, OrganizationDeprecated(_, rev, instant, subject)) =>
         c.copy(rev = rev, deprecated = true, updatedAt = instant, updatedBy = subject)
 
       case (_, _) => Initial
@@ -164,14 +185,15 @@ object Organizations {
     }
 
     def update(c: UpdateOrganization): EventOrRejection = state match {
-      case Initial                      => Left(OrganizationDoesNotExist)
-      case s: Current if c.rev == s.rev => Right(OrganizationUpdated(c.rev + 1, c.organization, c.instant, c.subject))
-      case s: Current                   => Left(IncorrectRev(s.rev, c.rev))
+      case Initial => Left(OrganizationDoesNotExist)
+      case s: Current if c.rev == s.rev =>
+        Right(OrganizationUpdated(c.id, c.rev + 1, c.organization, c.instant, c.subject))
+      case s: Current => Left(IncorrectRev(s.rev, c.rev))
     }
 
     def deprecate(c: DeprecateOrganization): EventOrRejection = state match {
       case Initial                      => Left(OrganizationDoesNotExist)
-      case s: Current if c.rev == s.rev => Right(OrganizationDeprecated(c.rev + 1, c.instant, c.subject))
+      case s: Current if c.rev == s.rev => Right(OrganizationDeprecated(c.id, c.rev + 1, c.instant, c.subject))
       case s: Current                   => Left(IncorrectRev(s.rev, c.rev))
     }
 
