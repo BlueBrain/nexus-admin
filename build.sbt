@@ -27,7 +27,7 @@ scalafmt: {
 // Dependency versions
 val rdfVersion                 = "0.2.29"
 val commonsVersion             = "0.10.39"
-val iamVersion                 = "0.10.27"
+val iamVersion                 = "0.10.27+16-06d7e8bb+20181205-1135"
 val serviceVersion             = "0.10.21"
 val sourcingVersion            = "0.12.0"
 val akkaVersion                = "2.5.18"
@@ -115,7 +115,7 @@ lazy val testSettings = Seq(
   Test / testOptions       += Tests.Argument(TestFrameworks.ScalaTest, "-o", "-u", "target/test-reports"),
   Test / fork              := true,
   Test / parallelExecution := false, // workaround for jena initialization
-  coverageFailOnMinimum    := false,
+  coverageFailOnMinimum    := false
 )
 
 lazy val buildInfoSettings = Seq(

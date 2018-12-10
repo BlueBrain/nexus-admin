@@ -19,7 +19,7 @@ import ch.epfl.bluebrain.nexus.admin.projects.ProjectEvent.{ProjectCreated, Proj
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectRejection._
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectState._
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF
-import ch.epfl.bluebrain.nexus.commons.types.identity.Identity
+import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
 import ch.epfl.bluebrain.nexus.sourcing.akka._
 
 /**
@@ -41,7 +41,7 @@ class Projects[F[_]](agg: Agg[F], index: Index[F], organizations: Organizations[
     * @param caller  an implicitly available caller
     * @return project the created project resource metadata if the operation was successful, a rejection otherwise
     */
-  def create(project: Project)(implicit caller: Identity): F[ProjectMetaOrRejection] =
+  def create(project: Project)(implicit caller: Subject): F[ProjectMetaOrRejection] =
     index.getOrganization(project.organization).flatMap {
       case Some(org) =>
         index.getProject(project.organization, project.label).flatMap {
@@ -62,7 +62,7 @@ class Projects[F[_]](agg: Agg[F], index: Index[F], organizations: Organizations[
     * @param caller  an implicitly available caller
     * @return the updated project resource metadata if the operation was successful, a rejection otherwise
     */
-  def update(project: Project)(implicit caller: Identity): F[ProjectMetaOrRejection] =
+  def update(project: Project)(implicit caller: Subject): F[ProjectMetaOrRejection] =
     index.getProject(project.organization, project.label).flatMap {
       case Some(resource) =>
         evaluateAndUpdateIndex(
@@ -79,7 +79,7 @@ class Projects[F[_]](agg: Agg[F], index: Index[F], organizations: Organizations[
     * @param caller  an implicitly available caller
     * @return the deprecated project resource metadata if the operation was successful, a rejection otherwise
     */
-  def deprecate(project: Project, rev: Long)(implicit caller: Identity): F[ProjectMetaOrRejection] =
+  def deprecate(project: Project, rev: Long)(implicit caller: Subject): F[ProjectMetaOrRejection] =
     index.getProject(project.organization, project.label).flatMap {
       case Some(resource) =>
         evaluateAndUpdateIndex(DeprecateProject(resource.uuid, rev, clock.instant, caller), resource.value)

@@ -3,7 +3,8 @@ package ch.epfl.bluebrain.nexus.admin.organizations
 import java.time.Instant
 import java.util.UUID
 
-import ch.epfl.bluebrain.nexus.commons.types.identity.Identity
+import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
+
 
 /**
   * Enumeration of organization event states
@@ -28,7 +29,7 @@ sealed trait OrganizationEvent extends Product with Serializable {
   /**
     * @return the subject which created this event
     */
-  def subject: Identity
+  def subject: Subject
 }
 
 object OrganizationEvent {
@@ -46,7 +47,7 @@ object OrganizationEvent {
                                        rev: Long,
                                        organization: Organization,
                                        instant: Instant,
-                                       subject: Identity)
+                                       subject: Subject)
       extends OrganizationEvent
 
   /**
@@ -62,7 +63,7 @@ object OrganizationEvent {
                                        rev: Long,
                                        organization: Organization,
                                        instant: Instant,
-                                       subject: Identity)
+                                       subject: Subject)
       extends OrganizationEvent
 
   /**
@@ -73,6 +74,6 @@ object OrganizationEvent {
     * @param instant      the instant when this event was created
     * @param subject      the subject which created this event
     */
-  final case class OrganizationDeprecated(id: UUID, rev: Long, instant: Instant, subject: Identity)
+  final case class OrganizationDeprecated(id: UUID, rev: Long, instant: Instant, subject: Subject)
       extends OrganizationEvent
 }

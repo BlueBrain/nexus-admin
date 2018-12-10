@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.admin.organizations.{Organization, Organizations}
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectRejection._
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF
 import ch.epfl.bluebrain.nexus.commons.test.io.{IOEitherValues, IOOptionValues}
-import ch.epfl.bluebrain.nexus.commons.types.identity.Identity.UserRef
+import ch.epfl.bluebrain.nexus.iam.client.types.Identity.User
 import ch.epfl.bluebrain.nexus.rdf.syntax.node.unsafe._
 import ch.epfl.bluebrain.nexus.sourcing.Aggregate
 import org.mockito.Mockito.{reset, times, verify}
@@ -46,7 +46,7 @@ class ProjectsSpec
 
   trait Context {
     val types  = Set(nxv.Project.value)
-    val caller = UserRef("realm", "alice")
+    val caller = User("realm", "alice")
     val desc   = Some("Project description")
     val orgId  = UUID.randomUUID
     val projId = UUID.randomUUID

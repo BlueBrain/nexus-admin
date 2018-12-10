@@ -53,7 +53,7 @@ trait QueryDirectives {
     * Extracts the organization and project labels from the resource segments.
     */
   def extractProject(resource: Path): Directive1[(String, String)] =
-    resource.segments.reverse match {
+    resource.segments.reverse.toList match {
       case project :: org :: _ => provide((org, project))
       case _ => reject(validationRejection(s"Path '${resource.asString}' is not a valid project reference."))
   }

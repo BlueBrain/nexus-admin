@@ -10,21 +10,29 @@ import ch.epfl.bluebrain.nexus.admin.marshallers.instances._
 import ch.epfl.bluebrain.nexus.admin.organizations.{Organization, Organizations}
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF.resourceMetaEncoder
 import ch.epfl.bluebrain.nexus.iam.client.IamClient
-import ch.epfl.bluebrain.nexus.iam.client.types.AuthToken
+import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
+import ch.epfl.bluebrain.nexus.iam.client.types.{AuthToken, Permission}
 import monix.eval.Task
 import monix.execution.Scheduler
 
-class OrganizationRoutes(organizations: Organizations[Task])(implicit iamClient: IamClient[Task], s: Scheduler)
+class OrganizationRoutes(organizations: Organizations[Task])(implicit iamClient: IamClient[Task],
+                                                             iamClientConfig: IamClientConfig,
+                                                             s: Scheduler)
     extends AuthDirectives(iamClient)
     with QueryDirectives
     with CombinedRoutes {
+
+  private val read  = Permission.unsafe("organizations/read")
+  private val write = Permission.unsafe("organizations/write")
+
+  def routes: Route = combinedRoutesFor("orgs")
 
   override def combined(implicit credentials: Option[AuthToken]): Route =
     readRoutes ~ writeRoutes
 
   private def readRoutes(implicit credentials: Option[AuthToken]): Route =
     (extractResourcePath & pathEndOrSingleSlash) { resource =>
-      (get & authorizeOn(resource)) { path =>
+      (get & authorizeOn(resource, read)) { path =>
         extractOrg(path) { name =>
           parameter('rev.as[Long].?) {
             case Some(rev) =>
@@ -46,7 +54,7 @@ class OrganizationRoutes(organizations: Organizations[Task])(implicit iamClient:
         authCaller.apply { implicit caller =>
           parameter('rev.as[Long].?) {
             case Some(rev) =>
-              (trace("updateProject") & authorizeOn(resource)) { path =>
+              (trace("updateProject") & authorizeOn(resource, write)) { path =>
                 extractOrg(path) { label =>
                   isValid(org, label) {
                     complete(organizations.update(label, org, rev).runToFuture)
@@ -54,7 +62,7 @@ class OrganizationRoutes(organizations: Organizations[Task])(implicit iamClient:
                 }
               }
             case None =>
-              (trace("createProject") & authorizeOn(resource)) { path =>
+              (trace("createProject") & authorizeOn(resource, write)) { path =>
                 extractOrg(path) { label =>
                   isValid(org, label) {
                     complete(StatusCodes.Created -> organizations.create(org).runToFuture)
@@ -67,7 +75,7 @@ class OrganizationRoutes(organizations: Organizations[Task])(implicit iamClient:
         delete {
           parameter('rev.as[Long]) { rev =>
             authCaller.apply { implicit caller =>
-              (trace("deprecateProject") & authorizeOn(resource)) { path =>
+              (trace("deprecateProject") & authorizeOn(resource, write)) { path =>
                 extractOrg(path) { name =>
                   complete(organizations.deprecate(name, rev).runToFuture)
                 }
@@ -82,4 +90,11 @@ class OrganizationRoutes(organizations: Organizations[Task])(implicit iamClient:
       reject(validationRejection(s"Resource path doesn't match provided organization: '$label'"))
     else pass
   }
+}
+
+object OrganizationRoutes {
+  def apply(organizations: Organizations[Task])(implicit iamClient: IamClient[Task],
+                                                iamClientConfig: IamClientConfig,
+                                                s: Scheduler): OrganizationRoutes =
+    new OrganizationRoutes(organizations)(iamClient, iamClientConfig, s)
 }

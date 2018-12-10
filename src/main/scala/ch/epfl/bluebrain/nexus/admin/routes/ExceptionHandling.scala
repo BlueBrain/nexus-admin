@@ -1,4 +1,5 @@
 package ch.epfl.bluebrain.nexus.admin.routes
+
 import akka.http.scaladsl.server.Directives.complete
 import akka.http.scaladsl.server.ExceptionHandler
 import ch.epfl.bluebrain.nexus.admin.exceptions.AdminError.UnexpectedError

@@ -6,7 +6,7 @@ import java.util.UUID
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.admin.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.admin.types.{ResourceF, ResourceMetadata}
-import ch.epfl.bluebrain.nexus.commons.types.identity.Identity
+import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
 
 /**
   * Enumeration of organization states.
@@ -39,9 +39,9 @@ object OrganizationState {
                            organization: Organization,
                            deprecated: Boolean,
                            createdAt: Instant,
-                           createdBy: Identity,
+                           createdBy: Subject,
                            updatedAt: Instant,
-                           updatedBy: Identity)
+                           updatedBy: Subject)
       extends OrganizationState {
 
     /**

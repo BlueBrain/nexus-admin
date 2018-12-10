@@ -12,7 +12,8 @@ import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationState._
 import ch.epfl.bluebrain.nexus.admin.organizations.Organizations._
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF
 import ch.epfl.bluebrain.nexus.commons.test.Randomness
-import ch.epfl.bluebrain.nexus.commons.types.identity.Identity
+import ch.epfl.bluebrain.nexus.iam.client.types.Caller
+import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
 import ch.epfl.bluebrain.nexus.rdf.syntax.node.unsafe._
 import ch.epfl.bluebrain.nexus.service.test.ActorSystemFixture
 import ch.epfl.bluebrain.nexus.sourcing.Aggregate
@@ -33,7 +34,7 @@ class OrganizationsSpec
   private implicit val clock: Clock          = Clock.fixed(Instant.ofEpochSecond(3600), ZoneId.systemDefault())
   private implicit val http                  = HttpConfig("some", 8080, "/v1", "http://nexus.example.com")
   private implicit val ctx: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
-  private implicit val identity              = Identity.Anonymous()
+  private implicit val caller: Subject       = Caller.anonymous.subject
   private val instant                        = clock.instant()
 
   val aggF: IO[Agg[IO]] = Aggregate.inMemory[IO, String]("organizations", Initial, next, evaluate[IO])
@@ -58,9 +59,9 @@ class OrganizationsSpec
       metadata.deprecated shouldEqual false
       metadata.types shouldEqual Set(nxv.Organization.value)
       metadata.createdAt shouldEqual instant
-      metadata.createdBy shouldEqual identity
+      metadata.createdBy shouldEqual caller
       metadata.updatedAt shouldEqual instant
-      metadata.updatedBy shouldEqual identity
+      metadata.updatedBy shouldEqual caller
 
       val organizationResource = metadata.map(_ => organization)
       orgs.fetch(organization.label).unsafeRunSync().value shouldEqual organizationResource
@@ -87,9 +88,9 @@ class OrganizationsSpec
         false,
         Set(nxv.Organization.value),
         instant,
-        identity,
+        caller,
         instant,
-        identity
+        caller
       )
 
       orgs.fetch(updatedOrg.label).unsafeRunSync().value shouldEqual ResourceF(
@@ -99,9 +100,9 @@ class OrganizationsSpec
         false,
         Set(nxv.Organization.value),
         instant,
-        identity,
+        caller,
         instant,
-        identity,
+        caller,
         updatedOrg
       )
 
@@ -135,9 +136,9 @@ class OrganizationsSpec
         false,
         Set(nxv.Organization.value),
         instant,
-        identity,
+        caller,
         instant,
-        identity,
+        caller,
         organization
       )
     }

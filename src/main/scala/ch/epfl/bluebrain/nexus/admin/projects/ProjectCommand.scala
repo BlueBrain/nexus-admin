@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.admin.projects
 import java.time.Instant
 import java.util.UUID
 
-import ch.epfl.bluebrain.nexus.commons.types.identity.Identity
+import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
 
 sealed trait ProjectCommand extends Product with Serializable {
 
@@ -20,7 +20,7 @@ sealed trait ProjectCommand extends Product with Serializable {
   /**
     * @return the identity associated to this command
     */
-  def subject: Identity
+  def subject: Subject
 }
 
 object ProjectCommand {
@@ -40,7 +40,7 @@ object ProjectCommand {
                                  label: String,
                                  description: Option[String],
                                  instant: Instant,
-                                 subject: Identity)
+                                 subject: Subject)
       extends ProjectCommand
 
   /**
@@ -58,7 +58,7 @@ object ProjectCommand {
                                  description: Option[String],
                                  rev: Long,
                                  instant: Instant,
-                                 subject: Identity)
+                                 subject: Subject)
       extends ProjectCommand
 
   /**
@@ -69,5 +69,5 @@ object ProjectCommand {
     * @param instant the timestamp associated to this command
     * @param subject the identity associated to this command
     */
-  final case class DeprecateProject(id: UUID, rev: Long, instant: Instant, subject: Identity) extends ProjectCommand
+  final case class DeprecateProject(id: UUID, rev: Long, instant: Instant, subject: Subject) extends ProjectCommand
 }

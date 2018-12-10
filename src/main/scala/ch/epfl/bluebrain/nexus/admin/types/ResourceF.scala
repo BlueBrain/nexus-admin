@@ -6,7 +6,8 @@ import java.util.UUID
 import akka.cluster.ddata.LWWRegister.Clock
 import ch.epfl.bluebrain.nexus.admin.config.Contexts._
 import ch.epfl.bluebrain.nexus.admin.config.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.commons.types.identity.Identity
+import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
+import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
 import ch.epfl.bluebrain.nexus.rdf.instances._
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import io.circe.syntax._
@@ -33,9 +34,9 @@ final case class ResourceF[A](
     deprecated: Boolean,
     types: Set[AbsoluteIri],
     createdAt: Instant,
-    createdBy: Identity,
+    createdBy: Subject,
     updatedAt: Instant,
-    updatedBy: Identity,
+    updatedBy: Subject,
     value: A
 ) {
 
@@ -77,13 +78,13 @@ object ResourceF {
       deprecated: Boolean,
       types: Set[AbsoluteIri],
       createdAt: Instant,
-      createdBy: Identity,
+      createdBy: Subject,
       updatedAt: Instant,
-      updatedBy: Identity
+      updatedBy: Subject
   ): ResourceF[Unit] =
     ResourceF(id, uuid, rev, deprecated, types, createdAt, createdBy, updatedAt, updatedBy, ())
 
-  implicit val resourceMetaEncoder: Encoder[ResourceMetadata] =
+  implicit def resourceMetaEncoder(implicit iamClientConfig: IamClientConfig): Encoder[ResourceMetadata] =
     Encoder.encodeJson.contramap {
       case ResourceF(id, uuid, rev, deprecated, types, createdAt, createdBy, updatedAt, updatedBy, _: Unit) =>
         Json.obj(
@@ -100,9 +101,9 @@ object ResourceF {
         )
     }
 
-  implicit def resourceEncoder[A](implicit encoder: Encoder[A]): Encoder[ResourceF[A]] =
+  implicit def resourceEncoder[A: Encoder](implicit iamClientConfig: IamClientConfig): Encoder[ResourceF[A]] =
     Encoder.encodeJson.contramap { resource =>
-      resourceMetaEncoder(resource.discard).deepMerge(encoder(resource.value))
+      resource.discard.asJson.deepMerge(resource.value.asJson)
     }
 
   implicit def clock[A]: Clock[ResourceF[A]] = { (_: Long, value: ResourceF[A]) =>

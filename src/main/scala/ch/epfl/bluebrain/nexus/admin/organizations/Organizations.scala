@@ -14,11 +14,11 @@ import ch.epfl.bluebrain.nexus.admin.exceptions.AdminError.UnexpectedState
 import ch.epfl.bluebrain.nexus.admin.index.Index
 import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationCommand._
 import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationEvent._
+import ch.epfl.bluebrain.nexus.admin.organizations.Organizations.next
 import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationRejection._
 import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationState._
-import ch.epfl.bluebrain.nexus.admin.organizations.Organizations.next
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF
-import ch.epfl.bluebrain.nexus.commons.types.identity.Identity
+import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
 import ch.epfl.bluebrain.nexus.sourcing.akka.{AkkaAggregate, AkkaSourcingConfig, PassivationStrategy, RetryStrategy}
 
 /**
@@ -35,7 +35,7 @@ class Organizations[F[_]](agg: Agg[F], index: Index[F])(implicit F: MonadError[F
     * @param caller       identity of the caller performing the operation
     * @return             metadata about the organization
     */
-  def create(organization: Organization)(implicit caller: Identity): F[OrganizationMetaOrRejection] =
+  def create(organization: Organization)(implicit caller: Subject): F[OrganizationMetaOrRejection] =
     index.getOrganization(organization.label).flatMap {
       case None =>
         evaluateAndUpdateIndex(CreateOrganization(UUID.randomUUID(), rev = 0L, organization, clock.instant(), caller),
@@ -53,7 +53,7 @@ class Organizations[F[_]](agg: Agg[F], index: Index[F])(implicit F: MonadError[F
     * @return
     */
   def update(label: String, organization: Organization, rev: Long)(
-      implicit caller: Identity): F[OrganizationMetaOrRejection] =
+      implicit caller: Subject): F[OrganizationMetaOrRejection] =
     index.getOrganization(label).flatMap {
       case Some(org) =>
         evaluateAndUpdateIndex(UpdateOrganization(org.uuid, rev, organization, clock.instant(), caller), organization)
@@ -68,7 +68,7 @@ class Organizations[F[_]](agg: Agg[F], index: Index[F])(implicit F: MonadError[F
     * @param caller identity of the caller performing the operation
     * @return       metadata about the organization
     */
-  def deprecate(label: String, rev: Long)(implicit caller: Identity): F[OrganizationMetaOrRejection] =
+  def deprecate(label: String, rev: Long)(implicit caller: Subject): F[OrganizationMetaOrRejection] =
     index.getOrganization(label).flatMap {
       case Some(org) =>
         evaluateAndUpdateIndex(DeprecateOrganization(org.uuid, rev, clock.instant(), caller), org.value)

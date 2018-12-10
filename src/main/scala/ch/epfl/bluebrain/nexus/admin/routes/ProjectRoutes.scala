@@ -10,21 +10,29 @@ import ch.epfl.bluebrain.nexus.admin.marshallers.instances._
 import ch.epfl.bluebrain.nexus.admin.projects.{Project, Projects}
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF.resourceMetaEncoder
 import ch.epfl.bluebrain.nexus.iam.client.IamClient
-import ch.epfl.bluebrain.nexus.iam.client.types.AuthToken
+import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
+import ch.epfl.bluebrain.nexus.iam.client.types.{AuthToken, Permission}
 import monix.eval.Task
 import monix.execution.Scheduler
 
-class ProjectRoutes(projects: Projects[Task])(implicit iamClient: IamClient[Task], s: Scheduler)
+class ProjectRoutes(projects: Projects[Task])(implicit iamClient: IamClient[Task],
+                                              iamClientConfig: IamClientConfig,
+                                              s: Scheduler)
     extends AuthDirectives(iamClient)
     with QueryDirectives
     with CombinedRoutes {
+
+  private val read  = Permission.unsafe("projects/read")
+  private val write = Permission.unsafe("projects/write")
+
+  def routes: Route = combinedRoutesFor("projects")
 
   override def combined(implicit credentials: Option[AuthToken]): Route =
     readRoutes ~ writeRoutes
 
   private def readRoutes(implicit credentials: Option[AuthToken]): Route =
-    (extractResourcePath & pathEndOrSingleSlash) { resource =>
-      (get & authorizeOn(resource)) { path =>
+    extractResourcePath { resource =>
+      (get & authorizeOn(resource, read)) { path =>
         extractProject(path) {
           case (org, label) =>
             parameter('rev.as[Long].?) {
@@ -42,12 +50,12 @@ class ProjectRoutes(projects: Projects[Task])(implicit iamClient: IamClient[Task
     }
 
   private def writeRoutes(implicit credentials: Option[AuthToken]): Route =
-    (extractResourcePath & pathEndOrSingleSlash) { resource =>
+    extractResourcePath { resource =>
       (put & entity(as[Project])) { project =>
         authCaller.apply { implicit caller =>
           parameter('rev.as[Long].?) {
             case Some(rev) =>
-              (trace("updateProject") & authorizeOn(resource)) { path =>
+              (trace("updateProject") & authorizeOn(resource, write)) { path =>
                 extractProject(path) {
                   case (org, label) =>
                     isValid(project, org, label) {
@@ -56,7 +64,7 @@ class ProjectRoutes(projects: Projects[Task])(implicit iamClient: IamClient[Task
                 }
               }
             case None =>
-              (trace("createProject") & authorizeOn(resource)) { path =>
+              (trace("createProject") & authorizeOn(resource, write)) { path =>
                 extractProject(path) {
                   case (org, label) =>
                     isValid(project, org, label) {
@@ -70,7 +78,7 @@ class ProjectRoutes(projects: Projects[Task])(implicit iamClient: IamClient[Task
         delete {
           parameter('rev.as[Long]) { rev =>
             authCaller.apply { implicit caller =>
-              (trace("deprecateProject") & authorizeOn(resource)) { path =>
+              (trace("deprecateProject") & authorizeOn(resource, write)) { path =>
                 extractProject(path) {
                   case (org, label) =>
                     complete(projects.deprecate(org, label, rev).runToFuture)
@@ -89,4 +97,11 @@ class ProjectRoutes(projects: Projects[Task])(implicit iamClient: IamClient[Task
     else
       pass
   }
+}
+
+object ProjectRoutes {
+  def apply(projects: Projects[Task])(implicit iamClient: IamClient[Task],
+                                      iamClientConfig: IamClientConfig,
+                                      s: Scheduler): ProjectRoutes =
+    new ProjectRoutes(projects)(iamClient, iamClientConfig, s)
 }

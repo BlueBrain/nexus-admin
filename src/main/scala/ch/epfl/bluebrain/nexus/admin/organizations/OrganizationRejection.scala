@@ -1,6 +1,8 @@
 package ch.epfl.bluebrain.nexus.admin.organizations
 
-sealed trait OrganizationRejection extends Product with Serializable
+import ch.epfl.bluebrain.nexus.commons.types.Rejection
+
+sealed trait OrganizationRejection extends Rejection
 
 object OrganizationRejection {
 
