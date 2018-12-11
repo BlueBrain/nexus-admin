@@ -16,12 +16,12 @@ object OrganizationRejection {
   /**
     * Signals the the organization already exists.
     */
-  final case object OrganizationAlreadyExists extends OrganizationRejection
+  final case object OrganizationExists extends OrganizationRejection
 
   /**
     * Signals that the organization does not exist.
     */
-  final case object OrganizationDoesNotExist extends OrganizationRejection
+  final case object OrganizationNotFound extends OrganizationRejection
 
   /**
     * Signals that the provided revision does not match the latest revision

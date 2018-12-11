@@ -131,9 +131,7 @@ object AppConfig {
     * @param size    the default results size
     * @param maxSize the maximum results size
     */
-  final case class PaginationConfig(from: Long,
-                                    size: Int,
-                                    maxSize: Int) {
+  final case class PaginationConfig(from: Long, size: Int, maxSize: Int) {
     val default: Pagination = Pagination(from, size)
   }
 

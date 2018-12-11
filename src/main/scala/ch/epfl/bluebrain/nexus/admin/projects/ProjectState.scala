@@ -5,7 +5,6 @@ import java.util.UUID
 
 import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
 
-
 sealed trait ProjectState extends Product with Serializable
 
 object ProjectState {

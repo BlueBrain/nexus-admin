@@ -42,7 +42,10 @@ class ProjectRoutes(projects: Projects[Task])(implicit iamClient: IamClient[Task
                 }
               case None =>
                 trace("getProject") {
-                  complete(projects.fetch(org, label).runToFuture)
+                  onSuccess(projects.fetch(org, label).runToFuture) {
+                    case Some(res) => complete(res)
+                    case None      => complete(StatusCodes.NotFound)
+                  }
                 }
             }
         }
@@ -68,7 +71,10 @@ class ProjectRoutes(projects: Projects[Task])(implicit iamClient: IamClient[Task
                 extractProject(path) {
                   case (org, label) =>
                     isValid(project, org, label) {
-                      complete(StatusCodes.Created -> projects.create(project).runToFuture)
+                      onSuccess(projects.create(project).runToFuture) {
+                        case Right(meta)     => complete(StatusCodes.Created -> meta)
+                        case Left(rejection) => complete(rejection)
+                      }
                     }
                 }
               }

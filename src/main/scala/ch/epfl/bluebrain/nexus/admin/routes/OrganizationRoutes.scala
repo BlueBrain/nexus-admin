@@ -31,17 +31,23 @@ class OrganizationRoutes(organizations: Organizations[Task])(implicit iamClient:
     readRoutes ~ writeRoutes
 
   private def readRoutes(implicit credentials: Option[AuthToken]): Route =
-    (extractResourcePath & pathEndOrSingleSlash) { resource =>
+    extractResourcePath { resource =>
       (get & authorizeOn(resource, read)) { path =>
         extractOrg(path) { name =>
           parameter('rev.as[Long].?) {
             case Some(rev) =>
               trace("getOrgRev") {
-                complete(organizations.fetch(name, rev).runToFuture)
+                onSuccess(organizations.fetch(name, rev).runToFuture) {
+                  case Some(res) => complete(res)
+                  case None      => complete(StatusCodes.NotFound)
+                }
               }
             case None =>
               trace("getOrg") {
-                complete(organizations.fetch(name).runToFuture)
+                onSuccess(organizations.fetch(name).runToFuture) {
+                  case Some(res) => complete(res)
+                  case None      => complete(StatusCodes.NotFound)
+                }
               }
           }
         }
@@ -49,7 +55,7 @@ class OrganizationRoutes(organizations: Organizations[Task])(implicit iamClient:
     }
 
   private def writeRoutes(implicit credentials: Option[AuthToken]): Route =
-    (extractResourcePath & pathEndOrSingleSlash) { resource =>
+    extractResourcePath { resource =>
       (put & entity(as[Organization])) { org =>
         authCaller.apply { implicit caller =>
           parameter('rev.as[Long].?) {
@@ -65,7 +71,10 @@ class OrganizationRoutes(organizations: Organizations[Task])(implicit iamClient:
               (trace("createProject") & authorizeOn(resource, write)) { path =>
                 extractOrg(path) { label =>
                   isValid(org, label) {
-                    complete(StatusCodes.Created -> organizations.create(org).runToFuture)
+                    onSuccess(organizations.create(org).runToFuture) {
+                      case Right(meta)     => complete(StatusCodes.Created -> meta)
+                      case Left(rejection) => complete(rejection)
+                    }
                   }
                 }
               }

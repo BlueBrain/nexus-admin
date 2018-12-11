@@ -36,7 +36,7 @@ object RejectionHandling {
       }
       .handleAll[MalformedRequestContentRejection] { rejection =>
         val aggregate = rejection.map(_.message).mkString(", ")
-        complete(BadRequest -> WrongOrInvalidJson(Some(aggregate)))
+        complete(WrongOrInvalidJson(Some(aggregate)))
       }
       .handleAll[MethodRejection] { methodRejections =>
         val names = methodRejections.map(_.supported.name)

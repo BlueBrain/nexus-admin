@@ -46,7 +46,7 @@ trait QueryDirectives {
     */
   def extractOrg(resource: Path): Directive1[String] = resource.lastSegment match {
     case Some(segment) => provide(segment)
-    case None => reject(validationRejection("Organization path cannot be empty."))
+    case None          => reject(validationRejection("Organization path cannot be empty."))
   }
 
   /**
@@ -55,8 +55,8 @@ trait QueryDirectives {
   def extractProject(resource: Path): Directive1[(String, String)] =
     resource.segments.reverse.toList match {
       case project :: org :: _ => provide((org, project))
-      case _ => reject(validationRejection(s"Path '${resource.asString}' is not a valid project reference."))
-  }
+      case _                   => reject(validationRejection(s"Path '${resource.asString}' is not a valid project reference."))
+    }
 
 }
 

@@ -116,20 +116,28 @@ object instances extends FailFastCirceSupport {
     case r: HttpRejection         => httpRejectionEncoder(r)
   }
 
-  private val statusCodeFrom: StatusFrom[Rejection] = StatusFrom {
+  private val projectStatusCodeFrom: StatusFrom[ProjectRejection] = StatusFrom {
+    case _: ProjectRejection.IncorrectRev         => Conflict
+    case ProjectRejection.ProjectExists           => Conflict
+    case ProjectRejection.ProjectNotFound         => NotFound
+    case ProjectRejection.OrganizationNotFound    => NotFound
+    case ProjectRejection.ProjectIsDeprecated     => BadRequest
+    case _: ProjectRejection.InvalidProjectFormat => BadRequest
+  }
+
+  private val organizationStatusCodeFrom: StatusFrom[OrganizationRejection] = StatusFrom {
     case _: OrganizationRejection.IncorrectRev              => Conflict
-    case _: ProjectRejection.IncorrectRev                   => Conflict
-    case OrganizationRejection.OrganizationAlreadyExists    => Conflict
-    case ProjectRejection.ProjectAlreadyExists              => Conflict
-    case OrganizationRejection.OrganizationDoesNotExist     => NotFound
-    case ProjectRejection.ProjectDoesNotExists              => NotFound
-    case ProjectRejection.OrganizationDoesNotExist          => NotFound
-    case ProjectRejection.ProjectIsDeprecated               => BadRequest
+    case OrganizationRejection.OrganizationExists           => Conflict
+    case OrganizationRejection.OrganizationNotFound         => NotFound
     case _: OrganizationRejection.InvalidOrganizationFormat => BadRequest
-    case _: ProjectRejection.InvalidProjectFormat           => BadRequest
-    case _: HttpRejection                                   => BadRequest
-    case _: CommonRejection.DownstreamServiceError          => InternalServerError
-    case _                                                  => BadRequest
+  }
+
+  private val statusCodeFrom: StatusFrom[Rejection] = StatusFrom {
+    case r: ProjectRejection                       => projectStatusCodeFrom(r)
+    case r: OrganizationRejection                  => organizationStatusCodeFrom(r)
+    case _: HttpRejection                          => BadRequest
+    case _: CommonRejection.DownstreamServiceError => InternalServerError
+    case _                                         => BadRequest
   }
 
 }

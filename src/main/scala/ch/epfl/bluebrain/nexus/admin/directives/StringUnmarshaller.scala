@@ -36,7 +36,7 @@ object StringUnmarshaller {
     parse(value).left.map(err => WrongOrInvalidJson(Try(err.message).toOption))
   }
 
-  private def unmarshaller[A](f: String => Either[Throwable, Json] )(
+  private def unmarshaller[A](f: String => Either[Throwable, Json])(
       implicit dec: Decoder[A]): FromStringUnmarshaller[A] =
     Unmarshaller.strict[String, A] {
       case "" => throw Unmarshaller.NoContentException

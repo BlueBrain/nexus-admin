@@ -20,4 +20,3 @@ object AdminError {
   @SuppressWarnings(Array("IncorrectlyNamedExceptions"))
   final case class UnexpectedError(override val message: String) extends Err(message)
 }
-
