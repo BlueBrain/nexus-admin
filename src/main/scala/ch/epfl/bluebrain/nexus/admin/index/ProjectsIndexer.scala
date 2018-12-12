@@ -8,7 +8,7 @@ import cats.effect.{IO, LiftIO}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig.{IndexingConfig, PersistenceConfig}
 import ch.epfl.bluebrain.nexus.admin.config.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.admin.exceptions.UnexpectedState
+import ch.epfl.bluebrain.nexus.admin.exceptions.AdminError.UnexpectedState
 import ch.epfl.bluebrain.nexus.admin.organizations.{Organization, Organizations}
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectEvent.ProjectCreated
 import ch.epfl.bluebrain.nexus.admin.projects.{Project, ProjectEvent, Projects}

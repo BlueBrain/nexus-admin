@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.admin.projects.ProjectEvent.{ProjectCreated, Proj
 import ch.epfl.bluebrain.nexus.admin.projects.{Project, Projects}
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF
 import ch.epfl.bluebrain.nexus.commons.test.io.{IOEitherValues, IOOptionValues}
-import ch.epfl.bluebrain.nexus.commons.types.identity.Identity.UserRef
+import ch.epfl.bluebrain.nexus.iam.client.types.Identity
 import ch.epfl.bluebrain.nexus.rdf.syntax.node.unsafe._
 import org.mockito.Mockito.verify
 import org.mockito.integrations.scalatest.IdiomaticMockitoFixture
@@ -26,7 +26,7 @@ class ProjectsIndexerSpec
   trait Context {
     val instant = Instant.now
     val types   = Set(nxv.Project.value)
-    val caller  = UserRef("realm", "alice")
+    val caller  = Identity.User("realm", "alice")
     val orgId   = UUID.randomUUID
     val projId  = UUID.randomUUID
     val organization = ResourceF(

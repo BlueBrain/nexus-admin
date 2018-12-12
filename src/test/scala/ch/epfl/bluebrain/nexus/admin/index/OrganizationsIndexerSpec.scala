@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationEvent.Organizatio
 import ch.epfl.bluebrain.nexus.admin.organizations.{Organization, Organizations}
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF
 import ch.epfl.bluebrain.nexus.commons.test.io.{IOEitherValues, IOOptionValues}
-import ch.epfl.bluebrain.nexus.commons.types.identity.Identity.UserRef
+import ch.epfl.bluebrain.nexus.iam.client.types.Identity
 import ch.epfl.bluebrain.nexus.rdf.syntax.node.unsafe._
 import org.mockito.Mockito.verify
 import org.mockito.integrations.scalatest.IdiomaticMockitoFixture
@@ -25,7 +25,7 @@ class OrganizationsIndexerSpec
   trait Context {
     val instant = Instant.now
     val types   = Set(nxv.Project.value)
-    val caller  = UserRef("realm", "alice")
+    val caller  = Identity.User("realm", "alice")
     val orgId   = UUID.randomUUID
     val organization = ResourceF(
       url"http://nexus.example.com/v1/orgs/org".value,

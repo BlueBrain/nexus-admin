@@ -8,7 +8,7 @@ import cats.effect.{IO, LiftIO}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig.{IndexingConfig, PersistenceConfig}
 import ch.epfl.bluebrain.nexus.admin.config.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.admin.exceptions.UnexpectedState
+import ch.epfl.bluebrain.nexus.admin.exceptions.AdminError.UnexpectedState
 import ch.epfl.bluebrain.nexus.admin.organizations._
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF
 import ch.epfl.bluebrain.nexus.service.indexer.persistence.OffsetStorage.Volatile
