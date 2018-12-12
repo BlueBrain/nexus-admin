@@ -26,8 +26,8 @@ scalafmt: {
 
 // Dependency versions
 val rdfVersion                 = "0.2.29"
-val commonsVersion             = "0.10.39"
-val iamVersion                 = "0.10.27+16-06d7e8bb+20181205-1135"
+val commonsVersion             = "0.10.41"
+val iamVersion                 = "0.10.27+20-01919a77+20181212-1739"
 val serviceVersion             = "0.10.21"
 val sourcingVersion            = "0.12.0"
 val akkaVersion                = "2.5.18"
@@ -38,7 +38,7 @@ val catsVersion                = "1.4.0"
 val circeVersion               = "0.10.0"
 val journalVersion             = "3.0.19"
 val logbackVersion             = "1.2.3"
-val mockitoVersion             = "1.0.4"
+val mockitoVersion             = "1.0.5"
 val pureconfigVersion          = "0.9.2"
 val scalaTestVersion           = "3.0.5"
 val kryoVersion                = "0.5.2"
@@ -116,7 +116,8 @@ lazy val testSettings = Seq(
   Test / testOptions       += Tests.Argument(TestFrameworks.ScalaTest, "-o", "-u", "target/test-reports"),
   Test / fork              := true,
   Test / parallelExecution := false, // workaround for jena initialization
-  coverageFailOnMinimum    := false
+  coverageFailOnMinimum    := false,
+  Test / scalacOptions --= Seq("-Ywarn-dead-code", "-Ywarn-value-discard") // for mockito-scala
 )
 
 lazy val buildInfoSettings = Seq(

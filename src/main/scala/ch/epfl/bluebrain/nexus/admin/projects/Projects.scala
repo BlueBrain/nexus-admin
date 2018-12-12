@@ -120,7 +120,7 @@ class Projects[F[_]](agg: Agg[F], index: Index[F], organizations: Organizations[
   def fetch(organization: String, label: String, rev: Long): F[ProjectResourceOrRejection] =
     index.getProject(organization, label).flatMap {
       case Some(project) => fetch(project.uuid, rev)
-      case None => F.pure(Left(ProjectNotFound))
+      case None          => F.pure(Left(ProjectNotFound))
     }
 
   /**

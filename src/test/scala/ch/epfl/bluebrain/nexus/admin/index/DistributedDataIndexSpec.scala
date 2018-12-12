@@ -25,9 +25,9 @@ class DistributedDataIndexSpec
     with OptionValues
     with Inspectors {
 
-  val consistencyTimeout        = 5 seconds
-  val askTimeout                = Timeout(consistencyTimeout)
-  private val instant           = Instant.now()
+  val consistencyTimeout       = 5 seconds
+  val askTimeout               = Timeout(consistencyTimeout)
+  private val instant          = Instant.now()
   private implicit val subject = Caller.anonymous.subject
 
   val index        = DistributedDataIndex[IO](askTimeout, consistencyTimeout)

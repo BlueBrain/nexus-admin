@@ -12,7 +12,6 @@ import ch.epfl.bluebrain.nexus.admin.types.ResourceF
 import ch.epfl.bluebrain.nexus.commons.test.io.{IOEitherValues, IOOptionValues}
 import ch.epfl.bluebrain.nexus.iam.client.types.Identity
 import ch.epfl.bluebrain.nexus.rdf.syntax.node.unsafe._
-import org.mockito.Mockito.verify
 import org.mockito.integrations.scalatest.IdiomaticMockitoFixture
 import org.scalatest.{Matchers, WordSpecLike}
 
@@ -75,8 +74,8 @@ class ProjectsIndexerSpec
           ))
         .unsafeRunSync()
 
-      verify(index).updateOrganization(organization)
-      verify(index).updateProject(project)
+      index.updateOrganization(organization) was called
+      index.updateProject(project) was called
     }
 
     "index project only for other project events" in new Context {
@@ -91,7 +90,7 @@ class ProjectsIndexerSpec
           ))
         .unsafeRunSync()
 
-      verify(index).updateProject(project)
+      index.updateProject(project) was called
     }
   }
 

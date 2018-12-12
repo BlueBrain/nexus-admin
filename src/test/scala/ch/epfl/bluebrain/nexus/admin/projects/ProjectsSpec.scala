@@ -14,7 +14,7 @@ import ch.epfl.bluebrain.nexus.commons.test.io.{IOEitherValues, IOOptionValues}
 import ch.epfl.bluebrain.nexus.iam.client.types.Identity.User
 import ch.epfl.bluebrain.nexus.rdf.syntax.node.unsafe._
 import ch.epfl.bluebrain.nexus.sourcing.Aggregate
-import org.mockito.Mockito.{reset, times, verify}
+import org.mockito.Mockito.reset
 import org.mockito.captor.ArgCaptor
 import org.mockito.integrations.scalatest.IdiomaticMockitoFixture
 import org.scalatest._
@@ -128,7 +128,7 @@ class ProjectsSpec
       created.updatedAt shouldEqual instant
       created.createdBy shouldEqual caller
       created.updatedBy shouldEqual caller
-      verify(index).updateProject(eqTo(created.map(_ => proj)))
+      index.updateProject(eqTo(created.map(_ => proj))) was called
     }
 
     "update a project" in new Context {
@@ -162,7 +162,7 @@ class ProjectsSpec
       val updated2 = projects.update(updatedProject2, 2L)(caller).accepted
 
       updated2.rev shouldEqual 3L
-      verify(index, times(3)).updateProject(captor.capture)
+      index.updateProject(captor.capture) wasCalled threeTimes
 
       captor.values shouldEqual List(created.map(_ => proj),
                                      updated.map(_ => updatedProject),
