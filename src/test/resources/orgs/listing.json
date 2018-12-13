@@ -1,0 +1,55 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/resource.json",
+    "https://bluebrain.github.io/nexus/contexts/admin.json",
+    "https://bluebrain.github.io/nexus/contexts/search.json"
+  ],
+  "_total": 3,
+  "_results": [
+    {
+      "label": "org1",
+      "description": "Org description",
+      "@id": "http://nexus.example.com/v1/orgs/org1",
+      "@type": [
+        "Organization"
+      ],
+      "_uuid": "{uuid}",
+      "_rev": 1,
+      "_deprecated": false,
+      "_createdBy": "https://nexus.example.com/v1/realms/alice/users/realm",
+      "_updatedBy": "https://nexus.example.com/v1/realms/alice/users/realm",
+      "_createdAt": "{instant}",
+      "_updatedAt": "{instant}"
+    },
+    {
+      "label": "org2",
+      "description": "Org description",
+      "@id": "http://nexus.example.com/v1/orgs/org2",
+      "@type": [
+        "Organization"
+      ],
+      "_uuid": "{uuid}",
+      "_rev": 1,
+      "_deprecated": false,
+      "_createdBy": "https://nexus.example.com/v1/realms/alice/users/realm",
+      "_updatedBy": "https://nexus.example.com/v1/realms/alice/users/realm",
+      "_createdAt": "{instant}",
+      "_updatedAt": "{instant}"
+    },
+    {
+      "label": "org3",
+      "description": "Org description",
+      "@id": "http://nexus.example.com/v1/orgs/org3",
+      "@type": [
+        "Organization"
+      ],
+      "_uuid": "{uuid}",
+      "_rev": 1,
+      "_deprecated": false,
+      "_createdBy": "https://nexus.example.com/v1/realms/alice/users/realm",
+      "_updatedBy": "https://nexus.example.com/v1/realms/alice/users/realm",
+      "_createdAt": "{instant}",
+      "_updatedAt": "{instant}"
+    }
+  ]
+}

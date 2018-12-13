@@ -7,9 +7,9 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import cats.MonadError
 import cats.effect.{Async, ConcurrentEffect}
+import cats.syntax.apply._
 import cats.syntax.flatMap._
 import cats.syntax.functor._
-import cats.syntax.apply._
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.admin.exceptions.AdminError.UnexpectedState
@@ -20,6 +20,9 @@ import ch.epfl.bluebrain.nexus.admin.projects.ProjectEvent.{ProjectCreated, Proj
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectRejection._
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectState._
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF
+import ch.epfl.bluebrain.nexus.commons.types.search.Pagination
+import ch.epfl.bluebrain.nexus.commons.types.search.QueryResult.UnscoredQueryResult
+import ch.epfl.bluebrain.nexus.commons.types.search.QueryResults.UnscoredQueryResults
 import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
 import ch.epfl.bluebrain.nexus.sourcing.akka._
 
@@ -138,10 +141,35 @@ class Projects[F[_]](agg: Agg[F], index: Index[F], organizations: Organizations[
       }
       .flatMap {
         case c: Current if c.rev == rev => toResource(c)
-        case _: Current                 => F.pure(Left(IncorrectRev(rev)))
+        case c: Current                 => F.pure(Left(IncorrectRev(c.rev, rev)))
         case Initial                    => F.pure(Left(ProjectNotFound))
       }
   }
+
+  /**
+    * Lists all indexed projects.
+    *
+    * @param pagination the pagination settings
+    * @return a paginated results list
+    */
+  def list(pagination: Pagination): F[UnscoredQueryResults[ResourceF[Project]]] =
+    index.listProjects(pagination).map { projects =>
+      val results = projects.map(project => UnscoredQueryResult(project))
+      UnscoredQueryResults(projects.size.toLong, results)
+    }
+
+  /**
+    * Lists all indexed projects within a given organization.
+    *
+    * @param organization the target organization
+    * @param pagination   the pagination settings
+    * @return a paginated results list
+    */
+  def list(organization: String, pagination: Pagination): F[UnscoredQueryResults[ResourceF[Project]]] =
+    index.listProjects(organization, pagination).map { projects =>
+      val results = projects.map(project => UnscoredQueryResult(project))
+      UnscoredQueryResults(projects.size.toLong, results)
+    }
 
   private def eval(command: ProjectCommand): F[ProjectMetaOrRejection] =
     agg
@@ -246,7 +274,7 @@ object Projects {
     private def updateProject(state: ProjectState, c: UpdateProject): Either[ProjectRejection, ProjectEvent] =
       state match {
         case Initial                      => Left(ProjectNotFound)
-        case s: Current if s.rev != c.rev => Left(IncorrectRev(c.rev))
+        case s: Current if s.rev != c.rev => Left(IncorrectRev(s.rev, c.rev))
         case s: Current if s.deprecated   => Left(ProjectIsDeprecated)
         case s: Current                   => updateProjectAfter(s, c)
       }
@@ -257,7 +285,7 @@ object Projects {
     private def deprecateProject(state: ProjectState, c: DeprecateProject): Either[ProjectRejection, ProjectEvent] =
       state match {
         case Initial                      => Left(ProjectNotFound)
-        case s: Current if s.rev != c.rev => Left(IncorrectRev(c.rev))
+        case s: Current if s.rev != c.rev => Left(IncorrectRev(s.rev, c.rev))
         case s: Current if s.deprecated   => Left(ProjectIsDeprecated)
         case s: Current                   => deprecateProjectAfter(s, c)
       }

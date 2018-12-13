@@ -4,11 +4,12 @@ import akka.http.javadsl.server.Rejections.validationRejection
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Directive0, Route}
+import ch.epfl.bluebrain.nexus.admin.config.AppConfig.PaginationConfig
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig.tracing.trace
 import ch.epfl.bluebrain.nexus.admin.directives.{AuthDirectives, QueryDirectives}
 import ch.epfl.bluebrain.nexus.admin.marshallers.instances._
 import ch.epfl.bluebrain.nexus.admin.projects.{Project, Projects}
-import ch.epfl.bluebrain.nexus.admin.types.ResourceF.resourceMetaEncoder
+import ch.epfl.bluebrain.nexus.admin.types.ResourceF._
 import ch.epfl.bluebrain.nexus.iam.client.IamClient
 import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
 import ch.epfl.bluebrain.nexus.iam.client.types.{AuthToken, Permission}
@@ -17,6 +18,7 @@ import monix.execution.Scheduler
 
 class ProjectRoutes(projects: Projects[Task])(implicit iamClient: IamClient[Task],
                                               iamClientConfig: IamClientConfig,
+                                              pagination: PaginationConfig,
                                               s: Scheduler)
     extends AuthDirectives(iamClient)
     with QueryDirectives
@@ -31,9 +33,18 @@ class ProjectRoutes(projects: Projects[Task])(implicit iamClient: IamClient[Task
     readRoutes ~ writeRoutes
 
   private def readRoutes(implicit credentials: Option[AuthToken]): Route =
-    extractResourcePath { resource =>
-      (get & authorizeOn(resource, read)) { path =>
-        extractProject(path) {
+    extractResourcePath { path =>
+      (get & authorizeOn(path, read)) {
+        optionalOrg(path) {
+          case Some(org) =>
+            (trace("listOrganizationProjects") & paginated) { pagination =>
+              complete(projects.list(org, pagination).runToFuture)
+            }
+          case None =>
+            (trace("listAllProjects") & paginated) { pagination =>
+              complete(projects.list(pagination).runToFuture)
+            }
+        } ~ extractProject(path) {
           case (org, label) =>
             parameter('rev.as[Long].?) {
               case Some(rev) =>
@@ -53,12 +64,12 @@ class ProjectRoutes(projects: Projects[Task])(implicit iamClient: IamClient[Task
     }
 
   private def writeRoutes(implicit credentials: Option[AuthToken]): Route =
-    extractResourcePath { resource =>
+    extractResourcePath { path =>
       (put & entity(as[Project])) { project =>
         authCaller.apply { implicit caller =>
           parameter('rev.as[Long].?) {
             case Some(rev) =>
-              (trace("updateProject") & authorizeOn(resource, write)) { path =>
+              (trace("updateProject") & authorizeOn(path, write)) {
                 extractProject(path) {
                   case (org, label) =>
                     isValid(project, org, label) {
@@ -67,7 +78,7 @@ class ProjectRoutes(projects: Projects[Task])(implicit iamClient: IamClient[Task
                 }
               }
             case None =>
-              (trace("createProject") & authorizeOn(resource, write)) { path =>
+              (trace("createProject") & authorizeOn(path, write)) {
                 extractProject(path) {
                   case (org, label) =>
                     isValid(project, org, label) {
@@ -84,7 +95,7 @@ class ProjectRoutes(projects: Projects[Task])(implicit iamClient: IamClient[Task
         delete {
           parameter('rev.as[Long]) { rev =>
             authCaller.apply { implicit caller =>
-              (trace("deprecateProject") & authorizeOn(resource, write)) { path =>
+              (trace("deprecateProject") & authorizeOn(path, write)) {
                 extractProject(path) {
                   case (org, label) =>
                     complete(projects.deprecate(org, label, rev).runToFuture)
@@ -108,6 +119,7 @@ class ProjectRoutes(projects: Projects[Task])(implicit iamClient: IamClient[Task
 object ProjectRoutes {
   def apply(projects: Projects[Task])(implicit iamClient: IamClient[Task],
                                       iamClientConfig: IamClientConfig,
+                                      pagination: PaginationConfig,
                                       s: Scheduler): ProjectRoutes =
-    new ProjectRoutes(projects)(iamClient, iamClientConfig, s)
+    new ProjectRoutes(projects)
 }

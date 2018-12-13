@@ -6,6 +6,8 @@ import java.util.UUID
 import akka.cluster.ddata.LWWRegister.Clock
 import ch.epfl.bluebrain.nexus.admin.config.Contexts._
 import ch.epfl.bluebrain.nexus.admin.config.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.commons.http.syntax.circe._
+import ch.epfl.bluebrain.nexus.commons.types.search.QueryResults.UnscoredQueryResults
 import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
 import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
 import ch.epfl.bluebrain.nexus.rdf.instances._
@@ -105,6 +107,18 @@ object ResourceF {
     Encoder.encodeJson.contramap { resource =>
       resource.discard.asJson.deepMerge(resource.value.asJson)
     }
+
+  implicit def uqrsEncoder[A: Encoder](
+      implicit iamClientConfig: IamClientConfig): Encoder[UnscoredQueryResults[ResourceF[A]]] = {
+    Encoder.encodeJson.contramap {
+      case UnscoredQueryResults(total, results) =>
+        Json.obj(
+          "@context"         -> Json.arr(resourceCtxUri.asJson, adminCtxUri.asJson, searchCtxUri.asJson),
+          nxv.total.prefix   -> Json.fromLong(total),
+          nxv.results.prefix -> Json.arr(results.map(_.source.asJson.removeKeys("@context")): _*)
+        )
+    }
+  }
 
   implicit def clock[A]: Clock[ResourceF[A]] = { (_: Long, value: ResourceF[A]) =>
     value.rev

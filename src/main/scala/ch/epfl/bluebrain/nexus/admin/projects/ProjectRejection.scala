@@ -36,8 +36,9 @@ object ProjectRejection {
   /**
     * Signals that a project update cannot be performed due to an incorrect revision provided.
     *
-    * @param rev the provided revision
+    * @param latest   latest know revision
+    * @param provided the provided revision
     */
-  final case class IncorrectRev(rev: Long) extends ProjectRejection
+  final case class IncorrectRev(latest: Long, provided: Long) extends ProjectRejection
 
 }

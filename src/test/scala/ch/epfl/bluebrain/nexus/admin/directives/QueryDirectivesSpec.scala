@@ -99,6 +99,26 @@ class QueryDirectivesSpec
       }
     }
 
+    "extract optional organization" in {
+      def extract(resource: Path, expected: Option[String]) = (get & QueryDirectives.optionalOrg(resource)) { o =>
+        o shouldEqual expected
+        complete(StatusCodes.Accepted)
+      }
+
+      Get("/") ~> routes(extract(Path./, None)) ~> check {
+        status shouldEqual StatusCodes.Accepted
+      }
+      Get("/foo") ~> routes(extract(Path("/foo").right.value, Some("foo"))) ~> check {
+        status shouldEqual StatusCodes.Accepted
+      }
+      Get("/foo/bar") ~> routes(extract(Path("/foo/bar").right.value, Some("bar"))) ~> check {
+        status shouldEqual StatusCodes.BadRequest
+        responseAs[Error] shouldEqual Error(classNameOf[IllegalParameter.type],
+                                            Some("Path '/foo/bar' is not a valid organization reference."),
+                                            errorCtxUri.asString)
+      }
+    }
+
     "extract organization" in {
       def extract(resource: Path, expected: String) = (get & QueryDirectives.extractOrg(resource)) { o =>
         o shouldEqual expected
@@ -111,11 +131,14 @@ class QueryDirectivesSpec
                                             Some("Organization path cannot be empty."),
                                             errorCtxUri.asString)
       }
-      Get("/foo/bar") ~> routes(extract(Path("/foo/bar").right.value, "bar")) ~> check {
+      Get("/foo") ~> routes(extract(Path("/foo").right.value, "foo")) ~> check {
         status shouldEqual StatusCodes.Accepted
       }
       Get("/foo/bar/") ~> routes(extract(Path("/foo/bar/").right.value, "bar")) ~> check {
-        status shouldEqual StatusCodes.Accepted
+        status shouldEqual StatusCodes.BadRequest
+        responseAs[Error] shouldEqual Error(classNameOf[IllegalParameter.type],
+                                            Some("Path '/foo/bar/' is not a valid organization reference."),
+                                            errorCtxUri.asString)
       }
     }
 

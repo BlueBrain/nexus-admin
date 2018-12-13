@@ -25,6 +25,7 @@ object OrganizationRejection {
 
   /**
     * Signals that the provided revision does not match the latest revision
+    *
     * @param latest    latest know revision
     * @param provided  provided revision
     */

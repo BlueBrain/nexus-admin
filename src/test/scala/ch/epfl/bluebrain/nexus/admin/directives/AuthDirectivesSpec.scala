@@ -45,8 +45,7 @@ class AuthDirectivesSpec
   private def authorizeOnRoute(path: Path, permission: Permission)(implicit cred: Option[AuthToken]): Route =
     handleExceptions(ExceptionHandling.handler) {
       handleRejections(RejectionHandling.handler) {
-        (get & directives.authorizeOn(path, permission)) { p =>
-          p shouldEqual path
+        (get & directives.authorizeOn(path, permission)) {
           complete(StatusCodes.Accepted)
         }
       }
@@ -65,12 +64,12 @@ class AuthDirectivesSpec
   "Authorization directives" should {
 
     "return the caller" in {
-      iamClient.getCaller(filterGroups = true)(token) shouldReturn Task(caller)
+      iamClient.getCaller(token) shouldReturn Task(caller)
       Get("/") ~> addCredentials(cred) ~> authCaller(caller)(token) ~> check {
         status shouldEqual StatusCodes.Accepted
       }
 
-      iamClient.getCaller(filterGroups = true)(None) shouldReturn Task(Caller.anonymous)
+      iamClient.getCaller(None) shouldReturn Task(Caller.anonymous)
       Get("/") ~> authCaller(Caller.anonymous)(None) ~> check {
         status shouldEqual StatusCodes.Accepted
       }

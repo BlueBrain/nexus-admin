@@ -18,6 +18,9 @@ import ch.epfl.bluebrain.nexus.admin.organizations.Organizations.next
 import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationRejection._
 import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationState._
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF
+import ch.epfl.bluebrain.nexus.commons.types.search.Pagination
+import ch.epfl.bluebrain.nexus.commons.types.search.QueryResult.UnscoredQueryResult
+import ch.epfl.bluebrain.nexus.commons.types.search.QueryResults.UnscoredQueryResults
 import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
 import ch.epfl.bluebrain.nexus.sourcing.akka.{AkkaAggregate, AkkaSourcingConfig, PassivationStrategy, RetryStrategy}
 
@@ -111,6 +114,18 @@ class Organizations[F[_]](agg: Agg[F], index: Index[F])(implicit F: MonadError[F
     */
   def fetch(id: UUID): F[Option[ResourceF[Organization]]] =
     agg.currentState(id.toString).map(stateToResource)
+
+  /**
+    * Lists all indexed organizations.
+    *
+    * @param pagination the pagination settings
+    * @return a paginated results list
+    */
+  def list(pagination: Pagination): F[UnscoredQueryResults[ResourceF[Organization]]] =
+    index.listOrganizations(pagination).map { orgs =>
+      val results = orgs.map(org => UnscoredQueryResult(org))
+      UnscoredQueryResults(orgs.size.toLong, results)
+    }
 
   private def evaluate(cmd: OrganizationCommand): F[OrganizationMetaOrRejection] =
     agg

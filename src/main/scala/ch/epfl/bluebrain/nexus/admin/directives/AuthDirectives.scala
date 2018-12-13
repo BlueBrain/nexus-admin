@@ -30,9 +30,9 @@ abstract class AuthDirectives(iamClient: IamClient[Task])(implicit s: Scheduler)
     *
     * @return forwards the provided resource [[Path]] if the caller has access.
     */
-  def authorizeOn(resource: Path, permission: Permission)(implicit cred: Option[AuthToken]): Directive1[Path] =
+  def authorizeOn(resource: Path, permission: Permission)(implicit cred: Option[AuthToken]): Directive0 =
     onComplete(iamClient.authorizeOn(resource, permission).runToFuture).flatMap {
-      case Success(_)                  => provide(resource)
+      case Success(_)                  => pass
       case Failure(UnauthorizedAccess) => reject(AuthorizationFailedRejection)
       case Failure(err)                => reject(authorizationRejection(err))
     }
@@ -43,7 +43,7 @@ abstract class AuthDirectives(iamClient: IamClient[Task])(implicit s: Scheduler)
     * @return the [[Subject]] of the caller
     */
   def authCaller(implicit cred: Option[AuthToken]): Directive1[Subject] =
-    onComplete(iamClient.getCaller(filterGroups = true).runToFuture).flatMap {
+    onComplete(iamClient.getCaller.runToFuture).flatMap {
       case Success(caller)             => provide(caller.subject)
       case Failure(UnauthorizedAccess) => reject(AuthorizationFailedRejection)
       case Failure(err)                => reject(authorizationRejection(err))

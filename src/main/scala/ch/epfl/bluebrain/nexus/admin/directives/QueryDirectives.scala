@@ -42,20 +42,30 @@ trait QueryDirectives {
   }
 
   /**
+    * Extracts an optional organization label from the resource segment.
+    */
+  def optionalOrg(resource: Path): Directive1[Option[String]] = resource.segments match {
+    case Seq(segment) => provide(Some(segment))
+    case Nil          => provide(None)
+    case _            => reject(validationRejection(s"Path '${resource.asString}' is not a valid organization reference."))
+  }
+
+  /**
     * Extracts the organization label from the resource segment.
     */
-  def extractOrg(resource: Path): Directive1[String] = resource.lastSegment match {
-    case Some(segment) => provide(segment)
-    case None          => reject(validationRejection("Organization path cannot be empty."))
+  def extractOrg(resource: Path): Directive1[String] = resource.segments match {
+    case Seq(segment) => provide(segment)
+    case Nil          => reject(validationRejection("Organization path cannot be empty."))
+    case _            => reject(validationRejection(s"Path '${resource.asString}' is not a valid organization reference."))
   }
 
   /**
     * Extracts the organization and project labels from the resource segments.
     */
   def extractProject(resource: Path): Directive1[(String, String)] =
-    resource.segments.reverse.toList match {
-      case project :: org :: _ => provide((org, project))
-      case _                   => reject(validationRejection(s"Path '${resource.asString}' is not a valid project reference."))
+    resource.segments match {
+      case Seq(org, project) => provide((org, project))
+      case _                 => reject(validationRejection(s"Path '${resource.asString}' is not a valid project reference."))
     }
 
 }

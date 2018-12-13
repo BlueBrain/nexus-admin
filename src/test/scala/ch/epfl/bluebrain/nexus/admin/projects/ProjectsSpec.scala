@@ -185,7 +185,7 @@ class ProjectsSpec
       deprecated.createdBy shouldEqual caller
       deprecated.updatedBy shouldEqual caller
 
-      projects.deprecate("org", "proj", 42L)(caller).rejected[ProjectRejection] shouldEqual IncorrectRev(42L)
+      projects.deprecate("org", "proj", 42L)(caller).rejected[ProjectRejection] shouldEqual IncorrectRev(2L, 42L)
     }
 
     "fetch a project" in new Context {
@@ -233,7 +233,7 @@ class ProjectsSpec
       index.getProject("org", "proj") shouldReturn IO.pure(Some(project.copy(uuid = fetched.uuid)))
       projects.fetch("org", "proj", 1L).accepted shouldEqual fetched.copy(rev = 1L, value = proj)
 
-      projects.fetch(created.uuid, 4L).rejected[ProjectRejection] shouldEqual IncorrectRev(4L)
+      projects.fetch(created.uuid, 4L).rejected[ProjectRejection] shouldEqual IncorrectRev(3L, 4L)
       projects.fetch(UUID.randomUUID, 4L).rejected[ProjectRejection] shouldEqual ProjectNotFound
     }
   }
