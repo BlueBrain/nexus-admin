@@ -4,19 +4,18 @@ import java.util.UUID
 
 import akka.actor.{ActorRef, ActorSystem}
 import cats.MonadError
-import cats.effect.{IO, LiftIO}
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.admin.config.AppConfig.{IndexingConfig, PersistenceConfig}
-import ch.epfl.bluebrain.nexus.admin.config.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.admin.config.AppConfig
 import ch.epfl.bluebrain.nexus.admin.exceptions.AdminError.UnexpectedState
 import ch.epfl.bluebrain.nexus.admin.organizations.{Organization, Organizations}
+import ch.epfl.bluebrain.nexus.admin.persistence.TaggingAdapter
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectEvent.ProjectCreated
 import ch.epfl.bluebrain.nexus.admin.projects.{Project, ProjectEvent, Projects}
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF
 import ch.epfl.bluebrain.nexus.service.indexer.persistence.OffsetStorage.Volatile
 import ch.epfl.bluebrain.nexus.service.indexer.persistence.{IndexerConfig, SequentialTagIndexer}
-
-import scala.concurrent.Future
+import monix.eval.Task
+import monix.execution.Scheduler
 
 /**
   * Projects indexer.
@@ -70,25 +69,24 @@ object ProjectsIndexer {
     * @param index          projects and organizations index
     * @return               ActorRef for stream coordinator
     */
-  final def start(projects: Projects[IO], organizations: Organizations[IO], index: Index[IO])(
+  final def start(projects: Projects[Task], organizations: Organizations[Task], index: Index[Task])(
       implicit
       as: ActorSystem,
-      persistence: PersistenceConfig,
-      indexing: IndexingConfig,
-      F: MonadError[IO, Throwable],
-      L: LiftIO[Future]): ActorRef = {
+      appConfig: AppConfig,
+      s: Scheduler
+  ): ActorRef = {
 
-    val indexer = new ProjectsIndexer[IO](projects, organizations, index)
+    val indexer = new ProjectsIndexer[Task](projects, organizations, index)
 
     SequentialTagIndexer.start(
       IndexerConfig.builder
         .name("projects-indexer")
-        .tag(s"type=${nxv.Project.value.show}")
-        .plugin(persistence.queryJournalPlugin)
-        .retry(indexing.retry.maxCount, indexing.retry.strategy)
-        .batch(indexing.batch, indexing.batchTimeout)
+        .tag(TaggingAdapter.ProjectTag)
+        .plugin(appConfig.persistence.queryJournalPlugin)
+        .retry(appConfig.indexing.retry.maxCount, appConfig.indexing.retry.strategy)
+        .batch(appConfig.indexing.batch, appConfig.indexing.batchTimeout)
         .offset(Volatile)
-        .index[ProjectEvent](indexer.index(_).to[Future])
+        .index[ProjectEvent](indexer.index(_).runToFuture)
         .build)
   }
 }

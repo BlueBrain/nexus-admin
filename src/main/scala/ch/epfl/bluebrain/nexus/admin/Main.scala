@@ -10,18 +10,27 @@ import akka.http.scaladsl.model.HttpMethods._
 import akka.http.scaladsl.model.headers.Location
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
+import akka.kafka.ProducerSettings
 import akka.stream.ActorMaterializer
 import ch.epfl.bluebrain.nexus.admin.config.Settings
+import ch.epfl.bluebrain.nexus.admin.index.{DistributedDataIndex, Index, OrganizationsIndexer, ProjectsIndexer}
+import ch.epfl.bluebrain.nexus.admin.organizations.{OrganizationEvent, Organizations}
+import ch.epfl.bluebrain.nexus.admin.persistence.TaggingAdapter
+import ch.epfl.bluebrain.nexus.admin.projects.{ProjectEvent, Projects}
 import ch.epfl.bluebrain.nexus.admin.routes._
+import ch.epfl.bluebrain.nexus.service.kafka.KafkaPublisher
 import ch.megard.akka.http.cors.scaladsl.CorsDirectives.{cors, corsRejectionHandler}
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 import com.github.jsonldjava.core.DocumentLoader
 import com.typesafe.config.{Config, ConfigFactory}
 import kamon.Kamon
 import kamon.system.SystemMetrics
+import monix.eval.Task
+import monix.execution.Scheduler
+import org.apache.kafka.common.serialization.StringSerializer
 
+import scala.concurrent.Await
 import scala.concurrent.duration._
-import scala.concurrent.{Await, ExecutionContext}
 import scala.util.{Failure, Success}
 
 //noinspection TypeAnnotation
@@ -55,8 +64,8 @@ object Main {
 
     implicit val appConfig             = new Settings(config).appConfig
     implicit val as: ActorSystem       = ActorSystem(appConfig.description.fullName, config)
-    implicit val ec: ExecutionContext  = as.dispatcher
     implicit val mt: ActorMaterializer = ActorMaterializer()
+    implicit val scheduler: Scheduler  = Scheduler.global
 
     val logger  = Logging(as, getClass)
     val cluster = Cluster(as)
@@ -70,6 +79,11 @@ object Main {
     val serviceDescription = AppInfoRoutes(appConfig.description,
                                            ClusterHealthChecker(cluster),
                                            CassandraHealthChecker(appConfig.persistence)).routes
+
+    val index: Index[Task]                 = DistributedDataIndex[Task](appConfig.index.askTimeout, appConfig.index.consistencyTimeout)
+    val organizations: Organizations[Task] = Organizations[Task](index, appConfig).runSyncUnsafe()
+    val projects: Projects[Task]           = Projects(index, organizations, appConfig).runSyncUnsafe()
+
     val corsSettings = CorsSettings.defaultSettings
       .withAllowedMethods(List(GET, PUT, POST, DELETE, OPTIONS, HEAD))
       .withExposedHeaders(List(Location.name))
@@ -98,9 +112,33 @@ object Main {
       SystemMetrics.stopCollecting()
     }
     // attempt to leave the cluster before shutting down
-    val _ = sys.addShutdownHook {
+    sys.addShutdownHook {
       val _ = Await.result(as.terminate(), 10.seconds)
     }
+
+    OrganizationsIndexer.start(organizations, index)
+    ProjectsIndexer.start(projects, organizations, index)
+
+    val _ = startKafkaIndexers(appConfig.kafka.topic, appConfig.persistence.queryJournalPlugin)
+
+  }
+
+  def startKafkaIndexers(topic: String, queryJournalPlugin: String)(implicit as: ActorSystem) = {
+    import ch.epfl.bluebrain.nexus.admin.kafka.encoders._
+    import ch.epfl.bluebrain.nexus.admin.kafka.keys._
+    val producerSettings = ProducerSettings(as, new StringSerializer, new StringSerializer)
+    KafkaPublisher
+      .startTagStream[ProjectEvent](queryJournalPlugin,
+                                    TaggingAdapter.ProjectTag,
+                                    "orgs-to-kafka",
+                                    producerSettings,
+                                    topic)
+    KafkaPublisher
+      .startTagStream[OrganizationEvent](queryJournalPlugin,
+                                         TaggingAdapter.OrganizationTag,
+                                         "orgs-to-kafka",
+                                         producerSettings,
+                                         topic)
   }
 
 }

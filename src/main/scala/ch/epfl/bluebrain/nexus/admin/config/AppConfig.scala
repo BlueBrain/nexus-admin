@@ -2,6 +2,7 @@ package ch.epfl.bluebrain.nexus.admin.config
 
 import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.Uri.Path
+import akka.util.Timeout
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig._
 import ch.epfl.bluebrain.nexus.admin.config.Vocabulary._
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport.OrderedKeys
@@ -11,6 +12,7 @@ import ch.epfl.bluebrain.nexus.rdf.syntax.node.unsafe._
 import ch.epfl.bluebrain.nexus.service.indexer.retryer.RetryStrategy
 import ch.epfl.bluebrain.nexus.service.indexer.retryer.RetryStrategy.Backoff
 import ch.epfl.bluebrain.nexus.service.kamon.directives.TracingDirectives
+import ch.epfl.bluebrain.nexus.sourcing.akka.SourcingConfig
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -22,12 +24,19 @@ import scala.concurrent.duration.FiniteDuration
   * @param cluster     akka cluster configuration
   * @param persistence persistence configuration
   * @param indexing    Indexing configuration
+  * @param kafka       Kafka configuration
+  * @param index       Distributed data configuration
+  * @param sourcing    Sourcing configuration
+  *
   */
 final case class AppConfig(description: Description,
                            http: HttpConfig,
                            cluster: ClusterConfig,
                            persistence: PersistenceConfig,
-                           indexing: IndexingConfig)
+                           indexing: IndexingConfig,
+                           kafka: KafkaConfig,
+                           index: IndexConfig,
+                           sourcing: SourcingConfig)
 
 object AppConfig {
 
@@ -123,6 +132,21 @@ object AppConfig {
     * @param retry        the retry configuration when indexing failures
     */
   final case class IndexingConfig(batch: Int, batchTimeout: FiniteDuration, retry: Retry)
+
+  /**
+    * Kafka configuration.
+    *
+    * @param topic  topic to publish events.
+    */
+  final case class KafkaConfig(topic: String)
+
+  /**
+    * DistributedData index config.
+    *
+    * @param askTimeout         actor ask timeout
+    * @param consistencyTimeout replication consistency timeout
+    */
+  final case class IndexConfig(askTimeout: Timeout, consistencyTimeout: FiniteDuration)
 
   /**
     * Pagination configuration

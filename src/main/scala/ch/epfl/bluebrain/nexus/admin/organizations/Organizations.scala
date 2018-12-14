@@ -6,7 +6,7 @@ import java.util.UUID
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import cats.MonadError
-import cats.effect.{Async, ConcurrentEffect}
+import cats.effect.{Async, ConcurrentEffect, Timer}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig.HttpConfig
@@ -14,15 +14,15 @@ import ch.epfl.bluebrain.nexus.admin.exceptions.AdminError.UnexpectedState
 import ch.epfl.bluebrain.nexus.admin.index.Index
 import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationCommand._
 import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationEvent._
-import ch.epfl.bluebrain.nexus.admin.organizations.Organizations.next
 import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationRejection._
 import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationState._
+import ch.epfl.bluebrain.nexus.admin.organizations.Organizations.next
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF
 import ch.epfl.bluebrain.nexus.commons.types.search.Pagination
 import ch.epfl.bluebrain.nexus.commons.types.search.QueryResult.UnscoredQueryResult
 import ch.epfl.bluebrain.nexus.commons.types.search.QueryResults.UnscoredQueryResults
 import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
-import ch.epfl.bluebrain.nexus.sourcing.akka.{AkkaAggregate, AkkaSourcingConfig, PassivationStrategy, RetryStrategy}
+import ch.epfl.bluebrain.nexus.sourcing.akka.AkkaAggregate
 
 /**
   * Organizations operations bundle
@@ -150,22 +150,21 @@ object Organizations {
   /**
     * Construct ''Organization'' wrapped on an ''F'' type based on akka clustered [[Agg]].
     */
-  def apply[F[_]: ConcurrentEffect](index: Index[F])(implicit cl: Clock = Clock.systemUTC(),
-                                                     ac: AppConfig,
-                                                     sc: AkkaSourcingConfig,
-                                                     as: ActorSystem,
-                                                     mt: ActorMaterializer): F[Organizations[F]] = {
-    implicit val http: HttpConfig = ac.http
+  def apply[F[_]: ConcurrentEffect: Timer](index: Index[F], appConfig: AppConfig)(
+      implicit cl: Clock = Clock.systemUTC(),
+      as: ActorSystem,
+      mt: ActorMaterializer): F[Organizations[F]] = {
+    implicit val http: HttpConfig = appConfig.http
     val aggF: F[Agg[F]] =
       AkkaAggregate.sharded(
         "organizations",
         Initial,
         next,
         evaluate[F],
-        PassivationStrategy.never[OrganizationState, OrganizationCommand],
-        RetryStrategy.never,
-        sc,
-        ac.cluster.shards
+        appConfig.sourcing.passivationStrategy(),
+        appConfig.sourcing.retryStrategy,
+        appConfig.sourcing.akkaSourcingConfig,
+        appConfig.cluster.shards
       )
 
     aggF.map(new Organizations(_, index))
@@ -191,7 +190,7 @@ object Organizations {
     def create(c: CreateOrganization): EventOrRejection = state match {
       case Initial if c.rev == 0L => Right(OrganizationCreated(c.id, rev = 1L, c.organization, c.instant, c.subject))
       case Initial                => Left(IncorrectRev(0L, c.rev))
-      case _                      => Left(OrganizationExists)
+      case _                      => Left(OrganizationAlreadyExists)
     }
 
     def update(c: UpdateOrganization): EventOrRejection = state match {

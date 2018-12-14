@@ -29,7 +29,7 @@ val rdfVersion                 = "0.2.29"
 val commonsVersion             = "0.10.41"
 val iamVersion                 = "0.11.0"
 val serviceVersion             = "0.10.21"
-val sourcingVersion            = "0.12.0"
+val sourcingVersion            = "0.12.2"
 val akkaVersion                = "2.5.18"
 val akkaCorsVersion            = "0.3.1"
 val akkaHttpVersion            = "10.1.5"
@@ -67,6 +67,7 @@ lazy val akkaSlf4j           = "com.typesafe.akka"       %% "akka-slf4j"        
 lazy val akkaStream          = "com.typesafe.akka"       %% "akka-stream"                 % akkaVersion
 lazy val catsCore            = "org.typelevel"           %% "cats-core"                   % catsVersion
 lazy val circeCore           = "io.circe"                %% "circe-core"                  % circeVersion
+lazy val circeJava8          = "io.circe"                %% "circe-java8"                 % circeVersion
 lazy val journalCore         = "io.verizon.journal"      %% "core"                        % journalVersion
 lazy val mockito             = "org.mockito"             %% "mockito-scala"               % mockitoVersion
 lazy val logbackClassic      = "ch.qos.logback"          % "logback-classic"              % logbackVersion
@@ -89,6 +90,7 @@ lazy val admin = project
       akkaStream,
       catsCore,
       circeCore,
+      circeJava8,
       commonQueryTypes,
       iamClient,
       journalCore,
