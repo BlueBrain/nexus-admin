@@ -150,7 +150,7 @@ class OrganizationRoutesSpec
     "fetch a specific organization revision" in new Context {
       iamClient.authorizeOn(path, read) shouldReturn Task.unit
       iamClient.getCaller shouldReturn Task(caller)
-      organizations.fetch("org", 2L) shouldReturn Task(Some(resource))
+      organizations.fetch("org", Some(2L)) shouldReturn Task(Some(resource))
 
       Get("/orgs/org?rev=2") ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.OK

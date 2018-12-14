@@ -37,21 +37,13 @@ class OrganizationRoutes(organizations: Organizations[Task])(implicit iamClient:
     extractResourcePath { path =>
       (get & authorizeOn(path, read)) {
         extractOrg(path) { name =>
-          parameter('rev.as[Long].?) {
-            case Some(rev) =>
-              trace("getOrgRev") {
-                onSuccess(organizations.fetch(name, rev).runToFuture) {
-                  case Some(res) => complete(res)
-                  case None      => complete(StatusCodes.NotFound)
-                }
+          parameter('rev.as[Long].?) { rev =>
+            trace("getOrganization") {
+              onSuccess(organizations.fetch(name, rev).runToFuture) {
+                case Some(res) => complete(res)
+                case None      => complete(StatusCodes.NotFound)
               }
-            case None =>
-              trace("getOrg") {
-                onSuccess(organizations.fetch(name).runToFuture) {
-                  case Some(res) => complete(res)
-                  case None      => complete(StatusCodes.NotFound)
-                }
-              }
+            }
           }
         }
       }

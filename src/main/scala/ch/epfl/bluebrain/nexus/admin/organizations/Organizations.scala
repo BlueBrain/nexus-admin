@@ -79,32 +79,27 @@ class Organizations[F[_]](agg: Agg[F], index: Index[F])(implicit F: MonadError[F
     }
 
   /**
-    * Fetch an organization.
+    * Fetch an organization
     *
     * @param label  label of the organization to fetch
+    * @param rev    optional revision to fetch
     * @return       organization and metadata if it exists, None otherwise
     */
-  def fetch(label: String): F[Option[ResourceF[Organization]]] =
-    index.getOrganization(label)
-
-  /**
-    * Fetch an organization by revision
-    *
-    * @param label  label of the organization to fetch
-    * @param rev    revision to fetch
-    * @return       organization and metadata if it exists, None otherwise
-    */
-  def fetch(label: String, rev: Long): F[Option[ResourceF[Organization]]] =
-    index.getOrganization(label).flatMap {
-      case Some(org) =>
-        agg
-          .foldLeft[OrganizationState](org.uuid.toString, Initial) {
-            case (state, event) if event.rev <= rev => next(state, event)
-            case (state, _)                         => state
-          }
-          .map(stateToResource)
-      case None => F.pure(None)
-    }
+  def fetch(label: String, rev: Option[Long] = None): F[Option[ResourceF[Organization]]] = rev match {
+    case None =>
+      index.getOrganization(label)
+    case Some(value) =>
+      index.getOrganization(label).flatMap {
+        case Some(org) =>
+          agg
+            .foldLeft[OrganizationState](org.uuid.toString, Initial) {
+              case (state, event) if event.rev <= value => next(state, event)
+              case (state, _)                           => state
+            }
+            .map(stateToResource)
+        case None => F.pure(None)
+      }
+  }
 
   /**
     * Fetch organization by UUID.
