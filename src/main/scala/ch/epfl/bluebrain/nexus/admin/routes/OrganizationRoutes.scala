@@ -1,14 +1,13 @@
 package ch.epfl.bluebrain.nexus.admin.routes
 
-import akka.http.javadsl.server.Rejections.validationRejection
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server.{Directive0, Route}
+import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig.PaginationConfig
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig.tracing.trace
 import ch.epfl.bluebrain.nexus.admin.directives.{AuthDirectives, QueryDirectives}
 import ch.epfl.bluebrain.nexus.admin.marshallers.instances._
-import ch.epfl.bluebrain.nexus.admin.organizations.{Organization, Organizations}
+import ch.epfl.bluebrain.nexus.admin.organizations.{Organization, OrganizationDescription, Organizations}
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF._
 import ch.epfl.bluebrain.nexus.iam.client.IamClient
 import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
@@ -51,25 +50,21 @@ class OrganizationRoutes(organizations: Organizations[Task])(implicit iamClient:
 
   private def writeRoutes(implicit credentials: Option[AuthToken]): Route =
     extractResourcePath { path =>
-      (put & entity(as[Organization])) { org =>
+      (put & entity(as[OrganizationDescription])) { desc =>
         authCaller.apply { implicit caller =>
           parameter('rev.as[Long].?) {
             case Some(rev) =>
               (trace("updateOrganization") & authorizeOn(path, write)) {
                 extractOrg(path) { label =>
-                  isValid(org, label) {
-                    complete(organizations.update(label, org, rev).runToFuture)
-                  }
+                  complete(organizations.update(label, Organization(label, desc.description), rev).runToFuture)
                 }
               }
             case None =>
               (trace("createOrganization") & authorizeOn(path, write)) {
                 extractOrg(path) { label =>
-                  isValid(org, label) {
-                    onSuccess(organizations.create(org).runToFuture) {
-                      case Right(meta)     => complete(StatusCodes.Created -> meta)
-                      case Left(rejection) => complete(rejection)
-                    }
+                  onSuccess(organizations.create(Organization(label, desc.description)).runToFuture) {
+                    case Right(meta)     => complete(StatusCodes.Created -> meta)
+                    case Left(rejection) => complete(rejection)
                   }
                 }
               }
@@ -96,11 +91,6 @@ class OrganizationRoutes(organizations: Organizations[Task])(implicit iamClient:
       }
     }
 
-  private def isValid(organization: Organization, label: String): Directive0 = {
-    if (organization.label != label)
-      reject(validationRejection(s"Resource path doesn't match provided organization: '$label'"))
-    else pass
-  }
 }
 
 object OrganizationRoutes {

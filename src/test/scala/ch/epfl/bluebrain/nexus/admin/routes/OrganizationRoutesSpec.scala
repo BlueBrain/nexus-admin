@@ -27,7 +27,6 @@ import ch.epfl.bluebrain.nexus.rdf.Iri
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
 import ch.epfl.bluebrain.nexus.rdf.syntax.node.unsafe._
 import io.circe.Json
-import io.circe.syntax._
 import monix.eval.Task
 import monix.execution.Scheduler.global
 import org.mockito.integrations.scalatest.IdiomaticMockitoFixture
@@ -67,6 +66,7 @@ class OrganizationRoutesSpec
     val iri     = url"http://nexus.example.com/v1/orgs/org".value
     val path    = Path("/org").right.value
 
+    val description  = Json.obj("description" -> Json.fromString("Org description"))
     val organization = Organization("org", "Org description")
     val resource = ResourceF(iri,
                              orgId,
@@ -89,7 +89,7 @@ class OrganizationRoutesSpec
       iamClient.getCaller shouldReturn Task(caller)
       organizations.create(organization) shouldReturn Task(Right(meta))
 
-      Put("/orgs/org", organization.asJson) ~> addCredentials(cred) ~> routes ~> check {
+      Put("/orgs/org", description) ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.Created
         responseAs[Json] shouldEqual jsonContentOf("/orgs/meta.json", replacements)
       }
@@ -100,7 +100,7 @@ class OrganizationRoutesSpec
       iamClient.getCaller shouldReturn Task(caller)
       organizations.create(organization) shouldReturn Task(Left(OrganizationExists))
 
-      Put("/orgs/org", organization.asJson) ~> addCredentials(cred) ~> routes ~> check {
+      Put("/orgs/org", description) ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.Conflict
         responseAs[Error].code shouldEqual classNameOf[OrganizationExists.type]
       }
@@ -110,17 +110,7 @@ class OrganizationRoutesSpec
       iamClient.authorizeOn(Path./, write) shouldReturn Task.unit
       iamClient.getCaller shouldReturn Task(caller)
 
-      Put("/orgs/", organization.asJson) ~> addCredentials(cred) ~> routes ~> check {
-        status shouldEqual StatusCodes.BadRequest
-        responseAs[Error].code shouldEqual classNameOf[IllegalParameter.type]
-      }
-    }
-
-    "reject the creation of an organization with a wrong name" in new Context {
-      iamClient.authorizeOn(Path("/foo").right.value, write) shouldReturn Task.unit
-      iamClient.getCaller shouldReturn Task(caller)
-
-      Put("/orgs/foo", organization.asJson) ~> addCredentials(cred) ~> routes ~> check {
+      Put("/orgs/", description) ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
         responseAs[Error].code shouldEqual classNameOf[IllegalParameter.type]
       }

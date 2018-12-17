@@ -30,7 +30,6 @@ import ch.epfl.bluebrain.nexus.rdf.Iri.Path
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
 import ch.epfl.bluebrain.nexus.rdf.syntax.node.unsafe._
 import io.circe.Json
-import io.circe.syntax._
 import monix.eval.Task
 import monix.execution.Scheduler.global
 import org.mockito.integrations.scalatest.IdiomaticMockitoFixture
@@ -70,6 +69,7 @@ class ProjectRoutesSpec
     val projId  = UUID.randomUUID
     val iri     = url"http://nexus.example.com/v1/projects/org/label".value
 
+    val description = Json.obj("description" -> Json.fromString("Project description"))
     val organization = ResourceF(
       url"http://nexus.example.com/v1/orgs/org".value,
       orgId,
@@ -96,7 +96,18 @@ class ProjectRoutesSpec
       iamClient.getCaller shouldReturn Task(caller)
       projects.create(project) shouldReturn Task(Right(meta))
 
-      Put("/projects/org/label", project.asJson) ~> addCredentials(cred) ~> routes ~> check {
+      Put("/projects/org/label", description) ~> addCredentials(cred) ~> routes ~> check {
+        status shouldEqual StatusCodes.Created
+        responseAs[Json] shouldEqual jsonContentOf("/projects/meta.json", replacements)
+      }
+    }
+
+    "create a project without a description" in new Context {
+      iamClient.authorizeOn("org" / "label", write) shouldReturn Task.unit
+      iamClient.getCaller shouldReturn Task(caller)
+      projects.create(Project("label", "org", None)) shouldReturn Task(Right(meta))
+
+      Put("/projects/org/label", Json.obj()) ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.Created
         responseAs[Json] shouldEqual jsonContentOf("/projects/meta.json", replacements)
       }
@@ -106,18 +117,7 @@ class ProjectRoutesSpec
       iamClient.authorizeOn(Path("/org").right.value, write) shouldReturn Task.unit
       iamClient.getCaller shouldReturn Task(caller)
 
-      Put("/projects/org", project.asJson) ~> addCredentials(cred) ~> routes ~> check {
-        status shouldEqual StatusCodes.BadRequest
-        responseAs[Error].code shouldEqual classNameOf[IllegalParameter.type]
-      }
-    }
-
-    "reject the creation of a project with a wrong label" in new Context {
-      iamClient.authorizeOn("org" / "foo", write) shouldReturn Task.unit
-      iamClient.getCaller shouldReturn Task(caller)
-      projects.create(project) shouldReturn Task(Right(meta))
-
-      Put("/projects/org/foo", project.asJson) ~> addCredentials(cred) ~> routes ~> check {
+      Put("/projects/org", description) ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
         responseAs[Error].code shouldEqual classNameOf[IllegalParameter.type]
       }
@@ -128,7 +128,7 @@ class ProjectRoutesSpec
       iamClient.getCaller shouldReturn Task(caller)
       projects.create(project) shouldReturn Task(Left(ProjectExists))
 
-      Put("/projects/org/label", project.asJson) ~> addCredentials(cred) ~> routes ~> check {
+      Put("/projects/org/label", description) ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.Conflict
         responseAs[Error].code shouldEqual classNameOf[ProjectExists.type]
       }
@@ -139,7 +139,7 @@ class ProjectRoutesSpec
       iamClient.getCaller shouldReturn Task(caller)
       projects.update(project, 2L) shouldReturn Task(Right(meta))
 
-      Put("/projects/org/label?rev=2", project.asJson) ~> addCredentials(cred) ~> routes ~> check {
+      Put("/projects/org/label?rev=2", description) ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         responseAs[Json] shouldEqual jsonContentOf("/projects/meta.json", replacements)
       }
@@ -149,7 +149,7 @@ class ProjectRoutesSpec
       iamClient.authorizeOn(Path("/org").right.value, write) shouldReturn Task.unit
       iamClient.getCaller shouldReturn Task(caller)
 
-      Put("/projects/org?rev=2", project.asJson) ~> addCredentials(cred) ~> routes ~> check {
+      Put("/projects/org?rev=2", description) ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
         responseAs[Error].code shouldEqual classNameOf[IllegalParameter.type]
       }
@@ -160,7 +160,7 @@ class ProjectRoutesSpec
       iamClient.getCaller shouldReturn Task(caller)
       projects.update(project, 2L) shouldReturn Task(Left(ProjectNotFound))
 
-      Put("/projects/org/label?rev=2", project.asJson) ~> addCredentials(cred) ~> routes ~> check {
+      Put("/projects/org/label?rev=2", description) ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
         responseAs[Error].code shouldEqual classNameOf[ProjectNotFound.type]
       }
@@ -171,7 +171,7 @@ class ProjectRoutesSpec
       iamClient.getCaller shouldReturn Task(caller)
       projects.update(project, 2L) shouldReturn Task(Left(IncorrectRev(1L, 2L)))
 
-      Put("/projects/org/label?rev=2", project.asJson) ~> addCredentials(cred) ~> routes ~> check {
+      Put("/projects/org/label?rev=2", description) ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.Conflict
         responseAs[Error].code shouldEqual classNameOf[IncorrectRev.type]
       }
