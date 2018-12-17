@@ -6,7 +6,10 @@ import java.util.UUID
 import akka.cluster.ddata.LWWRegister.Clock
 import ch.epfl.bluebrain.nexus.admin.config.Contexts._
 import ch.epfl.bluebrain.nexus.admin.config.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.commons.types.identity.Identity
+import ch.epfl.bluebrain.nexus.commons.http.syntax.circe._
+import ch.epfl.bluebrain.nexus.commons.types.search.QueryResults.UnscoredQueryResults
+import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
+import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
 import ch.epfl.bluebrain.nexus.rdf.instances._
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import io.circe.syntax._
@@ -33,9 +36,9 @@ final case class ResourceF[A](
     deprecated: Boolean,
     types: Set[AbsoluteIri],
     createdAt: Instant,
-    createdBy: Identity,
+    createdBy: Subject,
     updatedAt: Instant,
-    updatedBy: Identity,
+    updatedBy: Subject,
     value: A
 ) {
 
@@ -77,19 +80,19 @@ object ResourceF {
       deprecated: Boolean,
       types: Set[AbsoluteIri],
       createdAt: Instant,
-      createdBy: Identity,
+      createdBy: Subject,
       updatedAt: Instant,
-      updatedBy: Identity
+      updatedBy: Subject
   ): ResourceF[Unit] =
     ResourceF(id, uuid, rev, deprecated, types, createdAt, createdBy, updatedAt, updatedBy, ())
 
-  implicit val resourceMetaEncoder: Encoder[ResourceMetadata] =
+  implicit def resourceMetaEncoder(implicit iamClientConfig: IamClientConfig): Encoder[ResourceMetadata] =
     Encoder.encodeJson.contramap {
       case ResourceF(id, uuid, rev, deprecated, types, createdAt, createdBy, updatedAt, updatedBy, _: Unit) =>
         Json.obj(
           "@context"            -> Json.arr(resourceCtxUri.asJson, adminCtxUri.asJson),
           "@id"                 -> id.asJson,
-          "@type"               -> Json.arr(types.map(t => Json.fromString(lastSegment(t).getOrElse(t.asString))).toSeq: _*),
+          "@type"               -> Json.arr(types.map(t => Json.fromString(t.path.lastSegment.getOrElse(t.asString))).toSeq: _*),
           nxv.uuid.prefix       -> Json.fromString(uuid.toString),
           nxv.rev.prefix        -> Json.fromLong(rev),
           nxv.deprecated.prefix -> Json.fromBoolean(deprecated),
@@ -100,11 +103,22 @@ object ResourceF {
         )
     }
 
-  private def lastSegment(iri: AbsoluteIri): Option[String] =
-    iri.path.head match {
-      case segment: String => Some(segment)
-      case _               => None
+  implicit def resourceEncoder[A: Encoder](implicit iamClientConfig: IamClientConfig): Encoder[ResourceF[A]] =
+    Encoder.encodeJson.contramap { resource =>
+      resource.discard.asJson.deepMerge(resource.value.asJson)
     }
+
+  implicit def uqrsEncoder[A: Encoder](
+      implicit iamClientConfig: IamClientConfig): Encoder[UnscoredQueryResults[ResourceF[A]]] = {
+    Encoder.encodeJson.contramap {
+      case UnscoredQueryResults(total, results) =>
+        Json.obj(
+          "@context"         -> Json.arr(resourceCtxUri.asJson, adminCtxUri.asJson, searchCtxUri.asJson),
+          nxv.total.prefix   -> Json.fromLong(total),
+          nxv.results.prefix -> Json.arr(results.map(_.source.asJson.removeKeys("@context")): _*)
+        )
+    }
+  }
 
   implicit def clock[A]: Clock[ResourceF[A]] = { (_: Long, value: ResourceF[A]) =>
     value.rev

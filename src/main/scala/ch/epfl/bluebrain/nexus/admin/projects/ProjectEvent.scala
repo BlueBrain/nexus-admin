@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.admin.projects
 import java.time.Instant
 import java.util.UUID
 
-import ch.epfl.bluebrain.nexus.commons.types.identity.Identity
+import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
 
 sealed trait ProjectEvent extends Product with Serializable {
 
@@ -25,7 +25,7 @@ sealed trait ProjectEvent extends Product with Serializable {
   /**
     * @return the identity associated to this event
     */
-  def subject: Identity
+  def subject: Subject
 }
 
 object ProjectEvent {
@@ -47,7 +47,7 @@ object ProjectEvent {
                                   description: Option[String],
                                   rev: Long,
                                   instant: Instant,
-                                  subject: Identity)
+                                  subject: Subject)
       extends ProjectEvent
 
   /**
@@ -65,7 +65,7 @@ object ProjectEvent {
                                   description: Option[String],
                                   rev: Long,
                                   instant: Instant,
-                                  subject: Identity)
+                                  subject: Subject)
       extends ProjectEvent
 
   /**
@@ -76,6 +76,6 @@ object ProjectEvent {
     * @param instant    the timestamp associated to this event
     * @param subject    the identity associated to this event
     */
-  final case class ProjectDeprecated(id: UUID, rev: Long, instant: Instant, subject: Identity) extends ProjectEvent
+  final case class ProjectDeprecated(id: UUID, rev: Long, instant: Instant, subject: Subject) extends ProjectEvent
 
 }

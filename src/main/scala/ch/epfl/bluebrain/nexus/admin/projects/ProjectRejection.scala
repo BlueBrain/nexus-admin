@@ -16,17 +16,17 @@ object ProjectRejection {
   /**
     * Signals that a project cannot be created because one with the same identifier already exists.
     */
-  final case object ProjectAlreadyExists extends ProjectRejection
+  final case object ProjectExists extends ProjectRejection
 
   /**
     * Signals that an operation on a project cannot be performed due to the fact that the referenced project does not exist.
     */
-  final case object ProjectDoesNotExists extends ProjectRejection
+  final case object ProjectNotFound extends ProjectRejection
 
   /**
     * Signals that an operation on a project cannot be performed due to the fact that the referenced parent organization does not exist.
     */
-  final case object OrganizationDoesNotExist extends ProjectRejection
+  final case object OrganizationNotFound extends ProjectRejection
 
   /**
     * Signals that a project update cannot be performed due its deprecation status.
@@ -36,8 +36,9 @@ object ProjectRejection {
   /**
     * Signals that a project update cannot be performed due to an incorrect revision provided.
     *
-    * @param rev the provided revision
+    * @param latest   latest know revision
+    * @param provided the provided revision
     */
-  final case class IncorrectRev(rev: Long) extends ProjectRejection
+  final case class IncorrectRev(latest: Long, provided: Long) extends ProjectRejection
 
 }

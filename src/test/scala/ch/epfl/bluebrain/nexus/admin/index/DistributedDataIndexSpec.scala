@@ -10,8 +10,8 @@ import ch.epfl.bluebrain.nexus.admin.organizations.Organization
 import ch.epfl.bluebrain.nexus.admin.projects.Project
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF
 import ch.epfl.bluebrain.nexus.commons.test.Randomness
-import ch.epfl.bluebrain.nexus.commons.types.identity.Identity
 import ch.epfl.bluebrain.nexus.commons.types.search.Pagination
+import ch.epfl.bluebrain.nexus.iam.client.types.Caller
 import ch.epfl.bluebrain.nexus.rdf.syntax.node.unsafe._
 import ch.epfl.bluebrain.nexus.service.test.ActorSystemFixture
 import org.scalatest.{Inspectors, Matchers, OptionValues}
@@ -25,10 +25,10 @@ class DistributedDataIndexSpec
     with OptionValues
     with Inspectors {
 
-  val consistencyTimeout        = 5 seconds
-  val askTimeout                = Timeout(consistencyTimeout)
-  private val instant           = Instant.now()
-  private implicit val identity = Identity.Anonymous()
+  val consistencyTimeout       = 5 seconds
+  val askTimeout               = Timeout(consistencyTimeout)
+  private val instant          = Instant.now()
+  private implicit val subject = Caller.anonymous.subject
 
   val index        = DistributedDataIndex[IO](askTimeout, consistencyTimeout)
   val organization = Organization(genString(), genString())
@@ -39,9 +39,9 @@ class DistributedDataIndexSpec
     false,
     Set(nxv.Organization.value),
     instant,
-    identity,
+    subject,
     instant,
-    identity,
+    subject,
     organization
   )
   val project = Project(genString(), organization.label, Some(genString()))
@@ -51,9 +51,9 @@ class DistributedDataIndexSpec
                                   false,
                                   Set(nxv.Project.value),
                                   instant,
-                                  identity,
+                                  subject,
                                   instant,
-                                  identity,
+                                  subject,
                                   project)
 
   "DistributedDataIndex" should {
@@ -85,9 +85,9 @@ class DistributedDataIndexSpec
           false,
           Set(nxv.Organization.value),
           instant,
-          identity,
+          subject,
           instant,
-          identity,
+          subject,
           organization
         )
       } :+ orgResource
@@ -121,9 +121,9 @@ class DistributedDataIndexSpec
         false,
         Set(nxv.Organization.value),
         instant,
-        identity,
+        subject,
         instant,
-        identity,
+        subject,
         projectsOrganization
       )
 
@@ -136,9 +136,9 @@ class DistributedDataIndexSpec
           false,
           Set(nxv.Project.value),
           instant,
-          identity,
+          subject,
           instant,
-          identity,
+          subject,
           project
         )
       } :+ projectResource
@@ -173,9 +173,9 @@ class DistributedDataIndexSpec
           false,
           Set(nxv.Organization.value),
           instant,
-          identity,
+          subject,
           instant,
-          identity,
+          subject,
           organization
         )
 
@@ -190,9 +190,9 @@ class DistributedDataIndexSpec
             false,
             Set(nxv.Project.value),
             instant,
-            identity,
+            subject,
             instant,
-            identity,
+            subject,
             project
           )
         }

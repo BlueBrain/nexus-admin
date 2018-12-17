@@ -25,8 +25,9 @@ scalafmt: {
  */
 
 // Dependency versions
-val rdfVersion                 = "0.2.28"
-val commonsVersion             = "0.10.39"
+val rdfVersion                 = "0.2.29"
+val commonsVersion             = "0.10.41"
+val iamVersion                 = "0.11.0"
 val serviceVersion             = "0.10.21"
 val sourcingVersion            = "0.12.0"
 val akkaVersion                = "2.5.18"
@@ -37,7 +38,7 @@ val catsVersion                = "1.4.0"
 val circeVersion               = "0.10.0"
 val journalVersion             = "3.0.19"
 val logbackVersion             = "1.2.3"
-val mockitoVersion             = "1.0.4"
+val mockitoVersion             = "1.0.5"
 val pureconfigVersion          = "0.9.2"
 val scalaTestVersion           = "3.0.5"
 val kryoVersion                = "0.5.2"
@@ -47,6 +48,7 @@ lazy val rdfAkka             = "ch.epfl.bluebrain.nexus" %% "rdf-akka"          
 lazy val rdfJena             = "ch.epfl.bluebrain.nexus" %% "rdf-jena"                    % rdfVersion
 lazy val rdfCirce            = "ch.epfl.bluebrain.nexus" %% "rdf-circe"                   % rdfVersion
 lazy val rdfNexus            = "ch.epfl.bluebrain.nexus" %% "rdf-nexus"                   % rdfVersion
+lazy val iamClient           = "ch.epfl.bluebrain.nexus" %% "iam-client"                  % iamVersion
 lazy val serviceIndexing     = "ch.epfl.bluebrain.nexus" %% "service-indexing"            % serviceVersion
 lazy val serviceKamon        = "ch.epfl.bluebrain.nexus" %% "service-kamon"               % serviceVersion
 lazy val serviceHttp         = "ch.epfl.bluebrain.nexus" %% "service-http"                % serviceVersion
@@ -54,8 +56,8 @@ lazy val serviceKafka        = "ch.epfl.bluebrain.nexus" %% "service-kafka"     
 lazy val serviceTest         = "ch.epfl.bluebrain.nexus" %% "service-test"                % serviceVersion
 lazy val sourcingAkka        = "ch.epfl.bluebrain.nexus" %% "sourcing-akka"               % sourcingVersion
 lazy val shaclValidator      = "ch.epfl.bluebrain.nexus" %% "shacl-topquadrant-validator" % commonsVersion
-lazy val commonQueryTypes    = "ch.epfl.bluebrain.nexus" %% "commons-query-types"         % commonsVersion
 lazy val commonTest          = "ch.epfl.bluebrain.nexus" %% "commons-test"                % commonsVersion
+lazy val commonQueryTypes    = "ch.epfl.bluebrain.nexus" %% "commons-query-types"         % commonsVersion
 lazy val akkaCluster         = "com.typesafe.akka"       %% "akka-cluster"                % akkaVersion
 lazy val akkaHttp            = "com.typesafe.akka"       %% "akka-http"                   % akkaHttpVersion
 lazy val akkaHttpCors        = "ch.megard"               %% "akka-http-cors"              % akkaCorsVersion
@@ -88,6 +90,7 @@ lazy val admin = project
       catsCore,
       circeCore,
       commonQueryTypes,
+      iamClient,
       journalCore,
       logbackClassic,
       kryo,
@@ -114,6 +117,7 @@ lazy val testSettings = Seq(
   Test / fork              := true,
   Test / parallelExecution := false, // workaround for jena initialization
   coverageFailOnMinimum    := false,
+  Test / scalacOptions --= Seq("-Ywarn-dead-code", "-Ywarn-value-discard") // for mockito-scala
 )
 
 lazy val buildInfoSettings = Seq(

@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.admin.projects
 import java.time.Instant
 import java.util.UUID
 
-import ch.epfl.bluebrain.nexus.commons.types.identity.Identity
+import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
 
 sealed trait ProjectState extends Product with Serializable
 
@@ -32,7 +32,7 @@ object ProjectState {
                            description: Option[String],
                            rev: Long,
                            instant: Instant,
-                           subject: Identity,
+                           subject: Subject,
                            deprecated: Boolean)
       extends ProjectState
 

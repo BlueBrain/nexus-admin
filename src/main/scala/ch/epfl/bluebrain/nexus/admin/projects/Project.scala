@@ -1,5 +1,8 @@
 package ch.epfl.bluebrain.nexus.admin.projects
 
+import io.circe.{Decoder, Encoder}
+import io.circe.generic.semiauto._
+
 /**
   * Type that represents a project.
   *
@@ -13,4 +16,11 @@ final case class Project(label: String, organization: String, description: Optio
     * @return full label for the project (including organization).
     */
   def fullLabel: String = s"$organization/$label"
+}
+
+object Project {
+
+  implicit val projectEncoder: Encoder[Project] = deriveEncoder[Project]
+
+  implicit val projectDecoder: Decoder[Project] = deriveDecoder[Project]
 }

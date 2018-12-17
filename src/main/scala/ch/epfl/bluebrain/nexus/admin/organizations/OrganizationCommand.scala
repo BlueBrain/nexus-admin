@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.admin.organizations
 import java.time.Instant
 import java.util.UUID
 
-import ch.epfl.bluebrain.nexus.commons.types.identity.Identity
+import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
 
 /**
   * Enumeration of Organization collection command types.
@@ -28,7 +28,7 @@ sealed trait OrganizationCommand extends Product with Serializable {
   /**
     * @return the subject which created this command
     */
-  def subject: Identity
+  def subject: Subject
 }
 
 object OrganizationCommand {
@@ -45,7 +45,7 @@ object OrganizationCommand {
                                       rev: Long,
                                       organization: Organization,
                                       instant: Instant,
-                                      subject: Identity)
+                                      subject: Subject)
       extends OrganizationCommand
 
   /**
@@ -61,7 +61,7 @@ object OrganizationCommand {
                                       rev: Long,
                                       organization: Organization,
                                       instant: Instant,
-                                      subject: Identity)
+                                      subject: Subject)
       extends OrganizationCommand
 
   /**
@@ -72,6 +72,6 @@ object OrganizationCommand {
     * @param instant      the instant when this command was created
     * @param subject      the subject which created this command.
     */
-  final case class DeprecateOrganization(id: UUID, rev: Long, instant: Instant, subject: Identity)
+  final case class DeprecateOrganization(id: UUID, rev: Long, instant: Instant, subject: Subject)
       extends OrganizationCommand
 }
