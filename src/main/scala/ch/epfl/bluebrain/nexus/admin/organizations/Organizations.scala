@@ -190,7 +190,7 @@ object Organizations {
     def create(c: CreateOrganization): EventOrRejection = state match {
       case Initial if c.rev == 0L => Right(OrganizationCreated(c.id, rev = 1L, c.organization, c.instant, c.subject))
       case Initial                => Left(IncorrectRev(0L, c.rev))
-      case _                      => Left(OrganizationAlreadyExists)
+      case _                      => Left(OrganizationExists)
     }
 
     def update(c: UpdateOrganization): EventOrRejection = state match {

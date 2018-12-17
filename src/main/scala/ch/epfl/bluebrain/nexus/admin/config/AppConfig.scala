@@ -6,6 +6,7 @@ import akka.util.Timeout
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig._
 import ch.epfl.bluebrain.nexus.admin.config.Vocabulary._
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport.OrderedKeys
+import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
 import ch.epfl.bluebrain.nexus.commons.types.search.Pagination
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.syntax.node.unsafe._
@@ -27,6 +28,7 @@ import scala.concurrent.duration.FiniteDuration
   * @param kafka       Kafka configuration
   * @param index       Distributed data configuration
   * @param sourcing    Sourcing configuration
+  * @param iam IAM configuration
   *
   */
 final case class AppConfig(description: Description,
@@ -36,7 +38,8 @@ final case class AppConfig(description: Description,
                            indexing: IndexingConfig,
                            kafka: KafkaConfig,
                            index: IndexConfig,
-                           sourcing: SourcingConfig)
+                           sourcing: SourcingConfig,
+                           iam: IamClientConfig)
 
 object AppConfig {
 

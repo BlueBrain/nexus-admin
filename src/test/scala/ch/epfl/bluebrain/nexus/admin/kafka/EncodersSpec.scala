@@ -3,24 +3,26 @@ package ch.epfl.bluebrain.nexus.admin.kafka
 import java.time.Instant
 import java.util.UUID
 
-import ch.epfl.bluebrain.nexus.commons.test.Resources
-import org.scalatest.{Matchers, WordSpecLike}
 import ch.epfl.bluebrain.nexus.admin.kafka.encoders._
-import ch.epfl.bluebrain.nexus.admin.organizations.{Organization, OrganizationEvent}
 import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationEvent._
+import ch.epfl.bluebrain.nexus.admin.organizations.{Organization, OrganizationEvent}
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectEvent
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectEvent._
-import ch.epfl.bluebrain.nexus.commons.types.identity.Identity
-import ch.epfl.bluebrain.nexus.commons.types.identity.IdentityId.IdentityIdPrefix
+import ch.epfl.bluebrain.nexus.commons.test.Resources
+import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
+import ch.epfl.bluebrain.nexus.iam.client.types.Identity.User
+import ch.epfl.bluebrain.nexus.rdf.syntax.node.unsafe._
 import io.circe.syntax._
+import org.scalatest.{Matchers, WordSpecLike}
 
 class EncodersSpec extends WordSpecLike with Matchers with Resources {
 
-  val instant                   = Instant.parse("2018-12-04T11:31:30.00Z")
-  implicit val identityIdPrefix = IdentityIdPrefix("http://iam.nexus.example.com/v1")
-  val subject                   = Identity.UserRef("example-realm", "example-user")
-  val orgUuid                   = UUID.fromString("4cd2c88b-ed73-4fd7-8afb-315032239a56")
-  val projectUuid               = UUID.fromString("a5c736f2-0ace-48f4-a7a7-56a15123d0b3")
+  val instant = Instant.parse("2018-12-04T11:31:30.00Z")
+
+  implicit val iamConfig = IamClientConfig("v1", url"http://iam.nexus.example.com/".value)
+  val subject            = User("example-user", "example-realm")
+  val orgUuid            = UUID.fromString("4cd2c88b-ed73-4fd7-8afb-315032239a56")
+  val projectUuid        = UUID.fromString("a5c736f2-0ace-48f4-a7a7-56a15123d0b3")
 
   "Encoders" should {
 

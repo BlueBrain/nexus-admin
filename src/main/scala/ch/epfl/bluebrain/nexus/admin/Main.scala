@@ -12,7 +12,7 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.kafka.ProducerSettings
 import akka.stream.ActorMaterializer
-import ch.epfl.bluebrain.nexus.admin.config.Settings
+import ch.epfl.bluebrain.nexus.admin.config.{AppConfig, Settings}
 import ch.epfl.bluebrain.nexus.admin.index.{DistributedDataIndex, Index, OrganizationsIndexer, ProjectsIndexer}
 import ch.epfl.bluebrain.nexus.admin.organizations.{OrganizationEvent, Organizations}
 import ch.epfl.bluebrain.nexus.admin.persistence.TaggingAdapter
@@ -119,26 +119,27 @@ object Main {
     OrganizationsIndexer.start(organizations, index)
     ProjectsIndexer.start(projects, organizations, index)
 
-    val _ = startKafkaIndexers(appConfig.kafka.topic, appConfig.persistence.queryJournalPlugin)
+    val _ = startKafkaIndexers(appConfig)
 
   }
 
-  def startKafkaIndexers(topic: String, queryJournalPlugin: String)(implicit as: ActorSystem) = {
+  def startKafkaIndexers(appConfig: AppConfig)(implicit as: ActorSystem) = {
     import ch.epfl.bluebrain.nexus.admin.kafka.encoders._
     import ch.epfl.bluebrain.nexus.admin.kafka.keys._
-    val producerSettings = ProducerSettings(as, new StringSerializer, new StringSerializer)
+    implicit val iamClientConfig = appConfig.iam
+    val producerSettings         = ProducerSettings(as, new StringSerializer, new StringSerializer)
     KafkaPublisher
-      .startTagStream[ProjectEvent](queryJournalPlugin,
+      .startTagStream[ProjectEvent](appConfig.persistence.queryJournalPlugin,
                                     TaggingAdapter.ProjectTag,
                                     "orgs-to-kafka",
                                     producerSettings,
-                                    topic)
+                                    appConfig.kafka.topic)
     KafkaPublisher
-      .startTagStream[OrganizationEvent](queryJournalPlugin,
+      .startTagStream[OrganizationEvent](appConfig.persistence.queryJournalPlugin,
                                          TaggingAdapter.OrganizationTag,
                                          "orgs-to-kafka",
                                          producerSettings,
-                                         topic)
+                                         appConfig.kafka.topic)
   }
 
 }
