@@ -4,17 +4,16 @@ import java.util.UUID
 
 import akka.actor.{ActorRef, ActorSystem}
 import cats.MonadError
-import cats.effect.{IO, LiftIO}
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.admin.config.AppConfig.{IndexingConfig, PersistenceConfig}
-import ch.epfl.bluebrain.nexus.admin.config.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.admin.config.AppConfig
 import ch.epfl.bluebrain.nexus.admin.exceptions.AdminError.UnexpectedState
 import ch.epfl.bluebrain.nexus.admin.organizations._
+import ch.epfl.bluebrain.nexus.admin.persistence.TaggingAdapter
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF
 import ch.epfl.bluebrain.nexus.service.indexer.persistence.OffsetStorage.Volatile
 import ch.epfl.bluebrain.nexus.service.indexer.persistence.{IndexerConfig, SequentialTagIndexer}
-
-import scala.concurrent.Future
+import monix.eval.Task
+import monix.execution.Scheduler
 
 /**
   * Organizations indexer.
@@ -52,24 +51,22 @@ object OrganizationsIndexer {
     * @param index          projects and organizations index
     * @return               ActorRef for stream coordinator
     */
-  final def start(organizations: Organizations[IO], index: Index[IO])(implicit
-                                                                      as: ActorSystem,
-                                                                      persistence: PersistenceConfig,
-                                                                      indexing: IndexingConfig,
-                                                                      F: MonadError[IO, Throwable],
-                                                                      L: LiftIO[Future]): ActorRef = {
+  final def start(organizations: Organizations[Task], index: Index[Task])(implicit
+                                                                          as: ActorSystem,
+                                                                          appConfig: AppConfig,
+                                                                          s: Scheduler): ActorRef = {
 
-    val indexer = new OrganizationsIndexer[IO](organizations, index)
+    val indexer = new OrganizationsIndexer[Task](organizations, index)
 
     SequentialTagIndexer.start(
       IndexerConfig.builder
         .name("orgs-indexer")
-        .tag(s"type=${nxv.Organization.value.show}")
-        .plugin(persistence.queryJournalPlugin)
-        .retry(indexing.retry.maxCount, indexing.retry.strategy)
-        .batch(indexing.batch, indexing.batchTimeout)
+        .tag(TaggingAdapter.OrganizationTag)
+        .plugin(appConfig.persistence.queryJournalPlugin)
+        .retry(appConfig.indexing.retry.maxCount, appConfig.indexing.retry.strategy)
+        .batch(appConfig.indexing.batch, appConfig.indexing.batchTimeout)
         .offset(Volatile)
-        .index[OrganizationEvent](indexer.index(_).to[Future])
+        .index[OrganizationEvent](indexer.index(_).runToFuture)
         .build)
   }
 

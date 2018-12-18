@@ -6,7 +6,7 @@ import java.util.UUID
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import cats.MonadError
-import cats.effect.{Async, ConcurrentEffect}
+import cats.effect.{Async, ConcurrentEffect, Timer}
 import cats.syntax.apply._
 import cats.syntax.flatMap._
 import cats.syntax.functor._
@@ -220,22 +220,21 @@ object Projects {
     * @tparam F              a [[cats.effect.ConcurrentEffect]] instance
     * @return the operations bundle in an ''F'' context.
     */
-  def apply[F[_]: ConcurrentEffect](
-      index: Index[F],
-      organizations: Organizations[F],
-      appConfig: AppConfig,
-      sourcingConfig: AkkaSourcingConfig)(implicit as: ActorSystem, mt: ActorMaterializer): F[Projects[F]] = {
+  def apply[F[_]: ConcurrentEffect: Timer](index: Index[F], organizations: Organizations[F], appConfig: AppConfig)(
+      implicit as: ActorSystem,
+      mt: ActorMaterializer,
+      clock: Clock = Clock.systemUTC): F[Projects[F]] = {
     implicit val http: HttpConfig = appConfig.http
-    implicit val clock: Clock     = Clock.systemUTC
+
     val aggF: F[Agg[F]] =
       AkkaAggregate.shardedF(
         "projects",
         ProjectState.Initial,
         next,
         Eval.apply[F],
-        PassivationStrategy.immediately,
-        RetryStrategy.never,
-        sourcingConfig,
+        appConfig.sourcing.passivationStrategy(),
+        appConfig.sourcing.retryStrategy,
+        appConfig.sourcing.akkaSourcingConfig,
         appConfig.cluster.shards
       )
     aggF.map(agg => new Projects(agg, index, organizations))
