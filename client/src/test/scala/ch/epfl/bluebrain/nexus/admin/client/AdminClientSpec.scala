@@ -111,12 +111,17 @@ class AdminClientSpec
           HttpResponse(StatusCodes.OK,
                        entity = HttpEntity(ContentTypes.`application/json`, contentOf("/project.json"))))
 
-      client.fetchProject("testorg", "testproject").some shouldReturn
+      client.fetchProject("testorg", "testproject").some shouldEqual
         Project(
           url"http://admin.nexus.example.com/v1/projects/testorg/testproject".value,
           "testproject",
           "testorg",
           Some("Test project"),
+          url"https://nexus.example.com/base".value,
+          Map(
+            "nxv" -> url"https://bluebrain.github.io/nexus/vocabulary/".value,
+            "rdf" -> url"http://www.w3.org/1999/02/22-rdf-syntax-ns#".value
+          ),
           UUID.fromString("db7cee63-3f93-4d4a-9cc2-ebdace7f3b4f"),
           1L,
           false,

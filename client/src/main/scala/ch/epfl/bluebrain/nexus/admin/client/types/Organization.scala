@@ -41,8 +41,8 @@ object Organization {
     Decoder.instance { hc =>
       for {
         id          <- hc.get[AbsoluteIri]("@id")
-        label       <- hc.get[String]("label")
         description <- hc.get[String]("description")
+        label       <- hc.get[String]("_label")
         uuid        <- hc.get[String]("_uuid").map(UUID.fromString)
         rev         <- hc.get[Long]("_rev")
         deprecated  <- hc.get[Boolean]("_deprecated")

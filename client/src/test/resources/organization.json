@@ -7,8 +7,8 @@
   "@type": [
     "Organization"
   ],
-  "label": "testorg",
   "description": "Test organization",
+  "_label": "testorg",
   "_uuid": "504b6940-1b14-43a7-80e3-d08c52c3fc87",
   "_rev": 1,
   "_deprecated": false,

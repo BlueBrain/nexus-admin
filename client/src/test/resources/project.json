@@ -7,9 +7,20 @@
   "@type": [
     "Project"
   ],
-  "label": "testproject",
-  "organization": "testorg",
+  "base": "https://nexus.example.com/base",
+  "apiMappings": [
+    {
+      "prefix": "nxv",
+      "namespace": "https://bluebrain.github.io/nexus/vocabulary/"
+    },
+    {
+      "prefix": "rdf",
+      "namespace": "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    }
+  ],
   "description": "Test project",
+  "_label": "testproject",
+  "_organization": "testorg",
   "_uuid": "db7cee63-3f93-4d4a-9cc2-ebdace7f3b4f",
   "_rev": 1,
   "_deprecated": false,
