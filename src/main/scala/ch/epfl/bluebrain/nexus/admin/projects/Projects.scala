@@ -98,7 +98,7 @@ class Projects[F[_]](agg: Agg[F], index: Index[F], organizations: Organizations[
     * @param label        the project label
     * @return Some(project) if found, None otherwise
     */
-  def fetch(organization: String, label: String): F[Option[ResourceF[Project]]] =
+  def fetch(organization: String, label: String): F[Option[ProjectResource]] =
     index.getProject(organization, label)
 
   /**
@@ -107,7 +107,7 @@ class Projects[F[_]](agg: Agg[F], index: Index[F], organizations: Organizations[
     * @param uuid the project permanent identifier
     * @return Some(project) if found, None otherwise
     */
-  def fetch(uuid: UUID): F[Option[ResourceF[Project]]] = agg.currentState(uuid.toString).flatMap {
+  def fetch(uuid: UUID): F[Option[ProjectResource]] = agg.currentState(uuid.toString).flatMap {
     case c: Current => toResource(c).map(_.toOption)
     case Initial    => F.pure(None)
   }
@@ -152,7 +152,7 @@ class Projects[F[_]](agg: Agg[F], index: Index[F], organizations: Organizations[
     * @param pagination the pagination settings
     * @return a paginated results list
     */
-  def list(pagination: Pagination): F[UnscoredQueryResults[ResourceF[Project]]] =
+  def list(pagination: Pagination): F[UnscoredQueryResults[ProjectResource]] =
     index.listProjects(pagination).map { projects =>
       val results = projects.map(project => UnscoredQueryResult(project))
       UnscoredQueryResults(projects.size.toLong, results)
@@ -165,7 +165,7 @@ class Projects[F[_]](agg: Agg[F], index: Index[F], organizations: Organizations[
     * @param pagination   the pagination settings
     * @return a paginated results list
     */
-  def list(organization: String, pagination: Pagination): F[UnscoredQueryResults[ResourceF[Project]]] =
+  def list(organization: String, pagination: Pagination): F[UnscoredQueryResults[ProjectResource]] =
     index.listProjects(organization, pagination).map { projects =>
       val results = projects.map(project => UnscoredQueryResult(project))
       UnscoredQueryResults(projects.size.toLong, results)

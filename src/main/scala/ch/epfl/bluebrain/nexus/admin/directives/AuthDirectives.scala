@@ -43,7 +43,7 @@ abstract class AuthDirectives(iamClient: IamClient[Task])(implicit s: Scheduler)
     * @return the [[Subject]] of the caller
     */
   def authCaller(implicit cred: Option[AuthToken]): Directive1[Subject] =
-    onComplete(iamClient.getCaller.runToFuture).flatMap {
+    onComplete(iamClient.identities.runToFuture).flatMap {
       case Success(caller)             => provide(caller.subject)
       case Failure(UnauthorizedAccess) => reject(AuthorizationFailedRejection)
       case Failure(err)                => reject(authorizationRejection(err))
@@ -58,7 +58,7 @@ object AuthDirectives {
     *
     * @param err the [[CommonRejection]]
     */
-  case class CustomAuthRejection(err: CommonRejection) extends CustomRejection
+  final case class CustomAuthRejection(err: CommonRejection) extends CustomRejection
 
   private def authorizationRejection(err: Throwable) =
     CustomAuthRejection(

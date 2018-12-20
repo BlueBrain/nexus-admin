@@ -17,7 +17,6 @@ import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationEvent._
 import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationRejection._
 import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationState._
 import ch.epfl.bluebrain.nexus.admin.organizations.Organizations.next
-import ch.epfl.bluebrain.nexus.admin.types.ResourceF
 import ch.epfl.bluebrain.nexus.commons.types.search.Pagination
 import ch.epfl.bluebrain.nexus.commons.types.search.QueryResult.UnscoredQueryResult
 import ch.epfl.bluebrain.nexus.commons.types.search.QueryResults.UnscoredQueryResults
@@ -85,7 +84,7 @@ class Organizations[F[_]](agg: Agg[F], index: Index[F])(implicit F: MonadError[F
     * @param rev    optional revision to fetch
     * @return       organization and metadata if it exists, None otherwise
     */
-  def fetch(label: String, rev: Option[Long] = None): F[Option[ResourceF[Organization]]] = rev match {
+  def fetch(label: String, rev: Option[Long] = None): F[Option[OrganizationResource]] = rev match {
     case None =>
       index.getOrganization(label)
     case Some(value) =>
@@ -107,7 +106,7 @@ class Organizations[F[_]](agg: Agg[F], index: Index[F])(implicit F: MonadError[F
     * @param  id of the organization.
     * @return organization and metadata if it exists, None otherwise
     */
-  def fetch(id: UUID): F[Option[ResourceF[Organization]]] =
+  def fetch(id: UUID): F[Option[OrganizationResource]] =
     agg.currentState(id.toString).map(stateToResource)
 
   /**
@@ -116,7 +115,7 @@ class Organizations[F[_]](agg: Agg[F], index: Index[F])(implicit F: MonadError[F
     * @param pagination the pagination settings
     * @return a paginated results list
     */
-  def list(pagination: Pagination): F[UnscoredQueryResults[ResourceF[Organization]]] =
+  def list(pagination: Pagination): F[UnscoredQueryResults[OrganizationResource]] =
     index.listOrganizations(pagination).map { orgs =>
       val results = orgs.map(org => UnscoredQueryResult(org))
       UnscoredQueryResults(orgs.size.toLong, results)
@@ -139,7 +138,7 @@ class Organizations[F[_]](agg: Agg[F], index: Index[F])(implicit F: MonadError[F
       case Left(rej) => F.pure(Left(rej))
     }
 
-  private def stateToResource(state: OrganizationState): Option[ResourceF[Organization]] = state match {
+  private def stateToResource(state: OrganizationState): Option[OrganizationResource] = state match {
     case Initial    => None
     case c: Current => Some(c.toResource)
   }

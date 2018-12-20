@@ -64,12 +64,12 @@ class AuthDirectivesSpec
   "Authorization directives" should {
 
     "return the caller" in {
-      iamClient.getCaller(token) shouldReturn Task(caller)
+      iamClient.identities(token) shouldReturn Task(caller)
       Get("/") ~> addCredentials(cred) ~> authCaller(caller)(token) ~> check {
         status shouldEqual StatusCodes.Accepted
       }
 
-      iamClient.getCaller(None) shouldReturn Task(Caller.anonymous)
+      iamClient.identities(None) shouldReturn Task(Caller.anonymous)
       Get("/") ~> authCaller(Caller.anonymous)(None) ~> check {
         status shouldEqual StatusCodes.Accepted
       }
