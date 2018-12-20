@@ -29,6 +29,7 @@ import scala.concurrent.duration.FiniteDuration
   * @param keyValueStore Distributed data configuration
   * @param sourcing      Sourcing configuration
   * @param iam           IAM configuration
+  * @param pagination pagination configuration
   *
   */
 final case class AppConfig(description: Description,
@@ -39,7 +40,8 @@ final case class AppConfig(description: Description,
                            kafka: KafkaConfig,
                            keyValueStore: KeyValueStoreConfig,
                            sourcing: SourcingConfig,
-                           iam: IamClientConfig)
+                           iam: IamClientConfig,
+                           pagination: PaginationConfig)
 
 object AppConfig {
 
@@ -146,12 +148,11 @@ object AppConfig {
   /**
     * Pagination configuration
     *
-    * @param from    the default offset
     * @param size    the default results size
     * @param maxSize the maximum results size
     */
-  final case class PaginationConfig(from: Long, size: Int, maxSize: Int) {
-    val default: Pagination = Pagination(from, size)
+  final case class PaginationConfig(size: Int, maxSize: Int) {
+    val default: Pagination = Pagination(0, size)
   }
 
   val orderedKeys = OrderedKeys(

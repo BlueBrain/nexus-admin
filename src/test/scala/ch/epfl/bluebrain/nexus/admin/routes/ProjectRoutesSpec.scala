@@ -50,7 +50,7 @@ class ProjectRoutesSpec
 
   private implicit val iamClientConfig: IamClientConfig = IamClientConfig("v1", url"https://nexus.example.com".value)
 
-  private val routes = ProjectRoutes(projects)(iamClient, iamClientConfig, PaginationConfig(0, 50, 100), global).routes
+  private val routes = ProjectRoutes(projects)(iamClient, iamClientConfig, PaginationConfig(50, 100), global).routes
 
   //noinspection TypeAnnotation
   trait Context {
