@@ -56,8 +56,9 @@ lazy val serviceKafka        = "ch.epfl.bluebrain.nexus" %% "service-kafka"     
 lazy val serviceTest         = "ch.epfl.bluebrain.nexus" %% "service-test"                % serviceVersion
 lazy val sourcingAkka        = "ch.epfl.bluebrain.nexus" %% "sourcing-akka"               % sourcingVersion
 lazy val shaclValidator      = "ch.epfl.bluebrain.nexus" %% "shacl-topquadrant-validator" % commonsVersion
-lazy val commonTest          = "ch.epfl.bluebrain.nexus" %% "commons-test"                % commonsVersion
-lazy val commonQueryTypes    = "ch.epfl.bluebrain.nexus" %% "commons-query-types"         % commonsVersion
+lazy val commonsHttp         = "ch.epfl.bluebrain.nexus" %% "commons-http"                % commonsVersion
+lazy val commonsTest         = "ch.epfl.bluebrain.nexus" %% "commons-test"                % commonsVersion
+lazy val commonsQueryTypes   = "ch.epfl.bluebrain.nexus" %% "commons-query-types"         % commonsVersion
 lazy val akkaCluster         = "com.typesafe.akka"       %% "akka-cluster"                % akkaVersion
 lazy val akkaHttp            = "com.typesafe.akka"       %% "akka-http"                   % akkaHttpVersion
 lazy val akkaHttpCors        = "ch.megard"               %% "akka-http-cors"              % akkaCorsVersion
@@ -77,6 +78,7 @@ lazy val admin = project
   .in(file("."))
   .settings(testSettings, buildInfoSettings)
   .enablePlugins(BuildInfoPlugin, ServicePackagingPlugin)
+  .aggregate(client)
   .settings(
     name       := "admin",
     moduleName := "admin",
@@ -89,7 +91,7 @@ lazy val admin = project
       akkaStream,
       catsCore,
       circeCore,
-      commonQueryTypes,
+      commonsQueryTypes,
       iamClient,
       journalCore,
       logbackClassic,
@@ -106,9 +108,32 @@ lazy val admin = project
       serviceKamon,
       sourcingAkka,
       akkaHttpTestKit % Test,
-      commonTest      % Test,
+      commonsTest     % Test,
       mockito         % Test,
       serviceTest     % Test
+    )
+  )
+
+lazy val client = project
+  .in(file("client"))
+  .settings(
+    name                  := "admin-client",
+    moduleName            := "admin-client",
+    coverageFailOnMinimum := false,
+    Test / testOptions    += Tests.Argument(TestFrameworks.ScalaTest, "-o", "-u", "target/test-reports"),
+    libraryDependencies ++= Seq(
+      akkaHttp,
+      catsCore,
+      circeCore,
+      commonsHttp,
+      iamClient,
+      logbackClassic,
+      rdfAkka,
+      rdfCirce,
+      serviceHttp,
+      akkaHttpTestKit % Test,
+      commonsTest     % Test,
+      mockito         % Test
     )
   )
 

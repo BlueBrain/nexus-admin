@@ -1,0 +1,19 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/resource.json",
+    "https://bluebrain.github.io/nexus/contexts/admin.json"
+  ],
+  "@id": "http://admin.nexus.example.com/v1/orgs/testorg",
+  "@type": [
+    "Organization"
+  ],
+  "label": "testorg",
+  "description": "Test organization",
+  "_uuid": "504b6940-1b14-43a7-80e3-d08c52c3fc87",
+  "_rev": 1,
+  "_deprecated": false,
+  "_createdBy": "http://iam.nexus.example.com/v1/realms/example-realm/users/example-user",
+  "_createdAt": "2018-12-19T11:31:30.00Z",
+  "_updatedBy": "http://iam.nexus.example.com/v1/realms/example-realm/users/example-user2",
+  "_updatedAt": "2018-12-20T11:31:30.00Z"
+}
