@@ -33,7 +33,7 @@ class QueryDirectivesSpec
 
   "Query directives" should {
     "handle pagination" in {
-      def paginated(from: Long, size: Int) = (get & QueryDirectives.paginated(AppConfig.PaginationConfig(0, 50, 100))) {
+      def paginated(from: Long, size: Int) = (get & QueryDirectives.paginated(AppConfig.PaginationConfig(50, 100))) {
         pagination =>
           pagination shouldEqual Pagination(from, size)
           complete(StatusCodes.Accepted)

@@ -18,6 +18,7 @@ import ch.epfl.bluebrain.nexus.admin.organizations.{OrganizationEvent, Organizat
 import ch.epfl.bluebrain.nexus.admin.persistence.TaggingAdapter
 import ch.epfl.bluebrain.nexus.admin.projects.{ProjectEvent, Projects}
 import ch.epfl.bluebrain.nexus.admin.routes._
+import ch.epfl.bluebrain.nexus.iam.client.IamClient
 import ch.epfl.bluebrain.nexus.service.kafka.KafkaPublisher
 import ch.megard.akka.http.cors.scaladsl.CorsDirectives.{cors, corsRejectionHandler}
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
@@ -67,9 +68,12 @@ object Main {
     implicit val as: ActorSystem       = ActorSystem(appConfig.description.fullName, config)
     implicit val mt: ActorMaterializer = ActorMaterializer()
     implicit val scheduler: Scheduler  = Scheduler.global
+    implicit val iamConfig             = appConfig.iam
+    implicit val paginationConfig      = appConfig.pagination
 
     val logger  = Logging(as, getClass)
     val cluster = Cluster(as)
+
     val seeds: List[Address] = appConfig.cluster.seeds.toList
       .flatMap(_.split(","))
       .map(addr => AddressFromURIString(s"akka.tcp://${appConfig.description.fullName}@$addr")) match {
@@ -80,17 +84,21 @@ object Main {
     val serviceDescription = AppInfoRoutes(appConfig.description,
                                            ClusterHealthChecker(cluster),
                                            CassandraHealthChecker(appConfig.persistence)).routes
-
     val orgIndex: OrganizationCache[Task]  = OrganizationCache[Task]
     val projectIndex: ProjectCache[Task]   = ProjectCache[Task]
     val organizations: Organizations[Task] = Organizations[Task](orgIndex, appConfig).runSyncUnsafe()
     val projects: Projects[Task]           = Projects(projectIndex, organizations, appConfig).runSyncUnsafe()
+    implicit val iamClient                 = IamClient[Task]
+
+    val orgRoutes: OrganizationRoutes = OrganizationRoutes(organizations)
+    val projectRoutes: ProjectRoutes  = ProjectRoutes(projects)
 
     val corsSettings = CorsSettings.defaultSettings
       .withAllowedMethods(List(GET, PUT, POST, DELETE, OPTIONS, HEAD))
       .withExposedHeaders(List(Location.name))
     val routes: Route =
-      handleRejections(corsRejectionHandler)(cors(corsSettings)(serviceDescription))
+      handleRejections(corsRejectionHandler)(
+        cors(corsSettings)(serviceDescription ~ orgRoutes.routes ~ projectRoutes.routes))
 
     cluster.registerOnMemberUp {
       logger.info("==== Cluster is Live ====")
@@ -133,7 +141,7 @@ object Main {
     KafkaPublisher
       .startTagStream[ProjectEvent](appConfig.persistence.queryJournalPlugin,
                                     TaggingAdapter.ProjectTag,
-                                    "orgs-to-kafka",
+                                    "projects-to-kafka",
                                     producerSettings,
                                     appConfig.kafka.topic)
     KafkaPublisher

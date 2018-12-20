@@ -48,7 +48,7 @@ class OrganizationRoutesSpec
   private implicit val iamClientConfig: IamClientConfig = IamClientConfig("v1", url"https://nexus.example.com".value)
 
   private val routes =
-    OrganizationRoutes(organizations)(iamClient, iamClientConfig, PaginationConfig(0, 50, 100), global).routes
+    OrganizationRoutes(organizations)(iamClient, iamClientConfig, PaginationConfig(50, 100), global).routes
 
   //noinspection TypeAnnotation
   trait Context {
