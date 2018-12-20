@@ -10,6 +10,7 @@
     "nxv": "https://bluebrain.github.io/nexus/vocabulary/",
     "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type"
   },
+  "rev": 1,
   "instant": "2018-12-04T11:31:30Z",
   "subject": "http://iam.nexus.example.com/v1/realms/example-realm/users/example-user"
 }

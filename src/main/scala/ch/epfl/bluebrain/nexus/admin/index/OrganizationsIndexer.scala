@@ -31,7 +31,7 @@ class OrganizationsIndexer[F[_]](organizations: Organizations[F], index: Organiz
 
   private def indexEvent(event: OrganizationEvent): F[Unit] =
     organizations.fetch(event.id).flatMap {
-      case Some(org) => index.replace(event.id, org) *> F.pure(())
+      case Some(org) => index.replace(event.id, org) *> F.unit
       case _         => F.raiseError(UnexpectedState(s"Couldn't find organization ${event.id} while indexing organizations"))
     }
 }
