@@ -36,7 +36,6 @@ val akkaHttpVersion            = "10.1.5"
 val akkaPersistenceCassVersion = "0.91"
 val catsVersion                = "1.5.0"
 val circeVersion               = "0.11.0"
-val circeJava8Version          = "0.10.1"
 val journalVersion             = "3.0.19"
 val logbackVersion             = "1.2.3"
 val mockitoVersion             = "1.0.6"
@@ -68,7 +67,6 @@ lazy val akkaSlf4j           = "com.typesafe.akka"       %% "akka-slf4j"        
 lazy val akkaStream          = "com.typesafe.akka"       %% "akka-stream"                 % akkaVersion
 lazy val catsCore            = "org.typelevel"           %% "cats-core"                   % catsVersion
 lazy val circeCore           = "io.circe"                %% "circe-core"                  % circeVersion
-lazy val circeJava8          = "io.circe"                %% "circe-java8"                 % circeJava8Version
 lazy val journalCore         = "io.verizon.journal"      %% "core"                        % journalVersion
 lazy val mockito             = "org.mockito"             %% "mockito-scala"               % mockitoVersion
 lazy val logbackClassic      = "ch.qos.logback"          % "logback-classic"              % logbackVersion
@@ -91,7 +89,6 @@ lazy val admin = project
       akkaStream,
       catsCore,
       circeCore,
-      circeJava8,
       commonQueryTypes,
       iamClient,
       journalCore,
