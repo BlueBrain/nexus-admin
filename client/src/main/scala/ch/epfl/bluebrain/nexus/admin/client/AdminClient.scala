@@ -13,7 +13,9 @@ import ch.epfl.bluebrain.nexus.commons.http.HttpClient.UntypedHttpClient
 import ch.epfl.bluebrain.nexus.commons.http.{HttpClient, UnexpectedUnsuccessfulHttpResponse}
 import ch.epfl.bluebrain.nexus.commons.types.HttpRejection.UnauthorizedAccess
 import ch.epfl.bluebrain.nexus.iam.client.types.AuthToken
+import ch.epfl.bluebrain.nexus.rdf.Iri.Path
 import ch.epfl.bluebrain.nexus.rdf.syntax.akka._
+import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport._
 import journal.Logger
 
@@ -45,7 +47,7 @@ class AdminClient[F[_]: LiftIO](config: AdminClientConfig, httpClient: UntypedHt
     * @return [[Project]] instance if it exists, [[None]] otherwise, wrapped in [[F]]
     */
   def fetchProject(organization: String, label: String)(implicit credentials: Option[AuthToken]): F[Option[Project]] =
-    projectsClient(request("projects", organization, label))
+    projectsClient(request("projects" / organization / label))
       .map[Option[Project]](Some(_))
       .recoverWith(recover(s"projects/$organization/$label"))
 
@@ -57,7 +59,7 @@ class AdminClient[F[_]: LiftIO](config: AdminClientConfig, httpClient: UntypedHt
     * @return [[Organization]] instance if it exists, [[None]] otherwise, wrapped in [[F]]
     */
   def fetchOrganization(label: String)(implicit credentials: Option[AuthToken]): F[Option[Organization]] =
-    orgsClient(request("orgs", label))
+    orgsClient(request("orgs" / label))
       .map[Option[Organization]](Some(_))
       .recoverWith(recover(s"orgs/$label"))
 
@@ -75,10 +77,8 @@ class AdminClient[F[_]: LiftIO](config: AdminClientConfig, httpClient: UntypedHt
       F.raiseError(err)
   }
 
-  private def request(segments: String*)(implicit credentials: Option[AuthToken]): HttpRequest = {
-    val iri = segments.foldLeft(config.publicIri + config.prefix) { _ + _ }
-    addCredentials(Get(iri.toAkkaUri))
-  }
+  private def request(path: Path)(implicit credentials: Option[AuthToken]): HttpRequest =
+    addCredentials(Get((config.baseIri + path).toAkkaUri))
 
   private def addCredentials(request: HttpRequest)(implicit credentials: Option[AuthToken]): HttpRequest =
     credentials.map(token => request.addCredentials(OAuth2BearerToken(token.value))).getOrElse(request)

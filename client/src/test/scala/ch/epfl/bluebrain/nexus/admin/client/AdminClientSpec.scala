@@ -40,7 +40,7 @@ class AdminClientSpec
   implicit val ec: ExecutionContext  = system.dispatcher
   implicit val mt: ActorMaterializer = ActorMaterializer()
 
-  private val config     = AdminClientConfig("v1", url"http://admin.nexus.example.com/".value)
+  private val config     = AdminClientConfig(url"http://admin.nexus.example.com/v1".value)
   private val httpClient = mock[UntypedHttpClient[IO]]
   private val client     = new AdminClient[IO](config, httpClient)
 
