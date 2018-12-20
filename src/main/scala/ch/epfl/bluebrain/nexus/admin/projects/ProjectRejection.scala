@@ -29,6 +29,11 @@ object ProjectRejection {
   final case object OrganizationNotFound extends ProjectRejection
 
   /**
+    * Signals that an operation on a project cannot be performed due to the fact that the referenced parent organization is deprecated.
+    */
+  final case object OrganizationIsDeprecated extends ProjectRejection
+
+  /**
     * Signals that a project update cannot be performed due its deprecation status.
     */
   final case object ProjectIsDeprecated extends ProjectRejection

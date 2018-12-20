@@ -7,11 +7,10 @@ import cats.MonadError
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig
 import ch.epfl.bluebrain.nexus.admin.exceptions.AdminError.UnexpectedState
-import ch.epfl.bluebrain.nexus.admin.organizations.{Organization, Organizations}
+import ch.epfl.bluebrain.nexus.admin.organizations.{OrganizationResource, Organizations}
 import ch.epfl.bluebrain.nexus.admin.persistence.TaggingAdapter
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectEvent.ProjectCreated
-import ch.epfl.bluebrain.nexus.admin.projects.{Project, ProjectEvent, Projects}
-import ch.epfl.bluebrain.nexus.admin.types.ResourceF
+import ch.epfl.bluebrain.nexus.admin.projects.{ProjectEvent, ProjectResource, Projects}
 import ch.epfl.bluebrain.nexus.service.indexer.persistence.OffsetStorage.Volatile
 import ch.epfl.bluebrain.nexus.service.indexer.persistence.{IndexerConfig, SequentialTagIndexer}
 import monix.eval.Task
@@ -20,12 +19,15 @@ import monix.execution.Scheduler
 /**
   * Projects indexer.
   *
-  * @param projects       project operations
-  * @param organizations  organization operations
-  * @param index          projects and organizations index
+  * @param projects      project operations
+  * @param organizations organization operations
+  * @param index         projects index
+  * @param indexOrg      organizations index
   */
-class ProjectsIndexer[F[_]](projects: Projects[F], organizations: Organizations[F], index: Index[F])(
-    implicit F: MonadError[F, Throwable]) {
+class ProjectsIndexer[F[_]](projects: Projects[F],
+                            organizations: Organizations[F],
+                            index: ProjectCache[F],
+                            indexOrg: OrganizationCache[F])(implicit F: MonadError[F, Throwable]) {
 
   /**
     * Index a sequence of project events.
@@ -36,26 +38,29 @@ class ProjectsIndexer[F[_]](projects: Projects[F], organizations: Organizations[
   def index(events: List[ProjectEvent]): F[Unit] = events.map(indexEvent).sequence *> F.unit
 
   private def indexEvent(event: ProjectEvent): F[Unit] = event match {
-    case ProjectCreated(id, organization, _, _, _, _, _, _, _) =>
+    case ProjectCreated(id, orgUuid, _, _, _, _, _, _) =>
       for {
-        org     <- fetchOrgOrRaiseError(organization)
-        _       <- index.updateOrganization(org)
+        org     <- fetchOrgOrRaiseError(orgUuid)
+        _       <- indexOrg.replace(orgUuid, org)
         project <- fetchProjectOrRaiseError(id)
-        _       <- index.updateProject(project)
+        _       <- index.replace(id, project)
       } yield ()
-    case ev: ProjectEvent => fetchProjectOrRaiseError(ev.id).flatMap(index.updateProject) *> F.unit
+    case ev: ProjectEvent =>
+      fetchProjectOrRaiseError(ev.id).flatMap(project => index.replace(ev.id, project)) *> F.unit
 
   }
 
-  private def fetchProjectOrRaiseError(projectId: UUID): F[ResourceF[Project]] = projects.fetch(projectId).flatMap {
+  private def fetchProjectOrRaiseError(projectId: UUID): F[ProjectResource] = projects.fetch(projectId).flatMap {
     case Some(project) => F.pure(project)
     case None          => F.raiseError(UnexpectedState(s"Couldn't find project ${projectId.toString} while indexing projects"))
   }
 
-  private def fetchOrgOrRaiseError(orgId: UUID): F[ResourceF[Organization]] = organizations.fetch(orgId).flatMap {
-    case Some(org) => F.pure(org)
-    case None      => F.raiseError(UnexpectedState(s"Couldn't find organization ${orgId.toString} while indexing projects"))
-  }
+  private def fetchOrgOrRaiseError(orgId: UUID): F[OrganizationResource] =
+    organizations.fetch(orgId).flatMap {
+      case Some(org) => F.pure(org)
+      case None =>
+        F.raiseError(UnexpectedState(s"Couldn't find organization ${orgId.toString} while indexing projects"))
+    }
 
 }
 
@@ -66,17 +71,20 @@ object ProjectsIndexer {
     *
     * @param projects       project operations
     * @param organizations  organization operations
-    * @param index          projects and organizations index
+    * @param index          projects index
     * @return               ActorRef for stream coordinator
     */
-  final def start(projects: Projects[Task], organizations: Organizations[Task], index: Index[Task])(
+  final def start(projects: Projects[Task],
+                  organizations: Organizations[Task],
+                  index: ProjectCache[Task],
+                  indexOrg: OrganizationCache[Task])(
       implicit
       as: ActorSystem,
       appConfig: AppConfig,
       s: Scheduler
   ): ActorRef = {
 
-    val indexer = new ProjectsIndexer[Task](projects, organizations, index)
+    val indexer = new ProjectsIndexer[Task](projects, organizations, index, indexOrg)
 
     SequentialTagIndexer.start(
       IndexerConfig.builder

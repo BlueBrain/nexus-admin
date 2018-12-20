@@ -10,8 +10,9 @@ package object projects {
 
   type Agg[F[_]] = Aggregate[F, String, ProjectEvent, ProjectState, ProjectCommand, ProjectRejection]
 
+  type ProjectResource            = ResourceF[Project]
   type EventOrRejection           = Either[ProjectRejection, ProjectEvent]
-  type ProjectResourceOrRejection = Either[ProjectRejection, ResourceF[Project]]
+  type ProjectResourceOrRejection = Either[ProjectRejection, ProjectResource]
   type ProjectMetaOrRejection     = Either[ProjectRejection, ResourceF[Unit]]
 
 }

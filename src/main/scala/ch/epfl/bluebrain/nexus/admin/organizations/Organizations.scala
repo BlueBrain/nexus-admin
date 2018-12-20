@@ -11,15 +11,13 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.admin.exceptions.AdminError.UnexpectedState
-import ch.epfl.bluebrain.nexus.admin.index.Index
+import ch.epfl.bluebrain.nexus.admin.index.OrganizationCache
 import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationCommand._
 import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationEvent._
 import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationRejection._
 import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationState._
 import ch.epfl.bluebrain.nexus.admin.organizations.Organizations.next
-import ch.epfl.bluebrain.nexus.admin.types.ResourceF
 import ch.epfl.bluebrain.nexus.commons.types.search.Pagination
-import ch.epfl.bluebrain.nexus.commons.types.search.QueryResult.UnscoredQueryResult
 import ch.epfl.bluebrain.nexus.commons.types.search.QueryResults.UnscoredQueryResults
 import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
 import ch.epfl.bluebrain.nexus.sourcing.akka.AkkaAggregate
@@ -27,9 +25,9 @@ import ch.epfl.bluebrain.nexus.sourcing.akka.AkkaAggregate
 /**
   * Organizations operations bundle
   */
-class Organizations[F[_]](agg: Agg[F], index: Index[F])(implicit F: MonadError[F, Throwable],
-                                                        clock: Clock,
-                                                        http: HttpConfig) {
+class Organizations[F[_]](agg: Agg[F], index: OrganizationCache[F])(implicit F: MonadError[F, Throwable],
+                                                                    clock: Clock,
+                                                                    http: HttpConfig) {
 
   /**
     * Create an organization.
@@ -39,11 +37,11 @@ class Organizations[F[_]](agg: Agg[F], index: Index[F])(implicit F: MonadError[F
     * @return             metadata about the organization
     */
   def create(organization: Organization)(implicit caller: Subject): F[OrganizationMetaOrRejection] =
-    index.getOrganization(organization.label).flatMap {
-      case None =>
-        evaluateAndUpdateIndex(CreateOrganization(UUID.randomUUID(), rev = 0L, organization, clock.instant(), caller),
-                               organization)
+    index.getBy(organization.label).flatMap {
       case Some(_) => F.pure(Left(OrganizationExists))
+      case None =>
+        val cmd = CreateOrganization(UUID.randomUUID(), organization, clock.instant(), caller)
+        evalAndUpdateIndex(cmd, organization)
     }
 
   /**
@@ -57,9 +55,9 @@ class Organizations[F[_]](agg: Agg[F], index: Index[F])(implicit F: MonadError[F
     */
   def update(label: String, organization: Organization, rev: Long)(
       implicit caller: Subject): F[OrganizationMetaOrRejection] =
-    index.getOrganization(label).flatMap {
+    index.getBy(label).flatMap {
       case Some(org) =>
-        evaluateAndUpdateIndex(UpdateOrganization(org.uuid, rev, organization, clock.instant(), caller), organization)
+        evalAndUpdateIndex(UpdateOrganization(org.uuid, rev, organization, clock.instant(), caller), organization)
       case None => F.pure(Left(OrganizationNotFound))
     }
 
@@ -72,9 +70,9 @@ class Organizations[F[_]](agg: Agg[F], index: Index[F])(implicit F: MonadError[F
     * @return       metadata about the organization
     */
   def deprecate(label: String, rev: Long)(implicit caller: Subject): F[OrganizationMetaOrRejection] =
-    index.getOrganization(label).flatMap {
+    index.getBy(label).flatMap {
       case Some(org) =>
-        evaluateAndUpdateIndex(DeprecateOrganization(org.uuid, rev, clock.instant(), caller), org.value)
+        evalAndUpdateIndex(DeprecateOrganization(org.uuid, rev, clock.instant(), caller), org.value)
       case None => F.pure(Left(OrganizationNotFound))
     }
 
@@ -85,18 +83,17 @@ class Organizations[F[_]](agg: Agg[F], index: Index[F])(implicit F: MonadError[F
     * @param rev    optional revision to fetch
     * @return       organization and metadata if it exists, None otherwise
     */
-  def fetch(label: String, rev: Option[Long] = None): F[Option[ResourceF[Organization]]] = rev match {
+  def fetch(label: String, rev: Option[Long] = None): F[Option[OrganizationResource]] = rev match {
     case None =>
-      index.getOrganization(label)
+      index.getBy(label)
     case Some(value) =>
-      index.getOrganization(label).flatMap {
+      index.getBy(label).flatMap {
         case Some(org) =>
-          agg
-            .foldLeft[OrganizationState](org.uuid.toString, Initial) {
-              case (state, event) if event.rev <= value => next(state, event)
-              case (state, _)                           => state
-            }
-            .map(stateToResource)
+          val stateF = agg.foldLeft[OrganizationState](org.uuid.toString, Initial) {
+            case (state, event) if event.rev <= value => next(state, event)
+            case (state, _)                           => state
+          }
+          stateF.map(stateToResource)
         case None => F.pure(None)
       }
   }
@@ -107,7 +104,7 @@ class Organizations[F[_]](agg: Agg[F], index: Index[F])(implicit F: MonadError[F
     * @param  id of the organization.
     * @return organization and metadata if it exists, None otherwise
     */
-  def fetch(id: UUID): F[Option[ResourceF[Organization]]] =
+  def fetch(id: UUID): F[Option[OrganizationResource]] =
     agg.currentState(id.toString).map(stateToResource)
 
   /**
@@ -116,30 +113,24 @@ class Organizations[F[_]](agg: Agg[F], index: Index[F])(implicit F: MonadError[F
     * @param pagination the pagination settings
     * @return a paginated results list
     */
-  def list(pagination: Pagination): F[UnscoredQueryResults[ResourceF[Organization]]] =
-    index.listOrganizations(pagination).map { orgs =>
-      val results = orgs.map(org => UnscoredQueryResult(org))
-      UnscoredQueryResults(orgs.size.toLong, results)
+  def list(pagination: Pagination): F[UnscoredQueryResults[OrganizationResource]] =
+    index.list(pagination)
+
+  private def eval(cmd: OrganizationCommand): F[OrganizationMetaOrRejection] =
+    agg.evaluateS(cmd.id.toString, cmd).flatMap {
+      case Right(c: Current) => F.pure(Right(c.toResourceMetadata))
+      case Right(Initial)    => F.raiseError(UnexpectedState(cmd.id.toString))
+      case Left(rejection)   => F.pure(Left(rejection))
     }
 
-  private def evaluate(cmd: OrganizationCommand): F[OrganizationMetaOrRejection] =
-    agg
-      .evaluateS(cmd.id.toString, cmd)
-      .flatMap {
-        case Right(c: Current) => F.pure(Right(c.toResourceMetadata))
-        case Right(Initial)    => F.raiseError(UnexpectedState(cmd.id.toString))
-        case Left(rejection)   => F.pure(Left(rejection))
-      }
-
-  private def evaluateAndUpdateIndex(command: OrganizationCommand,
-                                     organization: Organization): F[OrganizationMetaOrRejection] =
-    evaluate(command).flatMap {
-      case Right(metadata) =>
-        index.updateOrganization(metadata.map(_ => organization)) *> F.pure(Right(metadata))
-      case Left(rej) => F.pure(Left(rej))
+  private def evalAndUpdateIndex(command: OrganizationCommand,
+                                 organization: Organization): F[OrganizationMetaOrRejection] =
+    eval(command).flatMap {
+      case Right(metadata) => index.replace(metadata.uuid, metadata.map(_ => organization)) *> F.pure(Right(metadata))
+      case Left(rej)       => F.pure(Left(rej))
     }
 
-  private def stateToResource(state: OrganizationState): Option[ResourceF[Organization]] = state match {
+  private def stateToResource(state: OrganizationState): Option[OrganizationResource] = state match {
     case Initial    => None
     case c: Current => Some(c.toResource)
   }
@@ -150,7 +141,7 @@ object Organizations {
   /**
     * Construct ''Organization'' wrapped on an ''F'' type based on akka clustered [[Agg]].
     */
-  def apply[F[_]: ConcurrentEffect: Timer](index: Index[F], appConfig: AppConfig)(
+  def apply[F[_]: ConcurrentEffect: Timer](index: OrganizationCache[F], appConfig: AppConfig)(
       implicit cl: Clock = Clock.systemUTC(),
       as: ActorSystem,
       mt: ActorMaterializer): F[Organizations[F]] = {
@@ -172,7 +163,7 @@ object Organizations {
 
   private[organizations] def next(state: OrganizationState, ev: OrganizationEvent): OrganizationState =
     (state, ev) match {
-      case (Initial, OrganizationCreated(uuid, 1L, org, instant, identity)) =>
+      case (Initial, OrganizationCreated(uuid, org, instant, identity)) =>
         Current(uuid, 1L, org, deprecated = false, instant, identity, instant, identity)
 
       case (c: Current, OrganizationUpdated(_, rev, org, instant, subject)) =>
@@ -188,9 +179,8 @@ object Organizations {
       implicit F: Async[F]): F[EventOrRejection] = {
 
     def create(c: CreateOrganization): EventOrRejection = state match {
-      case Initial if c.rev == 0L => Right(OrganizationCreated(c.id, rev = 1L, c.organization, c.instant, c.subject))
-      case Initial                => Left(IncorrectRev(0L, c.rev))
-      case _                      => Left(OrganizationExists)
+      case Initial => Right(OrganizationCreated(c.id, c.organization, c.instant, c.subject))
+      case _       => Left(OrganizationExists)
     }
 
     def update(c: UpdateOrganization): EventOrRejection = state match {

@@ -16,11 +16,6 @@ sealed trait OrganizationCommand extends Product with Serializable {
   def id: UUID
 
   /**
-    * @return the revision that this command generated
-    */
-  def rev: Long
-
-  /**
     * @return the instant when this command was created
     */
   def instant: Instant
@@ -36,16 +31,11 @@ object OrganizationCommand {
   /**
     * An intent to create an organization.
     * @param id           ID of the organization
-    * @param rev          the revision to create
     * @param organization representation of the organization
     * @param instant      the instant when this command was created
     * @param subject      the subject which created this command.
     */
-  final case class CreateOrganization(id: UUID,
-                                      rev: Long,
-                                      organization: Organization,
-                                      instant: Instant,
-                                      subject: Subject)
+  final case class CreateOrganization(id: UUID, organization: Organization, instant: Instant, subject: Subject)
       extends OrganizationCommand
 
   /**

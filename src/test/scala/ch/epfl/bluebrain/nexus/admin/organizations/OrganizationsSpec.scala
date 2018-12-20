@@ -2,11 +2,11 @@ package ch.epfl.bluebrain.nexus.admin.organizations
 
 import java.time.{Clock, Instant, ZoneId}
 
-import akka.util.Timeout
-import cats.effect.{ContextShift, IO}
+import cats.effect.{ContextShift, IO, Timer}
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.admin.config.Settings
 import ch.epfl.bluebrain.nexus.admin.config.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.admin.index.DistributedDataIndex
+import ch.epfl.bluebrain.nexus.admin.index.OrganizationCache
 import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationRejection._
 import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationState._
 import ch.epfl.bluebrain.nexus.admin.organizations.Organizations._
@@ -32,19 +32,21 @@ class OrganizationsSpec
     with IOEitherValues
     with Matchers {
 
-  override implicit val patienceConfig: PatienceConfig = PatienceConfig(3.seconds, 100.milliseconds)
+  override implicit val patienceConfig: PatienceConfig = PatienceConfig(3 seconds, 100 milliseconds)
 
   private implicit val clock: Clock          = Clock.fixed(Instant.ofEpochSecond(3600), ZoneId.systemDefault())
   private implicit val http: HttpConfig      = HttpConfig("some", 8080, "/v1", "http://nexus.example.com")
   private implicit val ctx: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
-  private implicit val caller: Subject       = Caller.anonymous.subject
-  private val instant                        = clock.instant()
+  implicit val timer: Timer[IO]              = IO.timer(system.dispatcher)
+
+  private implicit val caller: Subject = Caller.anonymous.subject
+  private val instant                  = clock.instant()
+  private implicit val appConfig       = Settings(system).appConfig
+  private implicit val keyStoreConfig  = appConfig.keyValueStore
 
   private val aggF: IO[Agg[IO]] = Aggregate.inMemory[IO, String]("organizations", Initial, next, evaluate[IO])
 
-  private val consistencyTimeout = 5 seconds
-  private val askTimeout         = Timeout(consistencyTimeout)
-  private val index              = DistributedDataIndex[IO](askTimeout, consistencyTimeout)
+  private val index = OrganizationCache[IO]
 
   private val orgs = aggF.map(new Organizations(_, index)).unsafeRunSync()
 

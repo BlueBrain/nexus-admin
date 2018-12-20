@@ -1,7 +1,15 @@
 package ch.epfl.bluebrain.nexus.admin.exceptions
 
-import ch.epfl.bluebrain.nexus.commons.types.Err
-
+/**
+  * Generic error types global to the entire service.
+  *
+  * @param msg the reason why the error occurred
+  */
+@SuppressWarnings(Array("IncorrectlyNamedExceptions"))
+sealed abstract class AdminError(val msg: String) extends Exception with Product with Serializable {
+  override def fillInStackTrace(): Throwable = this
+  override def getMessage: String            = msg
+}
 object AdminError {
 
   /**
@@ -10,7 +18,7 @@ object AdminError {
     * @param id ID of the resource
     */
   @SuppressWarnings(Array("IncorrectlyNamedExceptions"))
-  final case class UnexpectedState(id: String) extends Err(s"Unexpected resource state for resource with ID $id")
+  final case class UnexpectedState(id: String) extends AdminError(s"Unexpected resource state for resource with ID $id")
 
   /**
     * Signals that an unexpected error.
@@ -18,5 +26,14 @@ object AdminError {
     * @param message the exception message
     */
   @SuppressWarnings(Array("IncorrectlyNamedExceptions"))
-  final case class UnexpectedError(override val message: String) extends Err(message)
+  final case class UnexpectedError(val message: String) extends AdminError(message)
+
+  /**
+    * Generic wrapper for iam errors that should not be exposed to clients.
+    *
+    * @param reason the underlying error reason
+    */
+  @SuppressWarnings(Array("IncorrectlyNamedExceptions"))
+  final case class InternalError(reason: String)
+      extends AdminError(s"An internal server error occurred due to '$reason'.")
 }

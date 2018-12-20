@@ -58,7 +58,7 @@ object AuthDirectives {
     *
     * @param err the [[CommonRejection]]
     */
-  case class CustomAuthRejection(err: CommonRejection) extends CustomRejection
+  final case class CustomAuthRejection(err: CommonRejection) extends CustomRejection
 
   private def authorizationRejection(err: Throwable) =
     CustomAuthRejection(

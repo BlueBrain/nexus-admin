@@ -40,7 +40,6 @@ object ProjectEvent {
     * @param description  an optional project description
     * @param apiMappings  the API mappings
     * @param base         the base IRI for generated resource IDs
-    * @param rev          the revision number that this event generates
     * @param instant      the timestamp associated to this event
     * @param subject      the identity associated to this event
     */
@@ -50,10 +49,15 @@ object ProjectEvent {
                                   description: Option[String],
                                   apiMappings: Map[String, AbsoluteIri],
                                   base: AbsoluteIri,
-                                  rev: Long,
                                   instant: Instant,
                                   subject: Subject)
-      extends ProjectEvent
+      extends ProjectEvent {
+
+    /**
+      *  the revision number that this event generates
+      */
+    val rev: Long = 1L
+  }
 
   /**
     * Evidence that a project has been updated.

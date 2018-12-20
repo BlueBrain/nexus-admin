@@ -40,7 +40,7 @@ class OrganizationsIndexerSpec
     )
 
     val orgs: Organizations[IO]              = mock[Organizations[IO]]
-    val index: Index[IO]                     = mock[Index[IO]]
+    val index: OrganizationCache[IO]         = mock[OrganizationCache[IO]]
     val orgIndexer: OrganizationsIndexer[IO] = new OrganizationsIndexer[IO](orgs, index)
   }
 
@@ -49,16 +49,13 @@ class OrganizationsIndexerSpec
     "index organizations" in new Context {
 
       orgs.fetch(organization.uuid) shouldReturn IO.pure(Some(organization))
-      index.updateOrganization(organization) shouldReturn IO.pure(true)
+      index.replace(organization.uuid, organization) shouldReturn IO.pure(())
 
       orgIndexer
-        .index(
-          List(
-            OrganizationCreated(organization.uuid, 1L, organization.value, instant, caller),
-          ))
+        .index(List(OrganizationCreated(organization.uuid, organization.value, instant, caller)))
         .unsafeRunSync()
 
-      index.updateOrganization(organization) was called
+      index.replace(organization.uuid, organization) wasCalled once
     }
   }
 
