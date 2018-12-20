@@ -1,5 +1,5 @@
 {
-  "label" : "org",
+  "_label" : "org",
   "description" : "Org description",
   "@context" : [
     "https://bluebrain.github.io/nexus/contexts/resource.json",

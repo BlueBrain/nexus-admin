@@ -1,0 +1,31 @@
+{
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/resource.json",
+    "https://bluebrain.github.io/nexus/contexts/admin.json"
+  ],
+  "@id": "http://admin.nexus.example.com/v1/projects/testorg/testproject",
+  "@type": [
+    "Project"
+  ],
+  "base": "https://nexus.example.com/base",
+  "apiMappings": [
+    {
+      "prefix": "nxv",
+      "namespace": "https://bluebrain.github.io/nexus/vocabulary/"
+    },
+    {
+      "prefix": "rdf",
+      "namespace": "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    }
+  ],
+  "description": "Test project",
+  "_label": "testproject",
+  "_organization": "testorg",
+  "_uuid": "db7cee63-3f93-4d4a-9cc2-ebdace7f3b4f",
+  "_rev": 1,
+  "_deprecated": false,
+  "_createdBy": "http://iam.nexus.example.com/v1/realms/example-realm/users/example-user",
+  "_createdAt": "2018-12-19T11:31:30.00Z",
+  "_updatedBy": "http://iam.nexus.example.com/v1/realms/example-realm/users/example-user2",
+  "_updatedAt": "2018-12-20T11:31:30.00Z"
+}

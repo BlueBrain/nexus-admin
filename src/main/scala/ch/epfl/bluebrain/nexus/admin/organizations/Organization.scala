@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.admin.organizations
 
-import io.circe.{Decoder, Encoder}
-import io.circe.generic.semiauto._
+import io.circe.{Encoder, Json}
 
 /**
   * Representation of an organization.
@@ -13,7 +12,7 @@ final case class Organization(label: String, description: String)
 
 object Organization {
 
-  implicit val organizationEncoder: Encoder[Organization] = deriveEncoder[Organization]
-
-  implicit val organizationDecoder: Decoder[Organization] = deriveDecoder[Organization]
+  implicit val organizationEncoder: Encoder[Organization] = Encoder.encodeJson.contramap { o =>
+    Json.obj("_label" -> Json.fromString(o.label), "description" -> Json.fromString(o.description))
+  }
 }
