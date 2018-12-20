@@ -9,8 +9,8 @@ import ch.epfl.bluebrain.nexus.rdf.instances._
 import ch.epfl.bluebrain.nexus.rdf.syntax.circe.context._
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto._
-import io.circe.{Encoder, Json}
 import io.circe.syntax._
+import io.circe.{Encoder, Json}
 
 object encoders {
 
@@ -26,16 +26,18 @@ object encoders {
   /**
     * Kafka encoder for [[ProjectEvent]]s.
     */
-  implicit def projectEventEncoder(implicit iamClientConfig: IamClientConfig): Encoder[ProjectEvent] =
-    deriveEncoder[ProjectEvent]
-      .mapJson(_.renameKey("id", "uuid").addContext(adminCtxUri))
+  implicit def projectEventEncoder(implicit iamClientConfig: IamClientConfig): Encoder[ProjectEvent] = {
+    val enc = deriveEncoder[ProjectEvent].mapJson(_.renameKey("id", "uuid").addContext(adminCtxUri))
+    Encoder.instance(event => enc(event) deepMerge Json.obj("rev" -> Json.fromLong(event.rev)))
+  }
 
   /**
     * Kafka Encoder for [[OrganizationEvent]]s.
     */
-  implicit def organizationEventEncoder(implicit iamClientConfig: IamClientConfig): Encoder[OrganizationEvent] =
-    deriveEncoder[OrganizationEvent]
-      .mapJson(_.renameKey("id", "uuid").addContext(adminCtxUri))
+  implicit def organizationEventEncoder(implicit iamClientConfig: IamClientConfig): Encoder[OrganizationEvent] = {
+    val enc = deriveEncoder[OrganizationEvent].mapJson(_.renameKey("id", "uuid").addContext(adminCtxUri))
+    Encoder.instance(event => enc(event) deepMerge Json.obj("rev" -> Json.fromLong(event.rev)))
+  }
 
   private implicit class JsonOps(json: Json) {
 

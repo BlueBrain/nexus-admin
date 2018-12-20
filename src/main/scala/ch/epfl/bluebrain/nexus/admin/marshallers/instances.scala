@@ -117,12 +117,13 @@ object instances extends FailFastCirceSupport {
   }
 
   private val projectStatusCodeFrom: StatusFrom[ProjectRejection] = StatusFrom {
-    case _: ProjectRejection.IncorrectRev         => Conflict
-    case ProjectRejection.ProjectExists           => Conflict
-    case ProjectRejection.ProjectNotFound         => NotFound
-    case ProjectRejection.OrganizationNotFound    => NotFound
-    case ProjectRejection.ProjectIsDeprecated     => BadRequest
-    case _: ProjectRejection.InvalidProjectFormat => BadRequest
+    case _: ProjectRejection.IncorrectRev          => Conflict
+    case ProjectRejection.ProjectExists            => Conflict
+    case ProjectRejection.ProjectNotFound          => NotFound
+    case ProjectRejection.OrganizationNotFound     => NotFound
+    case ProjectRejection.ProjectIsDeprecated      => BadRequest
+    case ProjectRejection.OrganizationIsDeprecated => BadRequest
+    case _: ProjectRejection.InvalidProjectFormat  => BadRequest
   }
 
   private val organizationStatusCodeFrom: StatusFrom[OrganizationRejection] = StatusFrom {

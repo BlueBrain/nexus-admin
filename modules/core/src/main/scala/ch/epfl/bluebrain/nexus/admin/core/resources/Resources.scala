@@ -72,11 +72,10 @@ abstract class Resources[F[_], A: IdResolvable: PersistenceId: TypeFilterExpr](a
           case Right(graph) =>
             ShaclEngine(graph.asJenaModel, resourceSchema.asJenaModel, validateShapes = false, reportDetails = true) match {
               case Some(report) =>
-                if (report.isValid()) {
-                  F.pure(())
-                } else {
+                if (report.isValid()) F.unit
+                  F.unit
+                else
                   F.raiseError(CommandRejected(ResourceValidationFailed(report)))
-                }
               case None =>
                 F.raiseError(CommandRejected(ResourceValidationError))
             }
@@ -101,7 +100,7 @@ abstract class Resources[F[_], A: IdResolvable: PersistenceId: TypeFilterExpr](a
     agg.currentState(id.persistenceId) flatMap {
       case Initial                    => F.raiseError(CommandRejected(ParentResourceDoesNotExist))
       case c: Current if c.deprecated => F.raiseError(CommandRejected(ResourceIsDeprecated))
-      case _                          => F.pure(())
+      case _                          => F.unit
     }
 
   def label(id: A): String

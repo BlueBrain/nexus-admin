@@ -13,7 +13,7 @@ import akka.http.scaladsl.server.Route
 import akka.kafka.ProducerSettings
 import akka.stream.ActorMaterializer
 import ch.epfl.bluebrain.nexus.admin.config.{AppConfig, Settings}
-import ch.epfl.bluebrain.nexus.admin.index.{DistributedDataIndex, Index, OrganizationsIndexer, ProjectsIndexer}
+import ch.epfl.bluebrain.nexus.admin.index._
 import ch.epfl.bluebrain.nexus.admin.organizations.{OrganizationEvent, Organizations}
 import ch.epfl.bluebrain.nexus.admin.persistence.TaggingAdapter
 import ch.epfl.bluebrain.nexus.admin.projects.{ProjectEvent, Projects}
@@ -63,6 +63,7 @@ object Main {
     setupMonitoring(config)
 
     implicit val appConfig             = new Settings(config).appConfig
+    implicit val storeConfig           = appConfig.keyValueStore
     implicit val as: ActorSystem       = ActorSystem(appConfig.description.fullName, config)
     implicit val mt: ActorMaterializer = ActorMaterializer()
     implicit val scheduler: Scheduler  = Scheduler.global
@@ -80,9 +81,10 @@ object Main {
                                            ClusterHealthChecker(cluster),
                                            CassandraHealthChecker(appConfig.persistence)).routes
 
-    val index: Index[Task]                 = DistributedDataIndex[Task](appConfig.index.askTimeout, appConfig.index.consistencyTimeout)
-    val organizations: Organizations[Task] = Organizations[Task](index, appConfig).runSyncUnsafe()
-    val projects: Projects[Task]           = Projects(index, organizations, appConfig).runSyncUnsafe()
+    val orgIndex: OrganizationCache[Task]  = OrganizationCache[Task]
+    val projectIndex: ProjectCache[Task]   = ProjectCache[Task]
+    val organizations: Organizations[Task] = Organizations[Task](orgIndex, appConfig).runSyncUnsafe()
+    val projects: Projects[Task]           = Projects(projectIndex, organizations, appConfig).runSyncUnsafe()
 
     val corsSettings = CorsSettings.defaultSettings
       .withAllowedMethods(List(GET, PUT, POST, DELETE, OPTIONS, HEAD))
@@ -116,8 +118,8 @@ object Main {
       val _ = Await.result(as.terminate(), 10.seconds)
     }
 
-    OrganizationsIndexer.start(organizations, index)
-    ProjectsIndexer.start(projects, organizations, index)
+    OrganizationsIndexer.start(organizations, orgIndex)
+    ProjectsIndexer.start(projects, organizations, projectIndex, orgIndex)
 
     val _ = startKafkaIndexers(appConfig)
 

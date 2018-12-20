@@ -2,14 +2,14 @@ package ch.epfl.bluebrain.nexus.admin.config
 
 import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.Uri.Path
-import akka.util.Timeout
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig._
 import ch.epfl.bluebrain.nexus.admin.config.Vocabulary._
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport.OrderedKeys
-import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
 import ch.epfl.bluebrain.nexus.commons.types.search.Pagination
+import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.syntax.node.unsafe._
+import ch.epfl.bluebrain.nexus.service.indexer.cache.KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.service.indexer.retryer.RetryStrategy
 import ch.epfl.bluebrain.nexus.service.indexer.retryer.RetryStrategy.Backoff
 import ch.epfl.bluebrain.nexus.service.kamon.directives.TracingDirectives
@@ -20,15 +20,15 @@ import scala.concurrent.duration.FiniteDuration
 /**
   * Application configuration
   *
-  * @param description service description
-  * @param http        http interface configuration
-  * @param cluster     akka cluster configuration
-  * @param persistence persistence configuration
-  * @param indexing    Indexing configuration
-  * @param kafka       Kafka configuration
-  * @param index       Distributed data configuration
-  * @param sourcing    Sourcing configuration
-  * @param iam IAM configuration
+  * @param description   service description
+  * @param http          http interface configuration
+  * @param cluster       akka cluster configuration
+  * @param persistence   persistence configuration
+  * @param indexing      Indexing configuration
+  * @param kafka         Kafka configuration
+  * @param keyValueStore Distributed data configuration
+  * @param sourcing      Sourcing configuration
+  * @param iam           IAM configuration
   *
   */
 final case class AppConfig(description: Description,
@@ -37,7 +37,7 @@ final case class AppConfig(description: Description,
                            persistence: PersistenceConfig,
                            indexing: IndexingConfig,
                            kafka: KafkaConfig,
-                           index: IndexConfig,
+                           keyValueStore: KeyValueStoreConfig,
                            sourcing: SourcingConfig,
                            iam: IamClientConfig)
 
@@ -142,14 +142,6 @@ object AppConfig {
     * @param topic  topic to publish events.
     */
   final case class KafkaConfig(topic: String)
-
-  /**
-    * DistributedData index config.
-    *
-    * @param askTimeout         actor ask timeout
-    * @param consistencyTimeout replication consistency timeout
-    */
-  final case class IndexConfig(askTimeout: Timeout, consistencyTimeout: FiniteDuration)
 
   /**
     * Pagination configuration

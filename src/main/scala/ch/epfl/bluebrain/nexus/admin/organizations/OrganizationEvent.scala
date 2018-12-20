@@ -37,17 +37,18 @@ object OrganizationEvent {
     * Event representing organization creation.
     *
     * @param id           the permanent identifier of the organization
-    * @param rev          the revision to create
     * @param organization the representation of the organization
     * @param instant      the instant when this event was created
     * @param subject      the subject which created this event
     */
-  final case class OrganizationCreated(id: UUID,
-                                       rev: Long,
-                                       organization: Organization,
-                                       instant: Instant,
-                                       subject: Subject)
-      extends OrganizationEvent
+  final case class OrganizationCreated(id: UUID, organization: Organization, instant: Instant, subject: Subject)
+      extends OrganizationEvent {
+
+    /**
+      *  the revision number that this event generates
+      */
+    val rev: Long = 1L
+  }
 
   /**
     * Event representing organization update.

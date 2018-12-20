@@ -50,7 +50,7 @@ object OrganizationState {
       * @param   http implicitly available [[HttpConfig]]
       * @return [[Organization]] wrapped in [[ResourceF]]
       */
-    def toResource(implicit http: HttpConfig): ResourceF[Organization] =
+    def toResource(implicit http: HttpConfig): OrganizationResource =
       ResourceF(http.orgsBaseIri + organization.label,
                 id,
                 rev,

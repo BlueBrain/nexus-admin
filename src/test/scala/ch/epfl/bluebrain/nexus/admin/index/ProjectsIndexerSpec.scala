@@ -57,8 +57,9 @@ class ProjectsIndexerSpec
 
     val orgs: Organizations[IO]              = mock[Organizations[IO]]
     val projects: Projects[IO]               = mock[Projects[IO]]
-    val index: Index[IO]                     = mock[Index[IO]]
-    val projectsIndexer: ProjectsIndexer[IO] = new ProjectsIndexer[IO](projects, orgs, index)
+    val orgCache: OrganizationCache[IO]      = mock[OrganizationCache[IO]]
+    val projectCache: ProjectCache[IO]       = mock[ProjectCache[IO]]
+    val projectsIndexer: ProjectsIndexer[IO] = new ProjectsIndexer[IO](projects, orgs, projectCache, orgCache)
   }
 
   "Projects indexer" should {
@@ -67,8 +68,8 @@ class ProjectsIndexerSpec
 
       orgs.fetch(organization.uuid) shouldReturn IO.pure(Some(organization))
       projects.fetch(project.uuid) shouldReturn IO.pure(Some(project))
-      index.updateOrganization(organization) shouldReturn IO.pure(true)
-      index.updateProject(project) shouldReturn IO.pure(true)
+      orgCache.replace(organization.uuid, organization) shouldReturn IO.pure(())
+      projectCache.replace(project.uuid, project) shouldReturn IO.pure(())
 
       projectsIndexer
         .index(
@@ -79,19 +80,17 @@ class ProjectsIndexerSpec
                            proj.description,
                            proj.apiMappings,
                            proj.base,
-                           1L,
                            instant,
-                           caller),
-          ))
+                           caller)))
         .unsafeRunSync()
 
-      index.updateOrganization(organization) was called
-      index.updateProject(project) was called
+      orgCache.replace(organization.uuid, organization) was called
+      projectCache.replace(project.uuid, project) was called
     }
 
     "index project only for other project events" in new Context {
 
-      index.updateProject(project) shouldReturn IO.pure(true)
+      projectCache.replace(project.uuid, project) shouldReturn IO.pure(())
       projects.fetch(project.uuid) shouldReturn IO.pure(Some(project))
 
       projectsIndexer
@@ -99,8 +98,7 @@ class ProjectsIndexerSpec
           ProjectUpdated(project.uuid, proj.label, proj.description, proj.apiMappings, proj.base, 1L, instant, caller),
         ))
         .unsafeRunSync()
-
-      index.updateProject(project) was called
+      projectCache.replace(project.uuid, project) was called
     }
   }
 
