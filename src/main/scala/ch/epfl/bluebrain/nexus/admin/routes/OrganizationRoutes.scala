@@ -50,19 +50,19 @@ class OrganizationRoutes(organizations: Organizations[Task])(implicit iamClient:
 
   private def writeRoutes(implicit credentials: Option[AuthToken]): Route =
     extractResourcePath { path =>
-      (put & entity(as[OrganizationDescription])) { desc =>
+      (put & entity(as[OrganizationDescription])) { org =>
         authCaller.apply { implicit caller =>
           parameter('rev.as[Long].?) {
             case Some(rev) =>
               (trace("updateOrganization") & authorizeOn(path, write)) {
                 extractOrg(path) { label =>
-                  complete(organizations.update(label, Organization(label, desc.description), rev).runToFuture)
+                  complete(organizations.update(label, Organization(label, org.description), rev).runToFuture)
                 }
               }
             case None =>
               (trace("createOrganization") & authorizeOn(path, write)) {
                 extractOrg(path) { label =>
-                  onSuccess(organizations.create(Organization(label, desc.description)).runToFuture) {
+                  onSuccess(organizations.create(Organization(label, org.description)).runToFuture) {
                     case Right(meta)     => complete(StatusCodes.Created -> meta)
                     case Left(rejection) => complete(rejection)
                   }

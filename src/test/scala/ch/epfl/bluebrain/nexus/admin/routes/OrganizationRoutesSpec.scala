@@ -86,7 +86,7 @@ class OrganizationRoutesSpec
 
     "create an organization" in new Context {
       iamClient.authorizeOn(path, write) shouldReturn Task.unit
-      iamClient.getCaller shouldReturn Task(caller)
+      iamClient.identities shouldReturn Task(caller)
       organizations.create(organization) shouldReturn Task(Right(meta))
 
       Put("/orgs/org", description) ~> addCredentials(cred) ~> routes ~> check {
@@ -97,7 +97,7 @@ class OrganizationRoutesSpec
 
     "reject the creation of an organization which already exists" in new Context {
       iamClient.authorizeOn(path, write) shouldReturn Task.unit
-      iamClient.getCaller shouldReturn Task(caller)
+      iamClient.identities shouldReturn Task(caller)
       organizations.create(organization) shouldReturn Task(Left(OrganizationExists))
 
       Put("/orgs/org", description) ~> addCredentials(cred) ~> routes ~> check {
@@ -108,7 +108,7 @@ class OrganizationRoutesSpec
 
     "reject the creation of an organization without a label" in new Context {
       iamClient.authorizeOn(Path./, write) shouldReturn Task.unit
-      iamClient.getCaller shouldReturn Task(caller)
+      iamClient.identities shouldReturn Task(caller)
 
       Put("/orgs/", description) ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
@@ -118,7 +118,7 @@ class OrganizationRoutesSpec
 
     "fetch an organization" in new Context {
       iamClient.authorizeOn(path, read) shouldReturn Task.unit
-      iamClient.getCaller shouldReturn Task(caller)
+      iamClient.identities shouldReturn Task(caller)
       organizations.fetch("org") shouldReturn Task(Some(resource))
 
       Get("/orgs/org") ~> addCredentials(cred) ~> routes ~> check {
@@ -129,7 +129,7 @@ class OrganizationRoutesSpec
 
     "return not found for a non-existent organization" in new Context {
       iamClient.authorizeOn(path, read) shouldReturn Task.unit
-      iamClient.getCaller shouldReturn Task(caller)
+      iamClient.identities shouldReturn Task(caller)
       organizations.fetch("org") shouldReturn Task(None)
 
       Get("/orgs/org") ~> addCredentials(cred) ~> routes ~> check {
@@ -139,7 +139,7 @@ class OrganizationRoutesSpec
 
     "fetch a specific organization revision" in new Context {
       iamClient.authorizeOn(path, read) shouldReturn Task.unit
-      iamClient.getCaller shouldReturn Task(caller)
+      iamClient.identities shouldReturn Task(caller)
       organizations.fetch("org", Some(2L)) shouldReturn Task(Some(resource))
 
       Get("/orgs/org?rev=2") ~> addCredentials(cred) ~> routes ~> check {
@@ -150,7 +150,7 @@ class OrganizationRoutesSpec
 
     "deprecate an organization" in new Context {
       iamClient.authorizeOn(path, read) shouldReturn Task.unit
-      iamClient.getCaller shouldReturn Task(caller)
+      iamClient.identities shouldReturn Task(caller)
       organizations.deprecate("org", 2L) shouldReturn Task(Right(meta))
 
       Delete("/orgs/org?rev=2") ~> addCredentials(cred) ~> routes ~> check {
@@ -161,7 +161,7 @@ class OrganizationRoutesSpec
 
     "reject the deprecation of an organization without rev" in new Context {
       iamClient.authorizeOn(path, read) shouldReturn Task.unit
-      iamClient.getCaller shouldReturn Task(caller)
+      iamClient.identities shouldReturn Task(caller)
 
       Delete("/orgs/org") ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
@@ -171,7 +171,7 @@ class OrganizationRoutesSpec
 
     "reject the deprecation of an organization with incorrect rev" in new Context {
       iamClient.authorizeOn(path, read) shouldReturn Task.unit
-      iamClient.getCaller shouldReturn Task(caller)
+      iamClient.identities shouldReturn Task(caller)
       organizations.deprecate("org", 2L) shouldReturn Task(Left(IncorrectRev(3L, 2L)))
 
       Delete("/orgs/org?rev=2") ~> addCredentials(cred) ~> routes ~> check {
@@ -182,7 +182,7 @@ class OrganizationRoutesSpec
 
     "reject unauthorized requests" in new Context {
       iamClient.authorizeOn(path, read)(None) shouldReturn Task.raiseError(UnauthorizedAccess)
-      iamClient.getCaller(None) shouldReturn Task(Caller.anonymous)
+      iamClient.identities(None) shouldReturn Task(Caller.anonymous)
 
       Get("/orgs/org") ~> routes ~> check {
         status shouldEqual StatusCodes.Unauthorized
@@ -193,7 +193,7 @@ class OrganizationRoutesSpec
     "list organizations" in new Context {
       iamClient.authorizeOn(Path./, read) shouldReturn Task.unit
       iamClient.authorizeOn(Path.Empty, read) shouldReturn Task.unit
-      iamClient.getCaller shouldReturn Task(caller)
+      iamClient.identities shouldReturn Task(caller)
 
       val orgs = List(1, 2, 3).map { i =>
         val iri = Iri.Url(s"http://nexus.example.com/v1/orgs/org$i").right.value

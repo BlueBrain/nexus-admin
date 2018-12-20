@@ -4,6 +4,7 @@ import java.time.Instant
 import java.util.UUID
 
 import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
+import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 
 sealed trait ProjectState extends Product with Serializable
 
@@ -21,6 +22,8 @@ object ProjectState {
     * @param organization the permanent identifier of the parent organization
     * @param label        the label (segment) of the resource
     * @param description  an optional project description
+    * @param apiMappings  the API mappings
+    * @param base         the base IRI for generated resource IDs
     * @param rev          the selected revision number
     * @param instant      the timestamp associated with this state
     * @param subject      the identity associated with this state
@@ -30,6 +33,8 @@ object ProjectState {
                            organization: UUID,
                            label: String,
                            description: Option[String],
+                           apiMappings: Map[String, AbsoluteIri],
+                           base: AbsoluteIri,
                            rev: Long,
                            instant: Instant,
                            subject: Subject,

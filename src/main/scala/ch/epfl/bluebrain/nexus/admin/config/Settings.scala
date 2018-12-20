@@ -5,6 +5,7 @@ import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.syntax.node.unsafe._
 import com.typesafe.config.Config
+import pureconfig.generic.auto._
 import pureconfig.ConvertHelpers.catchReadError
 import pureconfig.{loadConfigOrThrow, ConfigConvert}
 

@@ -4,6 +4,7 @@ import java.time.Instant
 import java.util.UUID
 
 import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
+import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 
 sealed trait ProjectEvent extends Product with Serializable {
 
@@ -37,6 +38,8 @@ object ProjectEvent {
     * @param label        the label (segment) of the project
     * @param organization the permanent identifier for the parent organization
     * @param description  an optional project description
+    * @param apiMappings  the API mappings
+    * @param base         the base IRI for generated resource IDs
     * @param rev          the revision number that this event generates
     * @param instant      the timestamp associated to this event
     * @param subject      the identity associated to this event
@@ -45,6 +48,8 @@ object ProjectEvent {
                                   organization: UUID,
                                   label: String,
                                   description: Option[String],
+                                  apiMappings: Map[String, AbsoluteIri],
+                                  base: AbsoluteIri,
                                   rev: Long,
                                   instant: Instant,
                                   subject: Subject)
@@ -56,6 +61,8 @@ object ProjectEvent {
     * @param id          the permanent identifier for the project
     * @param label       the label (segment) of the project
     * @param description an optional project description
+    * @param apiMappings the API mappings
+    * @param base        the base IRI for generated resource IDs
     * @param rev         the revision number that this event generates
     * @param instant     the timestamp associated to this event
     * @param subject     the identity associated to this event
@@ -63,6 +70,8 @@ object ProjectEvent {
   final case class ProjectUpdated(id: UUID,
                                   label: String,
                                   description: Option[String],
+                                  apiMappings: Map[String, AbsoluteIri],
+                                  base: AbsoluteIri,
                                   rev: Long,
                                   instant: Instant,
                                   subject: Subject)
