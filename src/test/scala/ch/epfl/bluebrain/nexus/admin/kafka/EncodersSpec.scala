@@ -17,25 +17,27 @@ import org.scalatest.{Matchers, WordSpecLike}
 
 class EncodersSpec extends WordSpecLike with Matchers with Resources {
 
-  val instant = Instant.parse("2018-12-04T11:31:30.00Z")
-
   implicit val iamConfig = IamClientConfig("v1", url"http://iam.nexus.example.com/".value)
-  val subject            = User("example-user", "example-realm")
-  val orgUuid            = UUID.fromString("4cd2c88b-ed73-4fd7-8afb-315032239a56")
-  val projectUuid        = UUID.fromString("a5c736f2-0ace-48f4-a7a7-56a15123d0b3")
+
+  val instant     = Instant.parse("2018-12-04T11:31:30.00Z")
+  val subject     = User("example-user", "example-realm")
+  val orgUuid     = UUID.fromString("4cd2c88b-ed73-4fd7-8afb-315032239a56")
+  val projectUuid = UUID.fromString("a5c736f2-0ace-48f4-a7a7-56a15123d0b3")
+  val mappings = Map("nxv" -> url"https://bluebrain.github.io/nexus/vocabulary/".value,
+                     "rdf" -> url"http://www.w3.org/1999/02/22-rdf-syntax-ns#type".value)
+  val base = url"https://nexus.example.com/base".value
 
   "Encoders" should {
 
     "encode project created event" in {
       val event: ProjectEvent =
-        ProjectCreated(projectUuid, orgUuid, "project label", Some("description"), 1L, instant, subject)
+        ProjectCreated(projectUuid, orgUuid, "project label", Some("description"), mappings, base, 1L, instant, subject)
       event.asJson shouldEqual jsonContentOf("/kafka/project-created.json")
-
     }
 
     "encode project update event" in {
       val event: ProjectEvent =
-        ProjectUpdated(projectUuid, "project label", Some("description"), 2L, instant, subject)
+        ProjectUpdated(projectUuid, "project label", Some("description"), mappings, base, 2L, instant, subject)
       event.asJson shouldEqual jsonContentOf("/kafka/project-updated.json")
     }
     "encode project deprecated event" in {

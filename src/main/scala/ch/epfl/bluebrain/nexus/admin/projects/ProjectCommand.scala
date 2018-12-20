@@ -4,6 +4,7 @@ import java.time.Instant
 import java.util.UUID
 
 import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
+import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 
 sealed trait ProjectCommand extends Product with Serializable {
 
@@ -32,6 +33,8 @@ object ProjectCommand {
     * @param organization the permanent identifier for the parent organization
     * @param label        the label (segment) of the project
     * @param description  an optional project description
+    * @param apiMappings  the API mappings
+    * @param base         the base IRI for generated resource IDs
     * @param instant      the timestamp associated to this command
     * @param subject      the identity associated to this command
     */
@@ -39,6 +42,8 @@ object ProjectCommand {
                                  organization: UUID,
                                  label: String,
                                  description: Option[String],
+                                 apiMappings: Map[String, AbsoluteIri],
+                                 base: AbsoluteIri,
                                  instant: Instant,
                                  subject: Subject)
       extends ProjectCommand
@@ -49,6 +54,8 @@ object ProjectCommand {
     * @param id          the permanent identifier for the project
     * @param label       the label (segment) of the resource
     * @param description an optional project description
+    * @param apiMappings the API mappings
+    * @param base        the base IRI for generated resource IDs
     * @param rev         the last known revision of the project
     * @param instant     the timestamp associated to this command
     * @param subject     the identity associated to this command
@@ -56,6 +63,8 @@ object ProjectCommand {
   final case class UpdateProject(id: UUID,
                                  label: String,
                                  description: Option[String],
+                                 apiMappings: Map[String, AbsoluteIri],
+                                 base: AbsoluteIri,
                                  rev: Long,
                                  instant: Instant,
                                  subject: Subject)

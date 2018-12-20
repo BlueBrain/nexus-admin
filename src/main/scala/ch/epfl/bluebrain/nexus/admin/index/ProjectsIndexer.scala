@@ -36,7 +36,7 @@ class ProjectsIndexer[F[_]](projects: Projects[F], organizations: Organizations[
   def index(events: List[ProjectEvent]): F[Unit] = events.map(indexEvent).sequence *> F.unit
 
   private def indexEvent(event: ProjectEvent): F[Unit] = event match {
-    case ProjectCreated(id, organization, _, _, _, _, _) =>
+    case ProjectCreated(id, organization, _, _, _, _, _, _, _) =>
       for {
         org     <- fetchOrgOrRaiseError(organization)
         _       <- index.updateOrganization(org)

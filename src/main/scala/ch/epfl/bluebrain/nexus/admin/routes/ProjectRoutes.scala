@@ -64,21 +64,25 @@ class ProjectRoutes(projects: Projects[Task])(implicit iamClient: IamClient[Task
 
   private def writeRoutes(implicit credentials: Option[AuthToken]): Route =
     extractResourcePath { path =>
-      (put & entity(as[ProjectDescription])) { desc =>
+      (put & entity(as[ProjectDescription])) { proj =>
         authCaller.apply { implicit caller =>
           parameter('rev.as[Long].?) {
             case Some(rev) =>
               (trace("updateProject") & authorizeOn(path, write)) {
                 extractProject(path) {
                   case (org, label) =>
-                    complete(projects.update(Project(label, org, desc.description), rev).runToFuture)
+                    complete(
+                      projects
+                        .update(Project(label, org, proj.description, proj.apiMappings, proj.base), rev)
+                        .runToFuture)
                 }
               }
             case None =>
               (trace("createProject") & authorizeOn(path, write)) {
                 extractProject(path) {
                   case (org, label) =>
-                    onSuccess(projects.create(Project(label, org, desc.description)).runToFuture) {
+                    onSuccess(
+                      projects.create(Project(label, org, proj.description, proj.apiMappings, proj.base)).runToFuture) {
                       case Right(meta)     => complete(StatusCodes.Created -> meta)
                       case Left(rejection) => complete(rejection)
                     }

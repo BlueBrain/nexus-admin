@@ -1,7 +1,18 @@
 {
-  "label" : "label",
-  "organization" : "org",
+  "_label" : "label",
+  "_organization" : "org",
   "description" : "Project description",
+  "base": "https://nexus.example.com/base",
+  "apiMappings": [
+    {
+      "prefix": "nxv",
+      "namespace": "https://bluebrain.github.io/nexus/vocabulary/"
+    },
+    {
+      "prefix": "rdf",
+      "namespace": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type"
+    }
+  ],
   "@context" : [
     "https://bluebrain.github.io/nexus/contexts/resource.json",
     "https://bluebrain.github.io/nexus/contexts/admin.json"

@@ -51,7 +51,14 @@ class Projects[F[_]](agg: Agg[F], index: Index[F], organizations: Organizations[
         index.getProject(project.organization, project.label).flatMap {
           case None =>
             val projectId = UUID.randomUUID
-            val command   = CreateProject(projectId, org.uuid, project.label, project.description, clock.instant, caller)
+            val command = CreateProject(projectId,
+                                        org.uuid,
+                                        project.label,
+                                        project.description,
+                                        project.apiMappings,
+                                        project.base,
+                                        clock.instant,
+                                        caller)
             evaluateAndUpdateIndex(command, project)
           case Some(_) => F.pure(Left(ProjectExists))
         }
@@ -69,9 +76,15 @@ class Projects[F[_]](agg: Agg[F], index: Index[F], organizations: Organizations[
   def update(project: Project, rev: Long)(implicit caller: Subject): F[ProjectMetaOrRejection] =
     index.getProject(project.organization, project.label).flatMap {
       case Some(resource) =>
-        evaluateAndUpdateIndex(
-          UpdateProject(resource.uuid, project.label, project.description, rev, clock.instant, caller),
-          project)
+        evaluateAndUpdateIndex(UpdateProject(resource.uuid,
+                                             project.label,
+                                             project.description,
+                                             project.apiMappings,
+                                             project.base,
+                                             rev,
+                                             clock.instant,
+                                             caller),
+                               project)
       case None => F.pure(Left(ProjectNotFound))
     }
 
@@ -200,7 +213,7 @@ class Projects[F[_]](agg: Agg[F], index: Index[F], organizations: Organizations[
                   c.subject,
                   c.instant,
                   c.subject,
-                  Project(c.label, org.value.label, c.description)))
+                  Project(c.label, org.value.label, c.description, c.apiMappings, c.base)))
     case None =>
       Left(OrganizationNotFound)
   }
@@ -216,7 +229,6 @@ object Projects {
     *
     * @param index           the project and organization label index
     * @param appConfig       the application configuration
-    * @param sourcingConfig  the sourcing configuration
     * @tparam F              a [[cats.effect.ConcurrentEffect]] instance
     * @return the operations bundle in an ''F'' context.
     */
@@ -249,15 +261,21 @@ object Projects {
     * @return the next state
     */
   private[projects] def next(state: ProjectState, event: ProjectEvent): ProjectState = (state, event) match {
-    case (Initial, ProjectCreated(id, org, label, rev, instant, subject, value)) =>
-      Current(id, org, label, rev, instant, subject, value, deprecated = false)
+    case (Initial, ProjectCreated(id, org, label, desc, am, base, rev, instant, subject)) =>
+      Current(id, org, label, desc, am, base, rev, instant, subject, deprecated = false)
     // $COVERAGE-OFF$
     case (Initial, _) => Initial
     // $COVERAGE-ON$
     case (c: Current, _) if c.deprecated => c
     case (c, _: ProjectCreated)          => c
-    case (c: Current, ProjectUpdated(_, label, desc, rev, instant, subject)) =>
-      c.copy(label = label, description = desc, rev = rev, instant = instant, subject = subject)
+    case (c: Current, ProjectUpdated(_, label, desc, am, base, rev, instant, subject)) =>
+      c.copy(label = label,
+             description = desc,
+             apiMappings = am,
+             base = base,
+             rev = rev,
+             instant = instant,
+             subject = subject)
     case (c: Current, ProjectDeprecated(_, rev, instant, subject)) =>
       c.copy(rev = rev, instant = instant, subject = subject, deprecated = true)
   }
@@ -266,8 +284,18 @@ object Projects {
 
     private def createProject(state: ProjectState, c: CreateProject): Either[ProjectRejection, ProjectEvent] =
       state match {
-        case Initial => Right(ProjectCreated(c.id, c.organization, c.label, c.description, 1L, c.instant, c.subject))
-        case _       => Left(ProjectExists)
+        case Initial =>
+          Right(
+            ProjectCreated(c.id,
+                           c.organization,
+                           c.label,
+                           c.description,
+                           c.apiMappings,
+                           c.base,
+                           1L,
+                           c.instant,
+                           c.subject))
+        case _ => Left(ProjectExists)
       }
 
     private def updateProject(state: ProjectState, c: UpdateProject): Either[ProjectRejection, ProjectEvent] =
@@ -279,7 +307,8 @@ object Projects {
       }
 
     private def updateProjectAfter(state: Current, c: UpdateProject): Either[ProjectRejection, ProjectEvent] =
-      Right(ProjectUpdated(state.id, c.label, c.description, state.rev + 1, c.instant, c.subject))
+      Right(
+        ProjectUpdated(state.id, c.label, c.description, c.apiMappings, c.base, state.rev + 1, c.instant, c.subject))
 
     private def deprecateProject(state: ProjectState, c: DeprecateProject): Either[ProjectRejection, ProjectEvent] =
       state match {

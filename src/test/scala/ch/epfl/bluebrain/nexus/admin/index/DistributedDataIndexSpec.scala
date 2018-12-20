@@ -44,7 +44,10 @@ class DistributedDataIndexSpec
     subject,
     organization
   )
-  val project = Project(genString(), organization.label, Some(genString()))
+  val mappings = Map("nxv" -> url"https://bluebrain.github.io/nexus/vocabulary/".value,
+                     "rdf" -> url"http://www.w3.org/1999/02/22-rdf-syntax-ns#type".value)
+  val base    = url"http://nexus.example.com/base".value
+  val project = Project(genString(), organization.label, Some(genString()), mappings, base)
   val projectResource = ResourceF(url"http://nexus.example.com/v1/orgs/org".value,
                                   UUID.randomUUID(),
                                   1L,
@@ -128,7 +131,7 @@ class DistributedDataIndexSpec
       )
 
       val projectResources = projectLabels.map { label =>
-        val project = Project(label, projectsOrganization.label, Some(genString()))
+        val project = Project(label, projectsOrganization.label, Some(genString()), mappings, base)
         ResourceF(
           url"http://nexus.example.com/v1/projects/${projectsOrganization.label}/${project.label}".value,
           UUID.randomUUID(),
@@ -182,7 +185,7 @@ class DistributedDataIndexSpec
       }
       val projectResources = orgResources.map { org =>
         org.value.label -> (1 to 20).map { _ =>
-          val project = Project(genString(), org.value.label, Some(genString()))
+          val project = Project(genString(), org.value.label, Some(genString()), mappings, base)
           ResourceF(
             url"http://nexus.example.com/v1/projects/${project.organization}/${project.label}".value,
             UUID.randomUUID(),

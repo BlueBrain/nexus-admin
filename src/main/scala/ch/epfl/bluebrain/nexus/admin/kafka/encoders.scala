@@ -10,7 +10,6 @@ import ch.epfl.bluebrain.nexus.rdf.syntax.circe.context._
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto._
 import io.circe.{Encoder, Json}
-import io.circe.java8.time._
 import io.circe.syntax._
 
 object encoders {
