@@ -27,7 +27,8 @@ object OrganizationState {
     *
     * @param id           the permanent identifier of the organization
     * @param rev          the organization revision
-    * @param organization the organization representation
+    * @param label        the organization label
+    * @param description  the organization description
     * @param deprecated   the deprecation status of the organization
     * @param createdAt    the instant when the organization was created
     * @param createdBy    the identity that created the organization
@@ -36,7 +37,8 @@ object OrganizationState {
     */
   final case class Current(id: UUID,
                            rev: Long,
-                           organization: Organization,
+                           label: String,
+                           description: String,
                            deprecated: Boolean,
                            createdAt: Instant,
                            createdBy: Subject,
@@ -51,7 +53,7 @@ object OrganizationState {
       * @return [[Organization]] wrapped in [[ResourceF]]
       */
     def toResource(implicit http: HttpConfig): OrganizationResource =
-      ResourceF(http.orgsBaseIri + organization.label,
+      ResourceF(http.orgsBaseIri + label,
                 id,
                 rev,
                 deprecated,
@@ -60,7 +62,7 @@ object OrganizationState {
                 createdBy,
                 updatedAt,
                 updatedBy,
-                organization)
+                Organization(label, description))
 
     /**
       * Convert the state into [[ResourceMetadata]]
@@ -69,7 +71,7 @@ object OrganizationState {
       * @return [[ResourceMetadata]] for the [[Organization]]
       */
     def toResourceMetadata(implicit http: HttpConfig): ResourceMetadata =
-      ResourceF.unit(http.orgsBaseIri + organization.label,
+      ResourceF.unit(http.orgsBaseIri + label,
                      id,
                      rev,
                      deprecated,

@@ -31,11 +31,12 @@ object OrganizationCommand {
   /**
     * An intent to create an organization.
     * @param id           ID of the organization
-    * @param organization representation of the organization
+    * @param label        the organization label
+    * @param description  the organization description
     * @param instant      the instant when this command was created
     * @param subject      the subject which created this command.
     */
-  final case class CreateOrganization(id: UUID, organization: Organization, instant: Instant, subject: Subject)
+  final case class CreateOrganization(id: UUID, label: String, description: String, instant: Instant, subject: Subject)
       extends OrganizationCommand
 
   /**
@@ -43,13 +44,15 @@ object OrganizationCommand {
     *
     * @param id           ID of the organization
     * @param rev          the revision to update
-    * @param organization representation of the organization
+    * @param label        the organization label
+    * @param description  the organization description
     * @param instant      the instant when this command was created
     * @param subject      the subject which created this command.
     */
   final case class UpdateOrganization(id: UUID,
                                       rev: Long,
-                                      organization: Organization,
+                                      label: String,
+                                      description: String,
                                       instant: Instant,
                                       subject: Subject)
       extends OrganizationCommand

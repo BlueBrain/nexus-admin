@@ -40,7 +40,8 @@ class Organizations[F[_]](agg: Agg[F], index: OrganizationCache[F])(implicit F: 
     index.getBy(organization.label).flatMap {
       case Some(_) => F.pure(Left(OrganizationExists))
       case None =>
-        val cmd = CreateOrganization(UUID.randomUUID(), organization, clock.instant(), caller)
+        val cmd =
+          CreateOrganization(UUID.randomUUID, organization.label, organization.description, clock.instant, caller)
         evalAndUpdateIndex(cmd, organization)
     }
 
@@ -57,7 +58,9 @@ class Organizations[F[_]](agg: Agg[F], index: OrganizationCache[F])(implicit F: 
       implicit caller: Subject): F[OrganizationMetaOrRejection] =
     index.getBy(label).flatMap {
       case Some(org) =>
-        evalAndUpdateIndex(UpdateOrganization(org.uuid, rev, organization, clock.instant(), caller), organization)
+        evalAndUpdateIndex(
+          UpdateOrganization(org.uuid, rev, organization.label, organization.description, clock.instant, caller),
+          organization)
       case None => F.pure(Left(OrganizationNotFound))
     }
 
@@ -163,11 +166,11 @@ object Organizations {
 
   private[organizations] def next(state: OrganizationState, ev: OrganizationEvent): OrganizationState =
     (state, ev) match {
-      case (Initial, OrganizationCreated(uuid, org, instant, identity)) =>
-        Current(uuid, 1L, org, deprecated = false, instant, identity, instant, identity)
+      case (Initial, OrganizationCreated(uuid, label, desc, instant, identity)) =>
+        Current(uuid, 1L, label, desc, deprecated = false, instant, identity, instant, identity)
 
-      case (c: Current, OrganizationUpdated(_, rev, org, instant, subject)) =>
-        c.copy(rev = rev, organization = org, updatedAt = instant, updatedBy = subject)
+      case (c: Current, OrganizationUpdated(_, rev, label, desc, instant, subject)) =>
+        c.copy(rev = rev, label = label, description = desc, updatedAt = instant, updatedBy = subject)
 
       case (c: Current, OrganizationDeprecated(_, rev, instant, subject)) =>
         c.copy(rev = rev, deprecated = true, updatedAt = instant, updatedBy = subject)
@@ -179,14 +182,14 @@ object Organizations {
       implicit F: Async[F]): F[EventOrRejection] = {
 
     def create(c: CreateOrganization): EventOrRejection = state match {
-      case Initial => Right(OrganizationCreated(c.id, c.organization, c.instant, c.subject))
+      case Initial => Right(OrganizationCreated(c.id, c.label, c.description, c.instant, c.subject))
       case _       => Left(OrganizationExists)
     }
 
     def update(c: UpdateOrganization): EventOrRejection = state match {
       case Initial => Left(OrganizationNotFound)
       case s: Current if c.rev == s.rev =>
-        Right(OrganizationUpdated(c.id, c.rev + 1, c.organization, c.instant, c.subject))
+        Right(OrganizationUpdated(c.id, c.rev + 1, c.label, c.description, c.instant, c.subject))
       case s: Current => Left(IncorrectRev(s.rev, c.rev))
     }
 
