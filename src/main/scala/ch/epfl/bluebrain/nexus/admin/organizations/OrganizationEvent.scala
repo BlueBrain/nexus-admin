@@ -37,11 +37,12 @@ object OrganizationEvent {
     * Event representing organization creation.
     *
     * @param id           the permanent identifier of the organization
-    * @param organization the representation of the organization
+    * @param label        the organization label
+    * @param description  the organization description
     * @param instant      the instant when this event was created
     * @param subject      the subject which created this event
     */
-  final case class OrganizationCreated(id: UUID, organization: Organization, instant: Instant, subject: Subject)
+  final case class OrganizationCreated(id: UUID, label: String, description: String, instant: Instant, subject: Subject)
       extends OrganizationEvent {
 
     /**
@@ -55,13 +56,15 @@ object OrganizationEvent {
     *
     * @param id           the permanent identifier of the organization
     * @param rev          the update revision
-    * @param organization the representation of the organization
+    * @param label        the organization label
+    * @param description  the organization description
     * @param instant      the instant when this event was created
     * @param subject      the subject which created this event
     */
   final case class OrganizationUpdated(id: UUID,
                                        rev: Long,
-                                       organization: Organization,
+                                       label: String,
+                                       description: String,
                                        instant: Instant,
                                        subject: Subject)
       extends OrganizationEvent

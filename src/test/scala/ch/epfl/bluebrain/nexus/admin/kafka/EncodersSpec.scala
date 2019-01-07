@@ -4,8 +4,8 @@ import java.time.Instant
 import java.util.UUID
 
 import ch.epfl.bluebrain.nexus.admin.kafka.encoders._
+import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationEvent
 import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationEvent._
-import ch.epfl.bluebrain.nexus.admin.organizations.{Organization, OrganizationEvent}
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectEvent
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectEvent._
 import ch.epfl.bluebrain.nexus.commons.test.Resources
@@ -49,16 +49,12 @@ class EncodersSpec extends WordSpecLike with Matchers with Resources {
 
     "encode organization created event" in {
       val event: OrganizationEvent =
-        OrganizationCreated(orgUuid, Organization("organization label", "organization description"), instant, subject)
+        OrganizationCreated(orgUuid, "organization label", "organization description", instant, subject)
       event.asJson shouldEqual jsonContentOf("/kafka/organization-created.json")
     }
     "encode organization updated event" in {
       val event: OrganizationEvent =
-        OrganizationUpdated(orgUuid,
-                            2L,
-                            Organization("organization label", "organization description"),
-                            instant,
-                            subject)
+        OrganizationUpdated(orgUuid, 2L, "organization label", "organization description", instant, subject)
       event.asJson shouldEqual jsonContentOf("/kafka/organization-updated.json")
     }
     "encode organization deprecated event" in {

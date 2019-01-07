@@ -52,7 +52,13 @@ class OrganizationsIndexerSpec
       index.replace(organization.uuid, organization) shouldReturn IO.pure(())
 
       orgIndexer
-        .index(List(OrganizationCreated(organization.uuid, organization.value, instant, caller)))
+        .index(
+          List(
+            OrganizationCreated(organization.uuid,
+                                organization.value.label,
+                                organization.value.description,
+                                instant,
+                                caller)))
         .unsafeRunSync()
 
       index.replace(organization.uuid, organization) wasCalled once

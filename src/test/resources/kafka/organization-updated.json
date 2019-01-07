@@ -2,10 +2,8 @@
   "@context": "https://bluebrain.github.io/nexus/contexts/admin.json",
   "@type": "OrganizationUpdated",
   "uuid": "4cd2c88b-ed73-4fd7-8afb-315032239a56",
-  "organization": {
-    "label": "organization label",
-    "description": "organization description"
-  },
+  "label": "organization label",
+  "description": "organization description",
   "rev": 2,
   "instant": "2018-12-04T11:31:30Z",
   "subject": "http://iam.nexus.example.com/v1/realms/example-realm/users/example-user"
