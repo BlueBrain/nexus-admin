@@ -15,5 +15,6 @@
 
     <logger name="akka" level="WARN" />
     <logger name="ch.epfl.bluebrain.nexus.admin.client.AdminClient" level="OFF" />
+    <logger name="akka.util.ManifestInfo" level="ERROR"/>
 
 </configuration>

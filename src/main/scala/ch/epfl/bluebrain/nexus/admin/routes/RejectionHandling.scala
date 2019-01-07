@@ -4,7 +4,8 @@ import akka.http.javadsl.server.AuthorizationFailedRejection
 import akka.http.scaladsl.model.StatusCodes._
 import akka.http.scaladsl.server.Directives.complete
 import akka.http.scaladsl.server._
-import ch.epfl.bluebrain.nexus.admin.CommonRejection.IllegalParameter
+import ch.epfl.bluebrain.nexus.admin.CommonRejection
+import ch.epfl.bluebrain.nexus.admin.CommonRejection.{IllegalParameter, InvalidResourceIri}
 import ch.epfl.bluebrain.nexus.admin.directives.AuthDirectives.CustomAuthRejection
 import ch.epfl.bluebrain.nexus.admin.marshallers.instances._
 import ch.epfl.bluebrain.nexus.commons.types.HttpRejection
@@ -42,6 +43,16 @@ object RejectionHandling {
         val names = methodRejections.map(_.supported.name)
         complete(MethodNotAllowed -> MethodNotSupported(names))
       }
+      .result()
+
+  /**
+    * Provides a Json representation for the handling of empty rejections.
+    * This happens in the case of "Resource Not Found".
+    */
+  val notFound: RejectionHandler =
+    RejectionHandler
+      .newBuilder()
+      .handleNotFound(complete(NotFound -> (InvalidResourceIri: CommonRejection)))
       .result()
 
 }
