@@ -31,17 +31,17 @@ class EventSerializerSpec
 
   private val data: Map[AnyRef, (String, Json)] = Map(
     (OrganizationCreated(orgId, "myorg", "My organization", instant, subject),
-     ("organization-event", jsonContentOf("/events/org-created.json"))),
+     ("OrganizationEvent", jsonContentOf("/events/org-created.json"))),
     (OrganizationUpdated(orgId, 42L, "myorg", "My organization", instant, subject),
-     ("organization-event", jsonContentOf("/events/org-updated.json"))),
+     ("OrganizationEvent", jsonContentOf("/events/org-updated.json"))),
     (OrganizationDeprecated(orgId, 42L, instant, subject),
-     ("organization-event", jsonContentOf("/events/org-deprecated.json"))),
+     ("OrganizationEvent", jsonContentOf("/events/org-deprecated.json"))),
     (ProjectCreated(projId, orgId, "myproj", None, mappings, base, instant, subject),
-     ("project-event", jsonContentOf("/events/project-created.json"))),
+     ("ProjectEvent", jsonContentOf("/events/project-created.json"))),
     (ProjectUpdated(projId, "myproj", Some("My project"), mappings, base, 42L, instant, subject),
-     ("project-event", jsonContentOf("/events/project-updated.json"))),
+     ("ProjectEvent", jsonContentOf("/events/project-updated.json"))),
     (ProjectDeprecated(projId, 42L, instant, subject),
-     ("project-event", jsonContentOf("/events/project-deprecated.json")))
+     ("ProjectEvent", jsonContentOf("/events/project-deprecated.json")))
   )
 
   "An EventSerializer" should {
