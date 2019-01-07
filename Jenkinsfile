@@ -73,7 +73,7 @@ pipeline {
             steps {
                 unstash name: "service"
                 sh "mv target/universal/admin-*.tgz ./admin.tgz"
-                sh "oc start-build admin-build --from-file=admin-service.tgz --wait"
+                sh "oc start-build admin-build --from-file=admin.tgz --wait"
             }
         }
         stage("Redeploy & Test") {
