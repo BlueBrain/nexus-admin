@@ -56,6 +56,26 @@ pipeline {
                 }
             }
         }
+        stage("Build & Publish Artifacts") {
+            when {
+                expression { !isPR }
+            }
+            steps {
+                checkout scm
+                sh 'sbt releaseEarly universal:packageZipTarball'
+                stash name: "service", includes: "target/universal/admin-*.tgz"
+            }
+        }
+        stage("Build Image") {
+            when {
+                expression { !isPR }
+            }
+            steps {
+                unstash name: "service"
+                sh "mv target/universal/admin-*.tgz ./admin.tgz"
+                sh "oc start-build admin-build --from-file=admin-service.tgz --wait"
+            }
+        }
         stage("Build Snapshot & Deploy") {
             when {
                 expression { !isPR && !isRelease }
@@ -75,19 +95,37 @@ pipeline {
                 build job: 'nexus/nexus-tests/master', parameters: [booleanParam(name: 'run', value: true)], wait: true
             }
         }
-        stage("Build & Publish Release") {
+        stage("Redeploy & Test") {
+            when {
+                expression { !isPR && !isRelease }
+            }
+            steps {
+                sh "oc scale statefulset admin --replicas=0 --namespace=bbp-nexus-dev"
+                sleep 10
+                wait(ENDPOINT, false)
+                sh "oc scale statefulset admin --replicas=1 --namespace=bbp-nexus-dev"
+                sleep 120 // service readiness delay is set to 2 minutes
+                openshiftVerifyService namespace: 'bbp-nexus-dev', svcName: 'admin', verbose: 'false'
+                wait(ENDPOINT, true)
+                build job: 'nexus/nexus-tests/master', parameters: [booleanParam(name: 'run', value: true)], wait: true
+            }
+        }
+        stage("Tag Images") {
             when {
                 expression { isRelease }
             }
             steps {
-                checkout scm
-                sh 'sbt releaseEarly universal:packageZipTarball'
-                sh "mv modules/service/target/universal/admin-service-*.tgz ./admin-service.tgz"
-                echo "Pushing to internal image registry..."
-                sh "oc start-build admin-build --from-file=admin-service.tgz --wait"
                 openshiftTag srcStream: 'admin', srcTag: 'latest', destStream: 'admin', destTag: version.substring(1), verbose: 'false'
-                echo "Pushing to Docker Hub..."
-                sh "oc start-build nexus-admin-build --from-file=admin-service.tgz --wait"
+            }
+        }
+        stage("Push to Docker Hub") {
+            when {
+                expression { isRelease }
+            }
+            steps {
+                unstash name: "service"
+                sh "mv target/universal/admin-*.tgz ./admin.tgz"
+                sh "oc start-build nexus-admin-build --from-file=admin.tgz --wait"
             }
         }
         stage("Report Coverage") {
