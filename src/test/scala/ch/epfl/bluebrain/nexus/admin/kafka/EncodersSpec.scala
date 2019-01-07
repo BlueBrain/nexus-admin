@@ -17,7 +17,7 @@ import org.scalatest.{Matchers, WordSpecLike}
 
 class EncodersSpec extends WordSpecLike with Matchers with Resources {
 
-  implicit val iamConfig = IamClientConfig("v1", url"http://iam.nexus.example.com/".value)
+  implicit val iamConfig = IamClientConfig(url"http://iam.nexus.example.com/v1".value)
 
   val instant     = Instant.parse("2018-12-04T11:31:30.00Z")
   val subject     = User("example-user", "example-realm")

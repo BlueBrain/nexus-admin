@@ -67,6 +67,7 @@ lazy val akkaHttpTestKit      = "com.typesafe.akka"       %% "akka-http-testkit"
 lazy val akkaPersistenceCass  = "com.typesafe.akka"       %% "akka-persistence-cassandra"  % akkaPersistenceCassVersion
 lazy val akkaSlf4j            = "com.typesafe.akka"       %% "akka-slf4j"                  % akkaVersion
 lazy val akkaStream           = "com.typesafe.akka"       %% "akka-stream"                 % akkaVersion
+lazy val akkaTestkit          = "com.typesafe.akka"       %% "akka-testkit"                % akkaVersion
 lazy val catsCore             = "org.typelevel"           %% "cats-core"                   % catsVersion
 lazy val circeCore            = "io.circe"                %% "circe-core"                  % circeVersion
 lazy val journalCore          = "io.verizon.journal"      %% "core"                        % journalVersion
@@ -109,6 +110,7 @@ lazy val admin = project
       serviceKamon,
       serviceSerialization,
       sourcingAkka,
+      akkaTestkit     % Test,
       akkaHttpTestKit % Test,
       commonsTest     % Test,
       mockito         % Test,
@@ -133,6 +135,7 @@ lazy val client = project
       rdfAkka,
       rdfCirce,
       serviceHttp,
+      akkaTestkit     % Test,
       akkaHttpTestKit % Test,
       commonsTest     % Test,
       mockito         % Test

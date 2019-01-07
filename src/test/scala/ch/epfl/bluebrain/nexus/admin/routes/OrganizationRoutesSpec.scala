@@ -46,7 +46,7 @@ class OrganizationRoutesSpec
   private val iamClient     = mock[IamClient[Task]]
   private val organizations = mock[Organizations[Task]]
 
-  private implicit val iamClientConfig: IamClientConfig = IamClientConfig("v1", url"https://nexus.example.com".value)
+  private implicit val iamClientConfig: IamClientConfig = IamClientConfig(url"https://nexus.example.com/v1".value)
 
   private val routes =
     handleRejections(RejectionHandling.notFound) {
