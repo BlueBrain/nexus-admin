@@ -5,6 +5,7 @@ import java.util.regex.Pattern.quote
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.{BasicHttpCredentials, OAuth2BearerToken}
+import akka.http.scaladsl.server.Directives.handleRejections
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import ch.epfl.bluebrain.nexus.admin.CommonRejection._
 import ch.epfl.bluebrain.nexus.admin.Error
@@ -45,10 +46,12 @@ class OrganizationRoutesSpec
   private val iamClient     = mock[IamClient[Task]]
   private val organizations = mock[Organizations[Task]]
 
-  private implicit val iamClientConfig: IamClientConfig = IamClientConfig("v1", url"https://nexus.example.com".value)
+  private implicit val iamClientConfig: IamClientConfig = IamClientConfig(url"https://nexus.example.com/v1".value)
 
   private val routes =
-    OrganizationRoutes(organizations)(iamClient, iamClientConfig, PaginationConfig(50, 100), global).routes
+    handleRejections(RejectionHandling.notFound) {
+      OrganizationRoutes(organizations)(iamClient, iamClientConfig, PaginationConfig(50, 100), global).routes
+    }
 
   //noinspection TypeAnnotation
   trait Context {
@@ -187,6 +190,13 @@ class OrganizationRoutesSpec
       Get("/orgs/org") ~> routes ~> check {
         status shouldEqual StatusCodes.Unauthorized
         responseAs[Error].code shouldEqual classNameOf[UnauthorizedAccess.type]
+      }
+    }
+
+    "reject wrong endpoint" in new Context {
+      Get("/other") ~> routes ~> check {
+        status shouldEqual StatusCodes.NotFound
+        responseAs[Error].code shouldEqual classNameOf[InvalidResourceIri.type]
       }
     }
 

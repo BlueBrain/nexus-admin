@@ -27,18 +27,18 @@ scalafmt: {
 // Dependency versions
 val rdfVersion                 = "0.2.29"
 val commonsVersion             = "0.10.41"
-val iamVersion                 = "0.11.2"
+val iamVersion                 = "0.11.4"
 val serviceVersion             = "0.10.23"
 val sourcingVersion            = "0.12.2"
 val akkaVersion                = "2.5.19"
 val akkaCorsVersion            = "0.3.3"
-val akkaHttpVersion            = "10.1.5"
-val akkaPersistenceCassVersion = "0.91"
+val akkaHttpVersion            = "10.1.7"
+val akkaPersistenceCassVersion = "0.92"
 val catsVersion                = "1.5.0"
 val circeVersion               = "0.11.0"
 val journalVersion             = "3.0.19"
 val logbackVersion             = "1.2.3"
-val mockitoVersion             = "1.0.6"
+val mockitoVersion             = "1.0.8"
 val pureconfigVersion          = "0.10.1"
 val scalaTestVersion           = "3.0.5"
 val kryoVersion                = "0.5.2"
@@ -67,6 +67,7 @@ lazy val akkaHttpTestKit      = "com.typesafe.akka"       %% "akka-http-testkit"
 lazy val akkaPersistenceCass  = "com.typesafe.akka"       %% "akka-persistence-cassandra"  % akkaPersistenceCassVersion
 lazy val akkaSlf4j            = "com.typesafe.akka"       %% "akka-slf4j"                  % akkaVersion
 lazy val akkaStream           = "com.typesafe.akka"       %% "akka-stream"                 % akkaVersion
+lazy val akkaTestkit          = "com.typesafe.akka"       %% "akka-testkit"                % akkaVersion
 lazy val catsCore             = "org.typelevel"           %% "cats-core"                   % catsVersion
 lazy val circeCore            = "io.circe"                %% "circe-core"                  % circeVersion
 lazy val journalCore          = "io.verizon.journal"      %% "core"                        % journalVersion
@@ -109,6 +110,7 @@ lazy val admin = project
       serviceKamon,
       serviceSerialization,
       sourcingAkka,
+      akkaTestkit     % Test,
       akkaHttpTestKit % Test,
       commonsTest     % Test,
       mockito         % Test,
@@ -133,6 +135,7 @@ lazy val client = project
       rdfAkka,
       rdfCirce,
       serviceHttp,
+      akkaTestkit     % Test,
       akkaHttpTestKit % Test,
       commonsTest     % Test,
       mockito         % Test

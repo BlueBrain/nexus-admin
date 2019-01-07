@@ -48,7 +48,7 @@ class ProjectRoutesSpec
   private val iamClient = mock[IamClient[Task]]
   private val projects  = mock[Projects[Task]]
 
-  private implicit val iamClientConfig: IamClientConfig = IamClientConfig("v1", url"https://nexus.example.com".value)
+  private implicit val iamClientConfig: IamClientConfig = IamClientConfig(url"https://nexus.example.com/v1".value)
 
   private val routes = ProjectRoutes(projects)(iamClient, iamClientConfig, PaginationConfig(50, 100), global).routes
 

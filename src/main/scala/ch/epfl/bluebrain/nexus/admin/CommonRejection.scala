@@ -31,4 +31,12 @@ object CommonRejection {
   @SuppressWarnings(Array("IncorrectlyNamedExceptions"))
   final case class DownstreamServiceError(override val message: String) extends Err(message) with CommonRejection
 
+  /**
+    * Signals that the provided client URI does not match any service endpoint
+    */
+  @SuppressWarnings(Array("IncorrectlyNamedExceptions"))
+  final case object InvalidResourceIri
+      extends Err("Provided IRI does not match any service endpoint")
+      with CommonRejection
+
 }

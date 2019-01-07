@@ -97,7 +97,7 @@ object Main {
       .withAllowedMethods(List(GET, PUT, POST, DELETE, OPTIONS, HEAD))
       .withExposedHeaders(List(Location.name))
     val routes: Route =
-      handleRejections(corsRejectionHandler)(
+      handleRejections(corsRejectionHandler.withFallback(RejectionHandling.notFound))(
         cors(corsSettings)(serviceDescription ~ orgRoutes.routes ~ projectRoutes.routes))
 
     cluster.registerOnMemberUp {
