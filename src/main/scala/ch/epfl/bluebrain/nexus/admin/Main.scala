@@ -98,7 +98,10 @@ object Main {
       .withExposedHeaders(List(Location.name))
     val routes: Route =
       handleRejections(corsRejectionHandler.withFallback(RejectionHandling.notFound))(
-        cors(corsSettings)(serviceDescription ~ orgRoutes.routes ~ projectRoutes.routes))
+        cors(corsSettings)(
+          serviceDescription ~ pathPrefix(separateOnSlashes(appConfig.http.apiUri.path.tail.toString)) {
+            orgRoutes.routes ~ projectRoutes.routes
+          }))
 
     cluster.registerOnMemberUp {
       logger.info("==== Cluster is Live ====")
