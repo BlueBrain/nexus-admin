@@ -59,9 +59,10 @@ class OrganizationRoutesSpec
     implicit val subject: Identity.Subject = caller.subject
     implicit val token: Some[AuthToken]    = Some(AuthToken("token"))
 
-    val read  = Permission.unsafe("organizations/read")
-    val write = Permission.unsafe("organizations/write")
-    val cred  = OAuth2BearerToken("token")
+    val create = Permission.unsafe("organizations/create")
+    val read   = Permission.unsafe("organizations/read")
+    val write  = Permission.unsafe("organizations/write")
+    val cred   = OAuth2BearerToken("token")
 
     val instant = Instant.now
     val types   = Set(nxv.Organization.value)
@@ -88,7 +89,7 @@ class OrganizationRoutesSpec
   "Organizations routes" should {
 
     "create an organization" in new Context {
-      iamClient.authorizeOn(path, write) shouldReturn Task.unit
+      iamClient.authorizeOn(path, create) shouldReturn Task.unit
       iamClient.identities shouldReturn Task(caller)
       organizations.create(organization) shouldReturn Task(Right(meta))
 
@@ -99,7 +100,7 @@ class OrganizationRoutesSpec
     }
 
     "reject the creation of an organization which already exists" in new Context {
-      iamClient.authorizeOn(path, write) shouldReturn Task.unit
+      iamClient.authorizeOn(path, create) shouldReturn Task.unit
       iamClient.identities shouldReturn Task(caller)
       organizations.create(organization) shouldReturn Task(Left(OrganizationExists))
 
@@ -110,7 +111,7 @@ class OrganizationRoutesSpec
     }
 
     "reject the creation of an organization without a label" in new Context {
-      iamClient.authorizeOn(Path./, write) shouldReturn Task.unit
+      iamClient.authorizeOn(Path./, create) shouldReturn Task.unit
       iamClient.identities shouldReturn Task(caller)
 
       Put("/orgs/", description) ~> addCredentials(cred) ~> routes ~> check {
@@ -152,7 +153,7 @@ class OrganizationRoutesSpec
     }
 
     "deprecate an organization" in new Context {
-      iamClient.authorizeOn(path, read) shouldReturn Task.unit
+      iamClient.authorizeOn(path, write) shouldReturn Task.unit
       iamClient.identities shouldReturn Task(caller)
       organizations.deprecate("org", 2L) shouldReturn Task(Right(meta))
 
@@ -163,7 +164,7 @@ class OrganizationRoutesSpec
     }
 
     "reject the deprecation of an organization without rev" in new Context {
-      iamClient.authorizeOn(path, read) shouldReturn Task.unit
+      iamClient.authorizeOn(path, write) shouldReturn Task.unit
       iamClient.identities shouldReturn Task(caller)
 
       Delete("/orgs/org") ~> addCredentials(cred) ~> routes ~> check {
@@ -173,7 +174,7 @@ class OrganizationRoutesSpec
     }
 
     "reject the deprecation of an organization with incorrect rev" in new Context {
-      iamClient.authorizeOn(path, read) shouldReturn Task.unit
+      iamClient.authorizeOn(path, write) shouldReturn Task.unit
       iamClient.identities shouldReturn Task(caller)
       organizations.deprecate("org", 2L) shouldReturn Task(Left(IncorrectRev(3L, 2L)))
 
