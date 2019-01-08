@@ -23,8 +23,9 @@ class ProjectRoutes(projects: Projects[Task])(implicit iamClient: IamClient[Task
     with QueryDirectives
     with CombinedRoutes {
 
-  private val read  = Permission.unsafe("projects/read")
-  private val write = Permission.unsafe("projects/write")
+  private val create = Permission.unsafe("projects/create")
+  private val read   = Permission.unsafe("projects/read")
+  private val write  = Permission.unsafe("projects/write")
 
   def routes: Route = combinedRoutesFor("projects")
 
@@ -78,7 +79,7 @@ class ProjectRoutes(projects: Projects[Task])(implicit iamClient: IamClient[Task
                 }
               }
             case None =>
-              (trace("createProject") & authorizeOn(path, write)) {
+              (trace("createProject") & authorizeOn(path, create)) {
                 extractProject(path) {
                   case (org, label) =>
                     onSuccess(

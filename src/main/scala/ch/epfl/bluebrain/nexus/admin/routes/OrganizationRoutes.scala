@@ -24,8 +24,9 @@ class OrganizationRoutes(organizations: Organizations[Task])(implicit iamClient:
     with QueryDirectives
     with CombinedRoutes {
 
-  private val read  = Permission.unsafe("organizations/read")
-  private val write = Permission.unsafe("organizations/write")
+  private val create = Permission.unsafe("organizations/create")
+  private val read   = Permission.unsafe("organizations/read")
+  private val write  = Permission.unsafe("organizations/write")
 
   def routes: Route = combinedRoutesFor("orgs")
 
@@ -60,7 +61,7 @@ class OrganizationRoutes(organizations: Organizations[Task])(implicit iamClient:
                 }
               }
             case None =>
-              (trace("createOrganization") & authorizeOn(path, write)) {
+              (trace("createOrganization") & authorizeOn(path, create)) {
                 extractOrg(path) { label =>
                   onSuccess(organizations.create(Organization(label, org.description)).runToFuture) {
                     case Right(meta)     => complete(StatusCodes.Created -> meta)

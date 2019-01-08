@@ -58,9 +58,10 @@ class ProjectRoutesSpec
     implicit val subject: Identity.Subject = caller.subject
     implicit val token: Some[AuthToken]    = Some(AuthToken("token"))
 
-    val read  = Permission.unsafe("projects/read")
-    val write = Permission.unsafe("projects/write")
-    val cred  = OAuth2BearerToken("token")
+    val create = Permission.unsafe("projects/create")
+    val read   = Permission.unsafe("projects/read")
+    val write  = Permission.unsafe("projects/write")
+    val cred   = OAuth2BearerToken("token")
 
     val instant = Instant.now
     val types   = Set(nxv.Project.value)
@@ -108,7 +109,7 @@ class ProjectRoutesSpec
   "Project routes" should {
 
     "create a project" in new Context {
-      iamClient.authorizeOn("org" / "label", write) shouldReturn Task.unit
+      iamClient.authorizeOn("org" / "label", create) shouldReturn Task.unit
       iamClient.identities shouldReturn Task(caller)
       projects.create(project) shouldReturn Task(Right(meta))
 
@@ -119,7 +120,7 @@ class ProjectRoutesSpec
     }
 
     "create a project without a description" in new Context {
-      iamClient.authorizeOn("org" / "label", write) shouldReturn Task.unit
+      iamClient.authorizeOn("org" / "label", create) shouldReturn Task.unit
       iamClient.identities shouldReturn Task(caller)
       projects.create(Project("label", "org", None, Map.empty, base)) shouldReturn Task(Right(meta))
 
@@ -130,7 +131,7 @@ class ProjectRoutesSpec
     }
 
     "reject the creation of a project without a label" in new Context {
-      iamClient.authorizeOn(Path("/org").right.value, write) shouldReturn Task.unit
+      iamClient.authorizeOn(Path("/org").right.value, create) shouldReturn Task.unit
       iamClient.identities shouldReturn Task(caller)
 
       Put("/projects/org", payload) ~> addCredentials(cred) ~> routes ~> check {
@@ -140,7 +141,7 @@ class ProjectRoutesSpec
     }
 
     "reject the creation of a project which already exists" in new Context {
-      iamClient.authorizeOn("org" / "label", write) shouldReturn Task.unit
+      iamClient.authorizeOn("org" / "label", create) shouldReturn Task.unit
       iamClient.identities shouldReturn Task(caller)
       projects.create(project) shouldReturn Task(Left(ProjectExists))
 
