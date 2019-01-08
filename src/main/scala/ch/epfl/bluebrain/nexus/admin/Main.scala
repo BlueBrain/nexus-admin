@@ -19,6 +19,7 @@ import ch.epfl.bluebrain.nexus.admin.persistence.TaggingAdapter
 import ch.epfl.bluebrain.nexus.admin.projects.{ProjectEvent, Projects}
 import ch.epfl.bluebrain.nexus.admin.routes._
 import ch.epfl.bluebrain.nexus.iam.client.IamClient
+import ch.epfl.bluebrain.nexus.service.http.directives.PrefixDirectives.uriPrefix
 import ch.epfl.bluebrain.nexus.service.kafka.KafkaPublisher
 import ch.megard.akka.http.cors.scaladsl.CorsDirectives.{cors, corsRejectionHandler}
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
@@ -98,7 +99,9 @@ object Main {
       .withExposedHeaders(List(Location.name))
     val routes: Route =
       handleRejections(corsRejectionHandler.withFallback(RejectionHandling.notFound))(
-        cors(corsSettings)(serviceDescription ~ orgRoutes.routes ~ projectRoutes.routes))
+        cors(corsSettings)(serviceDescription ~ uriPrefix(appConfig.http.apiUri) {
+          orgRoutes.routes ~ projectRoutes.routes
+        }))
 
     cluster.registerOnMemberUp {
       logger.info("==== Cluster is Live ====")
