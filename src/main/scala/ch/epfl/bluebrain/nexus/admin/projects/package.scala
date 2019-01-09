@@ -12,6 +12,7 @@ package object projects {
 
   type ProjectResource            = ResourceF[Project]
   type EventOrRejection           = Either[ProjectRejection, ProjectEvent]
+  type StateOrRejection           = Either[ProjectRejection, ProjectState.Current]
   type ProjectResourceOrRejection = Either[ProjectRejection, ProjectResource]
   type ProjectMetaOrRejection     = Either[ProjectRejection, ResourceF[Unit]]
 

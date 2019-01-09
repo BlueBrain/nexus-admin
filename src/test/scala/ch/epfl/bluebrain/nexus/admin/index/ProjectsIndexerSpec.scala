@@ -44,7 +44,7 @@ class ProjectsIndexerSpec
       caller,
       Organization("org", "Org description")
     )
-    val proj = Project("proj", "org", Some("Project description"), mappings, base, Some(voc))
+    val proj = Project("proj", orgId, "org", Some("Project description"), mappings, base, Some(voc))
     val project = ResourceF(url"http://nexus.example.com/v1/projects/org/proj".value,
                             projId,
                             1L,
@@ -76,8 +76,9 @@ class ProjectsIndexerSpec
         .index(
           List(
             ProjectCreated(project.uuid,
-                           organization.uuid,
                            proj.label,
+                           organization.uuid,
+                           organization.value.label,
                            proj.description,
                            proj.apiMappings,
                            proj.base,

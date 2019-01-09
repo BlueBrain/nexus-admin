@@ -1,8 +1,9 @@
 {
   "@type": "ProjectCreated",
   "id": "27f5429c-b56f-4f8e-8481-f4334ebb334c",
-  "organization": "d8cf3015-1bce-4dda-ba80-80cd4b5281e5",
   "label": "myproj",
+  "organizationUuid": "d8cf3015-1bce-4dda-ba80-80cd4b5281e5",
+  "organizationLabel": "myorg",
   "base": "http://localhost:8080/base",
   "apiMappings": {
     "nxv": "https://bluebrain.github.io/nexus/vocabulary/",

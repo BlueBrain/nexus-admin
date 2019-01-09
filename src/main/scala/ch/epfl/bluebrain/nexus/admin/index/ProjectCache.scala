@@ -23,7 +23,7 @@ class ProjectCache[F[_]](store: KeyValueStore[F, UUID, ProjectResource])(implici
     extends Cache[F, Project](store) {
 
   override implicit val ordering: Ordering[ProjectResource] = Ordering.by { proj: ProjectResource =>
-    s"${proj.value.organization}/${proj.value.label}"
+    s"${proj.value.organizationLabel}/${proj.value.label}"
   }
 
   /**
@@ -35,7 +35,7 @@ class ProjectCache[F[_]](store: KeyValueStore[F, UUID, ProjectResource])(implici
     */
   def list(orgLabel: String, pagination: Pagination): F[UnscoredQueryResults[ProjectResource]] =
     store.values.map { values =>
-      val filtered = values.filter(_.value.organization == orgLabel)
+      val filtered = values.filter(_.value.organizationLabel == orgLabel)
       val count    = filtered.size.toLong
       val result   = filtered.toList.sorted.slice(pagination.from.toInt, (pagination.from + pagination.size).toInt)
       UnscoredQueryResults(count, result.map(UnscoredQueryResult(_)))
@@ -48,7 +48,7 @@ class ProjectCache[F[_]](store: KeyValueStore[F, UUID, ProjectResource])(implici
     * @param proj the project label
     */
   def getBy(org: String, proj: String): F[Option[ProjectResource]] =
-    store.findValue(r => r.value.organization == org && r.value.label == proj)
+    store.findValue(r => r.value.organizationLabel == org && r.value.label == proj)
 }
 
 object ProjectCache {

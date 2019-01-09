@@ -8,7 +8,8 @@
   "_results": [
     {
       "_label": "label1",
-      "_organization": "org",
+      "_organizationLabel": "org",
+      "_organizationUuid" : "{orgUuid}",
       "description": "Project description",
       "base": "https://nexus.example.com/base",
       "vocabulary": "https://nexus.example.com/voc",
@@ -36,7 +37,8 @@
     },
     {
       "_label": "label2",
-      "_organization": "org",
+      "_organizationLabel": "org",
+      "_organizationUuid" : "{orgUuid}",
       "description": "Project description",
       "base": "https://nexus.example.com/base",
       "vocabulary": "https://nexus.example.com/voc",
@@ -64,7 +66,8 @@
     },
     {
       "_label": "label3",
-      "_organization": "org",
+      "_organizationLabel": "org",
+      "_organizationUuid" : "{orgUuid}",
       "description": "Project description",
       "base": "https://nexus.example.com/base",
       "vocabulary": "https://nexus.example.com/voc",

@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.admin.config.AppConfig.PaginationConfig
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig.tracing.trace
 import ch.epfl.bluebrain.nexus.admin.directives.{AuthDirectives, QueryDirectives}
 import ch.epfl.bluebrain.nexus.admin.marshallers.instances._
-import ch.epfl.bluebrain.nexus.admin.projects.{Project, ProjectDescription, Projects}
+import ch.epfl.bluebrain.nexus.admin.projects.{ProjectDescription, Projects}
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF._
 import ch.epfl.bluebrain.nexus.iam.client.IamClient
 import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
@@ -72,9 +72,10 @@ class ProjectRoutes(projects: Projects[Task])(implicit iamClient: IamClient[Task
               (trace("updateProject") & authorizeOn(path, write)) {
                 extractProject(path) {
                   case (org, label) =>
-                    complete(projects
-                      .update(Project(label, org, proj.description, proj.apiMappings, proj.base, proj.vocabulary), rev)
-                      .runToFuture)
+                    complete(
+                      projects
+                        .update(org, label, proj, rev)
+                        .runToFuture)
                 }
               }
             case None =>
@@ -83,7 +84,7 @@ class ProjectRoutes(projects: Projects[Task])(implicit iamClient: IamClient[Task
                   case (org, label) =>
                     onSuccess(
                       projects
-                        .create(Project(label, org, proj.description, proj.apiMappings, proj.base, proj.vocabulary))
+                        .create(org, label, proj)
                         .runToFuture) {
                       case Right(meta)     => complete(StatusCodes.Created -> meta)
                       case Left(rejection) => complete(rejection)

@@ -29,19 +29,21 @@ object ProjectCommand {
   /**
     * Command that signals the intent to create a new project.
     *
-    * @param id           the permanent identifier for the project
-    * @param organization the permanent identifier for the parent organization
-    * @param label        the label (segment) of the project
-    * @param description  an optional project description
-    * @param apiMappings  the API mappings
-    * @param base         the base IRI for generated resource IDs
-    * @param vocabulary   an optional vocabulary for resources with no context
-    * @param instant      the timestamp associated to this command
-    * @param subject      the identity associated to this command
+    * @param id                the permanent identifier for the project
+    * @param label             the label (segment) of the project
+    * @param organizationUuid  the permanent identifier for the parent organization
+    * @param organizationLabel the parent organization label
+    * @param description       an optional project description
+    * @param apiMappings       the API mappings
+    * @param base              the base IRI for generated resource IDs
+    * @param vocabulary        an optional vocabulary for resources with no context
+    * @param instant           the timestamp associated to this command
+    * @param subject           the identity associated to this command
     */
   final case class CreateProject(id: UUID,
-                                 organization: UUID,
                                  label: String,
+                                 organizationUuid: UUID,
+                                 organizationLabel: String,
                                  description: Option[String],
                                  apiMappings: Map[String, AbsoluteIri],
                                  base: AbsoluteIri,

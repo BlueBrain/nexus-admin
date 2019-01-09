@@ -40,8 +40,8 @@ class ProjectsIndexer[F[_]](projects: Projects[F],
   private def indexEvent(event: ProjectEvent): F[Unit] = event match {
     case pc: ProjectCreated =>
       for {
-        org     <- fetchOrgOrRaiseError(pc.organization)
-        _       <- indexOrg.replace(pc.organization, org)
+        org     <- fetchOrgOrRaiseError(pc.organizationUuid)
+        _       <- indexOrg.replace(pc.organizationUuid, org)
         project <- fetchProjectOrRaiseError(pc.id)
         _       <- index.replace(pc.id, project)
       } yield ()

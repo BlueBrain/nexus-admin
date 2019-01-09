@@ -105,7 +105,7 @@ class AdminClientSpec
       client.fetchOrganization(orgLabel).unsafeToFuture().failed.futureValue shouldEqual exception
     }
 
-    "fetch project" in {
+    "fetch project with optional fields" in {
       httpClient(Get(s"http://admin.nexus.example.com/v1/projects/testorg/testproject").addCredentials(token)) shouldReturn IO
         .pure(
           HttpResponse(StatusCodes.OK,
@@ -116,9 +116,39 @@ class AdminClientSpec
           url"http://admin.nexus.example.com/v1/projects/testorg/testproject".value,
           "testproject",
           "testorg",
+          UUID.fromString("504b6940-1b14-43a7-80e3-d08c52c3fc87"),
           Some("Test project"),
           url"https://nexus.example.com/base".value,
           Some(url"https://nexus.example.com/voc".value),
+          Map(
+            "nxv" -> url"https://bluebrain.github.io/nexus/vocabulary/".value,
+            "rdf" -> url"http://www.w3.org/1999/02/22-rdf-syntax-ns#".value
+          ),
+          UUID.fromString("db7cee63-3f93-4d4a-9cc2-ebdace7f3b4f"),
+          1L,
+          deprecated = false,
+          Instant.parse("2018-12-19T11:31:30.00Z"),
+          url"http://iam.nexus.example.com/v1/realms/example-realm/users/example-user".value,
+          Instant.parse("2018-12-20T11:31:30.00Z"),
+          url"http://iam.nexus.example.com/v1/realms/example-realm/users/example-user2".value
+        )
+    }
+
+    "fetch project without optional fields" in {
+      httpClient(Get(s"http://admin.nexus.example.com/v1/projects/testorg/testproject").addCredentials(token)) shouldReturn IO
+        .pure(
+          HttpResponse(StatusCodes.OK,
+                       entity = HttpEntity(ContentTypes.`application/json`, contentOf("/minimal-project.json"))))
+
+      client.fetchProject("testorg", "testproject").some shouldEqual
+        Project(
+          url"http://admin.nexus.example.com/v1/projects/testorg/testproject".value,
+          "testproject",
+          "testorg",
+          UUID.fromString("504b6940-1b14-43a7-80e3-d08c52c3fc87"),
+          None,
+          url"https://nexus.example.com/base".value,
+          None,
           Map(
             "nxv" -> url"https://bluebrain.github.io/nexus/vocabulary/".value,
             "rdf" -> url"http://www.w3.org/1999/02/22-rdf-syntax-ns#".value

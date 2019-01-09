@@ -32,7 +32,16 @@ class EncodersSpec extends WordSpecLike with Matchers with Resources {
 
     "encode project created event" in {
       val event: ProjectEvent =
-        ProjectCreated(projectUuid, orgUuid, "project label", None, mappings, base, None, instant, subject)
+        ProjectCreated(projectUuid,
+                       "project label",
+                       orgUuid,
+                       "organization label",
+                       None,
+                       mappings,
+                       base,
+                       None,
+                       instant,
+                       subject)
       event.asJson shouldEqual jsonContentOf("/kafka/project-created.json")
     }
 

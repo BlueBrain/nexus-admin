@@ -50,9 +50,10 @@ class ProjectCacheSpec
   )
   val mappings = Map("nxv" -> url"https://bluebrain.github.io/nexus/vocabulary/".value,
                      "rdf" -> url"http://www.w3.org/1999/02/22-rdf-syntax-ns#type".value)
-  val base    = url"http://nexus.example.com/base".value
-  val voc     = url"http://nexus.example.com/voc".value
-  val project = Project(genString(), organization.label, Some(genString()), mappings, base, Some(voc))
+  val base = url"http://nexus.example.com/base".value
+  val voc  = url"http://nexus.example.com/voc".value
+  val project =
+    Project(genString(), UUID.randomUUID(), organization.label, Some(genString()), mappings, base, Some(voc))
   val projectResource = ResourceF(url"http://nexus.example.com/v1/orgs/org".value,
                                   UUID.randomUUID(),
                                   1L,
@@ -82,7 +83,8 @@ class ProjectCacheSpec
       val projectsOrganization2 = Organization(orgLabel2, "description2")
 
       val projectResources = projectLabels.map { label =>
-        val project = Project(label, projectsOrganization.label, Some(genString()), mappings, base, Some(voc))
+        val project =
+          Project(label, UUID.randomUUID(), projectsOrganization.label, Some(genString()), mappings, base, Some(voc))
         projectResource.copy(
           id = url"http://nexus.example.com/v1/projects/${projectsOrganization.label}/${project.label}".value,
           uuid = UUID.randomUUID(),
@@ -90,7 +92,8 @@ class ProjectCacheSpec
       }
 
       val projectResources2 = projectLabels2.map { label =>
-        val project = Project(label, projectsOrganization2.label, Some(genString()), mappings, base, None)
+        val project =
+          Project(label, UUID.randomUUID(), projectsOrganization2.label, Some(genString()), mappings, base, None)
         projectResource.copy(
           id = url"http://nexus.example.com/v1/projects/${projectsOrganization.label}/${project.label}".value,
           uuid = UUID.randomUUID(),
@@ -101,25 +104,25 @@ class ProjectCacheSpec
 
       combined.foreach(project => index.replace(project.uuid, project).ioValue)
       forAll(combined) { project =>
-        index.getBy(project.value.organization, project.value.label).some shouldEqual project
+        index.getBy(project.value.organizationLabel, project.value.label).some shouldEqual project
         index.get(project.uuid).some shouldEqual project
       }
 
       val sortedCombined =
         (combined :+ projectResource)
-          .sortBy(project => s"${project.value.organization}/${project.value.label}")
+          .sortBy(project => s"${project.value.organizationLabel}/${project.value.label}")
           .toList
           .map(UnscoredQueryResult(_))
 
       val sortedProjects =
         projectResources
-          .sortBy(project => s"${project.value.organization}/${project.value.label}")
+          .sortBy(project => s"${project.value.organizationLabel}/${project.value.label}")
           .toList
           .map(UnscoredQueryResult(_))
 
       val sortedProjects2 =
         projectResources2
-          .sortBy(project => s"${project.value.organization}/${project.value.label}")
+          .sortBy(project => s"${project.value.organizationLabel}/${project.value.label}")
           .toList
           .map(UnscoredQueryResult(_))
 

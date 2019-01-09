@@ -19,8 +19,9 @@ object ProjectState {
     * State used for all resources that have been created and later possibly updated or deprecated.
     *
     * @param id           the permanent identifier for the project
-    * @param organization the permanent identifier of the parent organization
     * @param label        the label (segment) of the resource
+    * @param organizationUuid  the permanent identifier for the parent organization
+    * @param organizationLabel the parent organization label
     * @param description  an optional project description
     * @param apiMappings  the API mappings
     * @param base         the base IRI for generated resource IDs
@@ -31,8 +32,9 @@ object ProjectState {
     * @param deprecated   the deprecation status
     */
   final case class Current(id: UUID,
-                           organization: UUID,
                            label: String,
+                           organizationUuid: UUID,
+                           organizationLabel: String,
                            description: Option[String],
                            apiMappings: Map[String, AbsoluteIri],
                            base: AbsoluteIri,

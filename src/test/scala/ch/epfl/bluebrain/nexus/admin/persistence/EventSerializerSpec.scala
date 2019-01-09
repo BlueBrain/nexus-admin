@@ -37,7 +37,7 @@ class EventSerializerSpec
      ("OrganizationEvent", jsonContentOf("/events/org-updated.json"))),
     (OrganizationDeprecated(orgId, 42L, instant, subject),
      ("OrganizationEvent", jsonContentOf("/events/org-deprecated.json"))),
-    (ProjectCreated(projId, orgId, "myproj", None, mappings, base, None, instant, subject),
+    (ProjectCreated(projId, "myproj", orgId, "myorg", None, mappings, base, None, instant, subject),
      ("ProjectEvent", jsonContentOf("/events/project-created.json"))),
     (ProjectUpdated(projId, "myproj", Some("My project"), mappings, base, Some(voc), 42L, instant, subject),
      ("ProjectEvent", jsonContentOf("/events/project-updated.json"))),
