@@ -1,4 +1,6 @@
 package ch.epfl.bluebrain.nexus.admin
+
+import ch.epfl.bluebrain.nexus.admin.client.types.events.OrganizationEvent
 import ch.epfl.bluebrain.nexus.admin.types.{ResourceF, ResourceMetadata}
 import ch.epfl.bluebrain.nexus.sourcing.Aggregate
 

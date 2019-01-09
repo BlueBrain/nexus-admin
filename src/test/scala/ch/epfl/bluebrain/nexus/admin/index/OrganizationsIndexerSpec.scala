@@ -4,8 +4,8 @@ import java.time.Instant
 import java.util.UUID
 
 import cats.effect.IO
+import ch.epfl.bluebrain.nexus.admin.client.types.events.OrganizationEvent.OrganizationCreated
 import ch.epfl.bluebrain.nexus.admin.config.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationEvent.OrganizationCreated
 import ch.epfl.bluebrain.nexus.admin.organizations.{Organization, Organizations}
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF
 import ch.epfl.bluebrain.nexus.commons.test.io.{IOEitherValues, IOOptionValues}

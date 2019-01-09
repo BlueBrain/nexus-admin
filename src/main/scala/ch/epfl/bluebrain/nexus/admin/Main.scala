@@ -12,11 +12,12 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.kafka.ProducerSettings
 import akka.stream.ActorMaterializer
+import ch.epfl.bluebrain.nexus.admin.client.types.events.{OrganizationEvent, ProjectEvent}
 import ch.epfl.bluebrain.nexus.admin.config.{AppConfig, Settings}
 import ch.epfl.bluebrain.nexus.admin.index._
-import ch.epfl.bluebrain.nexus.admin.organizations.{OrganizationEvent, Organizations}
+import ch.epfl.bluebrain.nexus.admin.organizations.Organizations
 import ch.epfl.bluebrain.nexus.admin.persistence.TaggingAdapter
-import ch.epfl.bluebrain.nexus.admin.projects.{ProjectEvent, Projects}
+import ch.epfl.bluebrain.nexus.admin.projects.Projects
 import ch.epfl.bluebrain.nexus.admin.routes._
 import ch.epfl.bluebrain.nexus.iam.client.IamClient
 import ch.epfl.bluebrain.nexus.service.http.directives.PrefixDirectives.uriPrefix
@@ -137,7 +138,7 @@ object Main {
   }
 
   def startKafkaIndexers(appConfig: AppConfig)(implicit as: ActorSystem) = {
-    import ch.epfl.bluebrain.nexus.admin.kafka.encoders._
+    import ch.epfl.bluebrain.nexus.admin.client.types.events.encoders._
     import ch.epfl.bluebrain.nexus.admin.kafka.keys._
     implicit val iamClientConfig = appConfig.iam
     val producerSettings         = ProducerSettings(as, new StringSerializer, new StringSerializer)

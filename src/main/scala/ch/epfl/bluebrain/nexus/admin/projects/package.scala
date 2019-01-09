@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.admin
 
+import ch.epfl.bluebrain.nexus.admin.client.types.events.ProjectEvent
 import ch.epfl.bluebrain.nexus.admin.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri

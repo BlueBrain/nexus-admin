@@ -1,9 +1,8 @@
 package ch.epfl.bluebrain.nexus.admin.persistence
 
 import akka.persistence.journal.{Tagged, WriteEventAdapter}
-import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationEvent
+import ch.epfl.bluebrain.nexus.admin.client.types.events.{OrganizationEvent, ProjectEvent}
 import ch.epfl.bluebrain.nexus.admin.persistence.TaggingAdapter._
-import ch.epfl.bluebrain.nexus.admin.projects.ProjectEvent
 
 /**
   * A tagging event adapter that adds tags to discriminate between event hierarchies.

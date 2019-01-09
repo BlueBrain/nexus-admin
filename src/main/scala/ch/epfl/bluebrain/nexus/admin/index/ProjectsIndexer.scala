@@ -5,12 +5,13 @@ import java.util.UUID
 import akka.actor.{ActorRef, ActorSystem}
 import cats.MonadError
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.admin.client.types.events.ProjectEvent
+import ch.epfl.bluebrain.nexus.admin.client.types.events.ProjectEvent._
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig
 import ch.epfl.bluebrain.nexus.admin.exceptions.AdminError.UnexpectedState
 import ch.epfl.bluebrain.nexus.admin.organizations.{OrganizationResource, Organizations}
 import ch.epfl.bluebrain.nexus.admin.persistence.TaggingAdapter
-import ch.epfl.bluebrain.nexus.admin.projects.ProjectEvent.ProjectCreated
-import ch.epfl.bluebrain.nexus.admin.projects.{ProjectEvent, ProjectResource, Projects}
+import ch.epfl.bluebrain.nexus.admin.projects.{ProjectResource, Projects}
 import ch.epfl.bluebrain.nexus.service.indexer.persistence.OffsetStorage.Volatile
 import ch.epfl.bluebrain.nexus.service.indexer.persistence.{IndexerConfig, SequentialTagIndexer}
 import monix.eval.Task

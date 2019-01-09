@@ -1,6 +1,6 @@
 package ch.epfl.bluebrain.nexus.admin.kafka
-import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationEvent
-import ch.epfl.bluebrain.nexus.admin.projects.ProjectEvent
+
+import ch.epfl.bluebrain.nexus.admin.client.types.events.{OrganizationEvent, ProjectEvent}
 import ch.epfl.bluebrain.nexus.service.kafka.key.Key
 
 object keys {

@@ -1,4 +1,4 @@
-package ch.epfl.bluebrain.nexus.admin.organizations
+package ch.epfl.bluebrain.nexus.admin.client.types.events
 
 import java.time.Instant
 import java.util.UUID
