@@ -16,6 +16,7 @@ import io.circe.{Decoder, DecodingFailure}
   * @param organization organization to which this project belongs
   * @param description  project description
   * @param base         the base IRI for generated resource IDs
+  * @param vocabulary   an optional vocabulary for resources with no context
   * @param apiMappings  the API mappings
   * @param uuid         project permanent identifier
   * @param rev          project revision
@@ -30,6 +31,7 @@ final case class Project(id: AbsoluteIri,
                          organization: String,
                          description: Option[String],
                          base: AbsoluteIri,
+                         vocabulary: Option[AbsoluteIri],
                          apiMappings: Map[String, AbsoluteIri],
                          uuid: UUID,
                          rev: Long,
@@ -61,6 +63,7 @@ object Project {
         organization <- hc.get[String]("_organization")
         description  <- hc.getOrElse[Option[String]]("description")(None)
         base         <- hc.get[AbsoluteIri]("base")
+        vocab        <- hc.get[Option[AbsoluteIri]]("vocabulary")
         lam          <- hc.get[List[Mapping]]("apiMappings")
         apiMap = lam.map(am => am.prefix -> am.namespace).toMap
         label      <- hc.get[String]("_label")
@@ -77,6 +80,7 @@ object Project {
                 organization,
                 description,
                 base,
+                vocab,
                 apiMap,
                 uuid,
                 rev,

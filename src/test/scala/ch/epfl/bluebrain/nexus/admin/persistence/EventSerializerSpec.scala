@@ -26,6 +26,7 @@ class EventSerializerSpec
   private val instant = Instant.parse("2018-12-21T15:37:44.203831Z")
   private val subject = Identity.User("alice", "bbp")
   private val base    = url"http://localhost:8080/base".value
+  private val voc     = url"http://localhost:8080/voc".value
   private val mappings = Map("nxv" -> url"https://bluebrain.github.io/nexus/vocabulary/".value,
                              "rdf" -> url"http://www.w3.org/1999/02/22-rdf-syntax-ns#".value)
 
@@ -36,9 +37,9 @@ class EventSerializerSpec
      ("OrganizationEvent", jsonContentOf("/events/org-updated.json"))),
     (OrganizationDeprecated(orgId, 42L, instant, subject),
      ("OrganizationEvent", jsonContentOf("/events/org-deprecated.json"))),
-    (ProjectCreated(projId, orgId, "myproj", None, mappings, base, instant, subject),
+    (ProjectCreated(projId, orgId, "myproj", None, mappings, base, None, instant, subject),
      ("ProjectEvent", jsonContentOf("/events/project-created.json"))),
-    (ProjectUpdated(projId, "myproj", Some("My project"), mappings, base, 42L, instant, subject),
+    (ProjectUpdated(projId, "myproj", Some("My project"), mappings, base, Some(voc), 42L, instant, subject),
      ("ProjectEvent", jsonContentOf("/events/project-updated.json"))),
     (ProjectDeprecated(projId, 42L, instant, subject),
      ("ProjectEvent", jsonContentOf("/events/project-deprecated.json")))

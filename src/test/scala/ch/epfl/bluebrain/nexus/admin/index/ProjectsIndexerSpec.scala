@@ -31,6 +31,7 @@ class ProjectsIndexerSpec
     val mappings = Map("nxv" -> url"https://bluebrain.github.io/nexus/vocabulary/".value,
                        "rdf" -> url"http://www.w3.org/1999/02/22-rdf-syntax-ns#type".value)
     val base = url"http://nexus.example.com/base".value
+    val voc  = url"http://nexus.example.com/voc".value
     val organization = ResourceF(
       url"http://nexus.example.com/v1/orgs/org".value,
       orgId,
@@ -43,7 +44,7 @@ class ProjectsIndexerSpec
       caller,
       Organization("org", "Org description")
     )
-    val proj = Project("proj", "org", Some("Project description"), mappings, base)
+    val proj = Project("proj", "org", Some("Project description"), mappings, base, Some(voc))
     val project = ResourceF(url"http://nexus.example.com/v1/projects/org/proj".value,
                             projId,
                             1L,
@@ -80,6 +81,7 @@ class ProjectsIndexerSpec
                            proj.description,
                            proj.apiMappings,
                            proj.base,
+                           proj.vocabulary,
                            instant,
                            caller)))
         .unsafeRunSync()
@@ -94,9 +96,18 @@ class ProjectsIndexerSpec
       projects.fetch(project.uuid) shouldReturn IO.pure(Some(project))
 
       projectsIndexer
-        .index(List(
-          ProjectUpdated(project.uuid, proj.label, proj.description, proj.apiMappings, proj.base, 1L, instant, caller),
-        ))
+        .index(
+          List(
+            ProjectUpdated(project.uuid,
+                           proj.label,
+                           proj.description,
+                           proj.apiMappings,
+                           proj.base,
+                           proj.vocabulary,
+                           1L,
+                           instant,
+                           caller),
+          ))
         .unsafeRunSync()
       projectCache.replace(project.uuid, project) was called
     }

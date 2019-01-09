@@ -3,6 +3,7 @@
   "_organization" : "org",
   "description" : "Project description",
   "base": "https://nexus.example.com/base",
+  "vocabulary": "https://nexus.example.com/voc",
   "apiMappings": [
     {
       "prefix": "nxv",

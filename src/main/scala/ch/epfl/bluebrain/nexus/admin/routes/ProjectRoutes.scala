@@ -72,10 +72,9 @@ class ProjectRoutes(projects: Projects[Task])(implicit iamClient: IamClient[Task
               (trace("updateProject") & authorizeOn(path, write)) {
                 extractProject(path) {
                   case (org, label) =>
-                    complete(
-                      projects
-                        .update(Project(label, org, proj.description, proj.apiMappings, proj.base), rev)
-                        .runToFuture)
+                    complete(projects
+                      .update(Project(label, org, proj.description, proj.apiMappings, proj.base, proj.vocabulary), rev)
+                      .runToFuture)
                 }
               }
             case None =>
@@ -83,7 +82,9 @@ class ProjectRoutes(projects: Projects[Task])(implicit iamClient: IamClient[Task
                 extractProject(path) {
                   case (org, label) =>
                     onSuccess(
-                      projects.create(Project(label, org, proj.description, proj.apiMappings, proj.base)).runToFuture) {
+                      projects
+                        .create(Project(label, org, proj.description, proj.apiMappings, proj.base, proj.vocabulary))
+                        .runToFuture) {
                       case Right(meta)     => complete(StatusCodes.Created -> meta)
                       case Left(rejection) => complete(rejection)
                     }

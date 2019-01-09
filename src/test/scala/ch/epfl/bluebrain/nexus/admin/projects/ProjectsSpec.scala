@@ -54,6 +54,7 @@ class ProjectsSpec
     val mappings = Map("nxv" -> url"https://bluebrain.github.io/nexus/vocabulary/".value,
                        "rdf" -> url"http://www.w3.org/1999/02/22-rdf-syntax-ns#type".value)
     val base = url"https://nexus.example.com/base".value
+    val voc  = url"https://nexus.example.com/voc".value
     val organization = ResourceF(
       url"http://nexus.example.com/v1/orgs/org".value,
       orgId,
@@ -66,7 +67,7 @@ class ProjectsSpec
       caller,
       Organization("org", "Org description")
     )
-    val proj    = Project("proj", "org", desc, mappings, base)
+    val proj    = Project("proj", "org", desc, mappings, base, Some(voc))
     val project = ResourceF(iri, projId, 1L, false, types, instant, caller, instant, caller, proj)
   }
 

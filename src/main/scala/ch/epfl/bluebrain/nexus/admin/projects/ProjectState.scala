@@ -24,6 +24,7 @@ object ProjectState {
     * @param description  an optional project description
     * @param apiMappings  the API mappings
     * @param base         the base IRI for generated resource IDs
+    * @param vocabulary   an optional vocabulary for resources with no context
     * @param rev          the selected revision number
     * @param instant      the timestamp associated with this state
     * @param subject      the identity associated with this state
@@ -35,6 +36,7 @@ object ProjectState {
                            description: Option[String],
                            apiMappings: Map[String, AbsoluteIri],
                            base: AbsoluteIri,
+                           vocabulary: Option[AbsoluteIri],
                            rev: Long,
                            instant: Instant,
                            subject: Subject,

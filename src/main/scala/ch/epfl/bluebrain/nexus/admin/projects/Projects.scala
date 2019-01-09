@@ -57,6 +57,7 @@ class Projects[F[_]](agg: Agg[F], index: ProjectCache[F], organizations: Organiz
                                         project.description,
                                         project.apiMappings,
                                         project.base,
+                                        project.vocabulary,
                                         clock.instant,
                                         caller)
             evaluateAndUpdateIndex(command, project)
@@ -84,6 +85,7 @@ class Projects[F[_]](agg: Agg[F], index: ProjectCache[F], organizations: Organiz
                                     project.description,
                                     project.apiMappings,
                                     project.base,
+                                    project.vocabulary,
                                     rev,
                                     clock.instant,
                                     caller)
@@ -208,7 +210,7 @@ class Projects[F[_]](agg: Agg[F], index: ProjectCache[F], organizations: Organiz
     case Some(org) =>
       val iri = http.projectsIri + org.value.label + c.label
       // format: off
-      Right(ResourceF(iri, c.id, c.rev, c.deprecated, types, c.instant, c.subject, c.instant, c.subject, Project(c.label, org.value.label, c.description, c.apiMappings, c.base)))
+      Right(ResourceF(iri, c.id, c.rev, c.deprecated, types, c.instant, c.subject, c.instant, c.subject, Project(c.label, org.value.label, c.description, c.apiMappings, c.base, c.vocabulary)))
     // format: on
     case None =>
       Left(OrganizationNotFound)
@@ -258,18 +260,19 @@ object Projects {
     * @return the next state
     */
   private[projects] def next(state: ProjectState, event: ProjectEvent): ProjectState = (state, event) match {
-    case (Initial, ProjectCreated(id, org, label, desc, am, base, instant, subject)) =>
-      Current(id, org, label, desc, am, base, 1L, instant, subject, deprecated = false)
+    case (Initial, ProjectCreated(id, org, label, desc, am, base, vocab, instant, subject)) =>
+      Current(id, org, label, desc, am, base, vocab, 1L, instant, subject, deprecated = false)
     // $COVERAGE-OFF$
     case (Initial, _) => Initial
     // $COVERAGE-ON$
     case (c: Current, _) if c.deprecated => c
     case (c, _: ProjectCreated)          => c
-    case (c: Current, ProjectUpdated(_, label, desc, am, base, rev, instant, subject)) =>
+    case (c: Current, ProjectUpdated(_, label, desc, am, base, vocab, rev, instant, subject)) =>
       c.copy(label = label,
              description = desc,
              apiMappings = am,
              base = base,
+             vocabulary = vocab,
              rev = rev,
              instant = instant,
              subject = subject)
@@ -283,7 +286,15 @@ object Projects {
       state match {
         case Initial =>
           Right(
-            ProjectCreated(c.id, c.organization, c.label, c.description, c.apiMappings, c.base, c.instant, c.subject))
+            ProjectCreated(c.id,
+                           c.organization,
+                           c.label,
+                           c.description,
+                           c.apiMappings,
+                           c.base,
+                           c.vocabulary,
+                           c.instant,
+                           c.subject))
         case _ => Left(ProjectExists)
       }
 
@@ -297,7 +308,15 @@ object Projects {
 
     private def updateProjectAfter(state: Current, c: UpdateProject): Either[ProjectRejection, ProjectEvent] =
       Right(
-        ProjectUpdated(state.id, c.label, c.description, c.apiMappings, c.base, state.rev + 1, c.instant, c.subject))
+        ProjectUpdated(state.id,
+                       c.label,
+                       c.description,
+                       c.apiMappings,
+                       c.base,
+                       c.vocabulary,
+                       state.rev + 1,
+                       c.instant,
+                       c.subject))
 
     private def deprecateProject(state: ProjectState, c: DeprecateProject): Either[ProjectRejection, ProjectEvent] =
       state match {

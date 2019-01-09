@@ -118,13 +118,14 @@ class AdminClientSpec
           "testorg",
           Some("Test project"),
           url"https://nexus.example.com/base".value,
+          Some(url"https://nexus.example.com/voc".value),
           Map(
             "nxv" -> url"https://bluebrain.github.io/nexus/vocabulary/".value,
             "rdf" -> url"http://www.w3.org/1999/02/22-rdf-syntax-ns#".value
           ),
           UUID.fromString("db7cee63-3f93-4d4a-9cc2-ebdace7f3b4f"),
           1L,
-          false,
+          deprecated = false,
           Instant.parse("2018-12-19T11:31:30.00Z"),
           url"http://iam.nexus.example.com/v1/realms/example-realm/users/example-user".value,
           Instant.parse("2018-12-20T11:31:30.00Z"),

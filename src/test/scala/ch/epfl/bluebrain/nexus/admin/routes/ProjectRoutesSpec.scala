@@ -69,11 +69,13 @@ class ProjectRoutesSpec
     val orgId   = UUID.randomUUID
     val projId  = UUID.randomUUID
     val base    = url"https://nexus.example.com/base".value
+    val voc     = url"https://nexus.example.com/voc".value
     val iri     = url"http://nexus.example.com/v1/projects/org/label".value
 
     val payload = Json.obj(
       "description" -> Json.fromString("Project description"),
       "base"        -> Json.fromString("https://nexus.example.com/base"),
+      "vocabulary"  -> Json.fromString("https://nexus.example.com/voc"),
       "apiMappings" -> Json.arr(
         Json.obj(
           "prefix"    -> Json.fromString("nxv"),
@@ -99,7 +101,7 @@ class ProjectRoutesSpec
     )
     val mappings = Map("nxv" -> url"https://bluebrain.github.io/nexus/vocabulary/".value,
                        "rdf" -> url"http://www.w3.org/1999/02/22-rdf-syntax-ns#type".value)
-    val project = Project("label", "org", desc, mappings, base)
+    val project = Project("label", "org", desc, mappings, base, Some(voc))
     val resource =
       ResourceF(iri, projId, 1L, deprecated = false, types, instant, caller.subject, instant, caller.subject, project)
     val meta         = resource.discard
@@ -122,7 +124,7 @@ class ProjectRoutesSpec
     "create a project without a description" in new Context {
       iamClient.authorizeOn("org" / "label", create) shouldReturn Task.unit
       iamClient.identities shouldReturn Task(caller)
-      projects.create(Project("label", "org", None, Map.empty, base)) shouldReturn Task(Right(meta))
+      projects.create(Project("label", "org", None, Map.empty, base, None)) shouldReturn Task(Right(meta))
 
       Put("/projects/org/label", Json.obj("base" -> Json.fromString(base.asString))) ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.Created

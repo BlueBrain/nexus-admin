@@ -38,12 +38,12 @@ class ProjectsIndexer[F[_]](projects: Projects[F],
   def index(events: List[ProjectEvent]): F[Unit] = events.map(indexEvent).sequence *> F.unit
 
   private def indexEvent(event: ProjectEvent): F[Unit] = event match {
-    case ProjectCreated(id, orgUuid, _, _, _, _, _, _) =>
+    case pc: ProjectCreated =>
       for {
-        org     <- fetchOrgOrRaiseError(orgUuid)
-        _       <- indexOrg.replace(orgUuid, org)
-        project <- fetchProjectOrRaiseError(id)
-        _       <- index.replace(id, project)
+        org     <- fetchOrgOrRaiseError(pc.organization)
+        _       <- indexOrg.replace(pc.organization, org)
+        project <- fetchProjectOrRaiseError(pc.id)
+        _       <- index.replace(pc.id, project)
       } yield ()
     case ev: ProjectEvent =>
       fetchProjectOrRaiseError(ev.id).flatMap(project => index.replace(ev.id, project)) *> F.unit

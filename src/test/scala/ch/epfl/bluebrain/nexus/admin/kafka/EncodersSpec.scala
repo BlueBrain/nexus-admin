@@ -26,18 +26,27 @@ class EncodersSpec extends WordSpecLike with Matchers with Resources {
   val mappings = Map("nxv" -> url"https://bluebrain.github.io/nexus/vocabulary/".value,
                      "rdf" -> url"http://www.w3.org/1999/02/22-rdf-syntax-ns#type".value)
   val base = url"https://nexus.example.com/base".value
+  val voc  = url"https://nexus.example.com/voc".value
 
   "Encoders" should {
 
     "encode project created event" in {
       val event: ProjectEvent =
-        ProjectCreated(projectUuid, orgUuid, "project label", Some("description"), mappings, base, instant, subject)
+        ProjectCreated(projectUuid, orgUuid, "project label", None, mappings, base, None, instant, subject)
       event.asJson shouldEqual jsonContentOf("/kafka/project-created.json")
     }
 
     "encode project update event" in {
       val event: ProjectEvent =
-        ProjectUpdated(projectUuid, "project label", Some("description"), mappings, base, 2L, instant, subject)
+        ProjectUpdated(projectUuid,
+                       "project label",
+                       Some("description"),
+                       mappings,
+                       base,
+                       Some(voc),
+                       2L,
+                       instant,
+                       subject)
       event.asJson shouldEqual jsonContentOf("/kafka/project-updated.json")
     }
     "encode project deprecated event" in {

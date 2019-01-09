@@ -35,6 +35,7 @@ object ProjectCommand {
     * @param description  an optional project description
     * @param apiMappings  the API mappings
     * @param base         the base IRI for generated resource IDs
+    * @param vocabulary   an optional vocabulary for resources with no context
     * @param instant      the timestamp associated to this command
     * @param subject      the identity associated to this command
     */
@@ -44,6 +45,7 @@ object ProjectCommand {
                                  description: Option[String],
                                  apiMappings: Map[String, AbsoluteIri],
                                  base: AbsoluteIri,
+                                 vocabulary: Option[AbsoluteIri],
                                  instant: Instant,
                                  subject: Subject)
       extends ProjectCommand
@@ -56,6 +58,7 @@ object ProjectCommand {
     * @param description an optional project description
     * @param apiMappings the API mappings
     * @param base        the base IRI for generated resource IDs
+    * @param vocabulary  an optional vocabulary for resources with no context
     * @param rev         the last known revision of the project
     * @param instant     the timestamp associated to this command
     * @param subject     the identity associated to this command
@@ -65,6 +68,7 @@ object ProjectCommand {
                                  description: Option[String],
                                  apiMappings: Map[String, AbsoluteIri],
                                  base: AbsoluteIri,
+                                 vocabulary: Option[AbsoluteIri],
                                  rev: Long,
                                  instant: Instant,
                                  subject: Subject)

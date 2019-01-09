@@ -51,7 +51,8 @@ class ProjectCacheSpec
   val mappings = Map("nxv" -> url"https://bluebrain.github.io/nexus/vocabulary/".value,
                      "rdf" -> url"http://www.w3.org/1999/02/22-rdf-syntax-ns#type".value)
   val base    = url"http://nexus.example.com/base".value
-  val project = Project(genString(), organization.label, Some(genString()), mappings, base)
+  val voc     = url"http://nexus.example.com/voc".value
+  val project = Project(genString(), organization.label, Some(genString()), mappings, base, Some(voc))
   val projectResource = ResourceF(url"http://nexus.example.com/v1/orgs/org".value,
                                   UUID.randomUUID(),
                                   1L,
@@ -81,7 +82,7 @@ class ProjectCacheSpec
       val projectsOrganization2 = Organization(orgLabel2, "description2")
 
       val projectResources = projectLabels.map { label =>
-        val project = Project(label, projectsOrganization.label, Some(genString()), mappings, base)
+        val project = Project(label, projectsOrganization.label, Some(genString()), mappings, base, Some(voc))
         projectResource.copy(
           id = url"http://nexus.example.com/v1/projects/${projectsOrganization.label}/${project.label}".value,
           uuid = UUID.randomUUID(),
@@ -89,7 +90,7 @@ class ProjectCacheSpec
       }
 
       val projectResources2 = projectLabels2.map { label =>
-        val project = Project(label, projectsOrganization2.label, Some(genString()), mappings, base)
+        val project = Project(label, projectsOrganization2.label, Some(genString()), mappings, base, None)
         projectResource.copy(
           id = url"http://nexus.example.com/v1/projects/${projectsOrganization.label}/${project.label}".value,
           uuid = UUID.randomUUID(),
