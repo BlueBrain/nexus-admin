@@ -2,14 +2,15 @@ package ch.epfl.bluebrain.nexus.admin.persistence
 
 import akka.actor.ExtendedActorSystem
 import akka.serialization.SerializerWithStringManifest
-import ch.epfl.bluebrain.nexus.admin.client.types.events.{OrganizationEvent, ProjectEvent}
 import ch.epfl.bluebrain.nexus.admin.config.Settings
+import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationEvent
+import ch.epfl.bluebrain.nexus.admin.projects.ProjectEvent
 import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
 import ch.epfl.bluebrain.nexus.rdf.instances._
 import ch.epfl.bluebrain.nexus.service.serialization.AkkaCoproductSerializer
+import io.circe.{Decoder, Encoder}
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.{deriveDecoder, deriveEncoder}
-import io.circe.{Decoder, Encoder}
 import shapeless.{:+:, CNil}
 
 class EventSerializer(system: ExtendedActorSystem) extends SerializerWithStringManifest {

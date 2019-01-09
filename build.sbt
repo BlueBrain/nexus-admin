@@ -80,7 +80,6 @@ lazy val admin = project
   .in(file("."))
   .settings(testSettings, buildInfoSettings)
   .enablePlugins(BuildInfoPlugin, ServicePackagingPlugin)
-  .dependsOn(client)
   .aggregate(client)
   .settings(
     name       := "admin",

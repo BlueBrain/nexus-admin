@@ -3,7 +3,6 @@ package ch.epfl.bluebrain.nexus.admin.index
 import akka.actor.{ActorRef, ActorSystem}
 import cats.MonadError
 import cats.implicits._
-import ch.epfl.bluebrain.nexus.admin.client.types.events.OrganizationEvent
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig
 import ch.epfl.bluebrain.nexus.admin.exceptions.AdminError.UnexpectedState
 import ch.epfl.bluebrain.nexus.admin.organizations._

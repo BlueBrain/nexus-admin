@@ -6,15 +6,13 @@ import java.util.UUID
 import ch.epfl.bluebrain.nexus.admin.client.types.events.OrganizationEvent._
 import ch.epfl.bluebrain.nexus.admin.client.types.events.ProjectEvent._
 import ch.epfl.bluebrain.nexus.admin.client.types.events.decoders._
-import ch.epfl.bluebrain.nexus.admin.client.types.events.encoders._
 import ch.epfl.bluebrain.nexus.commons.test.Resources
 import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
 import ch.epfl.bluebrain.nexus.iam.client.types.Identity.User
 import ch.epfl.bluebrain.nexus.rdf.syntax.node.unsafe._
-import io.circe.syntax._
 import org.scalatest.{EitherValues, Matchers, WordSpecLike}
 
-class EncodersDecodersSpec extends WordSpecLike with Matchers with Resources with EitherValues {
+class DecodersSpec extends WordSpecLike with Matchers with Resources with EitherValues {
 
   implicit val iamConfig = IamClientConfig(url"http://iam.nexus.example.com/v1".value)
 
@@ -28,55 +26,49 @@ class EncodersDecodersSpec extends WordSpecLike with Matchers with Resources wit
 
   "Encoders and decoders" should {
 
-    "encode and decode project created event" in {
+    "decode project created event" in {
       val event: ProjectEvent =
         ProjectCreated(projectUuid, orgUuid, "project label", Some("description"), mappings, base, instant, subject)
       val json = jsonContentOf("/kafka/project-created.json")
 
-      event.asJson shouldEqual json
       json.as[ProjectEvent].right.value shouldEqual event
     }
 
-    "encode and decode project update event" in {
+    "decode project update event" in {
       val event: ProjectEvent =
         ProjectUpdated(projectUuid, "project label", Some("description"), mappings, base, 2L, instant, subject)
       val json = jsonContentOf("/kafka/project-updated.json")
 
-      event.asJson shouldEqual json
       json.as[ProjectEvent].right.value shouldEqual event
     }
 
-    "encode and decode project deprecated event" in {
+    "decode project deprecated event" in {
       val event: ProjectEvent =
         ProjectDeprecated(projectUuid, 3L, instant, subject)
       val json = jsonContentOf("/kafka/project-deprecated.json")
 
-      event.asJson shouldEqual json
       json.as[ProjectEvent].right.value shouldEqual event
     }
 
-    "encode and decode organization created event" in {
+    "decode organization created event" in {
       val event: OrganizationEvent =
         OrganizationCreated(orgUuid, "organization label", "organization description", instant, subject)
       val json = jsonContentOf("/kafka/organization-created.json")
 
-      event.asJson shouldEqual json
       json.as[OrganizationEvent].right.value shouldEqual event
     }
-    "encode and decode organization updated event" in {
+    "decode organization updated event" in {
       val event: OrganizationEvent =
         OrganizationUpdated(orgUuid, 2L, "organization label", "organization description", instant, subject)
       val json = jsonContentOf("/kafka/organization-updated.json")
 
-      event.asJson shouldEqual json
       json.as[OrganizationEvent].right.value shouldEqual event
     }
 
-    "encode and decode organization deprecated event" in {
+    "decode organization deprecated event" in {
       val event: OrganizationEvent = OrganizationDeprecated(orgUuid, 3L, instant, subject)
       val json                     = jsonContentOf("/kafka/organization-deprecated.json")
 
-      event.asJson shouldEqual json
       json.as[OrganizationEvent].right.value shouldEqual event
     }
 
