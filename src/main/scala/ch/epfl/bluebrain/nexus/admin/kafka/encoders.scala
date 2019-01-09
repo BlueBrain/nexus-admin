@@ -17,8 +17,13 @@ object encoders {
   private implicit val config: Configuration = Configuration.default
     .withDiscriminator("@type")
     .copy(transformMemberNames = {
-      case "id"  => "uuid"
-      case other => other
+      case "id"           => "_uuid"
+      case "label"        => "_label"
+      case "rev"          => "_rev"
+      case "instant"      => "_instant"
+      case "subject"      => "_subject"
+      case "organization" => "_organization"
+      case other          => other
     })
 
   private implicit def identityEncoder(implicit iamClientConfig: IamClientConfig): Encoder[Subject] =
@@ -29,7 +34,7 @@ object encoders {
     */
   implicit def projectEventEncoder(implicit iamClientConfig: IamClientConfig): Encoder[ProjectEvent] = {
     val enc = deriveEncoder[ProjectEvent]
-    Encoder.instance(event => enc(event) deepMerge Json.obj("rev" -> Json.fromLong(event.rev)).addContext(adminCtxUri))
+    Encoder.instance(event => enc(event) deepMerge Json.obj("_rev" -> Json.fromLong(event.rev)).addContext(adminCtxUri))
   }
 
   /**
@@ -37,7 +42,7 @@ object encoders {
     */
   implicit def organizationEventEncoder(implicit iamClientConfig: IamClientConfig): Encoder[OrganizationEvent] = {
     val enc = deriveEncoder[OrganizationEvent]
-    Encoder.instance(event => enc(event) deepMerge Json.obj("rev" -> Json.fromLong(event.rev)).addContext(adminCtxUri))
+    Encoder.instance(event => enc(event) deepMerge Json.obj("_rev" -> Json.fromLong(event.rev)).addContext(adminCtxUri))
   }
 
 }
