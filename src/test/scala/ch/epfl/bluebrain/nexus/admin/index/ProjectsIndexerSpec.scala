@@ -44,7 +44,7 @@ class ProjectsIndexerSpec
       caller,
       Organization("org", "Org description")
     )
-    val proj = Project("proj", orgId, "org", Some("Project description"), mappings, base, Some(voc))
+    val proj = Project("proj", orgId, "org", Some("Project description"), mappings, base, voc)
     val project = ResourceF(url"http://nexus.example.com/v1/projects/org/proj".value,
                             projId,
                             1L,
@@ -82,7 +82,7 @@ class ProjectsIndexerSpec
                            proj.description,
                            proj.apiMappings,
                            proj.base,
-                           proj.vocabulary,
+                           proj.vocab,
                            instant,
                            caller)))
         .unsafeRunSync()
@@ -104,7 +104,7 @@ class ProjectsIndexerSpec
                            proj.description,
                            proj.apiMappings,
                            proj.base,
-                           proj.vocabulary,
+                           proj.vocab,
                            1L,
                            instant,
                            caller),

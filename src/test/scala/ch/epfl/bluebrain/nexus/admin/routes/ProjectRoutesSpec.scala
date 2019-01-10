@@ -75,7 +75,7 @@ class ProjectRoutesSpec
     val payload = Json.obj(
       "description" -> Json.fromString("Project description"),
       "base"        -> Json.fromString("https://nexus.example.com/base"),
-      "vocabulary"  -> Json.fromString("https://nexus.example.com/voc"),
+      "vocab"       -> Json.fromString("https://nexus.example.com/voc"),
       "apiMappings" -> Json.arr(
         Json.obj(
           "prefix"    -> Json.fromString("nxv"),
@@ -101,7 +101,7 @@ class ProjectRoutesSpec
     )
     val mappings = Map("nxv" -> url"https://bluebrain.github.io/nexus/vocabulary/".value,
                        "rdf" -> url"http://www.w3.org/1999/02/22-rdf-syntax-ns#type".value)
-    val project = ProjectDescription(desc, mappings, base, Some(voc))
+    val project = ProjectDescription(desc, mappings, Some(base), Some(voc))
     val resource =
       ResourceF(iri,
                 projId,
@@ -112,7 +112,7 @@ class ProjectRoutesSpec
                 caller.subject,
                 instant,
                 caller.subject,
-                Project("label", orgId, "org", desc, mappings, base, Some(voc)))
+                Project("label", orgId, "org", desc, mappings, base, voc))
     val meta = resource.discard
     val replacements = Map(quote("{instant}") -> instant.toString,
                            quote("{uuid}")    -> projId.toString,
@@ -132,12 +132,12 @@ class ProjectRoutesSpec
       }
     }
 
-    "create a project without a description" in new Context {
+    "create a project without optional fields" in new Context {
       iamClient.authorizeOn("org" / "label", create) shouldReturn Task.unit
       iamClient.identities shouldReturn Task(caller)
-      projects.create("org", "label", ProjectDescription(None, Map.empty, base, None)) shouldReturn Task(Right(meta))
+      projects.create("org", "label", ProjectDescription(None, Map.empty, None, None)) shouldReturn Task(Right(meta))
 
-      Put("/projects/org/label", Json.obj("base" -> Json.fromString(base.asString))) ~> addCredentials(cred) ~> routes ~> check {
+      Put("/projects/org/label", Json.obj()) ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.Created
         responseAs[Json] shouldEqual jsonContentOf("/projects/meta.json", replacements)
       }

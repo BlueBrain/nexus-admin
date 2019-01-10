@@ -19,13 +19,14 @@ object encoders {
   private implicit val config: Configuration = Configuration.default
     .withDiscriminator("@type")
     .copy(transformMemberNames = {
-      case "id"           => "_uuid"
-      case "label"        => "_label"
-      case "rev"          => "_rev"
-      case "instant"      => "_instant"
-      case "subject"      => "_subject"
-      case "organization" => "_organization"
-      case other          => other
+      case "id"                => "_uuid"
+      case "label"             => "_label"
+      case "rev"               => "_rev"
+      case "instant"           => "_instant"
+      case "subject"           => "_subject"
+      case "organizationLabel" => "_organizationLabel"
+      case "organizationUuid"  => "_organizationUuid"
+      case other               => other
     })
 
   private implicit def identityEncoder(implicit iamClientConfig: IamClientConfig): Encoder[Subject] =

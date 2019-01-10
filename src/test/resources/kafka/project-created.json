@@ -1,18 +1,24 @@
 {
   "@context": "https://bluebrain.github.io/nexus/contexts/admin.json",
   "@type": "ProjectCreated",
-  "uuid": "a5c736f2-0ace-48f4-a7a7-56a15123d0b3",
-  "organizationLabel": "organization label",
-  "organizationUuid": "4cd2c88b-ed73-4fd7-8afb-315032239a56",
-  "label": "project label",
+  "_uuid": "a5c736f2-0ace-48f4-a7a7-56a15123d0b3",
+  "_organizationUuid": "4cd2c88b-ed73-4fd7-8afb-315032239a56",
+  "_organizationLabel": "organization label",
+  "_label": "project label",
   "description": null,
   "base": "https://nexus.example.com/base",
-  "vocabulary": null,
-  "apiMappings": {
-    "nxv": "https://bluebrain.github.io/nexus/vocabulary/",
-    "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type"
-  },
-  "rev": 1,
-  "instant": "2018-12-04T11:31:30Z",
-  "subject": "http://iam.nexus.example.com/v1/realms/example-realm/users/example-user"
+  "vocab": "https://nexus.example.com/voc",
+  "apiMappings": [
+    {
+      "prefix": "nxv",
+      "namespace": "https://bluebrain.github.io/nexus/vocabulary/"
+    },
+    {
+      "prefix": "rdf",
+      "namespace": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type"
+    }
+  ],
+  "_rev": 1,
+  "_instant": "2018-12-04T11:31:30Z",
+  "_subject": "http://iam.nexus.example.com/v1/realms/example-realm/users/example-user"
 }

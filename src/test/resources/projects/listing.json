@@ -12,7 +12,7 @@
       "_organizationUuid" : "{orgUuid}",
       "description": "Project description",
       "base": "https://nexus.example.com/base",
-      "vocabulary": "https://nexus.example.com/voc",
+      "vocab": "https://nexus.example.com/voc",
       "apiMappings": [
         {
           "prefix": "nxv",
@@ -41,7 +41,7 @@
       "_organizationUuid" : "{orgUuid}",
       "description": "Project description",
       "base": "https://nexus.example.com/base",
-      "vocabulary": "https://nexus.example.com/voc",
+      "vocab": "https://nexus.example.com/voc",
       "apiMappings": [
         {
           "prefix": "nxv",
@@ -70,7 +70,7 @@
       "_organizationUuid" : "{orgUuid}",
       "description": "Project description",
       "base": "https://nexus.example.com/base",
-      "vocabulary": "https://nexus.example.com/voc",
+      "vocab": "https://nexus.example.com/voc",
       "apiMappings": [
         {
           "prefix": "nxv",

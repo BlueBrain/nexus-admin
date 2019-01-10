@@ -10,13 +10,13 @@ import io.circe.{Decoder, DecodingFailure}
   *
   * @param description an optional description
   * @param apiMappings the API mappings
-  * @param base        the base IRI for generated resource IDs
-  * @param vocabulary  an optional vocabulary for resources with no context
+  * @param base        an optional base IRI for generated resource IDs
+  * @param vocab       an optional vocabulary for resources with no context
   */
 final case class ProjectDescription(description: Option[String],
                                     apiMappings: Map[String, AbsoluteIri],
-                                    base: AbsoluteIri,
-                                    vocabulary: Option[AbsoluteIri])
+                                    base: Option[AbsoluteIri],
+                                    vocab: Option[AbsoluteIri])
 
 object ProjectDescription {
 
@@ -35,8 +35,8 @@ object ProjectDescription {
       desc <- hc.downField("description").as[Option[String]]
       lam = hc.downField("apiMappings").as[List[Mapping]].getOrElse(List.empty)
       map = lam.map(am => am.prefix -> am.namespace).toMap
-      base <- hc.downField("base").as[AbsoluteIri]
-      voc  <- hc.downField("vocabulary").as[Option[AbsoluteIri]]
+      base <- hc.downField("base").as[Option[AbsoluteIri]]
+      voc  <- hc.downField("vocab").as[Option[AbsoluteIri]]
     } yield ProjectDescription(desc, map, base, voc)
   }
 }

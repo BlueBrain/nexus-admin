@@ -129,7 +129,7 @@ class Organizations[F[_]](agg: Agg[F], index: OrganizationCache[F])(implicit F: 
   private def evalAndUpdateIndex(command: OrganizationCommand,
                                  organization: Organization): F[OrganizationMetaOrRejection] =
     eval(command).flatMap {
-      case Right(metadata) => index.replace(metadata.uuid, metadata.map(_ => organization)) *> F.pure(Right(metadata))
+      case Right(metadata) => index.replace(metadata.uuid, metadata.withValue(organization)) *> F.pure(Right(metadata))
       case Left(rej)       => F.pure(Left(rej))
     }
 

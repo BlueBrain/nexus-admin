@@ -14,7 +14,7 @@ import io.circe.{Encoder, Json}
   * @param description       an optional description
   * @param apiMappings       the API mappings
   * @param base              the base IRI for generated resource IDs
-  * @param vocabulary        an optional vocabulary for resources with no context
+  * @param vocab             an optional vocabulary for resources with no context
   */
 final case class Project(label: String,
                          organizationUuid: UUID,
@@ -22,7 +22,7 @@ final case class Project(label: String,
                          description: Option[String],
                          apiMappings: Map[String, AbsoluteIri],
                          base: AbsoluteIri,
-                         vocabulary: Option[AbsoluteIri]) {
+                         vocab: AbsoluteIri) {
 
   /**
     * @return full label for the project (including organization).
@@ -42,15 +42,12 @@ object Project {
           case (prefix, namespace) =>
             Json.obj("prefix" -> Json.fromString(prefix), "namespace" -> Json.fromString(namespace.asString))
         }: _*),
-        "base" -> Json.fromString(p.base.asString)
+        "base"  -> Json.fromString(p.base.asString),
+        "vocab" -> Json.fromString(p.vocab.asString)
       )
       .deepMerge(p.description match {
         case Some(desc) => Json.obj("description" -> Json.fromString(desc))
         case None       => Json.obj()
-      })
-      .deepMerge(p.vocabulary match {
-        case Some(vocabulary) => Json.obj("vocabulary" -> Json.fromString(vocabulary.asString))
-        case None             => Json.obj()
       })
   }
 }

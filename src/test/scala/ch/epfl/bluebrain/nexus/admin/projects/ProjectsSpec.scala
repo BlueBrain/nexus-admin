@@ -14,7 +14,7 @@ import ch.epfl.bluebrain.nexus.commons.test.io.{IOEitherValues, IOOptionValues}
 import ch.epfl.bluebrain.nexus.iam.client.types.Identity.User
 import ch.epfl.bluebrain.nexus.rdf.syntax.node.unsafe._
 import ch.epfl.bluebrain.nexus.sourcing.Aggregate
-import org.mockito.Mockito.reset
+import org.mockito.MockitoSugar.reset
 import org.mockito.integrations.scalatest.IdiomaticMockitoFixture
 import org.scalatest._
 
@@ -23,6 +23,7 @@ import scala.concurrent.duration._
 
 class ProjectsSpec
     extends WordSpecLike
+    with BeforeAndAfterEach
     with IdiomaticMockitoFixture
     with Matchers
     with IOEitherValues
@@ -43,7 +44,12 @@ class ProjectsSpec
 
   private val projects = aggF.map(agg => new Projects[IO](agg, index, orgs)).unsafeRunSync()
 
-  //noinspection TypeAnnotation
+  override protected def beforeEach(): Unit = {
+    reset(orgs)
+    reset(index)
+  }
+
+//noinspection TypeAnnotation
   trait Context {
     val types  = Set(nxv.Project.value)
     val caller = User("realm", "alice")
@@ -67,8 +73,8 @@ class ProjectsSpec
       caller,
       Organization("org", "Org description")
     )
-    val payload  = ProjectDescription(desc, mappings, base, Some(voc))
-    val project  = Project("proj", orgId, "org", desc, mappings, base, Some(voc))
+    val payload  = ProjectDescription(desc, mappings, Some(base), Some(voc))
+    val project  = Project("proj", orgId, "org", desc, mappings, base, voc)
     val resource = ResourceF(iri, projId, 1L, false, types, instant, caller, instant, caller, project)
   }
 
@@ -98,7 +104,6 @@ class ProjectsSpec
     }
 
     "not update a project if it's deprecated" in new Context {
-
       orgs.fetch("org") shouldReturn IO.pure(Some(organization))
       orgs.fetch(orgId) shouldReturn IO.pure(Some(organization))
       index.getBy("org", "proj") shouldReturn IO.pure(None)
@@ -115,6 +120,7 @@ class ProjectsSpec
       orgs.fetch("org") shouldReturn IO.pure(Some(organization))
       orgs.fetch(orgId) shouldReturn IO.pure(Some(organization))
       index.getBy("org", "proj") shouldReturn IO.pure(None)
+      index.replace(any[UUID], any[ResourceF[Project]]) shouldReturn IO.pure(())
       val created = projects.create("org", "proj", payload)(caller).accepted
       index.getBy("org", "proj") shouldReturn IO.pure(Some(resource.copy(uuid = created.uuid)))
       val deprecated = projects.deprecate("org", "proj", 1L)(caller).accepted
@@ -127,6 +133,7 @@ class ProjectsSpec
       orgs.fetch("org") shouldReturn IO.pure(Some(organization))
       orgs.fetch(orgId) shouldReturn IO.pure(Some(organization))
       index.getBy("org", "proj") shouldReturn IO.pure(None)
+      index.replace(any[UUID], any[ResourceF[Project]]) shouldReturn IO.pure(())
       val created = projects.create("org", "proj", payload)(caller).accepted
 
       created.id shouldEqual iri
@@ -137,20 +144,38 @@ class ProjectsSpec
       created.updatedAt shouldEqual instant
       created.createdBy shouldEqual caller
       created.updatedBy shouldEqual caller
-      index.replace(created.uuid, eqTo(created.map(_ => project))) was called
+      index.replace(created.uuid, created.withValue(project)) was called
     }
 
-    "update a project" in new Context {
-      reset(index)
+    "create a project without optional fields" in new Context {
       orgs.fetch("org") shouldReturn IO.pure(Some(organization))
       orgs.fetch(orgId) shouldReturn IO.pure(Some(organization))
       index.getBy("org", "proj") shouldReturn IO.pure(None)
       index.replace(any[UUID], any[ResourceF[Project]]) shouldReturn IO.pure(())
+      val created = projects.create("org", "proj", ProjectDescription(None, Map.empty, None, None))(caller).accepted
 
+      created.id shouldEqual iri
+      created.rev shouldEqual 1L
+      created.deprecated shouldEqual false
+      created.types shouldEqual types
+      created.createdAt shouldEqual instant
+      created.updatedAt shouldEqual instant
+      created.createdBy shouldEqual caller
+      created.updatedBy shouldEqual caller
+      val defaultBase = url"http://nexus.example.com/v1/resources/org/proj/_/".value
+      val defaultVoc  = url"http://nexus.example.com/v1/vocabs/org/proj/".value
+      val bare        = Project("proj", orgId, "org", None, Map.empty, defaultBase, defaultVoc)
+      index.replace(created.uuid, created.withValue(bare)) was called
+    }
+
+    "update a project" in new Context {
+      orgs.fetch("org") shouldReturn IO.pure(Some(organization))
+      orgs.fetch(orgId) shouldReturn IO.pure(Some(organization))
+      index.getBy("org", "proj") shouldReturn IO.pure(None)
+      index.replace(any[UUID], any[ResourceF[Project]]) shouldReturn IO.pure(())
       val created = projects.create("org", "proj", payload)(caller).accepted
 
       index.getBy("org", "proj") shouldReturn IO.pure(Some(resource.copy(uuid = created.uuid)))
-
       val updatedProject = payload.copy(description = Some("New description"))
       val updated        = projects.update("org", "proj", updatedProject, 1L)(caller).accepted
       updated.id shouldEqual iri
@@ -170,15 +195,16 @@ class ProjectsSpec
       val updated2 = projects.update("org", "proj", updatedProject2, 2L)(caller).accepted
 
       updated2.rev shouldEqual 3L
-      index.replace(created.uuid, created.map(_ => project)) wasCalled once
-      index.replace(created.uuid, updated.map(_ => project.copy(description = Some("New description")))) wasCalled once
-      index.replace(created.uuid, updated2.map(_ => project.copy(description = None))) wasCalled once
+      index.replace(created.uuid, created.withValue(project)) wasCalled once
+      index.replace(created.uuid, updated.withValue(project.copy(description = Some("New description")))) wasCalled once
+      index.replace(created.uuid, updated2.withValue(project.copy(description = None))) wasCalled once
     }
 
     "deprecate a project" in new Context {
       orgs.fetch("org") shouldReturn IO.pure(Some(organization))
       orgs.fetch(orgId) shouldReturn IO.pure(Some(organization))
       index.getBy("org", "proj") shouldReturn IO.pure(None)
+      index.replace(any[UUID], any[ResourceF[Project]]) shouldReturn IO.pure(())
       val created = projects.create("org", "proj", payload)(caller).accepted
       index.getBy("org", "proj") shouldReturn IO.pure(Some(resource.copy(uuid = created.uuid)))
       val deprecated = projects.deprecate("org", "proj", 1L)(caller).accepted
@@ -198,6 +224,7 @@ class ProjectsSpec
       orgs.fetch("org") shouldReturn IO.pure(Some(organization))
       orgs.fetch(orgId) shouldReturn IO.pure(Some(organization))
       index.getBy("org", "proj") shouldReturn IO.pure(None)
+      index.replace(any[UUID], any[ResourceF[Project]]) shouldReturn IO.pure(())
       val created = projects.create("org", "proj", payload)(caller).accepted
       val fetched = projects.fetch(created.uuid).some
       fetched.id shouldEqual iri
@@ -220,6 +247,7 @@ class ProjectsSpec
       orgs.fetch("org") shouldReturn IO.pure(Some(organization))
       orgs.fetch(orgId) shouldReturn IO.pure(Some(organization))
       index.getBy("org", "proj") shouldReturn IO.pure(None)
+      index.replace(any[UUID], any[ResourceF[Project]]) shouldReturn IO.pure(())
       val created = projects.create("org", "proj", payload)(caller).accepted
       index.getBy("org", "proj") shouldReturn IO.pure(Some(resource.copy(uuid = created.uuid)))
       projects.update("org", "proj", payload.copy(description = Some("New description")), 1L)(caller).accepted

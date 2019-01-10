@@ -22,6 +22,7 @@ import ch.epfl.bluebrain.nexus.admin.projects.ProjectState._
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF
 import ch.epfl.bluebrain.nexus.commons.types.search.Pagination
 import ch.epfl.bluebrain.nexus.commons.types.search.QueryResults.UnscoredQueryResults
+import ch.epfl.bluebrain.nexus.rdf.syntax.node.unsafe._
 import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
 import ch.epfl.bluebrain.nexus.sourcing.akka._
 
@@ -51,17 +52,19 @@ class Projects[F[_]](agg: Agg[F], index: ProjectCache[F], organizations: Organiz
     organizations.fetch(organization).flatMap {
       case Some(org) if org.deprecated => F.pure(Left(OrganizationIsDeprecated))
       case Some(org) =>
-        index.getBy(organization, label) flatMap {
+        index.getBy(organization, label).flatMap {
           case None =>
             val projectId = UUID.randomUUID
+            val base      = project.base.getOrElse(url"${http.apiUri}/resources/$organization/$label/_/".value)
+            val vocab     = project.vocab.getOrElse(url"${http.apiUri}/vocabs/$organization/$label/".value)
             val command = CreateProject(projectId,
                                         label,
                                         org.uuid,
-                                        org.value.label,
+                                        organization,
                                         project.description,
                                         project.apiMappings,
-                                        project.base,
-                                        project.vocabulary,
+                                        base,
+                                        vocab,
                                         clock.instant,
                                         caller)
             evaluateAndUpdateIndex(command)
@@ -87,15 +90,17 @@ class Projects[F[_]](agg: Agg[F], index: ProjectCache[F], organizations: Organiz
       case Some(_) =>
         index.getBy(organization, label).flatMap {
           case Some(proj) =>
-            val cmd = UpdateProject(proj.uuid,
-                                    label,
-                                    project.description,
-                                    project.apiMappings,
-                                    project.base,
-                                    project.vocabulary,
-                                    rev,
-                                    clock.instant,
-                                    caller)
+            val cmd = UpdateProject(
+              proj.uuid,
+              label,
+              project.description,
+              project.apiMappings,
+              project.base.getOrElse(proj.value.base),
+              project.vocab.getOrElse(proj.value.vocab),
+              rev,
+              clock.instant,
+              caller
+            )
             evaluateAndUpdateIndex(cmd)
           case None => F.pure(Left(ProjectNotFound))
         }
@@ -204,7 +209,7 @@ class Projects[F[_]](agg: Agg[F], index: ProjectCache[F], organizations: Organiz
       .flatMap {
         case Right(c: Current) =>
           toResource(c).flatMap {
-            case Right(project)  => index.replace(command.id, project) *> F.pure(Right(project.discard))
+            case Right(resource) => index.replace(c.id, resource) *> F.pure(Right(resource.discard))
             case Left(rejection) => F.pure(Left(rejection))
           }
         case Left(rejection) => F.pure(Left(rejection))
@@ -214,7 +219,7 @@ class Projects[F[_]](agg: Agg[F], index: ProjectCache[F], organizations: Organiz
   private def toResource(c: Current): F[ProjectResourceOrRejection] = organizations.fetch(c.organizationUuid).map {
     case Some(org) =>
       val iri     = http.projectsIri + org.value.label + c.label
-      val project = Project(c.label, org.uuid, org.value.label, c.description, c.apiMappings, c.base, c.vocabulary)
+      val project = Project(c.label, org.uuid, org.value.label, c.description, c.apiMappings, c.base, c.vocab)
       Right(ResourceF(iri, c.id, c.rev, c.deprecated, types, c.instant, c.subject, c.instant, c.subject, project))
     case None =>
       Left(OrganizationNotFound)
@@ -274,7 +279,7 @@ object Projects {
              description = desc,
              apiMappings = am,
              base = base,
-             vocabulary = vocab,
+             vocab = vocab,
              rev = rev,
              instant = instant,
              subject = subject)
@@ -295,7 +300,7 @@ object Projects {
                            c.description,
                            c.apiMappings,
                            c.base,
-                           c.vocabulary,
+                           c.vocab,
                            c.instant,
                            c.subject))
         case _ => Left(ProjectExists)
@@ -316,7 +321,7 @@ object Projects {
                        c.description,
                        c.apiMappings,
                        c.base,
-                       c.vocabulary,
+                       c.vocab,
                        state.rev + 1,
                        c.instant,
                        c.subject))

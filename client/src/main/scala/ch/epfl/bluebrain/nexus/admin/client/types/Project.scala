@@ -14,12 +14,12 @@ import io.circe.{Decoder, DecodingFailure}
   * @param id                project ID
   * @param label             project label
   * @param organizationLabel parent organization label
-  * @param organizationUuid  parent organization uuid
   * @param description       project description
   * @param base              the base IRI for generated resource IDs
-  * @param vocabulary        an optional vocabulary for resources with no context
+  * @param vocab             an optional vocabulary for resources with no context
   * @param apiMappings       the API mappings
   * @param uuid              project permanent identifier
+  * @param organizationUuid  parent organization uuid
   * @param rev               project revision
   * @param deprecated        project deprecation status
   * @param createdAt         [[Instant]] at which the project was created
@@ -30,12 +30,12 @@ import io.circe.{Decoder, DecodingFailure}
 final case class Project(id: AbsoluteIri,
                          label: String,
                          organizationLabel: String,
-                         organizationUuid: UUID,
                          description: Option[String],
                          base: AbsoluteIri,
-                         vocabulary: Option[AbsoluteIri],
+                         vocab: AbsoluteIri,
                          apiMappings: Map[String, AbsoluteIri],
                          uuid: UUID,
+                         organizationUuid: UUID,
                          rev: Long,
                          deprecated: Boolean,
                          createdAt: Instant,
@@ -66,7 +66,7 @@ object Project {
         orgUuid     <- hc.get[UUID]("_organizationUuid")
         description <- hc.get[Option[String]]("description")
         base        <- hc.get[AbsoluteIri]("base")
-        vocab       <- hc.get[Option[AbsoluteIri]]("vocabulary")
+        vocab       <- hc.get[AbsoluteIri]("vocab")
         lam         <- hc.get[List[Mapping]]("apiMappings")
         apiMap = lam.map(am => am.prefix -> am.namespace).toMap
         label      <- hc.get[String]("_label")
@@ -81,12 +81,12 @@ object Project {
         Project(id,
                 label,
                 orgLabel,
-                orgUuid,
                 description,
                 base,
                 vocab,
                 apiMap,
                 uuid,
+                orgUuid,
                 rev,
                 deprecated,
                 createdAt,

@@ -5,6 +5,7 @@
   "organizationUuid": "d8cf3015-1bce-4dda-ba80-80cd4b5281e5",
   "organizationLabel": "myorg",
   "base": "http://localhost:8080/base",
+  "vocab": "http://localhost:8080/voc",
   "apiMappings": {
     "nxv": "https://bluebrain.github.io/nexus/vocabulary/",
     "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
