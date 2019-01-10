@@ -1,9 +1,5 @@
 package ch.epfl.bluebrain.nexus.admin.client.types.events
 
-import java.time.Instant
-import java.util.UUID
-
-import ch.epfl.bluebrain.nexus.admin.client.types.events.ProjectEvent._
 import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
 import ch.epfl.bluebrain.nexus.iam.client.types.Identity
 import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
@@ -27,12 +23,6 @@ object decoders {
       case "organization" => "_organization"
       case other          => other
     })
-    .copy(transformConstructorNames = {
-      case "ProjectCreatedDto"    => "ProjectCreated"
-      case "ProjectUpdatedDto"    => "ProjectUpdated"
-      case "ProjectDeprecatedDto" => "ProjectDeprecated"
-      case other                  => other
-    })
 
   private implicit def subjectDecoder(implicit iamClientConfig: IamClientConfig): Decoder[Subject] =
     Decoder.decodeString.flatMap { id =>
@@ -43,80 +33,23 @@ object decoders {
 
     }
 
+  private final case class Mapping(prefix: String, namespace: AbsoluteIri)
+
   private implicit val mappingDecoder: Decoder[Mapping] = deriveDecoder[Mapping]
 
   /**
     * [[Decoder]] for [[ProjectEvent]]s.
     */
-  implicit def projectEventDecoder(implicit iamClientConfig: IamClientConfig): Decoder[ProjectEvent] =
-    deriveDecoder[ProjectEventDto].map(_.toEvent)
+  implicit def projectEventDecoder(implicit iamClientConfig: IamClientConfig): Decoder[ProjectEvent] = {
+    implicit val mappingDecoder: Decoder[Map[String, AbsoluteIri]] =
+      Decoder.decodeList[Mapping].map(_.map(m => (m.prefix, m.namespace)).toMap)
+    deriveDecoder[ProjectEvent]
+  }
 
   /**
     * [[Decoder]] for [[OrganizationEvent]]s.
     */
   implicit def organizationEventDecoder(implicit iamClientConfig: IamClientConfig): Decoder[OrganizationEvent] =
     deriveDecoder[OrganizationEvent]
-
-  private sealed trait ProjectEventDto extends Product with Serializable {
-
-    def id: UUID
-
-    def rev: Long
-
-    def instant: Instant
-
-    def subject: Subject
-
-    def toEvent: ProjectEvent
-  }
-
-  private final case class Mapping(prefix: String, namespace: AbsoluteIri)
-
-  private final case class ProjectCreatedDto(id: UUID,
-                                             organization: UUID,
-                                             label: String,
-                                             description: Option[String],
-                                             apiMappings: List[Mapping],
-                                             base: AbsoluteIri,
-                                             instant: Instant,
-                                             subject: Subject)
-      extends ProjectEventDto {
-
-    val rev: Long = 1L
-    override def toEvent: ProjectEvent =
-      ProjectCreated(id,
-                     organization,
-                     label,
-                     description,
-                     apiMappings.map(m => (m.prefix, m.namespace)).toMap,
-                     base,
-                     instant,
-                     subject)
-  }
-
-  private final case class ProjectUpdatedDto(id: UUID,
-                                             label: String,
-                                             description: Option[String],
-                                             apiMappings: List[Mapping],
-                                             base: AbsoluteIri,
-                                             rev: Long,
-                                             instant: Instant,
-                                             subject: Subject)
-      extends ProjectEventDto {
-    override def toEvent: ProjectEvent =
-      ProjectUpdated(id,
-                     label,
-                     description,
-                     apiMappings.map(m => (m.prefix, m.namespace)).toMap,
-                     base,
-                     rev,
-                     instant,
-                     subject)
-  }
-
-  private final case class ProjectDeprecatedDto(id: UUID, rev: Long, instant: Instant, subject: Subject)
-      extends ProjectEventDto {
-    override def toEvent: ProjectEvent = ProjectDeprecated(id, rev, instant, subject)
-  }
 
 }
