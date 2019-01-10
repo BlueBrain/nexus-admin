@@ -43,19 +43,17 @@ final case class ResourceF[A](
 ) {
 
   /**
-    * Creates a new [[ResourceF]] changing the value using the provided ''f'' function.
+    * Creates a new [[ResourceF]] changing the value using the provided ''v'' argument.
     *
-    * @param f a function to convert the current value
+    * @param v the new value.
     * @tparam B the generic type of the resulting value field
     */
-  def map[B](f: A => B): ResourceF[B] =
-    copy(value = f(value))
+  def withValue[B](v: B): ResourceF[B] = copy(value = v)
 
   /**
     * Converts the current [[ResourceF]] to a [[ResourceF]] where the value is of type Unit.
     */
-  def discard: ResourceF[Unit] =
-    map(_ => ())
+  def discard: ResourceF[Unit] = copy(value = ())
 }
 
 object ResourceF {

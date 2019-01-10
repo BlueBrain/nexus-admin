@@ -19,7 +19,6 @@
       "namespace": "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
     }
   ],
-  "description": "Test project",
   "_label": "testproject",
   "_organizationLabel": "testorg",
   "_organizationUuid": "504b6940-1b14-43a7-80e3-d08c52c3fc87",

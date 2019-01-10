@@ -78,7 +78,7 @@ class AdminClient[F[_]: LiftIO](config: AdminClientConfig, httpClient: UntypedHt
   }
 
   private def request(path: Path)(implicit credentials: Option[AuthToken]): HttpRequest =
-    addCredentials(Get((config.baseIri + path).toAkkaUri))
+    addCredentials(Get((config.baseUri + path).toAkkaUri))
 
   private def addCredentials(request: HttpRequest)(implicit credentials: Option[AuthToken]): HttpRequest =
     credentials.map(token => request.addCredentials(OAuth2BearerToken(token.value))).getOrElse(request)

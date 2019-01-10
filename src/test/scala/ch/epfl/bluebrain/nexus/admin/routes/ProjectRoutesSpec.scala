@@ -15,7 +15,7 @@ import ch.epfl.bluebrain.nexus.admin.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.admin.marshallers.instances._
 import ch.epfl.bluebrain.nexus.admin.organizations.Organization
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectRejection._
-import ch.epfl.bluebrain.nexus.admin.projects.{Project, Projects}
+import ch.epfl.bluebrain.nexus.admin.projects.{Project, ProjectDescription, Projects}
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF
 import ch.epfl.bluebrain.nexus.commons.test.Resources
 import ch.epfl.bluebrain.nexus.commons.types.HttpRejection.{MethodNotSupported, MissingParameters, UnauthorizedAccess}
@@ -69,11 +69,13 @@ class ProjectRoutesSpec
     val orgId   = UUID.randomUUID
     val projId  = UUID.randomUUID
     val base    = url"https://nexus.example.com/base".value
+    val voc     = url"https://nexus.example.com/voc".value
     val iri     = url"http://nexus.example.com/v1/projects/org/label".value
 
     val payload = Json.obj(
       "description" -> Json.fromString("Project description"),
       "base"        -> Json.fromString("https://nexus.example.com/base"),
+      "vocab"       -> Json.fromString("https://nexus.example.com/voc"),
       "apiMappings" -> Json.arr(
         Json.obj(
           "prefix"    -> Json.fromString("nxv"),
@@ -99,11 +101,22 @@ class ProjectRoutesSpec
     )
     val mappings = Map("nxv" -> url"https://bluebrain.github.io/nexus/vocabulary/".value,
                        "rdf" -> url"http://www.w3.org/1999/02/22-rdf-syntax-ns#type".value)
-    val project = Project("label", "org", desc, mappings, base)
+    val project = ProjectDescription(desc, mappings, Some(base), Some(voc))
     val resource =
-      ResourceF(iri, projId, 1L, deprecated = false, types, instant, caller.subject, instant, caller.subject, project)
-    val meta         = resource.discard
-    val replacements = Map(quote("{instant}") -> instant.toString, quote("{uuid}") -> projId.toString)
+      ResourceF(iri,
+                projId,
+                1L,
+                deprecated = false,
+                types,
+                instant,
+                caller.subject,
+                instant,
+                caller.subject,
+                Project("label", orgId, "org", desc, mappings, base, voc))
+    val meta = resource.discard
+    val replacements = Map(quote("{instant}") -> instant.toString,
+                           quote("{uuid}")    -> projId.toString,
+                           quote("{orgUuid}") -> orgId.toString)
   }
 
   "Project routes" should {
@@ -111,7 +124,7 @@ class ProjectRoutesSpec
     "create a project" in new Context {
       iamClient.authorizeOn("org" / "label", create) shouldReturn Task.unit
       iamClient.identities shouldReturn Task(caller)
-      projects.create(project) shouldReturn Task(Right(meta))
+      projects.create("org", "label", project) shouldReturn Task(Right(meta))
 
       Put("/projects/org/label", payload) ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.Created
@@ -119,12 +132,12 @@ class ProjectRoutesSpec
       }
     }
 
-    "create a project without a description" in new Context {
+    "create a project without optional fields" in new Context {
       iamClient.authorizeOn("org" / "label", create) shouldReturn Task.unit
       iamClient.identities shouldReturn Task(caller)
-      projects.create(Project("label", "org", None, Map.empty, base)) shouldReturn Task(Right(meta))
+      projects.create("org", "label", ProjectDescription(None, Map.empty, None, None)) shouldReturn Task(Right(meta))
 
-      Put("/projects/org/label", Json.obj("base" -> Json.fromString(base.asString))) ~> addCredentials(cred) ~> routes ~> check {
+      Put("/projects/org/label", Json.obj()) ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.Created
         responseAs[Json] shouldEqual jsonContentOf("/projects/meta.json", replacements)
       }
@@ -143,7 +156,7 @@ class ProjectRoutesSpec
     "reject the creation of a project which already exists" in new Context {
       iamClient.authorizeOn("org" / "label", create) shouldReturn Task.unit
       iamClient.identities shouldReturn Task(caller)
-      projects.create(project) shouldReturn Task(Left(ProjectExists))
+      projects.create("org", "label", project) shouldReturn Task(Left(ProjectExists))
 
       Put("/projects/org/label", payload) ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.Conflict
@@ -154,7 +167,7 @@ class ProjectRoutesSpec
     "update a project" in new Context {
       iamClient.authorizeOn("org" / "label", write) shouldReturn Task.unit
       iamClient.identities shouldReturn Task(caller)
-      projects.update(project, 2L) shouldReturn Task(Right(meta))
+      projects.update("org", "label", project, 2L) shouldReturn Task(Right(meta))
 
       Put("/projects/org/label?rev=2", payload) ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
@@ -175,7 +188,7 @@ class ProjectRoutesSpec
     "reject the update of a non-existent project" in new Context {
       iamClient.authorizeOn("org" / "label", write) shouldReturn Task.unit
       iamClient.identities shouldReturn Task(caller)
-      projects.update(project, 2L) shouldReturn Task(Left(ProjectNotFound))
+      projects.update("org", "label", project, 2L) shouldReturn Task(Left(ProjectNotFound))
 
       Put("/projects/org/label?rev=2", payload) ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
@@ -186,7 +199,7 @@ class ProjectRoutesSpec
     "reject the update of a non-existent project revision" in new Context {
       iamClient.authorizeOn("org" / "label", write) shouldReturn Task.unit
       iamClient.identities shouldReturn Task(caller)
-      projects.update(project, 2L) shouldReturn Task(Left(IncorrectRev(1L, 2L)))
+      projects.update("org", "label", project, 2L) shouldReturn Task(Left(IncorrectRev(1L, 2L)))
 
       Put("/projects/org/label?rev=2", payload) ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.Conflict

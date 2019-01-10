@@ -4,6 +4,7 @@
   "label": "myproj",
   "description": "My project",
   "base": "http://localhost:8080/base",
+  "vocab": "http://localhost:8080/voc",
   "apiMappings": {
     "nxv": "https://bluebrain.github.io/nexus/vocabulary/",
     "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#"

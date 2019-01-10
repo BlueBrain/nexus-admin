@@ -1,5 +1,6 @@
 package ch.epfl.bluebrain.nexus.admin.projects
 
+import ch.epfl.bluebrain.nexus.rdf.instances._
 import ch.epfl.bluebrain.nexus.rdf.Iri
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import io.circe.{Decoder, DecodingFailure}
@@ -9,11 +10,13 @@ import io.circe.{Decoder, DecodingFailure}
   *
   * @param description an optional description
   * @param apiMappings the API mappings
-  * @param base        the base IRI for generated resource IDs
+  * @param base        an optional base IRI for generated resource IDs
+  * @param vocab       an optional vocabulary for resources with no context
   */
 final case class ProjectDescription(description: Option[String],
                                     apiMappings: Map[String, AbsoluteIri],
-                                    base: AbsoluteIri)
+                                    base: Option[AbsoluteIri],
+                                    vocab: Option[AbsoluteIri])
 
 object ProjectDescription {
 
@@ -32,8 +35,8 @@ object ProjectDescription {
       desc <- hc.downField("description").as[Option[String]]
       lam = hc.downField("apiMappings").as[List[Mapping]].getOrElse(List.empty)
       map = lam.map(am => am.prefix -> am.namespace).toMap
-      base <- hc.downField("base").as[String]
-      iri  <- Iri.absolute(base).left.map(err => DecodingFailure(err, hc.history))
-    } yield ProjectDescription(desc, map, iri)
+      base <- hc.downField("base").as[Option[AbsoluteIri]]
+      voc  <- hc.downField("vocab").as[Option[AbsoluteIri]]
+    } yield ProjectDescription(desc, map, base, voc)
   }
 }

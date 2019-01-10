@@ -68,7 +68,7 @@ class OrganizationsSpec
       metadata.updatedAt shouldEqual instant
       metadata.updatedBy shouldEqual caller
 
-      val organizationResource = metadata.map(_ => organization)
+      val organizationResource = metadata.withValue(organization)
       orgs.fetch(organization.label).some shouldEqual organizationResource
 
       val nonExistentLabel = genString()
@@ -122,7 +122,7 @@ class OrganizationsSpec
 
       resource shouldEqual metadata.copy(rev = 2L, deprecated = true)
 
-      orgs.fetch(organization.label).some shouldEqual resource.map(_ => organization)
+      orgs.fetch(organization.label).some shouldEqual resource.withValue(organization)
     }
 
     "fetch organizations by revision" in {

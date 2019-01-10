@@ -1,8 +1,10 @@
 {
   "_label" : "label",
-  "_organization" : "org",
+  "_organizationLabel" : "org",
+  "_organizationUuid" : "{orgUuid}",
   "description" : "Project description",
   "base": "https://nexus.example.com/base",
+  "vocab": "https://nexus.example.com/voc",
   "apiMappings": [
     {
       "prefix": "nxv",

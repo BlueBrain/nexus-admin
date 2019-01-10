@@ -5,6 +5,7 @@
   "_label": "project label",
   "description": "description",
   "base": "https://nexus.example.com/base",
+  "vocab": "https://nexus.example.com/voc",
   "apiMappings": [
     {
       "prefix": "nxv",

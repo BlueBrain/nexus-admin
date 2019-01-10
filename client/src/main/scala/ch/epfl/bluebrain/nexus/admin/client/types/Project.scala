@@ -11,27 +11,31 @@ import io.circe.{Decoder, DecodingFailure}
 /**
   * Project with metadata.
   *
-  * @param id           project ID
-  * @param label        project label
-  * @param organization organization to which this project belongs
-  * @param description  project description
-  * @param base         the base IRI for generated resource IDs
-  * @param apiMappings  the API mappings
-  * @param uuid         project permanent identifier
-  * @param rev          project revision
-  * @param deprecated   project deprecation status
-  * @param createdAt    [[Instant]] at which the project was created
-  * @param createdBy    ID of the subject that created the project
-  * @param updatedAt    [[Instant]] at which the project was updated
-  * @param updatedBy    ID of the subject that updated the project
+  * @param id                project ID
+  * @param label             project label
+  * @param organizationLabel parent organization label
+  * @param description       project description
+  * @param base              the base IRI for generated resource IDs
+  * @param vocab             an optional vocabulary for resources with no context
+  * @param apiMappings       the API mappings
+  * @param uuid              project permanent identifier
+  * @param organizationUuid  parent organization uuid
+  * @param rev               project revision
+  * @param deprecated        project deprecation status
+  * @param createdAt         [[Instant]] at which the project was created
+  * @param createdBy         ID of the subject that created the project
+  * @param updatedAt         [[Instant]] at which the project was updated
+  * @param updatedBy         ID of the subject that updated the project
   */
 final case class Project(id: AbsoluteIri,
                          label: String,
-                         organization: String,
+                         organizationLabel: String,
                          description: Option[String],
                          base: AbsoluteIri,
+                         vocab: AbsoluteIri,
                          apiMappings: Map[String, AbsoluteIri],
                          uuid: UUID,
+                         organizationUuid: UUID,
                          rev: Long,
                          deprecated: Boolean,
                          createdAt: Instant,
@@ -57,14 +61,16 @@ object Project {
   implicit val projectDecoder: Decoder[Project] =
     Decoder.instance { hc =>
       for {
-        id           <- hc.get[AbsoluteIri]("@id")
-        organization <- hc.get[String]("_organization")
-        description  <- hc.getOrElse[Option[String]]("description")(None)
-        base         <- hc.get[AbsoluteIri]("base")
-        lam          <- hc.get[List[Mapping]]("apiMappings")
+        id          <- hc.get[AbsoluteIri]("@id")
+        orgLabel    <- hc.get[String]("_organizationLabel")
+        orgUuid     <- hc.get[UUID]("_organizationUuid")
+        description <- hc.get[Option[String]]("description")
+        base        <- hc.get[AbsoluteIri]("base")
+        vocab       <- hc.get[AbsoluteIri]("vocab")
+        lam         <- hc.get[List[Mapping]]("apiMappings")
         apiMap = lam.map(am => am.prefix -> am.namespace).toMap
         label      <- hc.get[String]("_label")
-        uuid       <- hc.get[String]("_uuid").map(UUID.fromString)
+        uuid       <- hc.get[UUID]("_uuid")
         rev        <- hc.get[Long]("_rev")
         deprecated <- hc.get[Boolean]("_deprecated")
         createdBy  <- hc.get[AbsoluteIri]("_createdBy")
@@ -74,11 +80,13 @@ object Project {
       } yield
         Project(id,
                 label,
-                organization,
+                orgLabel,
                 description,
                 base,
+                vocab,
                 apiMap,
                 uuid,
+                orgUuid,
                 rev,
                 deprecated,
                 createdAt,
