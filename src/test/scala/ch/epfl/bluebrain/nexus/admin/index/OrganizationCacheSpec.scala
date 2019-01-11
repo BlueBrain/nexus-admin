@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.admin.index
 import java.time.Instant
 import java.util.UUID
 
+import akka.testkit._
 import cats.effect.{IO, Timer}
 import ch.epfl.bluebrain.nexus.admin.config.Settings
 import ch.epfl.bluebrain.nexus.admin.config.Vocabulary.nxv
@@ -17,6 +18,8 @@ import ch.epfl.bluebrain.nexus.iam.client.types.Caller
 import ch.epfl.bluebrain.nexus.rdf.syntax.node.unsafe._
 import ch.epfl.bluebrain.nexus.service.test.ActorSystemFixture
 import org.scalatest.{Inspectors, Matchers, OptionValues}
+
+import scala.concurrent.duration._
 
 class OrganizationCacheSpec
     extends ActorSystemFixture("OrganizationCacheSpec", true)
@@ -46,6 +49,8 @@ class OrganizationCacheSpec
     subject,
     organization
   )
+
+  override implicit def patienceConfig: PatienceConfig = PatienceConfig(3.seconds.dilated, 5.milliseconds)
 
   "DistributedDataIndex" should {
 
