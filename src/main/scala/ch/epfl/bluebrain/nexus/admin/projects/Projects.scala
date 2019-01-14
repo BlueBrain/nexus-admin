@@ -22,8 +22,11 @@ import ch.epfl.bluebrain.nexus.admin.projects.ProjectState._
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF
 import ch.epfl.bluebrain.nexus.commons.types.search.Pagination
 import ch.epfl.bluebrain.nexus.commons.types.search.QueryResults.UnscoredQueryResults
+import ch.epfl.bluebrain.nexus.iam.client.IamClient
+import ch.epfl.bluebrain.nexus.iam.client.types.{AccessControlList, AccessControlLists, AuthToken, Permission}
 import ch.epfl.bluebrain.nexus.rdf.syntax.node.unsafe._
 import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
+import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
 import ch.epfl.bluebrain.nexus.sourcing.akka._
 
 /**
@@ -33,10 +36,11 @@ import ch.epfl.bluebrain.nexus.sourcing.akka._
   * @param index the project and organization labels index
   * @tparam F    the effect type
   */
-class Projects[F[_]](agg: Agg[F], index: ProjectCache[F], organizations: Organizations[F])(
+class Projects[F[_]](agg: Agg[F], index: ProjectCache[F], organizations: Organizations[F], iamClient: IamClient[F])(
     implicit F: MonadError[F, Throwable],
     http: HttpConfig,
-    clock: Clock) {
+    clock: Clock,
+    iamCredentials: Option[AuthToken]) {
 
   /**
     * Creates a project.
@@ -67,11 +71,36 @@ class Projects[F[_]](agg: Agg[F], index: ProjectCache[F], organizations: Organiz
                                         vocab,
                                         clock.instant,
                                         caller)
-            evaluateAndUpdateIndex(command)
+            evaluateAndUpdateIndex(command) <* setOwnerPermissions(organization, label, caller)
           case Some(_) => F.pure(Left(ProjectExists))
         }
       case None => F.pure(Left(OrganizationNotFound))
     }
+
+  def setPermissions(orgLabel: String,
+                     projectLabel: String,
+                     permissions: Set[Permission],
+                     acls: AccessControlLists,
+                     subject: Subject): F[Unit] = {
+    val rootPermissions = acls.value.get(/).flatMap(_.value.value.get(subject)).getOrElse(Set.empty)
+    val orgPermissions  = acls.value.get(/ + orgLabel).flatMap(_.value.value.get(subject)).getOrElse(Set.empty)
+
+    val projectAcl         = acls.value.get(orgLabel / projectLabel).map(_.value.value).getOrElse(Map.empty)
+    val projectPermissions = projectAcl.getOrElse(subject, Set.empty)
+    val rev                = acls.value.get(orgLabel / projectLabel).map(_.rev)
+
+    if (rootPermissions == permissions || orgPermissions == permissions || projectPermissions == permissions) F.unit
+    else iamClient.putAcls(orgLabel / projectLabel, AccessControlList(projectAcl + (subject -> permissions)), rev)
+
+  }
+
+  private def setOwnerPermissions(orgLabel: String, projectLabel: String, subject: Subject): F[Unit] = {
+    for {
+      permissions <- iamClient.permissions
+      acls        <- iamClient.acls(orgLabel / projectLabel, ancestors = true, self = false)
+      _           <- setPermissions(orgLabel, projectLabel, permissions, acls, subject)
+    } yield ()
+  }
 
   /**
     * Updates a project.
@@ -233,16 +262,19 @@ object Projects {
     * Constructs a [[ch.epfl.bluebrain.nexus.admin.projects.Projects]] operations bundle.
     *
     * @param index           the project and organization label index
+    * @param iamClient       the IAM client
     * @param appConfig       the application configuration
     * @tparam F              a [[cats.effect.ConcurrentEffect]] instance
     * @return the operations bundle in an ''F'' context.
     */
   def apply[F[_]: ConcurrentEffect: Timer](index: ProjectCache[F],
                                            organizations: Organizations[F],
+                                           iamClient: IamClient[F],
                                            appConfig: AppConfig)(implicit as: ActorSystem,
                                                                  mt: ActorMaterializer,
                                                                  clock: Clock = Clock.systemUTC): F[Projects[F]] = {
-    implicit val http: HttpConfig = appConfig.http
+    implicit val http: HttpConfig                  = appConfig.http
+    implicit val iamCredentials: Option[AuthToken] = appConfig.serviceAccount.credentials
 
     val aggF: F[Agg[F]] =
       AkkaAggregate.shardedF(
@@ -255,7 +287,7 @@ object Projects {
         appConfig.sourcing.akkaSourcingConfig,
         appConfig.cluster.shards
       )
-    aggF.map(agg => new Projects(agg, index, organizations))
+    aggF.map(agg => new Projects(agg, index, organizations, iamClient))
   }
 
   /**

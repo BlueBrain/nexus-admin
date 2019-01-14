@@ -89,7 +89,7 @@ object Main {
     val orgIndex: OrganizationCache[Task]  = OrganizationCache[Task]
     val projectIndex: ProjectCache[Task]   = ProjectCache[Task]
     val organizations: Organizations[Task] = Organizations[Task](orgIndex, iamClient, appConfig).runSyncUnsafe()
-    val projects: Projects[Task]           = Projects(projectIndex, organizations, appConfig).runSyncUnsafe()
+    val projects: Projects[Task]           = Projects(projectIndex, organizations, iamClient, appConfig).runSyncUnsafe()
 
     val orgRoutes: OrganizationRoutes = OrganizationRoutes(organizations)
     val projectRoutes: ProjectRoutes  = ProjectRoutes(projects)

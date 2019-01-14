@@ -114,26 +114,9 @@ class OrganizationsSpec
             )
           ))
 
-      val metadata = orgs.create(organization).accepted
+      orgs.create(organization).accepted
       iamClient.putAcls(*, *, *)(*) wasNever called
 
-      metadata.id shouldEqual url"http://nexus.example.com/v1/orgs/${organization.label}".value
-
-      metadata.rev shouldEqual 1L
-
-      metadata.deprecated shouldEqual false
-      metadata.types shouldEqual Set(nxv.Organization.value)
-      metadata.createdAt shouldEqual instant
-      metadata.createdBy shouldEqual caller
-      metadata.updatedAt shouldEqual instant
-      metadata.updatedBy shouldEqual caller
-
-      val organizationResource = metadata.withValue(organization)
-      orgs.fetch(organization.label).some shouldEqual organizationResource
-
-      val nonExistentLabel = genString()
-
-      orgs.fetch(nonExistentLabel).unsafeRunSync() shouldEqual None
     }
 
     "not set permissions if user has all permissions on /orglabel" in {
@@ -156,26 +139,8 @@ class OrganizationsSpec
             )
           ))
 
-      val metadata = orgs.create(organization).accepted
+      orgs.create(organization).accepted
       iamClient.putAcls(*, *, *)(*) wasNever called
-
-      metadata.id shouldEqual url"http://nexus.example.com/v1/orgs/${organization.label}".value
-
-      metadata.rev shouldEqual 1L
-
-      metadata.deprecated shouldEqual false
-      metadata.types shouldEqual Set(nxv.Organization.value)
-      metadata.createdAt shouldEqual instant
-      metadata.createdBy shouldEqual caller
-      metadata.updatedAt shouldEqual instant
-      metadata.updatedBy shouldEqual caller
-
-      val organizationResource = metadata.withValue(organization)
-      orgs.fetch(organization.label).some shouldEqual organizationResource
-
-      val nonExistentLabel = genString()
-
-      orgs.fetch(nonExistentLabel).unsafeRunSync() shouldEqual None
     }
 
     "set permissions when user doesn't have all permissions on /orglabel" in {
@@ -203,25 +168,8 @@ class OrganizationsSpec
       iamClient.putAcls(orgPath,
                         AccessControlList(subject -> Set(Permission.unsafe("test/permission1")), caller -> permissions),
                         Some(1L))(iamCredentials) shouldReturn IO.unit
-      val metadata = orgs.create(organization).accepted
+      orgs.create(organization).accepted
 
-      metadata.id shouldEqual url"http://nexus.example.com/v1/orgs/${organization.label}".value
-
-      metadata.rev shouldEqual 1L
-
-      metadata.deprecated shouldEqual false
-      metadata.types shouldEqual Set(nxv.Organization.value)
-      metadata.createdAt shouldEqual instant
-      metadata.createdBy shouldEqual caller
-      metadata.updatedAt shouldEqual instant
-      metadata.updatedBy shouldEqual caller
-
-      val organizationResource = metadata.withValue(organization)
-      orgs.fetch(organization.label).some shouldEqual organizationResource
-
-      val nonExistentLabel = genString()
-
-      orgs.fetch(nonExistentLabel).unsafeRunSync() shouldEqual None
     }
 
     "set permissions when user doesn't have all permissions on /" in {
@@ -258,25 +206,7 @@ class OrganizationsSpec
       iamClient.putAcls(orgPath,
                         AccessControlList(subject -> Set(Permission.unsafe("test/permission1")), caller -> permissions),
                         Some(1L))(iamCredentials) shouldReturn IO.unit
-      val metadata = orgs.create(organization).accepted
-
-      metadata.id shouldEqual url"http://nexus.example.com/v1/orgs/${organization.label}".value
-
-      metadata.rev shouldEqual 1L
-
-      metadata.deprecated shouldEqual false
-      metadata.types shouldEqual Set(nxv.Organization.value)
-      metadata.createdAt shouldEqual instant
-      metadata.createdBy shouldEqual caller
-      metadata.updatedAt shouldEqual instant
-      metadata.updatedBy shouldEqual caller
-
-      val organizationResource = metadata.withValue(organization)
-      orgs.fetch(organization.label).some shouldEqual organizationResource
-
-      val nonExistentLabel = genString()
-
-      orgs.fetch(nonExistentLabel).unsafeRunSync() shouldEqual None
+      orgs.create(organization).accepted
     }
 
     "update organization" in {
