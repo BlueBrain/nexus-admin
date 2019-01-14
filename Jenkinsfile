@@ -64,8 +64,7 @@ pipeline {
                 sh "oc scale statefulset admin --replicas=0 --namespace=bbp-nexus-dev"
                 sh "oc wait pods/admin-0 --for=delete --namespace=bbp-nexus-dev --timeout=3m"
                 sh "oc scale statefulset admin --replicas=1 --namespace=bbp-nexus-dev"
-                sleep 30 // service readiness delay is set to 30 seconds
-                sh "oc wait pods/admin-0 --for condition=ready --namespace=bbp-nexus-dev --timeout=3m"
+                sh "oc wait pods/admin-0 --for condition=ready --namespace=bbp-nexus-dev --timeout=4m"
                 build job: 'nexus/nexus-tests/master', parameters: [booleanParam(name: 'run', value: true)], wait: true
             }
         }
