@@ -32,6 +32,10 @@ sealed trait Event extends Product with Serializable {
   def subject: Subject
 }
 
+sealed trait OrganizationEvent extends Event
+
+sealed trait ProjectEvent extends Event
+
 object Event {
 
   /**
@@ -44,7 +48,7 @@ object Event {
     * @param subject      the subject which created this event
     */
   final case class OrganizationCreated(id: UUID, label: String, description: String, instant: Instant, subject: Subject)
-      extends Event {
+      extends OrganizationEvent {
 
     /**
       *  the revision number that this event generates
@@ -68,7 +72,7 @@ object Event {
                                        description: String,
                                        instant: Instant,
                                        subject: Subject)
-      extends Event
+      extends OrganizationEvent
 
   /**
     * Event representing organization deprecation.
@@ -78,7 +82,8 @@ object Event {
     * @param instant      the instant when this event was created
     * @param subject      the subject which created this event
     */
-  final case class OrganizationDeprecated(id: UUID, rev: Long, instant: Instant, subject: Subject) extends Event
+  final case class OrganizationDeprecated(id: UUID, rev: Long, instant: Instant, subject: Subject)
+      extends OrganizationEvent
 
   /**
     * Event representing project creation.
@@ -100,7 +105,7 @@ object Event {
                                   base: AbsoluteIri,
                                   instant: Instant,
                                   subject: Subject)
-      extends Event {
+      extends ProjectEvent {
 
     /**
       *  the revision number that this event generates
@@ -128,7 +133,7 @@ object Event {
                                   rev: Long,
                                   instant: Instant,
                                   subject: Subject)
-      extends Event
+      extends ProjectEvent
 
   /**
     * Event representing project deprecation.
@@ -138,6 +143,6 @@ object Event {
     * @param instant    the timestamp associated to this event
     * @param subject    the identity associated to this event
     */
-  final case class ProjectDeprecated(id: UUID, rev: Long, instant: Instant, subject: Subject) extends Event
+  final case class ProjectDeprecated(id: UUID, rev: Long, instant: Instant, subject: Subject) extends ProjectEvent
 
 }
