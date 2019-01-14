@@ -70,9 +70,11 @@ object Main {
     implicit val mt: ActorMaterializer = ActorMaterializer()
     implicit val scheduler: Scheduler  = Scheduler.global
     implicit val iamConfig             = appConfig.iam
+    implicit val iamClient             = IamClient[Task]
     implicit val paginationConfig      = appConfig.pagination
 
-    val logger  = Logging(as, getClass)
+    val logger = Logging(as, getClass)
+
     val cluster = Cluster(as)
 
     val seeds: List[Address] = appConfig.cluster.seeds.toList
@@ -81,15 +83,13 @@ object Main {
       case Nil      => List(cluster.selfAddress)
       case nonEmpty => nonEmpty
     }
-
     val serviceDescription = AppInfoRoutes(appConfig.description,
                                            ClusterHealthChecker(cluster),
                                            CassandraHealthChecker(appConfig.persistence)).routes
     val orgIndex: OrganizationCache[Task]  = OrganizationCache[Task]
     val projectIndex: ProjectCache[Task]   = ProjectCache[Task]
-    val organizations: Organizations[Task] = Organizations[Task](orgIndex, appConfig).runSyncUnsafe()
+    val organizations: Organizations[Task] = Organizations[Task](orgIndex, iamClient, appConfig).runSyncUnsafe()
     val projects: Projects[Task]           = Projects(projectIndex, organizations, appConfig).runSyncUnsafe()
-    implicit val iamClient                 = IamClient[Task]
 
     val orgRoutes: OrganizationRoutes = OrganizationRoutes(organizations)
     val projectRoutes: ProjectRoutes  = ProjectRoutes(projects)

@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.admin.config.Vocabulary._
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport.OrderedKeys
 import ch.epfl.bluebrain.nexus.commons.types.search.Pagination
 import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
+import ch.epfl.bluebrain.nexus.iam.client.types.AuthToken
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.syntax.node.unsafe._
 import ch.epfl.bluebrain.nexus.service.indexer.cache.KeyValueStoreConfig
@@ -41,7 +42,8 @@ final case class AppConfig(description: Description,
                            keyValueStore: KeyValueStoreConfig,
                            sourcing: SourcingConfig,
                            iam: IamClientConfig,
-                           pagination: PaginationConfig)
+                           pagination: PaginationConfig,
+                           serviceAccount: ServiceAccountConfig)
 
 object AppConfig {
 
@@ -144,6 +146,15 @@ object AppConfig {
     * @param topic  topic to publish events.
     */
   final case class KafkaConfig(topic: String)
+
+  /**
+    * Service account configuration.
+    *
+    * @param token token to be used for communication with IAM, if not present anonymous account will be used.
+    */
+  final case class ServiceAccountConfig(token: Option[String]) {
+    def credentials: Option[AuthToken] = token.map(AuthToken)
+  }
 
   /**
     * Pagination configuration

@@ -19,15 +19,21 @@ import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationState._
 import ch.epfl.bluebrain.nexus.admin.organizations.Organizations.next
 import ch.epfl.bluebrain.nexus.commons.types.search.Pagination
 import ch.epfl.bluebrain.nexus.commons.types.search.QueryResults.UnscoredQueryResults
+import ch.epfl.bluebrain.nexus.iam.client.IamClient
+import ch.epfl.bluebrain.nexus.iam.client.types._
 import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
+import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
 import ch.epfl.bluebrain.nexus.sourcing.akka.AkkaAggregate
 
 /**
   * Organizations operations bundle
   */
-class Organizations[F[_]](agg: Agg[F], index: OrganizationCache[F])(implicit F: MonadError[F, Throwable],
-                                                                    clock: Clock,
-                                                                    http: HttpConfig) {
+class Organizations[F[_]](agg: Agg[F], index: OrganizationCache[F], iamClient: IamClient[F])(
+    implicit F: MonadError[F, Throwable],
+    clock: Clock,
+    http: HttpConfig,
+    iamCredentials: Option[AuthToken]
+) {
 
   /**
     * Create an organization.
@@ -42,8 +48,30 @@ class Organizations[F[_]](agg: Agg[F], index: OrganizationCache[F])(implicit F: 
       case None =>
         val cmd =
           CreateOrganization(UUID.randomUUID, organization.label, organization.description, clock.instant, caller)
-        evalAndUpdateIndex(cmd, organization)
+        evalAndUpdateIndex(cmd, organization) <* setOwnerPermissions(organization.label, caller)
     }
+
+  def setPermissions(orgLabel: String,
+                     permissions: Set[Permission],
+                     acls: AccessControlLists,
+                     subject: Subject): F[Unit] = {
+    val rootPermissions = acls.value.get(/).flatMap(_.value.value.get(subject)).getOrElse(Set.empty)
+    val orgAcl          = acls.value.get(/ + orgLabel).map(_.value.value).getOrElse(Map.empty)
+    val orgPermissions  = orgAcl.getOrElse(subject, Set.empty)
+    val rev             = acls.value.get(/ + orgLabel).map(_.rev)
+
+    if (rootPermissions == permissions || orgPermissions == permissions) F.unit
+    else iamClient.putAcls(/ + orgLabel, AccessControlList(orgAcl + (subject -> permissions)), rev)
+
+  }
+
+  private def setOwnerPermissions(orgLabel: String, subject: Subject): F[Unit] = {
+    for {
+      permissions <- iamClient.permissions
+      acls        <- iamClient.acls(/ + orgLabel, ancestors = true, self = false)
+      _           <- setPermissions(orgLabel, permissions, acls, subject)
+    } yield ()
+  }
 
   /**
     * Update an organization.
@@ -144,11 +172,12 @@ object Organizations {
   /**
     * Construct ''Organization'' wrapped on an ''F'' type based on akka clustered [[Agg]].
     */
-  def apply[F[_]: ConcurrentEffect: Timer](index: OrganizationCache[F], appConfig: AppConfig)(
+  def apply[F[_]: ConcurrentEffect: Timer](index: OrganizationCache[F], iamClient: IamClient[F], appConfig: AppConfig)(
       implicit cl: Clock = Clock.systemUTC(),
       as: ActorSystem,
       mt: ActorMaterializer): F[Organizations[F]] = {
-    implicit val http: HttpConfig = appConfig.http
+    implicit val http: HttpConfig                  = appConfig.http
+    implicit val iamCredentials: Option[AuthToken] = appConfig.serviceAccount.credentials
     val aggF: F[Agg[F]] =
       AkkaAggregate.sharded(
         "organizations",
@@ -161,7 +190,7 @@ object Organizations {
         appConfig.cluster.shards
       )
 
-    aggF.map(new Organizations(_, index))
+    aggF.map(new Organizations(_, index, iamClient))
   }
 
   private[organizations] def next(state: OrganizationState, ev: OrganizationEvent): OrganizationState =
