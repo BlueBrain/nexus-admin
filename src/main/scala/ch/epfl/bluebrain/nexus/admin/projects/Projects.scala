@@ -80,15 +80,13 @@ class Projects[F[_]](agg: Agg[F], index: ProjectCache[F], organizations: Organiz
     }
 
   def setPermissions(orgLabel: String, projectLabel: String, acls: AccessControlLists, subject: Subject): F[Unit] = {
-    val rootPermissions = acls.value.get(/).flatMap(_.value.value.get(subject)).getOrElse(Set.empty)
-    val orgPermissions  = acls.value.get(/ + orgLabel).flatMap(_.value.value.get(subject)).getOrElse(Set.empty)
+    val currentPermissions = acls.filter(Set(subject)).value.foldLeft(Set.empty[Permission]) {
+      case (acc, (_, acl)) => acc ++ acl.value.permissions
+    }
+    val projectAcl = acls.value.get(orgLabel / projectLabel).map(_.value.value).getOrElse(Map.empty)
+    val rev        = acls.value.get(orgLabel / projectLabel).map(_.rev)
 
-    val projectAcl         = acls.value.get(orgLabel / projectLabel).map(_.value.value).getOrElse(Map.empty)
-    val projectPermissions = projectAcl.getOrElse(subject, Set.empty)
-    val rev                = acls.value.get(orgLabel / projectLabel).map(_.rev)
-
-    if (ownerPermissions.subsetOf(rootPermissions) || ownerPermissions.subsetOf(orgPermissions) || ownerPermissions
-          .subsetOf(projectPermissions)) F.unit
+    if (ownerPermissions.subsetOf(currentPermissions)) F.unit
     else iamClient.putAcls(orgLabel / projectLabel, AccessControlList(projectAcl + (subject -> ownerPermissions)), rev)
 
   }
