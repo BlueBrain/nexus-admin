@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.admin.config.Vocabulary._
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport.OrderedKeys
 import ch.epfl.bluebrain.nexus.commons.types.search.Pagination
 import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
-import ch.epfl.bluebrain.nexus.iam.client.types.AuthToken
+import ch.epfl.bluebrain.nexus.iam.client.types.{AuthToken, Permission}
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.syntax.node.unsafe._
 import ch.epfl.bluebrain.nexus.service.indexer.cache.KeyValueStoreConfig
@@ -21,17 +21,18 @@ import scala.concurrent.duration.FiniteDuration
 /**
   * Application configuration
   *
-  * @param description   service description
-  * @param http          http interface configuration
-  * @param cluster       akka cluster configuration
-  * @param persistence   persistence configuration
-  * @param indexing      Indexing configuration
-  * @param kafka         Kafka configuration
-  * @param keyValueStore Distributed data configuration
-  * @param sourcing      Sourcing configuration
-  * @param iam           IAM configuration
-  * @param pagination pagination configuration
-  *
+  * @param description    service description
+  * @param http           http interface configuration
+  * @param cluster        akka cluster configuration
+  * @param persistence    persistence configuration
+  * @param indexing       Indexing configuration
+  * @param kafka          Kafka configuration
+  * @param keyValueStore  Distributed data configuration
+  * @param sourcing       Sourcing configuration
+  * @param iam            IAM configuration
+  * @param pagination     pagination configuration
+  * @param serviceAccount service account configuration
+  * @param permissions    permissions configuration
   */
 final case class AppConfig(description: Description,
                            http: HttpConfig,
@@ -43,7 +44,8 @@ final case class AppConfig(description: Description,
                            sourcing: SourcingConfig,
                            iam: IamClientConfig,
                            pagination: PaginationConfig,
-                           serviceAccount: ServiceAccountConfig)
+                           serviceAccount: ServiceAccountConfig,
+                           permissions: PermissionsConfig)
 
 object AppConfig {
 
@@ -154,6 +156,15 @@ object AppConfig {
     */
   final case class ServiceAccountConfig(token: Option[String]) {
     def credentials: Option[AuthToken] = token.map(AuthToken)
+  }
+
+  /**
+    * Permissions configuration.
+    *
+    * @param owner  permissions applied to the creator of the project.
+    */
+  final case class PermissionsConfig(owner: Set[String]) {
+    def ownerPermissions: Set[Permission] = owner.map(Permission.unsafe)
   }
 
   /**

@@ -32,7 +32,8 @@ class Organizations[F[_]](agg: Agg[F], index: OrganizationCache[F], iamClient: I
     implicit F: MonadError[F, Throwable],
     clock: Clock,
     http: HttpConfig,
-    iamCredentials: Option[AuthToken]
+    iamCredentials: Option[AuthToken],
+    ownerPermissions: Set[Permission]
 ) {
 
   /**
@@ -51,25 +52,21 @@ class Organizations[F[_]](agg: Agg[F], index: OrganizationCache[F], iamClient: I
         evalAndUpdateIndex(cmd, organization) <* setOwnerPermissions(organization.label, caller)
     }
 
-  def setPermissions(orgLabel: String,
-                     permissions: Set[Permission],
-                     acls: AccessControlLists,
-                     subject: Subject): F[Unit] = {
+  def setPermissions(orgLabel: String, acls: AccessControlLists, subject: Subject): F[Unit] = {
     val rootPermissions = acls.value.get(/).flatMap(_.value.value.get(subject)).getOrElse(Set.empty)
     val orgAcl          = acls.value.get(/ + orgLabel).map(_.value.value).getOrElse(Map.empty)
     val orgPermissions  = orgAcl.getOrElse(subject, Set.empty)
     val rev             = acls.value.get(/ + orgLabel).map(_.rev)
 
-    if (rootPermissions == permissions || orgPermissions == permissions) F.unit
-    else iamClient.putAcls(/ + orgLabel, AccessControlList(orgAcl + (subject -> permissions)), rev)
+    if (ownerPermissions.subsetOf(rootPermissions) || ownerPermissions.subsetOf(orgPermissions)) F.unit
+    else iamClient.putAcls(/ + orgLabel, AccessControlList(orgAcl + (subject -> ownerPermissions)), rev)
 
   }
 
   private def setOwnerPermissions(orgLabel: String, subject: Subject): F[Unit] = {
     for {
-      permissions <- iamClient.permissions
-      acls        <- iamClient.acls(/ + orgLabel, ancestors = true, self = false)
-      _           <- setPermissions(orgLabel, permissions, acls, subject)
+      acls <- iamClient.acls(/ + orgLabel, ancestors = true, self = false)
+      _    <- setPermissions(orgLabel, acls, subject)
     } yield ()
   }
 
@@ -178,6 +175,7 @@ object Organizations {
       mt: ActorMaterializer): F[Organizations[F]] = {
     implicit val http: HttpConfig                  = appConfig.http
     implicit val iamCredentials: Option[AuthToken] = appConfig.serviceAccount.credentials
+    implicit val ownerPermissions: Set[Permission] = appConfig.permissions.ownerPermissions
     val aggF: F[Agg[F]] =
       AkkaAggregate.sharded(
         "organizations",

@@ -57,7 +57,7 @@ class OrganizationsSpec
   private val index     = OrganizationCache[IO]
   private val iamClient = mock[IamClient[IO]]
 
-  private val permissions = Set(Permission.unsafe("test/permission1"), Permission.unsafe("test/permission2"))
+  private implicit val permissions = Set(Permission.unsafe("test/permission1"), Permission.unsafe("test/permission2"))
 
   private val orgs = aggF.map(new Organizations(_, index, iamClient)).unsafeRunSync()
 

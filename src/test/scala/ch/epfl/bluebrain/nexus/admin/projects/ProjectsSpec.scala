@@ -49,8 +49,8 @@ class ProjectsSpec
   private val aggF: IO[Agg[IO]] =
     Aggregate.inMemoryF("projects-in-memory", ProjectState.Initial, Projects.next, Projects.Eval.apply[IO])
 
-  private val projects    = aggF.map(agg => new Projects[IO](agg, index, orgs, iamClient)).unsafeRunSync()
-  private val permissions = Set(Permission.unsafe("test/permission1"), Permission.unsafe("test/permission2"))
+  private implicit val permissions = Set(Permission.unsafe("test/permission1"), Permission.unsafe("test/permission2"))
+  private val projects             = aggF.map(agg => new Projects[IO](agg, index, orgs, iamClient)).unsafeRunSync()
 
   override protected def beforeEach(): Unit = {
     reset(orgs)

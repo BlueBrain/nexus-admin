@@ -40,7 +40,9 @@ class Projects[F[_]](agg: Agg[F], index: ProjectCache[F], organizations: Organiz
     implicit F: MonadError[F, Throwable],
     http: HttpConfig,
     clock: Clock,
-    iamCredentials: Option[AuthToken]) {
+    iamCredentials: Option[AuthToken],
+    ownerPermissions: Set[Permission]
+) {
 
   /**
     * Creates a project.
@@ -77,11 +79,7 @@ class Projects[F[_]](agg: Agg[F], index: ProjectCache[F], organizations: Organiz
       case None => F.pure(Left(OrganizationNotFound))
     }
 
-  def setPermissions(orgLabel: String,
-                     projectLabel: String,
-                     permissions: Set[Permission],
-                     acls: AccessControlLists,
-                     subject: Subject): F[Unit] = {
+  def setPermissions(orgLabel: String, projectLabel: String, acls: AccessControlLists, subject: Subject): F[Unit] = {
     val rootPermissions = acls.value.get(/).flatMap(_.value.value.get(subject)).getOrElse(Set.empty)
     val orgPermissions  = acls.value.get(/ + orgLabel).flatMap(_.value.value.get(subject)).getOrElse(Set.empty)
 
@@ -89,16 +87,16 @@ class Projects[F[_]](agg: Agg[F], index: ProjectCache[F], organizations: Organiz
     val projectPermissions = projectAcl.getOrElse(subject, Set.empty)
     val rev                = acls.value.get(orgLabel / projectLabel).map(_.rev)
 
-    if (rootPermissions == permissions || orgPermissions == permissions || projectPermissions == permissions) F.unit
-    else iamClient.putAcls(orgLabel / projectLabel, AccessControlList(projectAcl + (subject -> permissions)), rev)
+    if (ownerPermissions.subsetOf(rootPermissions) || ownerPermissions.subsetOf(orgPermissions) || ownerPermissions
+          .subsetOf(projectPermissions)) F.unit
+    else iamClient.putAcls(orgLabel / projectLabel, AccessControlList(projectAcl + (subject -> ownerPermissions)), rev)
 
   }
 
   private def setOwnerPermissions(orgLabel: String, projectLabel: String, subject: Subject): F[Unit] = {
     for {
-      permissions <- iamClient.permissions
-      acls        <- iamClient.acls(orgLabel / projectLabel, ancestors = true, self = false)
-      _           <- setPermissions(orgLabel, projectLabel, permissions, acls, subject)
+      acls <- iamClient.acls(orgLabel / projectLabel, ancestors = true, self = false)
+      _    <- setPermissions(orgLabel, projectLabel, acls, subject)
     } yield ()
   }
 
@@ -275,6 +273,7 @@ object Projects {
                                                                  clock: Clock = Clock.systemUTC): F[Projects[F]] = {
     implicit val http: HttpConfig                  = appConfig.http
     implicit val iamCredentials: Option[AuthToken] = appConfig.serviceAccount.credentials
+    implicit val ownerPermissions: Set[Permission] = appConfig.permissions.ownerPermissions
 
     val aggF: F[Agg[F]] =
       AkkaAggregate.shardedF(
