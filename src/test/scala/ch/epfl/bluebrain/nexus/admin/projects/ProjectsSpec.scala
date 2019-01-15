@@ -11,9 +11,14 @@ import ch.epfl.bluebrain.nexus.admin.organizations.{Organization, Organizations}
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectRejection._
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF
 import ch.epfl.bluebrain.nexus.commons.test.io.{IOEitherValues, IOOptionValues}
+import ch.epfl.bluebrain.nexus.iam.client.IamClient
+import ch.epfl.bluebrain.nexus.iam.client.types._
 import ch.epfl.bluebrain.nexus.iam.client.types.Identity.User
+import ch.epfl.bluebrain.nexus.rdf.Iri.Path
+import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
 import ch.epfl.bluebrain.nexus.rdf.syntax.node.unsafe._
 import ch.epfl.bluebrain.nexus.sourcing.Aggregate
+import ch.epfl.bluebrain.nexus.sourcing.akka.RetryStrategy
 import org.mockito.MockitoSugar.reset
 import org.mockito.integrations.scalatest.IdiomaticMockitoFixture
 import org.scalatest._
@@ -32,27 +37,32 @@ class ProjectsSpec
   override implicit val patienceConfig: PatienceConfig = PatienceConfig(3.seconds, 100.milliseconds)
   private implicit val ctx: ContextShift[IO]           = IO.contextShift(ExecutionContext.global)
   private implicit val httpConfig: HttpConfig          = HttpConfig("nexus", 80, "/v1", "http://nexus.example.com")
+  private implicit val iamCredentials                  = Some(AuthToken("token"))
 
   private val instant               = Instant.now
   private implicit val clock: Clock = Clock.fixed(instant, ZoneId.systemDefault)
 
-  private val index = mock[ProjectCache[IO]]
-  private val orgs  = mock[Organizations[IO]]
+  private val index     = mock[ProjectCache[IO]]
+  private val orgs      = mock[Organizations[IO]]
+  private val iamClient = mock[IamClient[IO]]
+  val caller            = User("realm", "alice")
 
   private val aggF: IO[Agg[IO]] =
     Aggregate.inMemoryF("projects-in-memory", ProjectState.Initial, Projects.next, Projects.Eval.apply[IO])
 
-  private val projects = aggF.map(agg => new Projects[IO](agg, index, orgs)).unsafeRunSync()
+  private implicit val permissions   = Set(Permission.unsafe("test/permission1"), Permission.unsafe("test/permission2"))
+  private implicit val retryStrategy = RetryStrategy.once[IO, Throwable]
+  private val projects               = aggF.map(agg => new Projects[IO](agg, index, orgs, iamClient)).unsafeRunSync()
 
   override protected def beforeEach(): Unit = {
     reset(orgs)
     reset(index)
+    reset(iamClient)
   }
 
 //noinspection TypeAnnotation
   trait Context {
     val types  = Set(nxv.Project.value)
-    val caller = User("realm", "alice")
     val desc   = Some("Project description")
     val orgId  = UUID.randomUUID
     val projId = UUID.randomUUID
@@ -108,6 +118,7 @@ class ProjectsSpec
       orgs.fetch(orgId) shouldReturn IO.pure(Some(organization))
       index.getBy("org", "proj") shouldReturn IO.pure(None)
       index.replace(any[UUID], any[ResourceF[Project]]) shouldReturn IO.pure(())
+      mockIamCalls()
       val created = projects.create("org", "proj", payload)(caller).accepted
       index.getBy("org", "proj") shouldReturn IO.pure(Some(resource.copy(uuid = created.uuid)))
       val deprecated = projects.deprecate("org", "proj", 1L)(caller).accepted
@@ -121,6 +132,7 @@ class ProjectsSpec
       orgs.fetch(orgId) shouldReturn IO.pure(Some(organization))
       index.getBy("org", "proj") shouldReturn IO.pure(None)
       index.replace(any[UUID], any[ResourceF[Project]]) shouldReturn IO.pure(())
+      mockIamCalls()
       val created = projects.create("org", "proj", payload)(caller).accepted
       index.getBy("org", "proj") shouldReturn IO.pure(Some(resource.copy(uuid = created.uuid)))
       val deprecated = projects.deprecate("org", "proj", 1L)(caller).accepted
@@ -134,6 +146,7 @@ class ProjectsSpec
       orgs.fetch(orgId) shouldReturn IO.pure(Some(organization))
       index.getBy("org", "proj") shouldReturn IO.pure(None)
       index.replace(any[UUID], any[ResourceF[Project]]) shouldReturn IO.pure(())
+      mockIamCalls()
       val created = projects.create("org", "proj", payload)(caller).accepted
 
       created.id shouldEqual iri
@@ -152,6 +165,7 @@ class ProjectsSpec
       orgs.fetch(orgId) shouldReturn IO.pure(Some(organization))
       index.getBy("org", "proj") shouldReturn IO.pure(None)
       index.replace(any[UUID], any[ResourceF[Project]]) shouldReturn IO.pure(())
+      mockIamCalls()
       val created = projects.create("org", "proj", ProjectDescription(None, Map.empty, None, None))(caller).accepted
 
       created.id shouldEqual iri
@@ -173,6 +187,7 @@ class ProjectsSpec
       orgs.fetch(orgId) shouldReturn IO.pure(Some(organization))
       index.getBy("org", "proj") shouldReturn IO.pure(None)
       index.replace(any[UUID], any[ResourceF[Project]]) shouldReturn IO.pure(())
+      mockIamCalls()
       val created = projects.create("org", "proj", payload)(caller).accepted
 
       index.getBy("org", "proj") shouldReturn IO.pure(Some(resource.copy(uuid = created.uuid)))
@@ -205,6 +220,7 @@ class ProjectsSpec
       orgs.fetch(orgId) shouldReturn IO.pure(Some(organization))
       index.getBy("org", "proj") shouldReturn IO.pure(None)
       index.replace(any[UUID], any[ResourceF[Project]]) shouldReturn IO.pure(())
+      mockIamCalls()
       val created = projects.create("org", "proj", payload)(caller).accepted
       index.getBy("org", "proj") shouldReturn IO.pure(Some(resource.copy(uuid = created.uuid)))
       val deprecated = projects.deprecate("org", "proj", 1L)(caller).accepted
@@ -225,6 +241,7 @@ class ProjectsSpec
       orgs.fetch(orgId) shouldReturn IO.pure(Some(organization))
       index.getBy("org", "proj") shouldReturn IO.pure(None)
       index.replace(any[UUID], any[ResourceF[Project]]) shouldReturn IO.pure(())
+      mockIamCalls()
       val created = projects.create("org", "proj", payload)(caller).accepted
       val fetched = projects.fetch(created.uuid).some
       fetched.id shouldEqual iri
@@ -248,6 +265,7 @@ class ProjectsSpec
       orgs.fetch(orgId) shouldReturn IO.pure(Some(organization))
       index.getBy("org", "proj") shouldReturn IO.pure(None)
       index.replace(any[UUID], any[ResourceF[Project]]) shouldReturn IO.pure(())
+      mockIamCalls()
       val created = projects.create("org", "proj", payload)(caller).accepted
       index.getBy("org", "proj") shouldReturn IO.pure(Some(resource.copy(uuid = created.uuid)))
       projects.update("org", "proj", payload.copy(description = Some("New description")), 1L)(caller).accepted
@@ -270,5 +288,121 @@ class ProjectsSpec
       projects.fetch(created.uuid, 4L).rejected[ProjectRejection] shouldEqual IncorrectRev(3L, 4L)
       projects.fetch(UUID.randomUUID, 4L).rejected[ProjectRejection] shouldEqual ProjectNotFound
     }
+
+    "not set permissions if user has all permissions on /" in new Context {
+      orgs.fetch("org") shouldReturn IO.pure(Some(organization))
+      orgs.fetch(orgId) shouldReturn IO.pure(Some(organization))
+      index.getBy("org", "proj") shouldReturn IO.pure(None)
+      index.replace(any[UUID], any[ResourceF[Project]]) shouldReturn IO.pure(())
+
+      iamClient.permissions(iamCredentials) shouldReturn IO.pure(permissions)
+      iamClient.acls("org" / "proj", ancestors = true, self = false)(iamCredentials) shouldReturn IO
+        .pure(
+          AccessControlLists(
+            / -> ResourceAccessControlList(
+              url"http://nexus.example.com/acls/".value,
+              1L,
+              Set.empty,
+              Instant.now(),
+              caller,
+              Instant.now(),
+              caller,
+              AccessControlList(caller -> permissions)
+            )
+          ))
+
+      projects.create("org", "proj", payload)(caller).accepted
+      iamClient.putAcls(*, *, *)(*) wasNever called
+
+    }
+
+    "not set permissions if user has all permissions on /org" in new Context {
+      orgs.fetch("org") shouldReturn IO.pure(Some(organization))
+      orgs.fetch(orgId) shouldReturn IO.pure(Some(organization))
+      index.getBy("org", "proj") shouldReturn IO.pure(None)
+      index.replace(any[UUID], any[ResourceF[Project]]) shouldReturn IO.pure(())
+
+      iamClient.permissions(iamCredentials) shouldReturn IO.pure(permissions)
+      iamClient.acls("org" / "proj", ancestors = true, self = false)(iamCredentials) shouldReturn IO
+        .pure(
+          AccessControlLists(
+            / + "org" -> ResourceAccessControlList(
+              url"http://nexus.example.com/acls/".value,
+              1L,
+              Set.empty,
+              Instant.now(),
+              caller,
+              Instant.now(),
+              caller,
+              AccessControlList(caller -> permissions)
+            )
+          ))
+
+      projects.create("org", "proj", payload)(caller).accepted
+      iamClient.putAcls(*, *, *)(*) wasNever called
+    }
+
+    "not set permissions if user has all permissions on /org/proj" in new Context {
+      orgs.fetch("org") shouldReturn IO.pure(Some(organization))
+      orgs.fetch(orgId) shouldReturn IO.pure(Some(organization))
+      index.getBy("org", "proj") shouldReturn IO.pure(None)
+      index.replace(any[UUID], any[ResourceF[Project]]) shouldReturn IO.pure(())
+
+      iamClient.permissions(iamCredentials) shouldReturn IO.pure(permissions)
+      iamClient.acls("org" / "proj", ancestors = true, self = false)(iamCredentials) shouldReturn IO
+        .pure(
+          AccessControlLists(
+            "org" / "proj" -> ResourceAccessControlList(
+              url"http://nexus.example.com/acls/".value,
+              1L,
+              Set.empty,
+              Instant.now(),
+              caller,
+              Instant.now(),
+              caller,
+              AccessControlList(caller -> permissions)
+            )
+          ))
+
+      projects.create("org", "proj", payload)(caller).accepted
+      iamClient.putAcls(*, *, *)(*) wasNever called
+    }
+
+    "set permissions when user doesn't have all permissions on /org/proj" in new Context {
+      orgs.fetch("org") shouldReturn IO.pure(Some(organization))
+      orgs.fetch(orgId) shouldReturn IO.pure(Some(organization))
+      index.getBy("org", "proj") shouldReturn IO.pure(None)
+      index.replace(any[UUID], any[ResourceF[Project]]) shouldReturn IO.pure(())
+
+      val subject = User("username", "realm")
+      iamClient.permissions(iamCredentials) shouldReturn IO.pure(permissions)
+      iamClient.acls("org" / "proj", ancestors = true, self = false)(iamCredentials) shouldReturn IO
+        .pure(
+          AccessControlLists(
+            "org" / "proj" -> ResourceAccessControlList(
+              url"http://nexus.example.com/acls/org/proj".value,
+              1L,
+              Set.empty,
+              Instant.now(),
+              caller,
+              Instant.now(),
+              caller,
+              AccessControlList(subject -> Set(Permission.unsafe("test/permission1")),
+                                caller  -> Set(Permission.unsafe("test/permission2")))
+            )
+          ))
+
+      iamClient.putAcls("org" / "proj",
+                        AccessControlList(subject -> Set(Permission.unsafe("test/permission1")), caller -> permissions),
+                        Some(1L))(iamCredentials) shouldReturn IO.unit
+    }
+  }
+
+  private def mockIamCalls() = {
+    val orgPath = Path.apply("/org/proj").right.value
+    iamClient.permissions(iamCredentials) shouldReturn IO.pure(permissions)
+    iamClient.acls(orgPath, ancestors = true, self = false)(iamCredentials) shouldReturn IO
+      .pure(AccessControlLists.empty)
+    iamClient.putAcls(orgPath, AccessControlList(caller -> permissions), None)(iamCredentials) shouldReturn IO.unit
   }
 }

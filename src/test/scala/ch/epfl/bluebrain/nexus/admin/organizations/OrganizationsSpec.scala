@@ -13,12 +13,18 @@ import ch.epfl.bluebrain.nexus.admin.organizations.Organizations._
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF
 import ch.epfl.bluebrain.nexus.commons.test.Randomness
 import ch.epfl.bluebrain.nexus.commons.test.io.{IOEitherValues, IOOptionValues}
-import ch.epfl.bluebrain.nexus.iam.client.types.Caller
-import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
+import ch.epfl.bluebrain.nexus.iam.client.IamClient
+import ch.epfl.bluebrain.nexus.iam.client.types._
+import ch.epfl.bluebrain.nexus.iam.client.types.Identity.{Subject, User}
+import ch.epfl.bluebrain.nexus.rdf.Iri.Path
+import ch.epfl.bluebrain.nexus.rdf.Iri.Path./
 import ch.epfl.bluebrain.nexus.rdf.syntax.node.unsafe._
 import ch.epfl.bluebrain.nexus.service.test.ActorSystemFixture
 import ch.epfl.bluebrain.nexus.sourcing.Aggregate
-import org.scalatest.Matchers
+import ch.epfl.bluebrain.nexus.sourcing.akka.RetryStrategy
+import org.mockito.Mockito
+import org.mockito.integrations.scalatest.IdiomaticMockitoFixture
+import org.scalatest.{BeforeAndAfter, Matchers}
 import org.scalatest.concurrent.ScalaFutures
 
 import scala.concurrent.ExecutionContext
@@ -30,7 +36,9 @@ class OrganizationsSpec
     with Randomness
     with IOOptionValues
     with IOEitherValues
-    with Matchers {
+    with Matchers
+    with IdiomaticMockitoFixture
+    with BeforeAndAfter {
 
   override implicit val patienceConfig: PatienceConfig = PatienceConfig(3 seconds, 100 milliseconds)
 
@@ -43,17 +51,28 @@ class OrganizationsSpec
   private val instant                  = clock.instant()
   private implicit val appConfig       = Settings(system).appConfig
   private implicit val keyStoreConfig  = appConfig.keyValueStore
+  private implicit val iamCredentials  = Some(AuthToken("token"))
 
   private val aggF: IO[Agg[IO]] = Aggregate.inMemory[IO, String]("organizations", Initial, next, evaluate[IO])
 
-  private val index = OrganizationCache[IO]
+  private val index     = OrganizationCache[IO]
+  private val iamClient = mock[IamClient[IO]]
 
-  private val orgs = aggF.map(new Organizations(_, index)).unsafeRunSync()
+  private implicit val permissions   = Set(Permission.unsafe("test/permission1"), Permission.unsafe("test/permission2"))
+  private implicit val retryStrategy = RetryStrategy.once[IO, Throwable]
+
+  private val orgs = aggF.map(new Organizations(_, index, iamClient)).unsafeRunSync()
+
+  before {
+    Mockito.reset(iamClient)
+  }
 
   "Organizations operations bundle" should {
 
     "create and fetch organizations " in {
       val organization = Organization(genString(), genString())
+
+      mockIamCalls(organization.label)
 
       val metadata = orgs.create(organization).accepted
 
@@ -77,8 +96,125 @@ class OrganizationsSpec
 
     }
 
+    "not set permissions if user has all permissions on /" in {
+      val organization = Organization(genString(), genString())
+
+      val orgPath = Path.apply(s"/${organization.label}").right.value
+      iamClient.permissions(iamCredentials) shouldReturn IO.pure(permissions)
+      iamClient.acls(orgPath, ancestors = true, self = false)(iamCredentials) shouldReturn IO
+        .pure(
+          AccessControlLists(
+            / -> ResourceAccessControlList(
+              url"http://nexus.example.com/acls/${organization.label}".value,
+              1L,
+              Set.empty,
+              Instant.now(),
+              caller,
+              Instant.now(),
+              caller,
+              AccessControlList(caller -> permissions)
+            )
+          ))
+
+      orgs.create(organization).accepted
+      iamClient.putAcls(*, *, *)(*) wasNever called
+
+    }
+
+    "not set permissions if user has all permissions on /orglabel" in {
+      val organization = Organization(genString(), genString())
+
+      val orgPath = Path.apply(s"/${organization.label}").right.value
+      iamClient.permissions(iamCredentials) shouldReturn IO.pure(permissions)
+      iamClient.acls(orgPath, ancestors = true, self = false)(iamCredentials) shouldReturn IO
+        .pure(
+          AccessControlLists(
+            orgPath -> ResourceAccessControlList(
+              url"http://nexus.example.com/acls/${organization.label}".value,
+              1L,
+              Set.empty,
+              Instant.now(),
+              caller,
+              Instant.now(),
+              caller,
+              AccessControlList(caller -> permissions)
+            )
+          ))
+
+      orgs.create(organization).accepted
+      iamClient.putAcls(*, *, *)(*) wasNever called
+    }
+
+    "set permissions when user doesn't have all permissions on /orglabel" in {
+      val organization = Organization(genString(), genString())
+
+      val orgPath = Path.apply(s"/${organization.label}").right.value
+      val subject = User("username", "realm")
+      iamClient.permissions(iamCredentials) shouldReturn IO.pure(permissions)
+      iamClient.acls(orgPath, ancestors = true, self = false)(iamCredentials) shouldReturn IO
+        .pure(
+          AccessControlLists(
+            orgPath -> ResourceAccessControlList(
+              url"http://nexus.example.com/acls/${organization.label}".value,
+              1L,
+              Set.empty,
+              Instant.now(),
+              caller,
+              Instant.now(),
+              caller,
+              AccessControlList(subject -> Set(Permission.unsafe("test/permission1")),
+                                caller  -> Set(Permission.unsafe("test/permission2")))
+            )
+          ))
+
+      iamClient.putAcls(orgPath,
+                        AccessControlList(subject -> Set(Permission.unsafe("test/permission1")), caller -> permissions),
+                        Some(1L))(iamCredentials) shouldReturn IO.unit
+      orgs.create(organization).accepted
+
+    }
+
+    "set permissions when user doesn't have all permissions on /" in {
+      val organization = Organization(genString(), genString())
+
+      val orgPath = Path.apply(s"/${organization.label}").right.value
+      val subject = User("username", "realm")
+      iamClient.permissions(iamCredentials) shouldReturn IO.pure(permissions)
+      iamClient.acls(orgPath, ancestors = true, self = false)(iamCredentials) shouldReturn IO
+        .pure(
+          AccessControlLists(
+            / -> ResourceAccessControlList(
+              url"http://nexus.example.com/acls/".value,
+              5L,
+              Set.empty,
+              Instant.now(),
+              caller,
+              Instant.now(),
+              caller,
+              AccessControlList(caller -> Set(Permission.unsafe("test/permission2")))
+            ),
+            orgPath -> ResourceAccessControlList(
+              url"http://nexus.example.com/acls/${organization.label}".value,
+              1L,
+              Set.empty,
+              Instant.now(),
+              caller,
+              Instant.now(),
+              caller,
+              AccessControlList(subject -> Set(Permission.unsafe("test/permission1")))
+            )
+          ))
+
+      iamClient.putAcls(orgPath,
+                        AccessControlList(subject -> Set(Permission.unsafe("test/permission1")), caller -> permissions),
+                        Some(1L))(iamCredentials) shouldReturn IO.unit
+      orgs.create(organization).accepted
+    }
+
     "update organization" in {
       val organization = Organization(genString(), genString())
+
+      mockIamCalls(organization.label)
 
       val metadata = orgs.create(organization).accepted
 
@@ -116,6 +252,8 @@ class OrganizationsSpec
     "deprecate organizations" in {
       val organization = Organization(genString(), genString())
 
+      mockIamCalls(organization.label)
+
       val metadata = orgs.create(organization).accepted
 
       val resource = orgs.deprecate(organization.label, 1L).accepted
@@ -127,6 +265,8 @@ class OrganizationsSpec
 
     "fetch organizations by revision" in {
       val organization = Organization(genString(), genString())
+
+      mockIamCalls(organization.label)
 
       val metadata = orgs.create(organization).accepted
 
@@ -151,6 +291,8 @@ class OrganizationsSpec
     "reject update when revision is incorrect" in {
       val organization = Organization(genString(), genString())
 
+      mockIamCalls(organization.label)
+
       orgs.create(organization).unsafeRunSync()
 
       val updatedOrg = organization.copy(description = genString())
@@ -161,6 +303,8 @@ class OrganizationsSpec
     "reject deprecation when revision is incorrect" in {
       val organization = Organization(genString(), genString())
 
+      mockIamCalls(organization.label)
+
       orgs.create(organization).unsafeRunSync()
 
       orgs.deprecate(organization.label, 2L).rejected[OrganizationRejection] shouldEqual IncorrectRev(1L, 2L)
@@ -170,5 +314,13 @@ class OrganizationsSpec
       val label = genString()
       orgs.fetch(label).unsafeRunSync() shouldEqual None
     }
+  }
+
+  private def mockIamCalls(orgLabel: String) = {
+    val orgPath = Path.apply(s"/$orgLabel").right.value
+    iamClient.permissions(iamCredentials) shouldReturn IO.pure(permissions)
+    iamClient.acls(orgPath, ancestors = true, self = false)(iamCredentials) shouldReturn IO
+      .pure(AccessControlLists.empty)
+    iamClient.putAcls(orgPath, AccessControlList(caller -> permissions), None)(iamCredentials) shouldReturn IO.unit
   }
 }
