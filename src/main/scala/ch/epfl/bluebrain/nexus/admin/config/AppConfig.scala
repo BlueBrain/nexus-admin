@@ -1,35 +1,40 @@
 package ch.epfl.bluebrain.nexus.admin.config
 
 import akka.http.scaladsl.model.Uri
+import cats.ApplicativeError
+import cats.effect.Timer
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig._
 import ch.epfl.bluebrain.nexus.admin.config.Vocabulary._
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport.OrderedKeys
 import ch.epfl.bluebrain.nexus.commons.types.search.Pagination
 import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
+import ch.epfl.bluebrain.nexus.iam.client.types.{AuthToken, Permission}
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.syntax.node.unsafe._
 import ch.epfl.bluebrain.nexus.service.indexer.cache.KeyValueStoreConfig
-import ch.epfl.bluebrain.nexus.service.indexer.retryer.RetryStrategy
+import ch.epfl.bluebrain.nexus.service.indexer.retryer.{RetryStrategy => IndexerRetryStrategy}
 import ch.epfl.bluebrain.nexus.service.indexer.retryer.RetryStrategy.Backoff
 import ch.epfl.bluebrain.nexus.service.kamon.directives.TracingDirectives
-import ch.epfl.bluebrain.nexus.sourcing.akka.SourcingConfig
+import ch.epfl.bluebrain.nexus.sourcing.akka.SourcingConfig.RetryStrategyConfig
+import ch.epfl.bluebrain.nexus.sourcing.akka.{RetryStrategy, SourcingConfig}
 
 import scala.concurrent.duration.FiniteDuration
 
 /**
   * Application configuration
   *
-  * @param description   service description
-  * @param http          http interface configuration
-  * @param cluster       akka cluster configuration
-  * @param persistence   persistence configuration
-  * @param indexing      Indexing configuration
-  * @param kafka         Kafka configuration
-  * @param keyValueStore Distributed data configuration
-  * @param sourcing      Sourcing configuration
-  * @param iam           IAM configuration
-  * @param pagination pagination configuration
-  *
+  * @param description    service description
+  * @param http           http interface configuration
+  * @param cluster        akka cluster configuration
+  * @param persistence    persistence configuration
+  * @param indexing       Indexing configuration
+  * @param kafka          Kafka configuration
+  * @param keyValueStore  Distributed data configuration
+  * @param sourcing       Sourcing configuration
+  * @param iam            IAM configuration
+  * @param pagination     pagination configuration
+  * @param serviceAccount service account configuration
+  * @param permissions    permissions configuration
   */
 final case class AppConfig(description: Description,
                            http: HttpConfig,
@@ -40,7 +45,9 @@ final case class AppConfig(description: Description,
                            keyValueStore: KeyValueStoreConfig,
                            sourcing: SourcingConfig,
                            iam: IamClientConfig,
-                           pagination: PaginationConfig)
+                           pagination: PaginationConfig,
+                           serviceAccount: ServiceAccountConfig,
+                           permissions: PermissionsConfig)
 
 object AppConfig {
 
@@ -124,7 +131,7 @@ object AppConfig {
     * @param randomFactor the jitter added between retries
     */
   final case class Retry(maxCount: Int, maxDuration: FiniteDuration, randomFactor: Double) {
-    val strategy: RetryStrategy = Backoff(maxDuration, randomFactor)
+    val strategy: IndexerRetryStrategy = Backoff(maxDuration, randomFactor)
   }
 
   /**
@@ -142,6 +149,38 @@ object AppConfig {
     * @param topic  topic to publish events.
     */
   final case class KafkaConfig(topic: String)
+
+  /**
+    * Service account configuration.
+    *
+    * @param token token to be used for communication with IAM, if not present anonymous account will be used.
+    */
+  final case class ServiceAccountConfig(token: Option[String]) {
+    def credentials: Option[AuthToken] = token.map(AuthToken)
+  }
+
+  /**
+    * Permissions configuration.
+    *
+    * @param owner  permissions applied to the creator of the project.
+    */
+  final case class PermissionsConfig(owner: Set[String], retry: RetryStrategyConfig) {
+
+    def ownerPermissions: Set[Permission] = owner.map(Permission.unsafe)
+
+    /**
+      * Computes a retry strategy from the provided configuration.
+      */
+    def retryStrategy[F[_]: Timer, E](implicit F: ApplicativeError[F, E]): RetryStrategy[F] =
+      retry.strategy match {
+        case "exponential" =>
+          RetryStrategy.exponentialBackoff(retry.initialDelay, retry.maxRetries, retry.factor)
+        case "once" =>
+          RetryStrategy.once
+        case _ =>
+          RetryStrategy.never
+      }
+  }
 
   /**
     * Pagination configuration
