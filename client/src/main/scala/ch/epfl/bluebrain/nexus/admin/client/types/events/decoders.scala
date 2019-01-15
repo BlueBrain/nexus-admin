@@ -38,19 +38,13 @@ object decoders {
 
   private implicit val mappingDecoder: Decoder[Mapping] = deriveDecoder[Mapping]
 
-  /**
-    * [[Decoder]] for [[ProjectEvent]]s.
-    */
-  implicit def projectEventDecoder(implicit iamClientConfig: IamClientConfig): Decoder[ProjectEvent] = {
-    implicit val mappingDecoder: Decoder[Map[String, AbsoluteIri]] =
-      Decoder.decodeList[Mapping].map(_.map(m => (m.prefix, m.namespace)).toMap)
-    deriveDecoder[ProjectEvent]
-  }
+  private implicit val mapDecoder: Decoder[Map[String, AbsoluteIri]] =
+    Decoder.decodeList[Mapping].map(_.map(m => (m.prefix, m.namespace)).toMap)
 
   /**
-    * [[Decoder]] for [[OrganizationEvent]]s.
+    * [[Decoder]] for [[Event]]s.
     */
-  implicit def organizationEventDecoder(implicit iamClientConfig: IamClientConfig): Decoder[OrganizationEvent] =
-    deriveDecoder[OrganizationEvent]
+  implicit def eventDecoder(implicit iamClientConfig: IamClientConfig): Decoder[Event] =
+    deriveDecoder[Event]
 
 }

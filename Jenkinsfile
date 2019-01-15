@@ -2,33 +2,10 @@ String version = env.BRANCH_NAME
 Boolean isRelease = version ==~ /v\d+\.\d+\.\d+.*/
 Boolean isPR = env.CHANGE_ID != null
 
-/*
- * Loops until the endpoint is up (true) or down (false), for 20 attempts maximum
- */
-def wait(endpoint, up, attempt = 1) {
-    if (attempt > 20) {
-        error("Invalid response from $endpoint after 20 attempts")
-    }
-    def response = httpRequest url: endpoint, validResponseCodes: '100:599' // prevents an exception to be thrown on 500 codes
-    if (up && response.status == 200) {
-        echo "$endpoint is up"
-        return
-    } else if (!up && response.status == 503) {
-        echo "$endpoint is down"
-        return
-    } else {
-        sleep 10
-        wait(endpoint, up, attempt + 1)
-    }
-}
-
 pipeline {
     agent { label 'slave-sbt' }
     options {
         timeout(time: 30, unit: 'MINUTES') 
-    }
-    environment {
-        ENDPOINT = sh(script: 'oc env statefulset/admin -n bbp-nexus-dev --list | grep PUBLIC_URI', returnStdout: true).split('=')[1].trim()
     }
     stages {
         stage("Review") {
@@ -82,12 +59,9 @@ pipeline {
             }
             steps {
                 sh "oc scale statefulset admin --replicas=0 --namespace=bbp-nexus-dev"
-                sleep 10
-                wait(ENDPOINT, false)
+                sh "oc wait pods/admin-0 --for=delete --namespace=bbp-nexus-dev --timeout=3m"
                 sh "oc scale statefulset admin --replicas=1 --namespace=bbp-nexus-dev"
-                sleep 120 // service readiness delay is set to 2 minutes
-                openshiftVerifyService namespace: 'bbp-nexus-dev', svcName: 'admin', verbose: 'false'
-                wait(ENDPOINT, true)
+                sh "oc wait pods/admin-0 --for condition=ready --namespace=bbp-nexus-dev --timeout=4m"
                 build job: 'nexus/nexus-tests/master', parameters: [booleanParam(name: 'run', value: true)], wait: true
             }
         }

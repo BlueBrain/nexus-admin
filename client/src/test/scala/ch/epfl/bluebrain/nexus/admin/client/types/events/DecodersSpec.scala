@@ -3,8 +3,7 @@ package ch.epfl.bluebrain.nexus.admin.client.types.events
 import java.time.Instant
 import java.util.UUID
 
-import ch.epfl.bluebrain.nexus.admin.client.types.events.OrganizationEvent._
-import ch.epfl.bluebrain.nexus.admin.client.types.events.ProjectEvent._
+import ch.epfl.bluebrain.nexus.admin.client.types.events.Event._
 import ch.epfl.bluebrain.nexus.admin.client.types.events.decoders._
 import ch.epfl.bluebrain.nexus.commons.test.Resources
 import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
@@ -48,8 +47,7 @@ class DecodersSpec extends WordSpecLike with Matchers with Resources with Either
                        subject)
       val json = jsonContentOf("/kafka/project-created.json")
 
-      println(json.as[ProjectEvent])
-      json.as[ProjectEvent].right.value shouldEqual event
+      json.as[Event].right.value shouldEqual event
     }
 
     "decode project update event" in {
@@ -57,7 +55,7 @@ class DecodersSpec extends WordSpecLike with Matchers with Resources with Either
         ProjectUpdated(projectUuid, projectLabel, projectDescription, mappings, base, vocab, 2L, instant, subject)
       val json = jsonContentOf("/kafka/project-updated.json")
 
-      json.as[ProjectEvent].right.value shouldEqual event
+      json.as[Event].right.value shouldEqual event
     }
 
     "decode project deprecated event" in {
@@ -65,7 +63,7 @@ class DecodersSpec extends WordSpecLike with Matchers with Resources with Either
         ProjectDeprecated(projectUuid, 2L, instant, subject)
       val json = jsonContentOf("/kafka/project-deprecated.json")
 
-      json.as[ProjectEvent].right.value shouldEqual event
+      json.as[Event].right.value shouldEqual event
     }
 
     "decode organization created event" in {
@@ -73,21 +71,21 @@ class DecodersSpec extends WordSpecLike with Matchers with Resources with Either
         OrganizationCreated(orgUuid, orgLabel, orgDescription, instant, subject)
       val json = jsonContentOf("/kafka/organization-created.json")
 
-      json.as[OrganizationEvent].right.value shouldEqual event
+      json.as[Event].right.value shouldEqual event
     }
     "decode organization updated event" in {
       val event: OrganizationEvent =
         OrganizationUpdated(orgUuid, 2L, orgLabel, orgDescription, instant, subject)
       val json = jsonContentOf("/kafka/organization-updated.json")
 
-      json.as[OrganizationEvent].right.value shouldEqual event
+      json.as[Event].right.value shouldEqual event
     }
 
     "decode organization deprecated event" in {
       val event: OrganizationEvent = OrganizationDeprecated(orgUuid, 2L, instant, subject)
       val json                     = jsonContentOf("/kafka/organization-deprecated.json")
 
-      json.as[OrganizationEvent].right.value shouldEqual event
+      json.as[Event].right.value shouldEqual event
     }
 
   }
