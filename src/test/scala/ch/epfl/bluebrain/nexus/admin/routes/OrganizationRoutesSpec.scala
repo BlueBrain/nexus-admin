@@ -98,7 +98,7 @@ class OrganizationRoutesSpec
 
       Put("/v1/orgs/org", description) ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.Created
-        responseAs[Json] shouldEqual jsonContentOf("/orgs/meta.json", replacements)
+        responseAs[Json].spaces2 shouldEqual jsonContentOf("/orgs/meta.json", replacements).spaces2
       }
     }
 
@@ -130,7 +130,7 @@ class OrganizationRoutesSpec
 
       Get("/v1/orgs/org") ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
-        responseAs[Json] shouldEqual jsonContentOf("/orgs/resource.json", replacements)
+        responseAs[Json].spaces2 shouldEqual jsonContentOf("/orgs/resource.json", replacements).spaces2
       }
     }
 
@@ -151,7 +151,7 @@ class OrganizationRoutesSpec
 
       Get("/v1/orgs/org?rev=2") ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
-        responseAs[Json] shouldEqual jsonContentOf("/orgs/resource.json", replacements)
+        responseAs[Json].spaces2 shouldEqual jsonContentOf("/orgs/resource.json", replacements).spaces2
       }
     }
 
@@ -162,7 +162,7 @@ class OrganizationRoutesSpec
 
       Delete("/v1/orgs/org?rev=2") ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
-        responseAs[Json] shouldEqual jsonContentOf("/orgs/meta.json", replacements)
+        responseAs[Json].spaces2 shouldEqual jsonContentOf("/orgs/meta.json", replacements).spaces2
       }
     }
 
@@ -218,11 +218,11 @@ class OrganizationRoutesSpec
 
       Get("/v1/orgs") ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
-        responseAs[Json] shouldEqual jsonContentOf("/orgs/listing.json", replacements)
+        responseAs[Json].spaces2 shouldEqual jsonContentOf("/orgs/listing.json", replacements).spaces2
       }
       Get("/v1/orgs/") ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
-        responseAs[Json] shouldEqual jsonContentOf("/orgs/listing.json", replacements)
+        responseAs[Json].spaces2 shouldEqual jsonContentOf("/orgs/listing.json", replacements).spaces2
       }
     }
 

@@ -11,8 +11,8 @@ import ch.epfl.bluebrain.nexus.admin.CommonRejection.IllegalParameter
 import ch.epfl.bluebrain.nexus.admin.Error
 import ch.epfl.bluebrain.nexus.admin.Error._
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig.{HttpConfig, PaginationConfig}
-import ch.epfl.bluebrain.nexus.admin.config.{AppConfig, Settings}
 import ch.epfl.bluebrain.nexus.admin.config.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.admin.config.{AppConfig, Settings}
 import ch.epfl.bluebrain.nexus.admin.marshallers.instances._
 import ch.epfl.bluebrain.nexus.admin.organizations.Organization
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectRejection._
@@ -87,7 +87,7 @@ class ProjectRoutesSpec
         ),
         Json.obj(
           "prefix"    -> Json.fromString("rdf"),
-          "namespace" -> Json.fromString("http://www.w3.org/1999/02/22-rdf-syntax-ns#type")
+          "namespace" -> Json.fromString("http://www.w3.org/1999/02/22-rdf-syntax-ns#")
         )
       )
     )
@@ -104,7 +104,7 @@ class ProjectRoutesSpec
       Organization("org", "Org description")
     )
     val mappings = Map("nxv" -> url"https://bluebrain.github.io/nexus/vocabulary/".value,
-                       "rdf" -> url"http://www.w3.org/1999/02/22-rdf-syntax-ns#type".value)
+                       "rdf" -> url"http://www.w3.org/1999/02/22-rdf-syntax-ns#".value)
     val project = ProjectDescription(desc, mappings, Some(base), Some(voc))
     val resource =
       ResourceF(iri,
@@ -132,7 +132,7 @@ class ProjectRoutesSpec
 
       Put("/v1/projects/org/label", payload) ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.Created
-        responseAs[Json] shouldEqual jsonContentOf("/projects/meta.json", replacements)
+        responseAs[Json].spaces2 shouldEqual jsonContentOf("/projects/meta.json", replacements).spaces2
       }
     }
 
@@ -143,7 +143,7 @@ class ProjectRoutesSpec
 
       Put("/v1/projects/org/label", Json.obj()) ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.Created
-        responseAs[Json] shouldEqual jsonContentOf("/projects/meta.json", replacements)
+        responseAs[Json].spaces2 shouldEqual jsonContentOf("/projects/meta.json", replacements).spaces2
       }
     }
 
@@ -175,7 +175,7 @@ class ProjectRoutesSpec
 
       Put("/v1/projects/org/label?rev=2", payload) ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
-        responseAs[Json] shouldEqual jsonContentOf("/projects/meta.json", replacements)
+        responseAs[Json].spaces2 shouldEqual jsonContentOf("/projects/meta.json", replacements).spaces2
       }
     }
 
@@ -218,7 +218,7 @@ class ProjectRoutesSpec
 
       Delete("/v1/projects/org/label?rev=2") ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
-        responseAs[Json] shouldEqual jsonContentOf("/projects/meta.json", replacements)
+        responseAs[Json].spaces2 shouldEqual jsonContentOf("/projects/meta.json", replacements).spaces2
       }
     }
 
@@ -250,7 +250,7 @@ class ProjectRoutesSpec
 
       Get("/v1/projects/org/label") ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
-        responseAs[Json] shouldEqual jsonContentOf("/projects/resource.json", replacements)
+        responseAs[Json].spaces2 shouldEqual jsonContentOf("/projects/resource.json", replacements).spaces2
       }
     }
 
@@ -271,7 +271,7 @@ class ProjectRoutesSpec
 
       Get("/v1/projects/org/label?rev=2") ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
-        responseAs[Json] shouldEqual jsonContentOf("/projects/resource.json", replacements)
+        responseAs[Json].spaces2 shouldEqual jsonContentOf("/projects/resource.json", replacements).spaces2
       }
     }
 
@@ -297,11 +297,11 @@ class ProjectRoutesSpec
 
       Get("/v1/projects") ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
-        responseAs[Json] shouldEqual jsonContentOf("/projects/listing.json", replacements)
+        responseAs[Json].spaces2 shouldEqual jsonContentOf("/projects/listing.json", replacements).spaces2
       }
       Get("/v1/projects/") ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
-        responseAs[Json] shouldEqual jsonContentOf("/projects/listing.json", replacements)
+        responseAs[Json].spaces2 shouldEqual jsonContentOf("/projects/listing.json", replacements).spaces2
       }
     }
 
@@ -317,11 +317,11 @@ class ProjectRoutesSpec
 
       Get("/v1/projects/org") ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
-        responseAs[Json] shouldEqual jsonContentOf("/projects/listing.json", replacements)
+        responseAs[Json].spaces2 shouldEqual jsonContentOf("/projects/listing.json", replacements).spaces2
       }
       Get("/v1/projects/org/") ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
-        responseAs[Json] shouldEqual jsonContentOf("/projects/listing.json", replacements)
+        responseAs[Json].spaces2 shouldEqual jsonContentOf("/projects/listing.json", replacements).spaces2
       }
     }
 

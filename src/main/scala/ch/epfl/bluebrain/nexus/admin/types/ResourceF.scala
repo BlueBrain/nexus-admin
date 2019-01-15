@@ -87,10 +87,15 @@ object ResourceF {
   implicit def resourceMetaEncoder(implicit iamClientConfig: IamClientConfig): Encoder[ResourceMetadata] =
     Encoder.encodeJson.contramap {
       case ResourceF(id, uuid, rev, deprecated, types, createdAt, createdBy, updatedAt, updatedBy, _: Unit) =>
+        val jsonTypes = types.toList match {
+          case Nil      => Json.Null
+          case t :: Nil => Json.fromString(t.lastSegment.getOrElse(t.asString))
+          case _        => Json.arr(types.map(t => Json.fromString(t.lastSegment.getOrElse(t.asString))).toSeq: _*)
+        }
         Json.obj(
-          "@context"            -> Json.arr(resourceCtxUri.asJson, adminCtxUri.asJson),
+          "@context"            -> Json.arr(adminCtxUri.asJson, resourceCtxUri.asJson),
           "@id"                 -> id.asJson,
-          "@type"               -> Json.arr(types.map(t => Json.fromString(t.path.lastSegment.getOrElse(t.asString))).toSeq: _*),
+          "@type"               -> jsonTypes,
           nxv.uuid.prefix       -> Json.fromString(uuid.toString),
           nxv.rev.prefix        -> Json.fromLong(rev),
           nxv.deprecated.prefix -> Json.fromBoolean(deprecated),
@@ -111,7 +116,7 @@ object ResourceF {
     Encoder.encodeJson.contramap {
       case UnscoredQueryResults(total, results) =>
         Json.obj(
-          "@context"         -> Json.arr(resourceCtxUri.asJson, adminCtxUri.asJson, searchCtxUri.asJson),
+          "@context"         -> Json.arr(adminCtxUri.asJson, resourceCtxUri.asJson, searchCtxUri.asJson),
           nxv.total.prefix   -> Json.fromLong(total),
           nxv.results.prefix -> Json.arr(results.map(_.source.asJson.removeKeys("@context")): _*)
         )
@@ -120,5 +125,13 @@ object ResourceF {
 
   implicit def clock[A]: Clock[ResourceF[A]] = { (_: Long, value: ResourceF[A]) =>
     value.rev
+  }
+
+  private implicit class AbsoluteIriSyntax(private val iri: AbsoluteIri) extends AnyVal {
+    def lastSegment: Option[String] =
+      iri.path.head match {
+        case segment: String => Some(segment)
+        case _               => None
+      }
   }
 }
