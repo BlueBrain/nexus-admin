@@ -88,21 +88,25 @@ object Event {
   /**
     * Event representing project creation.
     *
-    * @param id           the permanent identifier for the project
-    * @param label        the label (segment) of the project
-    * @param organization the permanent identifier for the parent organization
-    * @param description  an optional project description
-    * @param apiMappings  the API mappings
-    * @param base         the base IRI for generated resource IDs
-    * @param instant      the timestamp associated to this event
-    * @param subject      the identity associated to this event
+    * @param id                the permanent identifier for the project
+    * @param label             the label (segment) of the project
+    * @param organizationUuid  the permanent identifier for the parent organization
+    * @param organizationLabel the parent organization label
+    * @param description       an optional project description
+    * @param apiMappings       the API mappings
+    * @param base              the base IRI for generated resource IDs
+    * @param vocab             an optional vocabulary for resources with no context
+    * @param instant           the timestamp associated to this event
+    * @param subject           the identity associated to this event
     */
   final case class ProjectCreated(id: UUID,
-                                  organization: UUID,
                                   label: String,
+                                  organizationUuid: UUID,
+                                  organizationLabel: String,
                                   description: Option[String],
                                   apiMappings: Map[String, AbsoluteIri],
                                   base: AbsoluteIri,
+                                  vocab: AbsoluteIri,
                                   instant: Instant,
                                   subject: Subject)
       extends ProjectEvent {
@@ -121,6 +125,7 @@ object Event {
     * @param description an optional project description
     * @param apiMappings the API mappings
     * @param base        the base IRI for generated resource IDs
+    * @param vocab       an optional vocabulary for resources with no context
     * @param rev         the revision number that this event generates
     * @param instant     the timestamp associated to this event
     * @param subject     the identity associated to this event
@@ -130,6 +135,7 @@ object Event {
                                   description: Option[String],
                                   apiMappings: Map[String, AbsoluteIri],
                                   base: AbsoluteIri,
+                                  vocab: AbsoluteIri,
                                   rev: Long,
                                   instant: Instant,
                                   subject: Subject)
