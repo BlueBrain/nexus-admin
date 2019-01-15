@@ -7,9 +7,6 @@ pipeline {
     options {
         timeout(time: 30, unit: 'MINUTES') 
     }
-    environment {
-        ENDPOINT = sh(script: 'oc env statefulset/admin -n bbp-nexus-dev --list | grep PUBLIC_URI', returnStdout: true).split('=')[1].trim()
-    }
     stages {
         stage("Review") {
             when {
