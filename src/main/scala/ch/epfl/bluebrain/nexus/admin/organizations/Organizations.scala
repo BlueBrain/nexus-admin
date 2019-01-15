@@ -23,7 +23,7 @@ import ch.epfl.bluebrain.nexus.iam.client.IamClient
 import ch.epfl.bluebrain.nexus.iam.client.types._
 import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
-import ch.epfl.bluebrain.nexus.sourcing.akka.AkkaAggregate
+import ch.epfl.bluebrain.nexus.sourcing.akka.{AkkaAggregate, RetryStrategy}
 
 /**
   * Organizations operations bundle
@@ -33,7 +33,8 @@ class Organizations[F[_]](agg: Agg[F], index: OrganizationCache[F], iamClient: I
     clock: Clock,
     http: HttpConfig,
     iamCredentials: Option[AuthToken],
-    ownerPermissions: Set[Permission]
+    ownerPermissions: Set[Permission],
+    retryStrategy: RetryStrategy[F]
 ) {
 
   /**
@@ -49,7 +50,7 @@ class Organizations[F[_]](agg: Agg[F], index: OrganizationCache[F], iamClient: I
       case None =>
         val cmd =
           CreateOrganization(UUID.randomUUID, organization.label, organization.description, clock.instant, caller)
-        evalAndUpdateIndex(cmd, organization) <* setOwnerPermissions(organization.label, caller)
+        evalAndUpdateIndex(cmd, organization) <* retryStrategy(setOwnerPermissions(organization.label, caller))
     }
 
   def setPermissions(orgLabel: String, acls: AccessControlLists, subject: Subject): F[Unit] = {
@@ -175,9 +176,10 @@ object Organizations {
       implicit cl: Clock = Clock.systemUTC(),
       as: ActorSystem,
       mt: ActorMaterializer): F[Organizations[F]] = {
-    implicit val http: HttpConfig                  = appConfig.http
-    implicit val iamCredentials: Option[AuthToken] = appConfig.serviceAccount.credentials
-    implicit val ownerPermissions: Set[Permission] = appConfig.permissions.ownerPermissions
+    implicit val http: HttpConfig                           = appConfig.http
+    implicit val iamCredentials: Option[AuthToken]          = appConfig.serviceAccount.credentials
+    implicit val ownerPermissions: Set[Permission]          = appConfig.permissions.ownerPermissions
+    implicit val permissionsRetryStrategy: RetryStrategy[F] = appConfig.permissions.retryStrategy
     val aggF: F[Agg[F]] =
       AkkaAggregate.sharded(
         "organizations",

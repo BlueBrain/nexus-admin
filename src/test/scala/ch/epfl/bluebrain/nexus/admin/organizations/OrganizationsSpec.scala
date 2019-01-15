@@ -21,6 +21,7 @@ import ch.epfl.bluebrain.nexus.rdf.Iri.Path./
 import ch.epfl.bluebrain.nexus.rdf.syntax.node.unsafe._
 import ch.epfl.bluebrain.nexus.service.test.ActorSystemFixture
 import ch.epfl.bluebrain.nexus.sourcing.Aggregate
+import ch.epfl.bluebrain.nexus.sourcing.akka.RetryStrategy
 import org.mockito.Mockito
 import org.mockito.integrations.scalatest.IdiomaticMockitoFixture
 import org.scalatest.{BeforeAndAfter, Matchers}
@@ -57,7 +58,8 @@ class OrganizationsSpec
   private val index     = OrganizationCache[IO]
   private val iamClient = mock[IamClient[IO]]
 
-  private implicit val permissions = Set(Permission.unsafe("test/permission1"), Permission.unsafe("test/permission2"))
+  private implicit val permissions   = Set(Permission.unsafe("test/permission1"), Permission.unsafe("test/permission2"))
+  private implicit val retryStrategy = RetryStrategy.once[IO, Throwable]
 
   private val orgs = aggF.map(new Organizations(_, index, iamClient)).unsafeRunSync()
 

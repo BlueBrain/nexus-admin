@@ -18,6 +18,7 @@ import ch.epfl.bluebrain.nexus.rdf.Iri.Path
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
 import ch.epfl.bluebrain.nexus.rdf.syntax.node.unsafe._
 import ch.epfl.bluebrain.nexus.sourcing.Aggregate
+import ch.epfl.bluebrain.nexus.sourcing.akka.RetryStrategy
 import org.mockito.MockitoSugar.reset
 import org.mockito.integrations.scalatest.IdiomaticMockitoFixture
 import org.scalatest._
@@ -49,8 +50,9 @@ class ProjectsSpec
   private val aggF: IO[Agg[IO]] =
     Aggregate.inMemoryF("projects-in-memory", ProjectState.Initial, Projects.next, Projects.Eval.apply[IO])
 
-  private implicit val permissions = Set(Permission.unsafe("test/permission1"), Permission.unsafe("test/permission2"))
-  private val projects             = aggF.map(agg => new Projects[IO](agg, index, orgs, iamClient)).unsafeRunSync()
+  private implicit val permissions   = Set(Permission.unsafe("test/permission1"), Permission.unsafe("test/permission2"))
+  private implicit val retryStrategy = RetryStrategy.once[IO, Throwable]
+  private val projects               = aggF.map(agg => new Projects[IO](agg, index, orgs, iamClient)).unsafeRunSync()
 
   override protected def beforeEach(): Unit = {
     reset(orgs)

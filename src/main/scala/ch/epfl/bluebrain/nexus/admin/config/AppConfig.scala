@@ -2,6 +2,8 @@ package ch.epfl.bluebrain.nexus.admin.config
 
 import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.Uri.Path
+import cats.ApplicativeError
+import cats.effect.Timer
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig._
 import ch.epfl.bluebrain.nexus.admin.config.Vocabulary._
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport.OrderedKeys
@@ -11,10 +13,11 @@ import ch.epfl.bluebrain.nexus.iam.client.types.{AuthToken, Permission}
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.syntax.node.unsafe._
 import ch.epfl.bluebrain.nexus.service.indexer.cache.KeyValueStoreConfig
-import ch.epfl.bluebrain.nexus.service.indexer.retryer.RetryStrategy
+import ch.epfl.bluebrain.nexus.service.indexer.retryer.{RetryStrategy => IndexerRetryStrategy}
 import ch.epfl.bluebrain.nexus.service.indexer.retryer.RetryStrategy.Backoff
 import ch.epfl.bluebrain.nexus.service.kamon.directives.TracingDirectives
-import ch.epfl.bluebrain.nexus.sourcing.akka.SourcingConfig
+import ch.epfl.bluebrain.nexus.sourcing.akka.SourcingConfig.RetryStrategyConfig
+import ch.epfl.bluebrain.nexus.sourcing.akka.{RetryStrategy, SourcingConfig}
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -130,7 +133,7 @@ object AppConfig {
     * @param randomFactor the jitter added between retries
     */
   final case class Retry(maxCount: Int, maxDuration: FiniteDuration, randomFactor: Double) {
-    val strategy: RetryStrategy = Backoff(maxDuration, randomFactor)
+    val strategy: IndexerRetryStrategy = Backoff(maxDuration, randomFactor)
   }
 
   /**
@@ -163,8 +166,22 @@ object AppConfig {
     *
     * @param owner  permissions applied to the creator of the project.
     */
-  final case class PermissionsConfig(owner: Set[String]) {
+  final case class PermissionsConfig(owner: Set[String], retry: RetryStrategyConfig) {
+
     def ownerPermissions: Set[Permission] = owner.map(Permission.unsafe)
+
+    /**
+      * Computes a retry strategy from the provided configuration.
+      */
+    def retryStrategy[F[_]: Timer, E](implicit F: ApplicativeError[F, E]): RetryStrategy[F] =
+      retry.strategy match {
+        case "exponential" =>
+          RetryStrategy.exponentialBackoff(retry.initialDelay, retry.maxRetries, retry.factor)
+        case "once" =>
+          RetryStrategy.once
+        case _ =>
+          RetryStrategy.never
+      }
   }
 
   /**

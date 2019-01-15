@@ -41,7 +41,8 @@ class Projects[F[_]](agg: Agg[F], index: ProjectCache[F], organizations: Organiz
     http: HttpConfig,
     clock: Clock,
     iamCredentials: Option[AuthToken],
-    ownerPermissions: Set[Permission]
+    ownerPermissions: Set[Permission],
+    retryStrategy: RetryStrategy[F]
 ) {
 
   /**
@@ -73,7 +74,7 @@ class Projects[F[_]](agg: Agg[F], index: ProjectCache[F], organizations: Organiz
                                         vocab,
                                         clock.instant,
                                         caller)
-            evaluateAndUpdateIndex(command) <* setOwnerPermissions(organization, label, caller)
+            evaluateAndUpdateIndex(command) <* retryStrategy(setOwnerPermissions(organization, label, caller))
           case Some(_) => F.pure(Left(ProjectExists))
         }
       case None => F.pure(Left(OrganizationNotFound))
@@ -269,9 +270,10 @@ object Projects {
                                            appConfig: AppConfig)(implicit as: ActorSystem,
                                                                  mt: ActorMaterializer,
                                                                  clock: Clock = Clock.systemUTC): F[Projects[F]] = {
-    implicit val http: HttpConfig                  = appConfig.http
-    implicit val iamCredentials: Option[AuthToken] = appConfig.serviceAccount.credentials
-    implicit val ownerPermissions: Set[Permission] = appConfig.permissions.ownerPermissions
+    implicit val http: HttpConfig                           = appConfig.http
+    implicit val iamCredentials: Option[AuthToken]          = appConfig.serviceAccount.credentials
+    implicit val ownerPermissions: Set[Permission]          = appConfig.permissions.ownerPermissions
+    implicit val permissionsRetryStrategy: RetryStrategy[F] = appConfig.permissions.retryStrategy
 
     val aggF: F[Agg[F]] =
       AkkaAggregate.shardedF(
