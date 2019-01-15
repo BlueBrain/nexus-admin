@@ -10,7 +10,8 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import ch.epfl.bluebrain.nexus.admin.CommonRejection.IllegalParameter
 import ch.epfl.bluebrain.nexus.admin.Error
 import ch.epfl.bluebrain.nexus.admin.Error._
-import ch.epfl.bluebrain.nexus.admin.config.AppConfig.PaginationConfig
+import ch.epfl.bluebrain.nexus.admin.config.AppConfig.{HttpConfig, PaginationConfig}
+import ch.epfl.bluebrain.nexus.admin.config.{AppConfig, Settings}
 import ch.epfl.bluebrain.nexus.admin.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.admin.marshallers.instances._
 import ch.epfl.bluebrain.nexus.admin.organizations.Organization
@@ -48,9 +49,12 @@ class ProjectRoutesSpec
   private val iamClient = mock[IamClient[Task]]
   private val projects  = mock[Projects[Task]]
 
+  private val appConfig: AppConfig                      = Settings(system).appConfig
+  private implicit val httpConfig: HttpConfig           = appConfig.http
   private implicit val iamClientConfig: IamClientConfig = IamClientConfig(url"https://nexus.example.com/v1".value)
 
-  private val routes = ProjectRoutes(projects)(iamClient, iamClientConfig, PaginationConfig(50, 100), global).routes
+  private val routes =
+    ProjectRoutes(projects)(iamClient, iamClientConfig, httpConfig, PaginationConfig(50, 100), global).routes
 
   //noinspection TypeAnnotation
   trait Context {
@@ -126,7 +130,7 @@ class ProjectRoutesSpec
       iamClient.identities shouldReturn Task(caller)
       projects.create("org", "label", project) shouldReturn Task(Right(meta))
 
-      Put("/projects/org/label", payload) ~> addCredentials(cred) ~> routes ~> check {
+      Put("/v1/projects/org/label", payload) ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.Created
         responseAs[Json] shouldEqual jsonContentOf("/projects/meta.json", replacements)
       }
@@ -137,7 +141,7 @@ class ProjectRoutesSpec
       iamClient.identities shouldReturn Task(caller)
       projects.create("org", "label", ProjectDescription(None, Map.empty, None, None)) shouldReturn Task(Right(meta))
 
-      Put("/projects/org/label", Json.obj()) ~> addCredentials(cred) ~> routes ~> check {
+      Put("/v1/projects/org/label", Json.obj()) ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.Created
         responseAs[Json] shouldEqual jsonContentOf("/projects/meta.json", replacements)
       }
@@ -147,7 +151,7 @@ class ProjectRoutesSpec
       iamClient.authorizeOn(Path("/org").right.value, create) shouldReturn Task.unit
       iamClient.identities shouldReturn Task(caller)
 
-      Put("/projects/org", payload) ~> addCredentials(cred) ~> routes ~> check {
+      Put("/v1/projects/org", payload) ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
         responseAs[Error].code shouldEqual classNameOf[IllegalParameter.type]
       }
@@ -158,7 +162,7 @@ class ProjectRoutesSpec
       iamClient.identities shouldReturn Task(caller)
       projects.create("org", "label", project) shouldReturn Task(Left(ProjectExists))
 
-      Put("/projects/org/label", payload) ~> addCredentials(cred) ~> routes ~> check {
+      Put("/v1/projects/org/label", payload) ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.Conflict
         responseAs[Error].code shouldEqual classNameOf[ProjectExists.type]
       }
@@ -169,7 +173,7 @@ class ProjectRoutesSpec
       iamClient.identities shouldReturn Task(caller)
       projects.update("org", "label", project, 2L) shouldReturn Task(Right(meta))
 
-      Put("/projects/org/label?rev=2", payload) ~> addCredentials(cred) ~> routes ~> check {
+      Put("/v1/projects/org/label?rev=2", payload) ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         responseAs[Json] shouldEqual jsonContentOf("/projects/meta.json", replacements)
       }
@@ -179,7 +183,7 @@ class ProjectRoutesSpec
       iamClient.authorizeOn(Path("/org").right.value, write) shouldReturn Task.unit
       iamClient.identities shouldReturn Task(caller)
 
-      Put("/projects/org?rev=2", payload) ~> addCredentials(cred) ~> routes ~> check {
+      Put("/v1/projects/org?rev=2", payload) ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
         responseAs[Error].code shouldEqual classNameOf[IllegalParameter.type]
       }
@@ -190,7 +194,7 @@ class ProjectRoutesSpec
       iamClient.identities shouldReturn Task(caller)
       projects.update("org", "label", project, 2L) shouldReturn Task(Left(ProjectNotFound))
 
-      Put("/projects/org/label?rev=2", payload) ~> addCredentials(cred) ~> routes ~> check {
+      Put("/v1/projects/org/label?rev=2", payload) ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
         responseAs[Error].code shouldEqual classNameOf[ProjectNotFound.type]
       }
@@ -201,7 +205,7 @@ class ProjectRoutesSpec
       iamClient.identities shouldReturn Task(caller)
       projects.update("org", "label", project, 2L) shouldReturn Task(Left(IncorrectRev(1L, 2L)))
 
-      Put("/projects/org/label?rev=2", payload) ~> addCredentials(cred) ~> routes ~> check {
+      Put("/v1/projects/org/label?rev=2", payload) ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.Conflict
         responseAs[Error].code shouldEqual classNameOf[IncorrectRev.type]
       }
@@ -212,7 +216,7 @@ class ProjectRoutesSpec
       iamClient.identities shouldReturn Task(caller)
       projects.deprecate("org", "label", 2L) shouldReturn Task(Right(meta))
 
-      Delete("/projects/org/label?rev=2") ~> addCredentials(cred) ~> routes ~> check {
+      Delete("/v1/projects/org/label?rev=2") ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         responseAs[Json] shouldEqual jsonContentOf("/projects/meta.json", replacements)
       }
@@ -222,7 +226,7 @@ class ProjectRoutesSpec
       iamClient.authorizeOn("org" / "label", write) shouldReturn Task.unit
       iamClient.identities shouldReturn Task(caller)
 
-      Delete("/projects/org/label") ~> addCredentials(cred) ~> routes ~> check {
+      Delete("/v1/projects/org/label") ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
         responseAs[Error].code shouldEqual classNameOf[MissingParameters.type]
       }
@@ -233,7 +237,7 @@ class ProjectRoutesSpec
       iamClient.identities shouldReturn Task(caller)
       projects.deprecate("org", "label", 2L) shouldReturn Task(Left(ProjectNotFound))
 
-      Delete("/projects/org/label?rev=2") ~> addCredentials(cred) ~> routes ~> check {
+      Delete("/v1/projects/org/label?rev=2") ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
         responseAs[Error].code shouldEqual classNameOf[ProjectNotFound.type]
       }
@@ -244,7 +248,7 @@ class ProjectRoutesSpec
       iamClient.identities shouldReturn Task(caller)
       projects.fetch("org", "label") shouldReturn Task(Some(resource))
 
-      Get("/projects/org/label") ~> addCredentials(cred) ~> routes ~> check {
+      Get("/v1/projects/org/label") ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         responseAs[Json] shouldEqual jsonContentOf("/projects/resource.json", replacements)
       }
@@ -255,7 +259,7 @@ class ProjectRoutesSpec
       iamClient.identities shouldReturn Task(caller)
       projects.fetch("org", "label") shouldReturn Task(None)
 
-      Get("/projects/org/label") ~> addCredentials(cred) ~> routes ~> check {
+      Get("/v1/projects/org/label") ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
       }
     }
@@ -265,7 +269,7 @@ class ProjectRoutesSpec
       iamClient.identities shouldReturn Task(caller)
       projects.fetch("org", "label", 2L) shouldReturn Task(Right(resource))
 
-      Get("/projects/org/label?rev=2") ~> addCredentials(cred) ~> routes ~> check {
+      Get("/v1/projects/org/label?rev=2") ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         responseAs[Json] shouldEqual jsonContentOf("/projects/resource.json", replacements)
       }
@@ -276,7 +280,7 @@ class ProjectRoutesSpec
       iamClient.identities shouldReturn Task(caller)
       projects.fetch("org", "label", 2L) shouldReturn Task(Left(ProjectNotFound))
 
-      Get("/projects/org/label?rev=2") ~> addCredentials(cred) ~> routes ~> check {
+      Get("/v1/projects/org/label?rev=2") ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
       }
     }
@@ -291,11 +295,11 @@ class ProjectRoutesSpec
       }
       projects.list(Pagination(0, 50)) shouldReturn Task(UnscoredQueryResults(3, projs))
 
-      Get("/projects") ~> addCredentials(cred) ~> routes ~> check {
+      Get("/v1/projects") ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         responseAs[Json] shouldEqual jsonContentOf("/projects/listing.json", replacements)
       }
-      Get("/projects/") ~> addCredentials(cred) ~> routes ~> check {
+      Get("/v1/projects/") ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         responseAs[Json] shouldEqual jsonContentOf("/projects/listing.json", replacements)
       }
@@ -311,11 +315,11 @@ class ProjectRoutesSpec
       }
       projects.list("org", Pagination(0, 50)) shouldReturn Task(UnscoredQueryResults(3, projs))
 
-      Get("/projects/org") ~> addCredentials(cred) ~> routes ~> check {
+      Get("/v1/projects/org") ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         responseAs[Json] shouldEqual jsonContentOf("/projects/listing.json", replacements)
       }
-      Get("/projects/org/") ~> addCredentials(cred) ~> routes ~> check {
+      Get("/v1/projects/org/") ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         responseAs[Json] shouldEqual jsonContentOf("/projects/listing.json", replacements)
       }
@@ -325,21 +329,23 @@ class ProjectRoutesSpec
       iamClient.authorizeOn("org" / "label", read)(None) shouldReturn Task.raiseError(UnauthorizedAccess)
       iamClient.identities(None) shouldReturn Task(Caller.anonymous)
 
-      Get("/projects/org/label") ~> routes ~> check {
-        status shouldEqual StatusCodes.Unauthorized
+      Get("/v1/projects/org/label") ~> routes ~> check {
+        // TODO: discriminate between 401 and 403
+        status shouldEqual StatusCodes.Forbidden
         responseAs[Error].code shouldEqual classNameOf[UnauthorizedAccess.type]
       }
     }
 
     "reject unsupported credentials" in new Context {
-      Get("/projects/org/label") ~> addCredentials(BasicHttpCredentials("something")) ~> routes ~> check {
-        status shouldEqual StatusCodes.Unauthorized
+      Get("/v1/projects/org/label") ~> addCredentials(BasicHttpCredentials("something")) ~> routes ~> check {
+        // TODO: discriminate between 401 and 403
+        status shouldEqual StatusCodes.Forbidden
         responseAs[Error].code shouldEqual classNameOf[UnauthorizedAccess.type]
       }
     }
 
     "reject unsupported methods" in new Context {
-      Options("/projects/org/label") ~> addCredentials(cred) ~> routes ~> check {
+      Options("/v1/projects/org/label") ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.MethodNotAllowed
         responseAs[Error].code shouldEqual classNameOf[MethodNotSupported.type]
       }

@@ -31,7 +31,7 @@ class ProjectsSpec
 
   override implicit val patienceConfig: PatienceConfig = PatienceConfig(3.seconds, 100.milliseconds)
   private implicit val ctx: ContextShift[IO]           = IO.contextShift(ExecutionContext.global)
-  private implicit val httpConfig: HttpConfig          = HttpConfig("nexus", 80, "/v1", "http://nexus.example.com")
+  private implicit val httpConfig: HttpConfig          = HttpConfig("nexus", 80, "v1", "http://nexus.example.com")
 
   private val instant               = Instant.now
   private implicit val clock: Clock = Clock.fixed(instant, ZoneId.systemDefault)

@@ -71,6 +71,8 @@ object Main {
     implicit val scheduler: Scheduler  = Scheduler.global
     implicit val iamConfig             = appConfig.iam
     implicit val paginationConfig      = appConfig.pagination
+    implicit val httpConfig            = appConfig.http
+    implicit val persistenceConfig     = appConfig.persistence
 
     val logger  = Logging(as, getClass)
     val cluster = Cluster(as)
@@ -93,14 +95,15 @@ object Main {
 
     val orgRoutes: OrganizationRoutes = OrganizationRoutes(organizations)
     val projectRoutes: ProjectRoutes  = ProjectRoutes(projects)
+    val eventRoutes: EventRoutes      = EventRoutes()
 
     val corsSettings = CorsSettings.defaultSettings
       .withAllowedMethods(List(GET, PUT, POST, DELETE, OPTIONS, HEAD))
       .withExposedHeaders(List(Location.name))
     val routes: Route =
       handleRejections(corsRejectionHandler.withFallback(RejectionHandling.notFound))(
-        cors(corsSettings)(serviceDescription ~ uriPrefix(appConfig.http.apiUri) {
-          orgRoutes.routes ~ projectRoutes.routes
+        cors(corsSettings)(serviceDescription ~ uriPrefix(appConfig.http.publicUri) {
+          eventRoutes.routes ~ orgRoutes.routes ~ projectRoutes.routes
         }))
 
     cluster.registerOnMemberUp {

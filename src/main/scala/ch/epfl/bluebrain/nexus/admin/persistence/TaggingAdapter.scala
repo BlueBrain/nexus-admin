@@ -16,8 +16,8 @@ class TaggingAdapter extends WriteEventAdapter {
   }
 
   override def toJournal(event: Any): Any = event match {
-    case pe: ProjectEvent      => Tagged(pe, Set(ProjectTag))
-    case po: OrganizationEvent => Tagged(po, Set(OrganizationTag))
+    case pe: ProjectEvent      => Tagged(pe, Set(ProjectTag, EventTag))
+    case po: OrganizationEvent => Tagged(po, Set(OrganizationTag, EventTag))
     case _                     => event
   }
 }
@@ -27,10 +27,15 @@ object TaggingAdapter {
   /**
     * Tag applied to projects.
     */
-  val ProjectTag: String = "project"
+  final val ProjectTag: String = "project"
 
   /**
     * Tag applied to organizations.
     */
-  val OrganizationTag: String = "organization"
+  final val OrganizationTag: String = "organization"
+
+  /**
+    * Tag applied to all events.
+    */
+  final val EventTag: String = "event"
 }

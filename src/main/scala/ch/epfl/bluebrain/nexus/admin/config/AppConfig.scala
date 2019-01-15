@@ -1,7 +1,6 @@
 package ch.epfl.bluebrain.nexus.admin.config
 
 import akka.http.scaladsl.model.Uri
-import akka.http.scaladsl.model.Uri.Path
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig._
 import ch.epfl.bluebrain.nexus.admin.config.Vocabulary._
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport.OrderedKeys
@@ -75,25 +74,24 @@ object AppConfig {
   final case class HttpConfig(interface: String, port: Int, prefix: String, publicUri: Uri) {
 
     /**
-      * The base API URI i.e. publicUri + prefix.
+      * The public IRI of the service.
       */
-    val apiUri: Uri = publicUri.copy(path = publicUri.path ++ Path(prefix))
+    val publicIri: AbsoluteIri = url"$publicUri".value
 
     /**
-      * The base IRI for all resource IDs.
+      * The public IRI of the service including the http prefix.
       */
-    val baseIri: AbsoluteIri = url"$apiUri".value
+    val prefixIri: AbsoluteIri = url"$publicUri/$prefix".value
 
     /**
       * The root IRI for projects
       */
-    val projectsIri: AbsoluteIri = baseIri + "projects"
+    val projectsIri: AbsoluteIri = prefixIri + "projects"
 
     /**
       * The base IRI for organizations
       */
-    val orgsBaseIri: AbsoluteIri = baseIri + "orgs"
-
+    val orgsBaseIri: AbsoluteIri = prefixIri + "orgs"
   }
 
   /**
@@ -163,20 +161,33 @@ object AppConfig {
       "code",
       "message",
       "details",
+      nxv.reason.prefix,
       nxv.total.prefix,
       nxv.maxScore.prefix,
       nxv.results.prefix,
       nxv.score.prefix,
+      nxv.description.name,
+      nxv.`@base`.name,
+      nxv.`@vocab`.name,
+      nxv.apiMappings.name,
+      nxv.prefix.name,
+      nxv.namespace.name,
       "",
+      nxv.uuid.prefix,
+      nxv.label.prefix,
+      nxv.organizationUuid.prefix,
+      nxv.organizationLabel.prefix,
       nxv.self.prefix,
       nxv.constrainedBy.prefix,
       nxv.project.prefix,
+      nxv.rev.prefix,
+      nxv.deprecated.prefix,
       nxv.createdAt.prefix,
       nxv.createdBy.prefix,
       nxv.updatedAt.prefix,
       nxv.updatedBy.prefix,
-      nxv.rev.prefix,
-      nxv.deprecated.prefix
+      nxv.instant.prefix,
+      nxv.subject.prefix,
     ))
 
   val tracing = new TracingDirectives()

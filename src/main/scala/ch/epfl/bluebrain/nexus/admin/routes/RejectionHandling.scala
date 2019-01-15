@@ -30,8 +30,11 @@ object RejectionHandling {
           complete(IllegalParameter(err))
         case MissingQueryParamRejection(param) =>
           complete(MissingParameters(Seq(param)))
-        case _: AuthorizationFailedRejection =>
+        case _: AuthenticationFailedRejection =>
           complete(Unauthorized -> UnauthorizedAccess)
+        case _: AuthorizationFailedRejection =>
+          // TODO: change this to Forbidden after adding it to common types and iam client
+          complete(Forbidden -> UnauthorizedAccess)
         case CustomAuthRejection(e) =>
           complete(e)
       }

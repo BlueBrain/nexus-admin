@@ -12,31 +12,49 @@ import ch.epfl.bluebrain.nexus.iam.client.types.Identity.User
 import ch.epfl.bluebrain.nexus.rdf.syntax.node.unsafe._
 import org.scalatest.{EitherValues, Matchers, WordSpecLike}
 
+//noinspection TypeAnnotation
 class DecodersSpec extends WordSpecLike with Matchers with Resources with EitherValues {
 
-  implicit val iamConfig = IamClientConfig(url"http://iam.nexus.example.com/v1".value)
+  implicit val iamConfig = IamClientConfig(url"http://localhost:8080/v1".value)
 
-  val instant     = Instant.parse("2018-12-04T11:31:30.00Z")
-  val subject     = User("example-user", "example-realm")
-  val orgUuid     = UUID.fromString("4cd2c88b-ed73-4fd7-8afb-315032239a56")
-  val projectUuid = UUID.fromString("a5c736f2-0ace-48f4-a7a7-56a15123d0b3")
-  val mappings = Map("nxv" -> url"https://bluebrain.github.io/nexus/vocabulary/".value,
-                     "rdf" -> url"http://www.w3.org/1999/02/22-rdf-syntax-ns#type".value)
-  val base = url"https://nexus.example.com/base".value
+  val instant            = Instant.EPOCH
+  val subject            = User("uuid", "myrealm")
+  val orgUuid            = UUID.fromString("d8cf3015-1bce-4dda-ba80-80cd4b5281e5")
+  val orgLabel           = "thelabel"
+  val orgDescription     = "the description"
+  val projectLabel       = "theprojectlabel"
+  val projectUuid        = UUID.fromString("94463ac0-3e9b-4261-80f5-e4253956eee2")
+  val projectDescription = Some("the project description")
+  val mappings = Map(
+    "nxv" -> url"https://bluebrain.github.io/nexus/vocabulary/".value,
+    "rdf" -> url"http://www.w3.org/1999/02/22-rdf-syntax-ns#".value
+  )
+  val base  = url"http://localhost:8080/base/".value
+  val vocab = url"http://localhost:8080/vocab/".value
 
   "Encoders and decoders" should {
 
     "decode project created event" in {
       val event: ProjectEvent =
-        ProjectCreated(projectUuid, orgUuid, "project label", Some("description"), mappings, base, instant, subject)
+        ProjectCreated(projectUuid,
+                       projectLabel,
+                       orgUuid,
+                       orgLabel,
+                       projectDescription,
+                       mappings,
+                       base,
+                       vocab,
+                       instant,
+                       subject)
       val json = jsonContentOf("/kafka/project-created.json")
 
+      println(json.as[ProjectEvent])
       json.as[ProjectEvent].right.value shouldEqual event
     }
 
     "decode project update event" in {
       val event: ProjectEvent =
-        ProjectUpdated(projectUuid, "project label", Some("description"), mappings, base, 2L, instant, subject)
+        ProjectUpdated(projectUuid, projectLabel, projectDescription, mappings, base, vocab, 2L, instant, subject)
       val json = jsonContentOf("/kafka/project-updated.json")
 
       json.as[ProjectEvent].right.value shouldEqual event
@@ -44,7 +62,7 @@ class DecodersSpec extends WordSpecLike with Matchers with Resources with Either
 
     "decode project deprecated event" in {
       val event: ProjectEvent =
-        ProjectDeprecated(projectUuid, 3L, instant, subject)
+        ProjectDeprecated(projectUuid, 2L, instant, subject)
       val json = jsonContentOf("/kafka/project-deprecated.json")
 
       json.as[ProjectEvent].right.value shouldEqual event
@@ -52,21 +70,21 @@ class DecodersSpec extends WordSpecLike with Matchers with Resources with Either
 
     "decode organization created event" in {
       val event: OrganizationEvent =
-        OrganizationCreated(orgUuid, "organization label", "organization description", instant, subject)
+        OrganizationCreated(orgUuid, orgLabel, orgDescription, instant, subject)
       val json = jsonContentOf("/kafka/organization-created.json")
 
       json.as[OrganizationEvent].right.value shouldEqual event
     }
     "decode organization updated event" in {
       val event: OrganizationEvent =
-        OrganizationUpdated(orgUuid, 2L, "organization label", "organization description", instant, subject)
+        OrganizationUpdated(orgUuid, 2L, orgLabel, orgDescription, instant, subject)
       val json = jsonContentOf("/kafka/organization-updated.json")
 
       json.as[OrganizationEvent].right.value shouldEqual event
     }
 
     "decode organization deprecated event" in {
-      val event: OrganizationEvent = OrganizationDeprecated(orgUuid, 3L, instant, subject)
+      val event: OrganizationEvent = OrganizationDeprecated(orgUuid, 2L, instant, subject)
       val json                     = jsonContentOf("/kafka/organization-deprecated.json")
 
       json.as[OrganizationEvent].right.value shouldEqual event

@@ -26,20 +26,33 @@ object Vocabulary {
     def withSuffix(suffix: String): IriNode = IriNode(base + suffix)
 
     // Metadata vocabulary
-    val rev           = Metadata("rev")
-    val deprecated    = Metadata("deprecated")
-    val createdAt     = Metadata("createdAt")
-    val updatedAt     = Metadata("updatedAt")
-    val createdBy     = Metadata("createdBy")
-    val updatedBy     = Metadata("updatedBy")
-    val constrainedBy = Metadata("constrainedBy")
-    val self          = Metadata("self")
-    val project       = Metadata("project")
-    val total         = Metadata("total")
-    val results       = Metadata("results")
-    val maxScore      = Metadata("maxScore")
-    val score         = Metadata("score")
-    val uuid          = Metadata("uuid")
+    val `@id`             = Metadata("@id", base, "id")
+    val `@base`           = Metadata("@base", base, "base")
+    val `@vocab`          = Metadata("@vocab", base, "vocab")
+    val reason            = Metadata("reason")
+    val rev               = Metadata("rev")
+    val deprecated        = Metadata("deprecated")
+    val createdAt         = Metadata("createdAt")
+    val updatedAt         = Metadata("updatedAt")
+    val createdBy         = Metadata("createdBy")
+    val updatedBy         = Metadata("updatedBy")
+    val constrainedBy     = Metadata("constrainedBy")
+    val self              = Metadata("self")
+    val project           = Metadata("project")
+    val total             = Metadata("total")
+    val results           = Metadata("results")
+    val maxScore          = Metadata("maxScore")
+    val score             = Metadata("score")
+    val uuid              = Metadata("uuid")
+    val organizationUuid  = Metadata("organizationUuid")
+    val organizationLabel = Metadata("organizationLabel")
+    val label             = Metadata("label")
+    val description       = Metadata("description")
+    val apiMappings       = Metadata("apiMappings")
+    val prefix            = Metadata("prefix")
+    val namespace         = Metadata("namespace")
+    val instant           = Metadata("instant")
+    val subject           = Metadata("subject")
 
     // Resource types
     val Project: IriNode      = withSuffix("Project")
@@ -52,7 +65,7 @@ object Vocabulary {
     * @param prefix the prefix associated to this term, used in the Json-LD context
     * @param value  the fully expanded [[AbsoluteIri]] to what the ''prefix'' resolves
     */
-  final case class Metadata(prefix: String, value: AbsoluteIri)
+  final case class Metadata(prefix: String, value: AbsoluteIri, name: String)
 
   object Metadata {
 
@@ -63,7 +76,7 @@ object Vocabulary {
       *                    vocabulary term
       */
     def apply(lastSegment: String)(implicit base: IriNode): Metadata =
-      Metadata("_" + lastSegment, url"${base.value.show + lastSegment}".value)
+      Metadata("_" + lastSegment, url"${base.value.show + lastSegment}".value, lastSegment)
 
     implicit def metadatataIri(m: Metadata): IriNode             = IriNode(m.value)
     implicit def metadatataAbsoluteIri(m: Metadata): AbsoluteIri = m.value

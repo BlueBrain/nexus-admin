@@ -77,6 +77,49 @@ object OrganizationEvent {
     * @param instant      the instant when this event was created
     * @param subject      the subject which created this event
     */
-  final case class OrganizationDeprecated(id: UUID, rev: Long, instant: Instant, subject: Subject)
-      extends OrganizationEvent
+  final case class OrganizationDeprecated(
+      id: UUID,
+      rev: Long,
+      instant: Instant,
+      subject: Subject
+  ) extends OrganizationEvent
+
+  object JsonLd {
+    import ch.epfl.bluebrain.nexus.admin.config.Contexts._
+    import ch.epfl.bluebrain.nexus.admin.config.Vocabulary.nxv
+    import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
+    import ch.epfl.bluebrain.nexus.rdf.syntax.circe.context._
+    import ch.epfl.bluebrain.nexus.rdf.instances._
+    import io.circe.generic.extras.Configuration
+    import io.circe.generic.extras.semiauto._
+    import io.circe.{Encoder, Json}
+    import io.circe.syntax._
+
+    private implicit val config: Configuration = Configuration.default
+      .withDiscriminator("@type")
+      .copy(transformMemberNames = {
+        case nxv.`@id`.name   => nxv.uuid.prefix
+        case nxv.label.name   => nxv.label.prefix
+        case nxv.rev.name     => nxv.rev.prefix
+        case nxv.instant.name => nxv.instant.prefix
+        case nxv.subject.name => nxv.subject.prefix
+        case other            => other
+      })
+
+    private implicit def subjectIdEncoder(implicit ic: IamClientConfig): Encoder[Subject] =
+      Encoder.encodeJson.contramap(_.id.asJson)
+
+    final implicit def orgEventEncoder(implicit ic: IamClientConfig): Encoder[OrganizationEvent] =
+      Encoder.encodeJson.contramap[OrganizationEvent] { ev =>
+        deriveEncoder[OrganizationEvent]
+          .mapJson { json =>
+            val rev = Json.obj(nxv.rev.prefix -> Json.fromLong(ev.rev))
+            json
+              .deepMerge(rev)
+              .addContext(adminCtxUri)
+              .addContext(resourceCtxUri)
+          }
+          .apply(ev)
+      }
+  }
 }
