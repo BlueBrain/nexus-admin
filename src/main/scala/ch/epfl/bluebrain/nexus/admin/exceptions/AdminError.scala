@@ -26,7 +26,7 @@ object AdminError {
     * @param message the exception message
     */
   @SuppressWarnings(Array("IncorrectlyNamedExceptions"))
-  final case class UnexpectedError(val message: String) extends AdminError(message)
+  final case class UnexpectedError(message: String) extends AdminError(message)
 
   /**
     * Generic wrapper for iam errors that should not be exposed to clients.
