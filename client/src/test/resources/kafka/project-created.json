@@ -2,10 +2,12 @@
   "@context": "https://bluebrain.github.io/nexus/contexts/admin.json",
   "@type": "ProjectCreated",
   "_uuid": "a5c736f2-0ace-48f4-a7a7-56a15123d0b3",
-  "_organization": "4cd2c88b-ed73-4fd7-8afb-315032239a56",
   "_label": "project label",
+  "_organizationUuid": "4cd2c88b-ed73-4fd7-8afb-315032239a56",
+  "_organizationLabel": "organization label",
   "description": "description",
   "base": "https://nexus.example.com/base",
+  "vocab": "https://nexus.example.com/voc",
   "apiMappings": [
     {
       "prefix": "nxv",

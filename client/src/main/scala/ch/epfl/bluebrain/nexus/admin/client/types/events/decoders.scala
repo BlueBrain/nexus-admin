@@ -15,13 +15,14 @@ object decoders {
   private implicit val config: Configuration = Configuration.default
     .withDiscriminator("@type")
     .copy(transformMemberNames = {
-      case "id"           => "_uuid"
-      case "label"        => "_label"
-      case "rev"          => "_rev"
-      case "instant"      => "_instant"
-      case "subject"      => "_subject"
-      case "organization" => "_organization"
-      case other          => other
+      case "id"                => "_uuid"
+      case "label"             => "_label"
+      case "rev"               => "_rev"
+      case "instant"           => "_instant"
+      case "subject"           => "_subject"
+      case "organizationUuid"  => "_organizationUuid"
+      case "organizationLabel" => "_organizationLabel"
+      case other               => other
     })
 
   private implicit def subjectDecoder(implicit iamClientConfig: IamClientConfig): Decoder[Subject] =
@@ -43,7 +44,7 @@ object decoders {
   /**
     * [[Decoder]] for [[Event]]s.
     */
-  implicit def organizationEventDecoder(implicit iamClientConfig: IamClientConfig): Decoder[Event] =
+  implicit def eventDecode(implicit iamClientConfig: IamClientConfig): Decoder[Event] =
     deriveDecoder[Event]
 
 }

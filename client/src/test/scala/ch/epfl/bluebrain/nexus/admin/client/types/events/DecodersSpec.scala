@@ -22,12 +22,22 @@ class DecodersSpec extends WordSpecLike with Matchers with Resources with Either
   val mappings = Map("nxv" -> url"https://bluebrain.github.io/nexus/vocabulary/".value,
                      "rdf" -> url"http://www.w3.org/1999/02/22-rdf-syntax-ns#type".value)
   val base = url"https://nexus.example.com/base".value
+  val voc  = url"https://nexus.example.com/voc".value
 
   "Encoders and decoders" should {
 
     "decode project created event" in {
       val event: Event =
-        ProjectCreated(projectUuid, orgUuid, "project label", Some("description"), mappings, base, instant, subject)
+        ProjectCreated(projectUuid,
+                       "project label",
+                       orgUuid,
+                       "organization label",
+                       Some("description"),
+                       mappings,
+                       base,
+                       voc,
+                       instant,
+                       subject)
       val json = jsonContentOf("/kafka/project-created.json")
 
       json.as[Event].right.value shouldEqual event
@@ -35,7 +45,7 @@ class DecodersSpec extends WordSpecLike with Matchers with Resources with Either
 
     "decode project update event" in {
       val event: Event =
-        ProjectUpdated(projectUuid, "project label", Some("description"), mappings, base, 2L, instant, subject)
+        ProjectUpdated(projectUuid, "project label", Some("description"), mappings, base, voc, 2L, instant, subject)
       val json = jsonContentOf("/kafka/project-updated.json")
 
       json.as[Event].right.value shouldEqual event
