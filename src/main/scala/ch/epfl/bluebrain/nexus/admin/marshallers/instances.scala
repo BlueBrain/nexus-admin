@@ -95,7 +95,7 @@ object instances extends FailFastCirceSupport {
       printer: Printer = Printer.noSpaces.copy(dropNullValues = true)): ToResponseMarshaller[Either[Rejection, A]] =
     eitherMarshaller(rejectionResponse, httpEntity[A])
 
-  private implicit val rejectionConfig: Configuration = Configuration.default.withDiscriminator("code")
+  private implicit val rejectionConfig: Configuration = Configuration.default.withDiscriminator("@type")
 
   private val organizationRejectionEncoder: Encoder[OrganizationRejection] =
     deriveEncoder[OrganizationRejection].mapJson(_ addContext errorCtxUri)

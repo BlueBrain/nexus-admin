@@ -26,6 +26,7 @@ import org.scalatest._
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
+//noinspection TypeAnnotation
 class ProjectsSpec
     extends WordSpecLike
     with BeforeAndAfterEach
@@ -36,7 +37,7 @@ class ProjectsSpec
 
   override implicit val patienceConfig: PatienceConfig = PatienceConfig(3.seconds, 100.milliseconds)
   private implicit val ctx: ContextShift[IO]           = IO.contextShift(ExecutionContext.global)
-  private implicit val httpConfig: HttpConfig          = HttpConfig("nexus", 80, "/v1", "http://nexus.example.com")
+  private implicit val httpConfig: HttpConfig          = HttpConfig("nexus", 80, "v1", "http://nexus.example.com")
   private implicit val iamCredentials                  = Some(AuthToken("token"))
 
   private val instant               = Instant.now
@@ -60,7 +61,7 @@ class ProjectsSpec
     reset(iamClient)
   }
 
-//noinspection TypeAnnotation
+//noinspection TypeAnnotation,NameBooleanParameters
   trait Context {
     val types  = Set(nxv.Project.value)
     val desc   = Some("Project description")

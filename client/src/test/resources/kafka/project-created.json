@@ -1,13 +1,12 @@
 {
-  "@context": "https://bluebrain.github.io/nexus/contexts/admin.json",
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/admin.json",
+    "https://bluebrain.github.io/nexus/contexts/resource.json"
+  ],
   "@type": "ProjectCreated",
-  "_uuid": "a5c736f2-0ace-48f4-a7a7-56a15123d0b3",
-  "_label": "project label",
-  "_organizationUuid": "4cd2c88b-ed73-4fd7-8afb-315032239a56",
-  "_organizationLabel": "organization label",
-  "description": "description",
-  "base": "https://nexus.example.com/base",
-  "vocab": "https://nexus.example.com/voc",
+  "description": "the project description",
+  "base": "http://localhost:8080/base/",
+  "vocab": "http://localhost:8080/vocab/",
   "apiMappings": [
     {
       "prefix": "nxv",
@@ -15,10 +14,14 @@
     },
     {
       "prefix": "rdf",
-      "namespace": "http://www.w3.org/1999/02/22-rdf-syntax-ns#type"
+      "namespace": "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
     }
   ],
+  "_uuid": "94463ac0-3e9b-4261-80f5-e4253956eee2",
+  "_label": "theprojectlabel",
+  "_organizationUuid": "d8cf3015-1bce-4dda-ba80-80cd4b5281e5",
+  "_organizationLabel": "thelabel",
   "_rev": 1,
-  "_instant": "2018-12-04T11:31:30Z",
-  "_subject": "http://iam.nexus.example.com/v1/realms/example-realm/users/example-user"
+  "_instant": "1970-01-01T00:00:00Z",
+  "_subject": "http://localhost:8080/v1/realms/myrealm/users/uuid"
 }

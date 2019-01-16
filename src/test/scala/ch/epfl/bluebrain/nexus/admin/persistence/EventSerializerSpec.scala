@@ -32,17 +32,17 @@ class EventSerializerSpec
 
   private val data: Map[AnyRef, (String, Json)] = Map(
     (OrganizationCreated(orgId, "myorg", "My organization", instant, subject),
-     ("OrganizationEvent", jsonContentOf("/events/org-created.json"))),
+     ("OrganizationEvent", jsonContentOf("/serializer/org-created.json"))),
     (OrganizationUpdated(orgId, 42L, "myorg", "My organization", instant, subject),
-     ("OrganizationEvent", jsonContentOf("/events/org-updated.json"))),
+     ("OrganizationEvent", jsonContentOf("/serializer/org-updated.json"))),
     (OrganizationDeprecated(orgId, 42L, instant, subject),
-     ("OrganizationEvent", jsonContentOf("/events/org-deprecated.json"))),
+     ("OrganizationEvent", jsonContentOf("/serializer/org-deprecated.json"))),
     (ProjectCreated(projId, "myproj", orgId, "myorg", None, mappings, base, voc, instant, subject),
-     ("ProjectEvent", jsonContentOf("/events/project-created.json"))),
+     ("ProjectEvent", jsonContentOf("/serializer/project-created.json"))),
     (ProjectUpdated(projId, "myproj", Some("My project"), mappings, base, voc, 42L, instant, subject),
-     ("ProjectEvent", jsonContentOf("/events/project-updated.json"))),
+     ("ProjectEvent", jsonContentOf("/serializer/project-updated.json"))),
     (ProjectDeprecated(projId, 42L, instant, subject),
-     ("ProjectEvent", jsonContentOf("/events/project-deprecated.json")))
+     ("ProjectEvent", jsonContentOf("/serializer/project-deprecated.json")))
   )
 
   "An EventSerializer" should {
@@ -55,14 +55,14 @@ class EventSerializerSpec
       }
     }
 
-    "correctly serialize known events" in {
+    "correctly serialize known serializer" in {
       forAll(data.toList) {
         case (event, (_, json)) =>
           parse(new String(serializer.toBinary(event))).right.value shouldEqual json
       }
     }
 
-    "correctly deserialize known events" in {
+    "correctly deserialize known serializer" in {
       forAll(data.toList) {
         case (event, (manifest, json)) =>
           serializer.fromBinary(json.noSpaces.getBytes, manifest) shouldEqual event

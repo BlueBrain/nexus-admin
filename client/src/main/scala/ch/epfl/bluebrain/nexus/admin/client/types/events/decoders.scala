@@ -20,8 +20,8 @@ object decoders {
       case "rev"               => "_rev"
       case "instant"           => "_instant"
       case "subject"           => "_subject"
-      case "organizationUuid"  => "_organizationUuid"
       case "organizationLabel" => "_organizationLabel"
+      case "organizationUuid"  => "_organizationUuid"
       case other               => other
     })
 
@@ -44,7 +44,7 @@ object decoders {
   /**
     * [[Decoder]] for [[Event]]s.
     */
-  implicit def eventDecode(implicit iamClientConfig: IamClientConfig): Decoder[Event] =
+  implicit def eventDecoder(implicit iamClientConfig: IamClientConfig): Decoder[Event] =
     deriveDecoder[Event]
 
 }

@@ -62,8 +62,8 @@ class Projects[F[_]](agg: Agg[F], index: ProjectCache[F], organizations: Organiz
         index.getBy(organization, label).flatMap {
           case None =>
             val projectId = UUID.randomUUID
-            val base      = project.base.getOrElse(url"${http.apiUri}/resources/$organization/$label/_/".value)
-            val vocab     = project.vocab.getOrElse(url"${http.apiUri}/vocabs/$organization/$label/".value)
+            val base      = project.base.getOrElse(url"${http.prefixIri.asUri}/resources/$organization/$label/_/".value)
+            val vocab     = project.vocab.getOrElse(url"${http.prefixIri.asUri}/vocabs/$organization/$label/".value)
             val command = CreateProject(projectId,
                                         label,
                                         org.uuid,

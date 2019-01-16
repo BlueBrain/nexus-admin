@@ -4,6 +4,7 @@ import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.directives.RouteDirectives.reject
 import akka.http.scaladsl.server.{AuthorizationFailedRejection, Route}
+import ch.epfl.bluebrain.nexus.admin.config.AppConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.iam.client.types.AuthToken
 
 /**
@@ -23,10 +24,10 @@ trait CombinedRoutes {
     *
     * @param initialPrefix the initial prefix to be consumed
     */
-  def combinedRoutesFor(initialPrefix: String): Route =
+  def combinedRoutesFor(initialPrefix: String)(implicit hc: HttpConfig): Route =
     handleExceptions(ExceptionHandling.handler) {
       handleRejections(RejectionHandling.handler) {
-        pathPrefix(initialPrefix) {
+        pathPrefix(hc.prefix / initialPrefix) {
           extractCredentials {
             case Some(OAuth2BearerToken(value)) => combined(Some(AuthToken(value)))
             case Some(_)                        => reject(AuthorizationFailedRejection)

@@ -1,6 +1,8 @@
 package ch.epfl.bluebrain.nexus.admin.directives
 
 import akka.http.javadsl.server.CustomRejection
+import akka.http.scaladsl.model.headers.{HttpChallenges, OAuth2BearerToken}
+import akka.http.scaladsl.server.AuthenticationFailedRejection.CredentialsRejected
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.directives.FutureDirectives.onComplete
@@ -32,7 +34,8 @@ abstract class AuthDirectives(iamClient: IamClient[Task])(implicit s: Scheduler)
     */
   def authorizeOn(resource: Path, permission: Permission)(implicit cred: Option[AuthToken]): Directive0 =
     onComplete(iamClient.authorizeOn(resource, permission).runToFuture).flatMap {
-      case Success(_)                  => pass
+      case Success(_) => pass
+      // TODO: change this to Forbidden after adding it to common types and iam client
       case Failure(UnauthorizedAccess) => reject(AuthorizationFailedRejection)
       case Failure(err)                => reject(authorizationRejection(err))
     }
@@ -44,9 +47,22 @@ abstract class AuthDirectives(iamClient: IamClient[Task])(implicit s: Scheduler)
     */
   def authCaller(implicit cred: Option[AuthToken]): Directive1[Subject] =
     onComplete(iamClient.identities.runToFuture).flatMap {
-      case Success(caller)             => provide(caller.subject)
-      case Failure(UnauthorizedAccess) => reject(AuthorizationFailedRejection)
-      case Failure(err)                => reject(authorizationRejection(err))
+      case Success(caller) => provide(caller.subject)
+      case Failure(UnauthorizedAccess) =>
+        reject(AuthenticationFailedRejection(CredentialsRejected, HttpChallenges.oAuth2("*")))
+      case Failure(err) => reject(authorizationRejection(err))
+    }
+
+  /**
+    * Attempts to extract an [[AuthToken]] from the http headers.
+    *
+    * @return an optional token
+    */
+  def extractToken: Directive1[Option[AuthToken]] =
+    extractCredentials.flatMap {
+      case Some(OAuth2BearerToken(value)) => provide(Some(AuthToken(value)))
+      case Some(_)                        => reject(AuthorizationFailedRejection)
+      case _                              => provide(None)
     }
 
 }

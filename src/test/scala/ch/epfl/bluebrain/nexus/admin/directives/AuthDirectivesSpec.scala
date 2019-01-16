@@ -81,9 +81,10 @@ class AuthDirectivesSpec
         status shouldEqual StatusCodes.Accepted
       }
 
+      // TODO: discriminate between 401 and 403
       iamClient.authorizeOn(path, permission)(None) shouldReturn Task.raiseError(UnauthorizedAccess)
       Get("/") ~> authorizeOnRoute(path, permission)(None) ~> check {
-        status shouldEqual StatusCodes.Unauthorized
+        status shouldEqual StatusCodes.Forbidden
         responseAs[Error] shouldEqual Error(classNameOf[UnauthorizedAccess.type], None, errorCtxUri.asString)
       }
 

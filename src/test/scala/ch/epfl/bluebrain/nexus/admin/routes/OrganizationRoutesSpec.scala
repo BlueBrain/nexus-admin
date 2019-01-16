@@ -1,4 +1,5 @@
 package ch.epfl.bluebrain.nexus.admin.routes
+
 import java.time.Instant
 import java.util.UUID
 import java.util.regex.Pattern.quote
@@ -10,9 +11,11 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import ch.epfl.bluebrain.nexus.admin.CommonRejection._
 import ch.epfl.bluebrain.nexus.admin.Error
 import ch.epfl.bluebrain.nexus.admin.Error.classNameOf
-import ch.epfl.bluebrain.nexus.admin.config.AppConfig.PaginationConfig
+import ch.epfl.bluebrain.nexus.admin.config.AppConfig.{HttpConfig, PaginationConfig}
 import ch.epfl.bluebrain.nexus.admin.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.admin.marshallers.instances._
+import ch.epfl.bluebrain.nexus.admin.config.Permissions.orgs._
+import ch.epfl.bluebrain.nexus.admin.config.{AppConfig, Settings}
 import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationRejection._
 import ch.epfl.bluebrain.nexus.admin.organizations.{Organization, Organizations}
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF
@@ -23,7 +26,7 @@ import ch.epfl.bluebrain.nexus.commons.types.search.QueryResult.UnscoredQueryRes
 import ch.epfl.bluebrain.nexus.commons.types.search.QueryResults.UnscoredQueryResults
 import ch.epfl.bluebrain.nexus.iam.client.IamClient
 import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
-import ch.epfl.bluebrain.nexus.iam.client.types.{AuthToken, Caller, Identity, Permission}
+import ch.epfl.bluebrain.nexus.iam.client.types.{AuthToken, Caller, Identity}
 import ch.epfl.bluebrain.nexus.rdf.Iri
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
 import ch.epfl.bluebrain.nexus.rdf.syntax.node.unsafe._
@@ -34,6 +37,7 @@ import org.mockito.integrations.scalatest.IdiomaticMockitoFixture
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{EitherValues, Matchers, WordSpecLike}
 
+//noinspection TypeAnnotation
 class OrganizationRoutesSpec
     extends WordSpecLike
     with IdiomaticMockitoFixture
@@ -46,11 +50,13 @@ class OrganizationRoutesSpec
   private val iamClient     = mock[IamClient[Task]]
   private val organizations = mock[Organizations[Task]]
 
+  private val appConfig: AppConfig                      = Settings(system).appConfig
+  private implicit val httpConfig: HttpConfig           = appConfig.http
   private implicit val iamClientConfig: IamClientConfig = IamClientConfig(url"https://nexus.example.com/v1".value)
 
   private val routes =
     handleRejections(RejectionHandling.notFound) {
-      OrganizationRoutes(organizations)(iamClient, iamClientConfig, PaginationConfig(50, 100), global).routes
+      OrganizationRoutes(organizations)(iamClient, iamClientConfig, httpConfig, PaginationConfig(50, 100), global).routes
     }
 
   //noinspection TypeAnnotation
@@ -59,10 +65,7 @@ class OrganizationRoutesSpec
     implicit val subject: Identity.Subject = caller.subject
     implicit val token: Some[AuthToken]    = Some(AuthToken("token"))
 
-    val create = Permission.unsafe("organizations/create")
-    val read   = Permission.unsafe("organizations/read")
-    val write  = Permission.unsafe("organizations/write")
-    val cred   = OAuth2BearerToken("token")
+    val cred = OAuth2BearerToken("token")
 
     val instant = Instant.now
     val types   = Set(nxv.Organization.value)
@@ -93,9 +96,9 @@ class OrganizationRoutesSpec
       iamClient.identities shouldReturn Task(caller)
       organizations.create(organization) shouldReturn Task(Right(meta))
 
-      Put("/orgs/org", description) ~> addCredentials(cred) ~> routes ~> check {
+      Put("/v1/orgs/org", description) ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.Created
-        responseAs[Json] shouldEqual jsonContentOf("/orgs/meta.json", replacements)
+        responseAs[Json].spaces2 shouldEqual jsonContentOf("/orgs/meta.json", replacements).spaces2
       }
     }
 
@@ -104,7 +107,7 @@ class OrganizationRoutesSpec
       iamClient.identities shouldReturn Task(caller)
       organizations.create(organization) shouldReturn Task(Left(OrganizationExists))
 
-      Put("/orgs/org", description) ~> addCredentials(cred) ~> routes ~> check {
+      Put("/v1/orgs/org", description) ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.Conflict
         responseAs[Error].code shouldEqual classNameOf[OrganizationExists.type]
       }
@@ -114,7 +117,7 @@ class OrganizationRoutesSpec
       iamClient.authorizeOn(Path./, create) shouldReturn Task.unit
       iamClient.identities shouldReturn Task(caller)
 
-      Put("/orgs/", description) ~> addCredentials(cred) ~> routes ~> check {
+      Put("/v1/orgs/", description) ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
         responseAs[Error].code shouldEqual classNameOf[IllegalParameter.type]
       }
@@ -125,9 +128,9 @@ class OrganizationRoutesSpec
       iamClient.identities shouldReturn Task(caller)
       organizations.fetch("org") shouldReturn Task(Some(resource))
 
-      Get("/orgs/org") ~> addCredentials(cred) ~> routes ~> check {
+      Get("/v1/orgs/org") ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
-        responseAs[Json] shouldEqual jsonContentOf("/orgs/resource.json", replacements)
+        responseAs[Json].spaces2 shouldEqual jsonContentOf("/orgs/resource.json", replacements).spaces2
       }
     }
 
@@ -136,7 +139,7 @@ class OrganizationRoutesSpec
       iamClient.identities shouldReturn Task(caller)
       organizations.fetch("org") shouldReturn Task(None)
 
-      Get("/orgs/org") ~> addCredentials(cred) ~> routes ~> check {
+      Get("/v1/orgs/org") ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
       }
     }
@@ -146,9 +149,9 @@ class OrganizationRoutesSpec
       iamClient.identities shouldReturn Task(caller)
       organizations.fetch("org", Some(2L)) shouldReturn Task(Some(resource))
 
-      Get("/orgs/org?rev=2") ~> addCredentials(cred) ~> routes ~> check {
+      Get("/v1/orgs/org?rev=2") ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
-        responseAs[Json] shouldEqual jsonContentOf("/orgs/resource.json", replacements)
+        responseAs[Json].spaces2 shouldEqual jsonContentOf("/orgs/resource.json", replacements).spaces2
       }
     }
 
@@ -157,9 +160,9 @@ class OrganizationRoutesSpec
       iamClient.identities shouldReturn Task(caller)
       organizations.deprecate("org", 2L) shouldReturn Task(Right(meta))
 
-      Delete("/orgs/org?rev=2") ~> addCredentials(cred) ~> routes ~> check {
+      Delete("/v1/orgs/org?rev=2") ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
-        responseAs[Json] shouldEqual jsonContentOf("/orgs/meta.json", replacements)
+        responseAs[Json].spaces2 shouldEqual jsonContentOf("/orgs/meta.json", replacements).spaces2
       }
     }
 
@@ -167,7 +170,7 @@ class OrganizationRoutesSpec
       iamClient.authorizeOn(path, write) shouldReturn Task.unit
       iamClient.identities shouldReturn Task(caller)
 
-      Delete("/orgs/org") ~> addCredentials(cred) ~> routes ~> check {
+      Delete("/v1/orgs/org") ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
         responseAs[Error].code shouldEqual classNameOf[MissingParameters.type]
       }
@@ -178,18 +181,19 @@ class OrganizationRoutesSpec
       iamClient.identities shouldReturn Task(caller)
       organizations.deprecate("org", 2L) shouldReturn Task(Left(IncorrectRev(3L, 2L)))
 
-      Delete("/orgs/org?rev=2") ~> addCredentials(cred) ~> routes ~> check {
+      Delete("/v1/orgs/org?rev=2") ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.Conflict
         responseAs[Error].code shouldEqual classNameOf[IncorrectRev.type]
       }
     }
 
     "reject unauthorized requests" in new Context {
+      // TODO: discriminate between 401 and 403
       iamClient.authorizeOn(path, read)(None) shouldReturn Task.raiseError(UnauthorizedAccess)
       iamClient.identities(None) shouldReturn Task(Caller.anonymous)
 
-      Get("/orgs/org") ~> routes ~> check {
-        status shouldEqual StatusCodes.Unauthorized
+      Get("/v1/orgs/org") ~> routes ~> check {
+        status shouldEqual StatusCodes.Forbidden
         responseAs[Error].code shouldEqual classNameOf[UnauthorizedAccess.type]
       }
     }
@@ -212,25 +216,26 @@ class OrganizationRoutesSpec
       }
       organizations.list(Pagination(0, 50)) shouldReturn Task(UnscoredQueryResults(3, orgs))
 
-      Get("/orgs") ~> addCredentials(cred) ~> routes ~> check {
+      Get("/v1/orgs") ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
-        responseAs[Json] shouldEqual jsonContentOf("/orgs/listing.json", replacements)
+        responseAs[Json].spaces2 shouldEqual jsonContentOf("/orgs/listing.json", replacements).spaces2
       }
-      Get("/orgs/") ~> addCredentials(cred) ~> routes ~> check {
+      Get("/v1/orgs/") ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
-        responseAs[Json] shouldEqual jsonContentOf("/orgs/listing.json", replacements)
+        responseAs[Json].spaces2 shouldEqual jsonContentOf("/orgs/listing.json", replacements).spaces2
       }
     }
 
     "reject unsupported credentials" in new Context {
-      Get("/orgs/org") ~> addCredentials(BasicHttpCredentials("something")) ~> routes ~> check {
-        status shouldEqual StatusCodes.Unauthorized
+      Get("/v1/orgs/org") ~> addCredentials(BasicHttpCredentials("something")) ~> routes ~> check {
+        // TODO: discriminate between 401 and 403
+        status shouldEqual StatusCodes.Forbidden
         responseAs[Error].code shouldEqual classNameOf[UnauthorizedAccess.type]
       }
     }
 
     "reject unsupported methods" in new Context {
-      Options("/orgs/org") ~> addCredentials(cred) ~> routes ~> check {
+      Options("/v1/orgs/org") ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.MethodNotAllowed
         responseAs[Error].code shouldEqual classNameOf[MethodNotSupported.type]
       }

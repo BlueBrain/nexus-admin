@@ -1,20 +1,25 @@
 {
+  "@context": [
+    "https://bluebrain.github.io/nexus/contexts/admin.json",
+    "https://bluebrain.github.io/nexus/contexts/resource.json"
+  ],
   "@type": "ProjectUpdated",
-  "id": "27f5429c-b56f-4f8e-8481-f4334ebb334c",
-  "label": "myproj",
-  "description": "My project",
-  "base": "http://localhost:8080/base",
-  "vocab": "http://localhost:8080/voc",
-  "apiMappings": {
-    "nxv": "https://bluebrain.github.io/nexus/vocabulary/",
-    "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-  },
-  "rev": 42,
-  "instant": "2018-12-21T15:37:44.203831Z",
-  "subject": {
-    "@id": "http://localhost:8080/v1/realms/bbp/users/alice",
-    "@type": "User",
-    "realm": "bbp",
-    "subject": "alice"
-  }
+  "description": "the project description",
+  "base": "http://localhost:8080/base/",
+  "vocab": "http://localhost:8080/vocab/",
+  "apiMappings": [
+    {
+      "prefix": "nxv",
+      "namespace": "https://bluebrain.github.io/nexus/vocabulary/"
+    },
+    {
+      "prefix": "rdf",
+      "namespace": "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    }
+  ],
+  "_uuid": "94463ac0-3e9b-4261-80f5-e4253956eee2",
+  "_label": "theprojectlabel",
+  "_rev": 2,
+  "_instant": "1970-01-01T00:00:00Z",
+  "_subject": "http://localhost:8080/v1/realms/myrealm/users/uuid"
 }

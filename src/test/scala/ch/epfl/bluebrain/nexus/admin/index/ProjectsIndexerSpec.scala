@@ -91,7 +91,7 @@ class ProjectsIndexerSpec
       projectCache.replace(project.uuid, project) was called
     }
 
-    "index project only for other project events" in new Context {
+    "index project only for other project serializer" in new Context {
 
       projectCache.replace(project.uuid, project) shouldReturn IO.pure(())
       projects.fetch(project.uuid) shouldReturn IO.pure(Some(project))

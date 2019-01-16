@@ -47,8 +47,13 @@ object Event {
     * @param instant      the instant when this event was created
     * @param subject      the subject which created this event
     */
-  final case class OrganizationCreated(id: UUID, label: String, description: String, instant: Instant, subject: Subject)
-      extends OrganizationEvent {
+  final case class OrganizationCreated(
+      id: UUID,
+      label: String,
+      description: String,
+      instant: Instant,
+      subject: Subject
+  ) extends OrganizationEvent {
 
     /**
       *  the revision number that this event generates
@@ -66,13 +71,14 @@ object Event {
     * @param instant      the instant when this event was created
     * @param subject      the subject which created this event
     */
-  final case class OrganizationUpdated(id: UUID,
-                                       rev: Long,
-                                       label: String,
-                                       description: String,
-                                       instant: Instant,
-                                       subject: Subject)
-      extends OrganizationEvent
+  final case class OrganizationUpdated(
+      id: UUID,
+      rev: Long,
+      label: String,
+      description: String,
+      instant: Instant,
+      subject: Subject
+  ) extends OrganizationEvent
 
   /**
     * Event representing organization deprecation.
@@ -82,8 +88,12 @@ object Event {
     * @param instant      the instant when this event was created
     * @param subject      the subject which created this event
     */
-  final case class OrganizationDeprecated(id: UUID, rev: Long, instant: Instant, subject: Subject)
-      extends OrganizationEvent
+  final case class OrganizationDeprecated(
+      id: UUID,
+      rev: Long,
+      instant: Instant,
+      subject: Subject
+  ) extends OrganizationEvent
 
   /**
     * Event representing project creation.
@@ -99,17 +109,18 @@ object Event {
     * @param instant           the timestamp associated to this event
     * @param subject           the identity associated to this event
     */
-  final case class ProjectCreated(id: UUID,
-                                  label: String,
-                                  organizationUuid: UUID,
-                                  organizationLabel: String,
-                                  description: Option[String],
-                                  apiMappings: Map[String, AbsoluteIri],
-                                  base: AbsoluteIri,
-                                  vocab: AbsoluteIri,
-                                  instant: Instant,
-                                  subject: Subject)
-      extends ProjectEvent {
+  final case class ProjectCreated(
+      id: UUID,
+      label: String,
+      organizationUuid: UUID,
+      organizationLabel: String,
+      description: Option[String],
+      apiMappings: Map[String, AbsoluteIri],
+      base: AbsoluteIri,
+      vocab: AbsoluteIri,
+      instant: Instant,
+      subject: Subject
+  ) extends ProjectEvent {
 
     /**
       *  the revision number that this event generates
@@ -130,16 +141,17 @@ object Event {
     * @param instant     the timestamp associated to this event
     * @param subject     the identity associated to this event
     */
-  final case class ProjectUpdated(id: UUID,
-                                  label: String,
-                                  description: Option[String],
-                                  apiMappings: Map[String, AbsoluteIri],
-                                  base: AbsoluteIri,
-                                  vocab: AbsoluteIri,
-                                  rev: Long,
-                                  instant: Instant,
-                                  subject: Subject)
-      extends ProjectEvent
+  final case class ProjectUpdated(
+      id: UUID,
+      label: String,
+      description: Option[String],
+      apiMappings: Map[String, AbsoluteIri],
+      base: AbsoluteIri,
+      vocab: AbsoluteIri,
+      rev: Long,
+      instant: Instant,
+      subject: Subject
+  ) extends ProjectEvent
 
   /**
     * Event representing project deprecation.
@@ -149,6 +161,10 @@ object Event {
     * @param instant    the timestamp associated to this event
     * @param subject    the identity associated to this event
     */
-  final case class ProjectDeprecated(id: UUID, rev: Long, instant: Instant, subject: Subject) extends ProjectEvent
-
+  final case class ProjectDeprecated(
+      id: UUID,
+      rev: Long,
+      instant: Instant,
+      subject: Subject
+  ) extends ProjectEvent
 }
