@@ -7,23 +7,19 @@ import akka.cluster.Cluster
 import akka.event.Logging
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Route
-import akka.kafka.ProducerSettings
 import akka.stream.ActorMaterializer
-import ch.epfl.bluebrain.nexus.admin.config.{AppConfig, Settings}
+import ch.epfl.bluebrain.nexus.admin.config.Settings
 import ch.epfl.bluebrain.nexus.admin.index._
-import ch.epfl.bluebrain.nexus.admin.organizations.{OrganizationEvent, Organizations}
-import ch.epfl.bluebrain.nexus.admin.persistence.TaggingAdapter
-import ch.epfl.bluebrain.nexus.admin.projects.{ProjectEvent, Projects}
+import ch.epfl.bluebrain.nexus.admin.organizations.Organizations
+import ch.epfl.bluebrain.nexus.admin.projects.Projects
 import ch.epfl.bluebrain.nexus.admin.routes._
 import ch.epfl.bluebrain.nexus.iam.client.IamClient
-import ch.epfl.bluebrain.nexus.service.kafka.KafkaPublisher
 import com.github.jsonldjava.core.DocumentLoader
 import com.typesafe.config.{Config, ConfigFactory}
 import kamon.Kamon
 import kamon.system.SystemMetrics
 import monix.eval.Task
 import monix.execution.Scheduler
-import org.apache.kafka.common.serialization.StringSerializer
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -108,30 +104,7 @@ object Main {
     }
 
     OrganizationsIndexer.start(organizations, orgIndex)
-    ProjectsIndexer.start(projects, organizations, projectIndex, orgIndex)
-
-    val _ = startKafkaIndexers(appConfig)
-
+    val _ = ProjectsIndexer.start(projects, organizations, projectIndex, orgIndex)
   }
-
-  def startKafkaIndexers(appConfig: AppConfig)(implicit as: ActorSystem) = {
-    import ch.epfl.bluebrain.nexus.admin.kafka.encoders._
-    import ch.epfl.bluebrain.nexus.admin.kafka.keys._
-    implicit val iamClientConfig = appConfig.iam
-    val producerSettings         = ProducerSettings(as, new StringSerializer, new StringSerializer)
-    KafkaPublisher
-      .startTagStream[ProjectEvent](appConfig.persistence.queryJournalPlugin,
-                                    TaggingAdapter.ProjectTag,
-                                    "projects-to-kafka",
-                                    producerSettings,
-                                    appConfig.kafka.topic)
-    KafkaPublisher
-      .startTagStream[OrganizationEvent](appConfig.persistence.queryJournalPlugin,
-                                         TaggingAdapter.OrganizationTag,
-                                         "orgs-to-kafka",
-                                         producerSettings,
-                                         appConfig.kafka.topic)
-  }
-
 }
 // $COVERAGE-ON$
