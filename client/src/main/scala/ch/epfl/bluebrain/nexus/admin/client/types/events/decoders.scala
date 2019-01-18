@@ -1,6 +1,5 @@
 package ch.epfl.bluebrain.nexus.admin.client.types.events
 
-import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
 import ch.epfl.bluebrain.nexus.iam.client.types.Identity
 import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
@@ -25,7 +24,7 @@ object decoders {
       case other               => other
     })
 
-  private implicit def subjectDecoder(implicit iamClientConfig: IamClientConfig): Decoder[Subject] =
+  private implicit val subjectDecoder: Decoder[Subject] =
     Decoder.decodeString.flatMap { id =>
       Identity(url"$id".value) match {
         case Some(s: Subject) => Decoder.const(s)
@@ -44,7 +43,7 @@ object decoders {
   /**
     * [[Decoder]] for [[Event]]s.
     */
-  implicit def eventDecoder(implicit iamClientConfig: IamClientConfig): Decoder[Event] =
+  implicit val eventDecoder: Decoder[Event] =
     deriveDecoder[Event]
 
 }

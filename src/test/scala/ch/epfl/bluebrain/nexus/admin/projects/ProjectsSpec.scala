@@ -94,24 +94,29 @@ class ProjectsSpec
     "not create a project if it already exists" in new Context {
       orgs.fetch("org") shouldReturn IO.pure(Some(organization))
       index.getBy("org", "proj") shouldReturn IO.pure(Some(resource))
-      projects.create("org", "proj", payload)(caller).rejected[ProjectRejection] shouldEqual ProjectExists
+      projects.create("org", "proj", payload)(caller).rejected[ProjectRejection] shouldEqual ProjectAlreadyExists(
+        "org",
+        "proj")
     }
 
     "not create a project if its organization is deprecated" in new Context {
       orgs.fetch("org") shouldReturn IO.pure(Some(organization.copy(deprecated = true)))
-      projects.create("org", "proj", payload)(caller).rejected[ProjectRejection] shouldEqual OrganizationIsDeprecated
+      projects.create("org", "proj", payload)(caller).rejected[ProjectRejection] shouldEqual OrganizationIsDeprecated(
+        "org")
     }
 
     "not update a project if it doesn't exists" in new Context {
       orgs.fetch("org") shouldReturn IO.pure(Some(organization))
       index.getBy("org", "proj") shouldReturn IO.pure(None)
-      projects.update("org", "proj", payload, 1L)(caller).rejected[ProjectRejection] shouldEqual ProjectNotFound
+      projects.update("org", "proj", payload, 1L)(caller).rejected[ProjectRejection] shouldEqual ProjectNotFound("org",
+                                                                                                                 "proj")
     }
 
     "not deprecate a project if it doesn't exists" in new Context {
       orgs.fetch("org") shouldReturn IO.pure(Some(organization))
       index.getBy("org", "proj") shouldReturn IO.pure(None)
-      projects.deprecate("org", "proj", 1L)(caller).rejected[ProjectRejection] shouldEqual ProjectNotFound
+      projects.deprecate("org", "proj", 1L)(caller).rejected[ProjectRejection] shouldEqual ProjectNotFound("org",
+                                                                                                           "proj")
     }
 
     "not update a project if it's deprecated" in new Context {
@@ -125,7 +130,8 @@ class ProjectsSpec
       val deprecated = projects.deprecate("org", "proj", 1L)(caller).accepted
       index.getBy("org", "proj") shouldReturn IO.pure(
         Some(resource.copy(uuid = deprecated.uuid, rev = 2L, deprecated = true)))
-      projects.update("org", "proj", payload, 2L)(caller).rejected[ProjectRejection] shouldEqual ProjectIsDeprecated
+      projects.update("org", "proj", payload, 2L)(caller).rejected[ProjectRejection] shouldEqual ProjectIsDeprecated(
+        deprecated.uuid)
     }
 
     "not deprecate a project if it's already deprecated" in new Context {
@@ -139,7 +145,8 @@ class ProjectsSpec
       val deprecated = projects.deprecate("org", "proj", 1L)(caller).accepted
       index.getBy("org", "proj") shouldReturn IO.pure(
         Some(resource.copy(uuid = deprecated.uuid, rev = 2L, deprecated = true)))
-      projects.deprecate("org", "proj", 2L)(caller).rejected[ProjectRejection] shouldEqual ProjectIsDeprecated
+      projects.deprecate("org", "proj", 2L)(caller).rejected[ProjectRejection] shouldEqual ProjectIsDeprecated(
+        deprecated.uuid)
     }
 
     "create a project" in new Context {
@@ -287,7 +294,8 @@ class ProjectsSpec
       projects.fetch("org", "proj", 1L).accepted shouldEqual fetched.copy(rev = 1L, value = project)
 
       projects.fetch(created.uuid, 4L).rejected[ProjectRejection] shouldEqual IncorrectRev(3L, 4L)
-      projects.fetch(UUID.randomUUID, 4L).rejected[ProjectRejection] shouldEqual ProjectNotFound
+      private val uuid: UUID = UUID.randomUUID
+      projects.fetch(uuid, 4L).rejected[ProjectRejection] shouldEqual ProjectNotFound(uuid)
     }
 
     "not set permissions if user has all permissions on /" in new Context {

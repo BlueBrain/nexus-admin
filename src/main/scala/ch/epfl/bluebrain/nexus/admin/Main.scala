@@ -6,9 +6,6 @@ import akka.actor.{ActorSystem, Address, AddressFromURIString}
 import akka.cluster.Cluster
 import akka.event.Logging
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.HttpMethods._
-import akka.http.scaladsl.model.headers.Location
-import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.kafka.ProducerSettings
 import akka.stream.ActorMaterializer
@@ -19,10 +16,7 @@ import ch.epfl.bluebrain.nexus.admin.persistence.TaggingAdapter
 import ch.epfl.bluebrain.nexus.admin.projects.{ProjectEvent, Projects}
 import ch.epfl.bluebrain.nexus.admin.routes._
 import ch.epfl.bluebrain.nexus.iam.client.IamClient
-import ch.epfl.bluebrain.nexus.service.http.directives.PrefixDirectives.uriPrefix
 import ch.epfl.bluebrain.nexus.service.kafka.KafkaPublisher
-import ch.megard.akka.http.cors.scaladsl.CorsDirectives.{cors, corsRejectionHandler}
-import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 import com.github.jsonldjava.core.DocumentLoader
 import com.typesafe.config.{Config, ConfigFactory}
 import kamon.Kamon
@@ -71,9 +65,6 @@ object Main {
     implicit val scheduler: Scheduler  = Scheduler.global
     implicit val iamConfig             = appConfig.iam
     implicit val iamClient             = IamClient[Task]
-    implicit val paginationConfig      = appConfig.pagination
-    implicit val httpConfig            = appConfig.http
-    implicit val persistenceConfig     = appConfig.persistence
 
     val logger = Logging(as, getClass)
 
@@ -85,34 +76,15 @@ object Main {
       case Nil      => List(cluster.selfAddress)
       case nonEmpty => nonEmpty
     }
-    val serviceDescription = AppInfoRoutes(appConfig.description,
-                                           ClusterHealthChecker(cluster),
-                                           CassandraHealthChecker(appConfig.persistence)).routes
     val orgIndex: OrganizationCache[Task]  = OrganizationCache[Task]
     val projectIndex: ProjectCache[Task]   = ProjectCache[Task]
     val organizations: Organizations[Task] = Organizations[Task](orgIndex, iamClient, appConfig).runSyncUnsafe()
     val projects: Projects[Task]           = Projects(projectIndex, organizations, iamClient, appConfig).runSyncUnsafe()
 
-    val orgRoutes: OrganizationRoutes = OrganizationRoutes(organizations)
-    val projectRoutes: ProjectRoutes  = ProjectRoutes(projects)
-    val eventRoutes: EventRoutes      = EventRoutes()
-
-    val corsSettings = CorsSettings.defaultSettings
-      .withAllowedMethods(List(GET, PUT, POST, DELETE, OPTIONS, HEAD))
-      .withExposedHeaders(List(Location.name))
-    val routes: Route = {
-      val rh = corsRejectionHandler withFallback RejectionHandling.handler withFallback RejectionHandling.notFound
-      (handleRejections(rh) & handleExceptions(ExceptionHandling.handler)) {
-        cors(corsSettings)(serviceDescription ~ uriPrefix(appConfig.http.publicUri) {
-          eventRoutes.routes ~ orgRoutes.routes ~ projectRoutes.routes
-        })
-      }
-    }
-
     cluster.registerOnMemberUp {
       logger.info("==== Cluster is Live ====")
-
-      val httpBinding = Http().bindAndHandle(routes, appConfig.http.interface, appConfig.http.port)
+      val routes: Route = Routes(organizations, projects)
+      val httpBinding   = Http().bindAndHandle(routes, appConfig.http.interface, appConfig.http.port)
 
       httpBinding.onComplete {
         case Success(binding) =>

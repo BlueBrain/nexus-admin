@@ -14,8 +14,8 @@ import akka.persistence.query.scaladsl.EventsByTagQuery
 import akka.persistence.query.{PersistenceQuery, _}
 import akka.stream.scaladsl.Source
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig
+import ch.epfl.bluebrain.nexus.admin.config.AppConfig.PersistenceConfig
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig.tracing._
-import ch.epfl.bluebrain.nexus.admin.config.AppConfig.{HttpConfig, PersistenceConfig}
 import ch.epfl.bluebrain.nexus.admin.config.Permissions._
 import ch.epfl.bluebrain.nexus.admin.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationEvent
@@ -41,7 +41,6 @@ import scala.util.{Failure, Success, Try}
   */
 class EventRoutes(
     implicit as: ActorSystem,
-    hc: HttpConfig,
     pc: PersistenceConfig,
     icc: IamClientConfig,
     ic: IamClient[Task]
@@ -51,13 +50,11 @@ class EventRoutes(
   private val printer: Printer     = Printer.noSpaces.copy(dropNullValues = true)
 
   def routes: Route =
-    pathPrefix(hc.prefix) {
-      concat(
-        routesFor("orgs" / "events", OrganizationTag, orgs.read, typedEventToSse[OrganizationEvent]),
-        routesFor("projects" / "events", ProjectTag, projects.read, typedEventToSse[ProjectEvent]),
-        routesFor("events", EventTag, events.read, eventToSse),
-      )
-    }
+    concat(
+      routesFor("orgs" / "events", OrganizationTag, orgs.read, typedEventToSse[OrganizationEvent]),
+      routesFor("projects" / "events", ProjectTag, projects.read, typedEventToSse[ProjectEvent]),
+      routesFor("events", EventTag, events.read, eventToSse),
+    )
 
   private def routesFor(
       pm: PathMatcher0,
@@ -128,10 +125,6 @@ class EventRoutes(
 }
 
 object EventRoutes {
-  def apply()(implicit as: ActorSystem,
-              hc: HttpConfig,
-              pc: PersistenceConfig,
-              icc: IamClientConfig,
-              ic: IamClient[Task]): EventRoutes =
+  def apply()(implicit as: ActorSystem, pc: PersistenceConfig, icc: IamClientConfig, ic: IamClient[Task]): EventRoutes =
     new EventRoutes
 }

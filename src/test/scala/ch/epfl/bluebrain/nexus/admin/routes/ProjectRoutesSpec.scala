@@ -6,9 +6,7 @@ import java.util.regex.Pattern.quote
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.{BasicHttpCredentials, OAuth2BearerToken}
-import akka.http.scaladsl.server.Directives.{handleExceptions, handleRejections}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import ch.epfl.bluebrain.nexus.admin.CommonRejection.IllegalParameter
 import ch.epfl.bluebrain.nexus.admin.Error
 import ch.epfl.bluebrain.nexus.admin.Error._
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig.{HttpConfig, PaginationConfig}
@@ -20,7 +18,6 @@ import ch.epfl.bluebrain.nexus.admin.projects.ProjectRejection._
 import ch.epfl.bluebrain.nexus.admin.projects.{Project, ProjectDescription, Projects}
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF
 import ch.epfl.bluebrain.nexus.commons.test.Resources
-import ch.epfl.bluebrain.nexus.commons.types.HttpRejection.{MethodNotSupported, MissingParameters, UnauthorizedAccess}
 import ch.epfl.bluebrain.nexus.commons.types.search.Pagination
 import ch.epfl.bluebrain.nexus.commons.types.search.QueryResult.UnscoredQueryResult
 import ch.epfl.bluebrain.nexus.commons.types.search.QueryResults.UnscoredQueryResults
@@ -38,6 +35,7 @@ import org.mockito.integrations.scalatest.IdiomaticMockitoFixture
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{EitherValues, Matchers, WordSpecLike}
 
+//noinspection TypeAnnotation
 class ProjectRoutesSpec
     extends WordSpecLike
     with IdiomaticMockitoFixture
@@ -55,10 +53,9 @@ class ProjectRoutesSpec
   private implicit val iamClientConfig: IamClientConfig = IamClientConfig(url"https://nexus.example.com/v1".value)
 
   private val routes =
-    (handleExceptions(ExceptionHandling.handler) & handleRejections(
-      RejectionHandling.handler withFallback RejectionHandling.notFound)) {
-      ProjectRoutes(projects)(iamClient, iamClientConfig, httpConfig, PaginationConfig(50, 100), global).routes
-    }
+    Routes.wrap(
+      ProjectRoutes(projects)(iamClient, iamClientConfig, PaginationConfig(50, 100), global).routes
+    )
 
   //noinspection TypeAnnotation
   trait Context {
@@ -130,168 +127,168 @@ class ProjectRoutesSpec
   "Project routes" should {
 
     "create a project" in new Context {
-      iamClient.authorizeOn("org" / "label", create) shouldReturn Task.unit
+      iamClient.hasPermission(Path("/org").right.value, create)(any[Option[AuthToken]]) shouldReturn Task.pure(true)
       iamClient.identities shouldReturn Task(caller)
       projects.create("org", "label", project) shouldReturn Task(Right(meta))
 
-      Put("/v1/projects/org/label", payload) ~> addCredentials(cred) ~> routes ~> check {
+      Put("/projects/org/label", payload) ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.Created
         responseAs[Json].spaces2 shouldEqual jsonContentOf("/projects/meta.json", replacements).spaces2
       }
     }
 
     "create a project without optional fields" in new Context {
-      iamClient.authorizeOn("org" / "label", create) shouldReturn Task.unit
+      iamClient.hasPermission(Path("/org").right.value, create)(any[Option[AuthToken]]) shouldReturn Task.pure(true)
       iamClient.identities shouldReturn Task(caller)
       projects.create("org", "label", ProjectDescription(None, Map.empty, None, None)) shouldReturn Task(Right(meta))
 
-      Put("/v1/projects/org/label", Json.obj()) ~> addCredentials(cred) ~> routes ~> check {
+      Put("/projects/org/label", Json.obj()) ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.Created
         responseAs[Json].spaces2 shouldEqual jsonContentOf("/projects/meta.json", replacements).spaces2
       }
     }
 
     "reject the creation of a project without a label" in new Context {
-      iamClient.authorizeOn(Path("/org").right.value, create) shouldReturn Task.unit
+      iamClient.hasPermission(Path("/org").right.value, create)(any[Option[AuthToken]]) shouldReturn Task.pure(true)
       iamClient.identities shouldReturn Task(caller)
 
-      Put("/v1/projects/org", payload) ~> addCredentials(cred) ~> routes ~> check {
-        status shouldEqual StatusCodes.BadRequest
-        responseAs[Error].code shouldEqual classNameOf[IllegalParameter.type]
+      Put("/projects/org", payload) ~> addCredentials(cred) ~> routes ~> check {
+        status shouldEqual StatusCodes.MethodNotAllowed
+        responseAs[Error].`@type` shouldEqual "HttpMethodNotAllowed"
       }
     }
 
     "reject the creation of a project which already exists" in new Context {
-      iamClient.authorizeOn("org" / "label", create) shouldReturn Task.unit
+      iamClient.hasPermission("org" / "label", create)(any[Option[AuthToken]]) shouldReturn Task.pure(true)
       iamClient.identities shouldReturn Task(caller)
-      projects.create("org", "label", project) shouldReturn Task(Left(ProjectExists))
+      projects.create("org", "label", project) shouldReturn Task(Left(ProjectAlreadyExists("org", "label")))
 
-      Put("/v1/projects/org/label", payload) ~> addCredentials(cred) ~> routes ~> check {
+      Put("/projects/org/label", payload) ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.Conflict
-        responseAs[Error].code shouldEqual classNameOf[ProjectExists.type]
+        responseAs[Error].`@type` shouldEqual classNameOf[ProjectAlreadyExists.type]
       }
     }
 
     "update a project" in new Context {
-      iamClient.authorizeOn("org" / "label", write) shouldReturn Task.unit
+      iamClient.hasPermission("org" / "label", write)(any[Option[AuthToken]]) shouldReturn Task.pure(true)
       iamClient.identities shouldReturn Task(caller)
       projects.update("org", "label", project, 2L) shouldReturn Task(Right(meta))
 
-      Put("/v1/projects/org/label?rev=2", payload) ~> addCredentials(cred) ~> routes ~> check {
+      Put("/projects/org/label?rev=2", payload) ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         responseAs[Json].spaces2 shouldEqual jsonContentOf("/projects/meta.json", replacements).spaces2
       }
     }
 
     "reject the update of a project without name" in new Context {
-      iamClient.authorizeOn(Path("/org").right.value, write) shouldReturn Task.unit
+      iamClient.hasPermission(Path("/org").right.value, write)(any[Option[AuthToken]]) shouldReturn Task.pure(true)
       iamClient.identities shouldReturn Task(caller)
 
-      Put("/v1/projects/org?rev=2", payload) ~> addCredentials(cred) ~> routes ~> check {
-        status shouldEqual StatusCodes.BadRequest
-        responseAs[Error].code shouldEqual classNameOf[IllegalParameter.type]
+      Put("/projects/org?rev=2", payload) ~> addCredentials(cred) ~> routes ~> check {
+        status shouldEqual StatusCodes.MethodNotAllowed
+        responseAs[Error].`@type` shouldEqual "HttpMethodNotAllowed"
       }
     }
 
     "reject the update of a non-existent project" in new Context {
-      iamClient.authorizeOn("org" / "label", write) shouldReturn Task.unit
+      iamClient.hasPermission("org" / "label", write)(any[Option[AuthToken]]) shouldReturn Task.pure(true)
       iamClient.identities shouldReturn Task(caller)
-      projects.update("org", "label", project, 2L) shouldReturn Task(Left(ProjectNotFound))
+      projects.update("org", "label", project, 2L) shouldReturn Task(Left(ProjectNotFound("org", "label")))
 
-      Put("/v1/projects/org/label?rev=2", payload) ~> addCredentials(cred) ~> routes ~> check {
+      Put("/projects/org/label?rev=2", payload) ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
-        responseAs[Error].code shouldEqual classNameOf[ProjectNotFound.type]
+        responseAs[Error].`@type` shouldEqual classNameOf[ProjectNotFound.type]
       }
     }
 
     "reject the update of a non-existent project revision" in new Context {
-      iamClient.authorizeOn("org" / "label", write) shouldReturn Task.unit
+      iamClient.hasPermission("org" / "label", write)(any[Option[AuthToken]]) shouldReturn Task.pure(true)
       iamClient.identities shouldReturn Task(caller)
       projects.update("org", "label", project, 2L) shouldReturn Task(Left(IncorrectRev(1L, 2L)))
 
-      Put("/v1/projects/org/label?rev=2", payload) ~> addCredentials(cred) ~> routes ~> check {
+      Put("/projects/org/label?rev=2", payload) ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.Conflict
-        responseAs[Error].code shouldEqual classNameOf[IncorrectRev.type]
+        responseAs[Error].`@type` shouldEqual classNameOf[IncorrectRev.type]
       }
     }
 
     "deprecate a project" in new Context {
-      iamClient.authorizeOn("org" / "label", write) shouldReturn Task.unit
+      iamClient.hasPermission("org" / "label", write)(any[Option[AuthToken]]) shouldReturn Task.pure(true)
       iamClient.identities shouldReturn Task(caller)
       projects.deprecate("org", "label", 2L) shouldReturn Task(Right(meta))
 
-      Delete("/v1/projects/org/label?rev=2") ~> addCredentials(cred) ~> routes ~> check {
+      Delete("/projects/org/label?rev=2") ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         responseAs[Json].spaces2 shouldEqual jsonContentOf("/projects/meta.json", replacements).spaces2
       }
     }
 
     "reject the deprecation of a project without rev" in new Context {
-      iamClient.authorizeOn("org" / "label", write) shouldReturn Task.unit
+      iamClient.hasPermission("org" / "label", write)(any[Option[AuthToken]]) shouldReturn Task.pure(true)
       iamClient.identities shouldReturn Task(caller)
 
-      Delete("/v1/projects/org/label") ~> addCredentials(cred) ~> routes ~> check {
+      Delete("/projects/org/label") ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.BadRequest
-        responseAs[Error].code shouldEqual classNameOf[MissingParameters.type]
+        responseAs[Error].`@type` shouldEqual "MissingQueryParam"
       }
     }
 
     "reject the deprecation of a non-existent project" in new Context {
-      iamClient.authorizeOn("org" / "label", write) shouldReturn Task.unit
+      iamClient.hasPermission("org" / "label", write)(any[Option[AuthToken]]) shouldReturn Task.pure(true)
       iamClient.identities shouldReturn Task(caller)
-      projects.deprecate("org", "label", 2L) shouldReturn Task(Left(ProjectNotFound))
+      projects.deprecate("org", "label", 2L) shouldReturn Task(Left(ProjectNotFound("org", "label")))
 
-      Delete("/v1/projects/org/label?rev=2") ~> addCredentials(cred) ~> routes ~> check {
+      Delete("/projects/org/label?rev=2") ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
-        responseAs[Error].code shouldEqual classNameOf[ProjectNotFound.type]
+        responseAs[Error].`@type` shouldEqual classNameOf[ProjectNotFound.type]
       }
     }
 
     "fetch a project" in new Context {
-      iamClient.authorizeOn("org" / "label", read) shouldReturn Task.unit
+      iamClient.hasPermission("org" / "label", read)(any[Option[AuthToken]]) shouldReturn Task.pure(true)
       iamClient.identities shouldReturn Task(caller)
       projects.fetch("org", "label") shouldReturn Task(Some(resource))
 
-      Get("/v1/projects/org/label") ~> addCredentials(cred) ~> routes ~> check {
+      Get("/projects/org/label") ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         responseAs[Json].spaces2 shouldEqual jsonContentOf("/projects/resource.json", replacements).spaces2
       }
     }
 
     "return not found for a non-existent project" in new Context {
-      iamClient.authorizeOn("org" / "label", read) shouldReturn Task.unit
+      iamClient.hasPermission("org" / "label", read)(any[Option[AuthToken]]) shouldReturn Task.pure(true)
       iamClient.identities shouldReturn Task(caller)
       projects.fetch("org", "label") shouldReturn Task(None)
 
-      Get("/v1/projects/org/label") ~> addCredentials(cred) ~> routes ~> check {
+      Get("/projects/org/label") ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
       }
     }
 
     "fetch a specific project revision" in new Context {
-      iamClient.authorizeOn("org" / "label", read) shouldReturn Task.unit
+      iamClient.hasPermission("org" / "label", read)(any[Option[AuthToken]]) shouldReturn Task.pure(true)
       iamClient.identities shouldReturn Task(caller)
       projects.fetch("org", "label", 2L) shouldReturn Task(Right(resource))
 
-      Get("/v1/projects/org/label?rev=2") ~> addCredentials(cred) ~> routes ~> check {
+      Get("/projects/org/label?rev=2") ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         responseAs[Json].spaces2 shouldEqual jsonContentOf("/projects/resource.json", replacements).spaces2
       }
     }
 
     "return not found for a non-existent project revision" in new Context {
-      iamClient.authorizeOn("org" / "label", read) shouldReturn Task.unit
+      iamClient.hasPermission("org" / "label", read)(any[Option[AuthToken]]) shouldReturn Task.pure(true)
       iamClient.identities shouldReturn Task(caller)
-      projects.fetch("org", "label", 2L) shouldReturn Task(Left(ProjectNotFound))
+      projects.fetch("org", "label", 2L) shouldReturn Task(Left(ProjectNotFound("org", "label")))
 
-      Get("/v1/projects/org/label?rev=2") ~> addCredentials(cred) ~> routes ~> check {
+      Get("/projects/org/label?rev=2") ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.NotFound
       }
     }
 
     "list all projects" in new Context {
-      iamClient.authorizeOn(Path./, read) shouldReturn Task.unit
-      iamClient.authorizeOn(Path.Empty, read) shouldReturn Task.unit
+      iamClient.hasPermission(Path./, read)(any[Option[AuthToken]]) shouldReturn Task.pure(true)
+      iamClient.hasPermission(Path.Empty, read)(any[Option[AuthToken]]) shouldReturn Task.pure(true)
       iamClient.identities shouldReturn Task(caller)
       val projs = List(1, 2, 3).map { i =>
         val iri = Iri.Url(s"http://nexus.example.com/v1/projects/org/label$i").right.value
@@ -299,19 +296,19 @@ class ProjectRoutesSpec
       }
       projects.list(Pagination(0, 50)) shouldReturn Task(UnscoredQueryResults(3, projs))
 
-      Get("/v1/projects") ~> addCredentials(cred) ~> routes ~> check {
+      Get("/projects") ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         responseAs[Json].spaces2 shouldEqual jsonContentOf("/projects/listing.json", replacements).spaces2
       }
-      Get("/v1/projects/") ~> addCredentials(cred) ~> routes ~> check {
+      Get("/projects/") ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         responseAs[Json].spaces2 shouldEqual jsonContentOf("/projects/listing.json", replacements).spaces2
       }
     }
 
     "list an organization projects" in new Context {
-      iamClient.authorizeOn(Path("/org").right.value, read) shouldReturn Task.unit
-      iamClient.authorizeOn(Path("/org/").right.value, read) shouldReturn Task.unit
+      iamClient.hasPermission(Path("/org").right.value, read)(any[Option[AuthToken]]) shouldReturn Task.pure(true)
+      iamClient.hasPermission(Path("/org/").right.value, read)(any[Option[AuthToken]]) shouldReturn Task.pure(true)
       iamClient.identities shouldReturn Task(caller)
       val projs = List(1, 2, 3).map { i =>
         val iri = Iri.Url(s"http://nexus.example.com/v1/projects/org/label$i").right.value
@@ -319,39 +316,37 @@ class ProjectRoutesSpec
       }
       projects.list("org", Pagination(0, 50)) shouldReturn Task(UnscoredQueryResults(3, projs))
 
-      Get("/v1/projects/org") ~> addCredentials(cred) ~> routes ~> check {
+      Get("/projects/org") ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         responseAs[Json].spaces2 shouldEqual jsonContentOf("/projects/listing.json", replacements).spaces2
       }
-      Get("/v1/projects/org/") ~> addCredentials(cred) ~> routes ~> check {
+      Get("/projects/org/") ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
         responseAs[Json].spaces2 shouldEqual jsonContentOf("/projects/listing.json", replacements).spaces2
       }
     }
 
     "reject unauthorized requests" in new Context {
-      iamClient.authorizeOn("org" / "label", read)(None) shouldReturn Task.raiseError(UnauthorizedAccess)
+      iamClient.hasPermission("org" / "label", read)(None) shouldReturn Task.pure(false)
       iamClient.identities(None) shouldReturn Task(Caller.anonymous)
 
-      Get("/v1/projects/org/label") ~> routes ~> check {
-        // TODO: discriminate between 401 and 403
+      Get("/projects/org/label") ~> routes ~> check {
         status shouldEqual StatusCodes.Forbidden
-        responseAs[Error].code shouldEqual classNameOf[UnauthorizedAccess.type]
+        responseAs[Error].`@type` shouldEqual "AuthorizationFailed"
       }
     }
 
     "reject unsupported credentials" in new Context {
-      Get("/v1/projects/org/label") ~> addCredentials(BasicHttpCredentials("something")) ~> routes ~> check {
-        // TODO: discriminate between 401 and 403
-        status shouldEqual StatusCodes.Forbidden
-        responseAs[Error].code shouldEqual classNameOf[UnauthorizedAccess.type]
+      Get("/projects/org/label") ~> addCredentials(BasicHttpCredentials("something")) ~> routes ~> check {
+        status shouldEqual StatusCodes.Unauthorized
+        responseAs[Error].`@type` shouldEqual "AuthenticationFailed"
       }
     }
 
     "reject unsupported methods" in new Context {
-      Options("/v1/projects/org/label") ~> addCredentials(cred) ~> routes ~> check {
+      Options("/projects/org/label") ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.MethodNotAllowed
-        responseAs[Error].code shouldEqual classNameOf[MethodNotSupported.type]
+        responseAs[Error].`@type` shouldEqual "HttpMethodNotAllowed"
       }
     }
   }
