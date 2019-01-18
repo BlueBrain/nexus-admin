@@ -48,6 +48,17 @@ object AdminError {
     */
   final case object NotFound extends AdminError("The requested resource could not be found.")
 
+  /**
+    * Signals that the provided authentication is not valid.
+    */
+  final case object AuthenticationFailed extends AdminError("The supplied authentication is invalid.")
+
+  /**
+    * Signals that the caller doesn't have access to the selected resource.
+    */
+  final case object AuthorizationFailed
+      extends AdminError("The supplied authentication is not authorized to access this resource.")
+
   implicit val adminErrorEncoder: Encoder[AdminError] = {
     implicit val rejectionConfig: Configuration = Configuration.default.withDiscriminator("@type")
     val enc                                     = deriveEncoder[AdminError].mapJson(_ addContext errorCtxUri)
@@ -55,7 +66,9 @@ object AdminError {
   }
 
   implicit val adminErrorStatusFrom: StatusFrom[AdminError] = {
-    case NotFound => StatusCodes.NotFound
-    case _        => StatusCodes.InternalServerError
+    case NotFound             => StatusCodes.NotFound
+    case AuthenticationFailed => StatusCodes.Unauthorized
+    case AuthorizationFailed  => StatusCodes.Forbidden
+    case _                    => StatusCodes.InternalServerError
   }
 }
