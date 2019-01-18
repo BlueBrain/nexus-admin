@@ -9,7 +9,7 @@ import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig.{HttpConfig, PaginationConfig, PersistenceConfig}
 import ch.epfl.bluebrain.nexus.admin.exceptions.AdminError
-import ch.epfl.bluebrain.nexus.admin.exceptions.AdminError.{InternalError, NotFound}
+import ch.epfl.bluebrain.nexus.admin.exceptions.AdminError._
 import ch.epfl.bluebrain.nexus.admin.marshallers.instances._
 import ch.epfl.bluebrain.nexus.admin.organizations.{OrganizationRejection, Organizations}
 import ch.epfl.bluebrain.nexus.admin.projects.{ProjectRejection, Projects}
@@ -36,6 +36,12 @@ object Routes {
       case NotFound =>
         // suppress errors for not found
         complete(AdminError.adminErrorStatusFrom(NotFound) -> (NotFound: AdminError))
+      case AuthenticationFailed =>
+        // suppress errors for authentication failures
+        complete(AdminError.adminErrorStatusFrom(AuthenticationFailed) -> (AuthenticationFailed: AdminError))
+      case AuthorizationFailed =>
+        // suppress errors for authorization failures
+        complete(AdminError.adminErrorStatusFrom(AuthorizationFailed) -> (AuthorizationFailed: AdminError))
       case err =>
         logger.error("Exception caught during routes processing ", err)
         val error: AdminError = InternalError("The system experienced an unexpected error, please try again later.")
