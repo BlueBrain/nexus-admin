@@ -8,6 +8,8 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.`Last-Event-ID`
 import akka.http.scaladsl.model.sse.ServerSentEvent
+import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.persistence.query.{EventEnvelope, NoOffset, Offset, Sequence}
 import akka.stream.scaladsl.Source
@@ -234,6 +236,11 @@ object EventRoutesSpec {
       events: List[Any],
   )(implicit as: ActorSystem, hc: HttpConfig, pc: PersistenceConfig, ic: IamClientConfig, cl: IamClient[Task])
       extends EventRoutes() {
+
+    override def routes: Route =
+      (handleExceptions(ExceptionHandling.handler) & handleRejections(RejectionHandling.handler)) {
+        super.routes
+      }
 
     private val envelopes = events.zipWithIndex.map {
       case (ev, idx) =>

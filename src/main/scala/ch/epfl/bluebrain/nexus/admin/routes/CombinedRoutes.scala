@@ -25,15 +25,11 @@ trait CombinedRoutes {
     * @param initialPrefix the initial prefix to be consumed
     */
   def combinedRoutesFor(initialPrefix: String)(implicit hc: HttpConfig): Route =
-    handleExceptions(ExceptionHandling.handler) {
-      handleRejections(RejectionHandling.handler) {
-        pathPrefix(hc.prefix / initialPrefix) {
-          extractCredentials {
-            case Some(OAuth2BearerToken(value)) => combined(Some(AuthToken(value)))
-            case Some(_)                        => reject(AuthorizationFailedRejection)
-            case _                              => combined(None)
-          }
-        }
+    pathPrefix(hc.prefix / initialPrefix) {
+      extractCredentials {
+        case Some(OAuth2BearerToken(value)) => combined(Some(AuthToken(value)))
+        case Some(_)                        => reject(AuthorizationFailedRejection)
+        case _                              => combined(None)
       }
     }
 }

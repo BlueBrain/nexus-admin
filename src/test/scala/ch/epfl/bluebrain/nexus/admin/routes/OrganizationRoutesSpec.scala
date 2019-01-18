@@ -6,7 +6,7 @@ import java.util.regex.Pattern.quote
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.{BasicHttpCredentials, OAuth2BearerToken}
-import akka.http.scaladsl.server.Directives.handleRejections
+import akka.http.scaladsl.server.Directives.{handleExceptions, handleRejections}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import ch.epfl.bluebrain.nexus.admin.CommonRejection._
 import ch.epfl.bluebrain.nexus.admin.Error
@@ -55,7 +55,8 @@ class OrganizationRoutesSpec
   private implicit val iamClientConfig: IamClientConfig = IamClientConfig(url"https://nexus.example.com/v1".value)
 
   private val routes =
-    handleRejections(RejectionHandling.notFound) {
+    (handleExceptions(ExceptionHandling.handler) & handleRejections(
+      RejectionHandling.handler withFallback RejectionHandling.notFound)) {
       OrganizationRoutes(organizations)(iamClient, iamClientConfig, httpConfig, PaginationConfig(50, 100), global).routes
     }
 
