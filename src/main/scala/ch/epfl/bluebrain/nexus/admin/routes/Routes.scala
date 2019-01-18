@@ -46,10 +46,10 @@ object Routes {
     val custom = RejectionHandling.apply[ResourceRejection]({
       case rejection: OrganizationRejection =>
         logger.debug(s"Handling organization rejection '$rejection'")
-        rejection
+        OrganizationRejection.organizationStatusFrom(rejection) -> rejection
       case rejection: ProjectRejection =>
         logger.debug(s"Handling project rejection '$rejection'")
-        rejection
+        ProjectRejection.projectStatusFrom(rejection) -> rejection
     })
     corsRejectionHandler withFallback custom withFallback RejectionHandling.notFound withFallback RejectionHandler.default
   }
