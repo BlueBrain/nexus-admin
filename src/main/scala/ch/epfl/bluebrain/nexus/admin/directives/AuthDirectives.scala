@@ -1,11 +1,9 @@
 package ch.epfl.bluebrain.nexus.admin.directives
 
-import akka.http.scaladsl.model.headers.{HttpChallenges, OAuth2BearerToken}
-import akka.http.scaladsl.server.AuthenticationFailedRejection.CredentialsRejected
+import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.directives.FutureDirectives.onComplete
-import akka.http.scaladsl.server.directives.RouteDirectives.reject
 import ch.epfl.bluebrain.nexus.admin.exceptions.AdminError.{AuthenticationFailed, AuthorizationFailed, InternalError}
 import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
 import ch.epfl.bluebrain.nexus.iam.client.types.{AuthToken, Permission}
@@ -24,8 +22,7 @@ import scala.util.{Failure, Success}
   */
 abstract class AuthDirectives(iamClient: IamClient[Task])(implicit s: Scheduler) {
 
-  private val authRejection = AuthenticationFailedRejection(CredentialsRejected, HttpChallenges.oAuth2("*"))
-  private val logger        = Logger[this.type]
+  private val logger = Logger[this.type]
 
   /**
     * Checks if the caller has permissions on a provided ''resource''.
@@ -84,7 +81,7 @@ abstract class AuthDirectives(iamClient: IamClient[Task])(implicit s: Scheduler)
   def extractToken: Directive1[Option[AuthToken]] =
     extractCredentials.flatMap {
       case Some(OAuth2BearerToken(value)) => provide(Some(AuthToken(value)))
-      case Some(_)                        => reject(authRejection)
+      case Some(_)                        => failWith(AuthenticationFailed)
       case _                              => provide(None)
     }
 }

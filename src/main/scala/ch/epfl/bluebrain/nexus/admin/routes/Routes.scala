@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.admin.routes
 import akka.actor.ActorSystem
 import akka.cluster.Cluster
 import akka.http.scaladsl.model.HttpMethods._
-import akka.http.scaladsl.model.headers.Location
+import akka.http.scaladsl.model.headers.{`WWW-Authenticate`, HttpChallenges, Location}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{ExceptionHandler, RejectionHandler, Route}
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig
@@ -38,7 +38,10 @@ object Routes {
         complete(AdminError.adminErrorStatusFrom(NotFound) -> (NotFound: AdminError))
       case AuthenticationFailed =>
         // suppress errors for authentication failures
-        complete(AdminError.adminErrorStatusFrom(AuthenticationFailed) -> (AuthenticationFailed: AdminError))
+        val status            = AdminError.adminErrorStatusFrom(AuthenticationFailed)
+        val header            = `WWW-Authenticate`(HttpChallenges.oAuth2("*"))
+        val error: AdminError = AuthenticationFailed
+        complete((status, List(header), error))
       case AuthorizationFailed =>
         // suppress errors for authorization failures
         complete(AdminError.adminErrorStatusFrom(AuthorizationFailed) -> (AuthorizationFailed: AdminError))
