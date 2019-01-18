@@ -100,11 +100,14 @@ object Main {
     val corsSettings = CorsSettings.defaultSettings
       .withAllowedMethods(List(GET, PUT, POST, DELETE, OPTIONS, HEAD))
       .withExposedHeaders(List(Location.name))
-    val routes: Route =
-      handleRejections(corsRejectionHandler.withFallback(RejectionHandling.notFound))(
+    val routes: Route = {
+      val rh = corsRejectionHandler withFallback RejectionHandling.handler withFallback RejectionHandling.notFound
+      (handleRejections(rh) & handleExceptions(ExceptionHandling.handler)) {
         cors(corsSettings)(serviceDescription ~ uriPrefix(appConfig.http.publicUri) {
           eventRoutes.routes ~ orgRoutes.routes ~ projectRoutes.routes
-        }))
+        })
+      }
+    }
 
     cluster.registerOnMemberUp {
       logger.info("==== Cluster is Live ====")

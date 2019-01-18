@@ -51,7 +51,7 @@ class EventRoutes(
   private val printer: Printer     = Printer.noSpaces.copy(dropNullValues = true)
 
   def routes: Route =
-    (handleRejections(RejectionHandling.handler) & handleExceptions(ExceptionHandling.handler) & pathPrefix(hc.prefix)) {
+    pathPrefix(hc.prefix) {
       concat(
         routesFor("orgs" / "events", OrganizationTag, orgs.read, typedEventToSse[OrganizationEvent]),
         routesFor("projects" / "events", ProjectTag, projects.read, typedEventToSse[ProjectEvent]),
