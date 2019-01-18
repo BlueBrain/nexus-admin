@@ -5,7 +5,7 @@ import akka.http.scaladsl.server.AuthenticationFailedRejection.CredentialsReject
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.directives.FutureDirectives.onComplete
 import akka.http.scaladsl.server.directives.RouteDirectives.reject
-import akka.http.scaladsl.server.{AuthenticationFailedRejection, _}
+import akka.http.scaladsl.server._
 import ch.epfl.bluebrain.nexus.admin.exceptions.AdminError.InternalError
 import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
 import ch.epfl.bluebrain.nexus.iam.client.types.{AuthToken, Permission}

@@ -35,7 +35,7 @@ class ProjectRoutes(projects: Projects[Task])(
       // list projects in organization
       (get & pathPrefix(Segment) & pathEndOrSingleSlash & paginated) { (orgLabel, pagination) =>
         authorizeOn(pathOf(orgLabel), pp.read).apply {
-          trace("listProjectInOrganization") {
+          trace("listProjectsInOrganization") {
             complete(projects.list(orgLabel, pagination).runToFuture)
           }
         }

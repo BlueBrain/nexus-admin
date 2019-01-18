@@ -42,8 +42,8 @@ object OrganizationRejection {
   /**
     * Signals that the provided revision does not match the latest revision
     *
-    * @param expected    latest know revision
-    * @param provided  provided revision
+    * @param expected latest know revision
+    * @param provided provided revision
     */
   final case class IncorrectRev(expected: Long, provided: Long)
       extends OrganizationRejection(

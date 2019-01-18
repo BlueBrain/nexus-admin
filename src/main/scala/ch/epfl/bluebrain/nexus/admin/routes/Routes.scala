@@ -42,6 +42,9 @@ object Routes {
         complete(AdminError.adminErrorStatusFrom(error) -> error)
     }
 
+  /**
+    * @return a complete RejectionHandler for all library and code rejections
+    */
   final val rejectionHandler: RejectionHandler = {
     val custom = RejectionHandling.apply[ResourceRejection]({
       case rejection: OrganizationRejection =>
@@ -54,6 +57,11 @@ object Routes {
     corsRejectionHandler withFallback custom withFallback RejectionHandling.notFound withFallback RejectionHandler.default
   }
 
+  /**
+    * Wraps the provided route with CORS, rejection and exception handling.
+    *
+    * @param route the route to wrap
+    */
   final def wrap(route: Route)(implicit hc: HttpConfig): Route = {
     val corsSettings = CorsSettings.defaultSettings
       .withAllowedMethods(List(GET, PUT, POST, DELETE, OPTIONS, HEAD))
@@ -69,6 +77,12 @@ object Routes {
     }
   }
 
+  /**
+    * Pulls together all service routes and wraps them with CORS, rejection and exception handling.
+    *
+    * @param orgs     the organizations api bundle
+    * @param projects the projects api bundle
+    */
   final def apply(
       orgs: Organizations[Task],
       projects: Projects[Task]
