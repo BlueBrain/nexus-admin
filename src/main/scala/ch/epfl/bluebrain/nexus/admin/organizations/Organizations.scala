@@ -46,7 +46,7 @@ class Organizations[F[_]](agg: Agg[F], index: OrganizationCache[F], iamClient: I
     */
   def create(organization: Organization)(implicit caller: Subject): F[OrganizationMetaOrRejection] =
     index.getBy(organization.label).flatMap {
-      case Some(_) => F.pure(Left(OrganizationExists))
+      case Some(_) => F.pure(Left(OrganizationAlreadyExists(organization.label)))
       case None =>
         val cmd =
           CreateOrganization(UUID.randomUUID, organization.label, organization.description, clock.instant, caller)
@@ -89,7 +89,7 @@ class Organizations[F[_]](agg: Agg[F], index: OrganizationCache[F], iamClient: I
         evalAndUpdateIndex(
           UpdateOrganization(org.uuid, rev, organization.label, organization.description, clock.instant, caller),
           organization)
-      case None => F.pure(Left(OrganizationNotFound))
+      case None => F.pure(Left(OrganizationNotFound(label)))
     }
 
   /**
@@ -104,7 +104,7 @@ class Organizations[F[_]](agg: Agg[F], index: OrganizationCache[F], iamClient: I
     index.getBy(label).flatMap {
       case Some(org) =>
         evalAndUpdateIndex(DeprecateOrganization(org.uuid, rev, clock.instant(), caller), org.value)
-      case None => F.pure(Left(OrganizationNotFound))
+      case None => F.pure(Left(OrganizationNotFound(label)))
     }
 
   /**
@@ -214,18 +214,18 @@ object Organizations {
 
     def create(c: CreateOrganization): EventOrRejection = state match {
       case Initial => Right(OrganizationCreated(c.id, c.label, c.description, c.instant, c.subject))
-      case _       => Left(OrganizationExists)
+      case _       => Left(OrganizationAlreadyExists(c.label))
     }
 
     def update(c: UpdateOrganization): EventOrRejection = state match {
-      case Initial => Left(OrganizationNotFound)
+      case Initial => Left(OrganizationNotFound(c.label))
       case s: Current if c.rev == s.rev =>
         Right(OrganizationUpdated(c.id, c.rev + 1, c.label, c.description, c.instant, c.subject))
       case s: Current => Left(IncorrectRev(s.rev, c.rev))
     }
 
     def deprecate(c: DeprecateOrganization): EventOrRejection = state match {
-      case Initial                      => Left(OrganizationNotFound)
+      case Initial                      => Left(OrganizationNotFound(c.id))
       case s: Current if c.rev == s.rev => Right(OrganizationDeprecated(c.id, c.rev + 1, c.instant, c.subject))
       case s: Current                   => Left(IncorrectRev(s.rev, c.rev))
     }

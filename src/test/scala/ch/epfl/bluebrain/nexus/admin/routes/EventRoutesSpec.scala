@@ -9,21 +9,15 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.`Last-Event-ID`
 import akka.http.scaladsl.model.sse.ServerSentEvent
 import akka.http.scaladsl.server.Route
-import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.persistence.query.{EventEnvelope, NoOffset, Offset, Sequence}
 import akka.stream.scaladsl.Source
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig.{HttpConfig, PersistenceConfig}
 import ch.epfl.bluebrain.nexus.admin.config.Settings
-import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationEvent.{
-  OrganizationCreated,
-  OrganizationDeprecated,
-  OrganizationUpdated
-}
-import ch.epfl.bluebrain.nexus.admin.projects.ProjectEvent.{ProjectCreated, ProjectDeprecated, ProjectUpdated}
+import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationEvent._
+import ch.epfl.bluebrain.nexus.admin.projects.ProjectEvent._
 import ch.epfl.bluebrain.nexus.admin.routes.EventRoutesSpec.TestableEventRoutes
 import ch.epfl.bluebrain.nexus.commons.test.Resources
-import ch.epfl.bluebrain.nexus.commons.types.HttpRejection.UnauthorizedAccess
 import ch.epfl.bluebrain.nexus.iam.client.IamClient
 import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
 import ch.epfl.bluebrain.nexus.iam.client.types.Identity.User
@@ -67,7 +61,7 @@ class EventRoutesSpec
 
   before {
     Mockito.reset(client)
-    client.authorizeOn(any[Path], any[Permission])(any[Option[AuthToken]]) shouldReturn Task.pure(())
+    client.hasPermission(any[Path], any[Permission])(any[Option[AuthToken]]) shouldReturn Task.pure(true)
   }
 
   val instant = Instant.EPOCH
@@ -171,7 +165,7 @@ class EventRoutesSpec
   "The EventRoutes" should {
     "return the organization events in the right order" in {
       val routes = new TestableEventRoutes(orgEvents).routes
-      forAll(List("/v1/orgs/events", "/v1/orgs/events/")) { path =>
+      forAll(List("/orgs/events", "/orgs/events/")) { path =>
         Get(path) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           responseAs[String] shouldEqual eventStreamFor(orgEventsJsons)
@@ -180,7 +174,7 @@ class EventRoutesSpec
     }
     "return the project events in the right order" in {
       val routes = new TestableEventRoutes(projectEvents).routes
-      forAll(List("/v1/projects/events", "/v1/projects/events/")) { path =>
+      forAll(List("/projects/events", "/projects/events/")) { path =>
         Get(path) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           responseAs[String] shouldEqual eventStreamFor(projectEventsJsons)
@@ -189,7 +183,7 @@ class EventRoutesSpec
     }
     "return all events in the right order" in {
       val routes = new TestableEventRoutes(orgEvents ++ projectEvents).routes
-      forAll(List("/v1/events", "/v1/events/")) { path =>
+      forAll(List("/events", "/events/")) { path =>
         Get(path) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           responseAs[String] shouldEqual eventStreamFor(orgEventsJsons ++ projectEventsJsons)
@@ -198,7 +192,7 @@ class EventRoutesSpec
     }
     "return events from the last seen" in {
       val routes = new TestableEventRoutes(orgEvents ++ projectEvents).routes
-      forAll(List("/v1/events", "/v1/events/")) { path =>
+      forAll(List("/events", "/events/")) { path =>
         Get(path).addHeader(`Last-Event-ID`(1.toString)) ~> routes ~> check {
           status shouldEqual StatusCodes.OK
           responseAs[String] shouldEqual eventStreamFor(orgEventsJsons ++ projectEventsJsons, 2)
@@ -208,16 +202,15 @@ class EventRoutesSpec
 
     "return Forbidden when requesting the log with no permissions" in {
       Mockito.reset(client)
-      client.authorizeOn(any[Path], any[Permission])(any[Option[AuthToken]]) shouldReturn Task.raiseError(
-        UnauthorizedAccess)
+      client.hasPermission(any[Path], any[Permission])(any[Option[AuthToken]]) shouldReturn Task.pure(false)
       val routes = new TestableEventRoutes(orgEvents ++ projectEvents).routes
       val endpoints = List(
-        "/v1/events",
-        "/v1/events/",
-        "/v1/orgs/events",
-        "/v1/orgs/events/",
-        "/v1/projects/events",
-        "/v1/projects/events/",
+        "/events",
+        "/events/",
+        "/orgs/events",
+        "/orgs/events/",
+        "/projects/events",
+        "/projects/events/",
       )
       forAll(endpoints) { path =>
         Get(path) ~> routes ~> check {
@@ -237,10 +230,7 @@ object EventRoutesSpec {
   )(implicit as: ActorSystem, hc: HttpConfig, pc: PersistenceConfig, ic: IamClientConfig, cl: IamClient[Task])
       extends EventRoutes() {
 
-    override def routes: Route =
-      (handleExceptions(ExceptionHandling.handler) & handleRejections(RejectionHandling.handler)) {
-        super.routes
-      }
+    override def routes: Route = Routes.wrap(super.routes)
 
     private val envelopes = events.zipWithIndex.map {
       case (ev, idx) =>

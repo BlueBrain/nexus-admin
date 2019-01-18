@@ -3,10 +3,9 @@ package ch.epfl.bluebrain.nexus.admin.routes
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig.Description
+import ch.epfl.bluebrain.nexus.admin.marshallers.instances._
 import ch.epfl.bluebrain.nexus.admin.routes.AppInfoRoutes._
 import ch.epfl.bluebrain.nexus.admin.routes.HealthChecker.Status
-import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport._
-import io.circe.Printer
 import io.circe.generic.auto._
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -14,17 +13,17 @@ import scala.concurrent.{ExecutionContext, Future}
 /**
   * Akka HTTP route definition for service description and health status
   */
-class AppInfoRoutes(serviceDescription: ServiceDescription, healthGroup: HealthStatusGroup)(
-    implicit ec: ExecutionContext) {
-
-  private implicit val printer: Printer = Printer.noSpaces.copy(dropNullValues = true)
+class AppInfoRoutes(description: ServiceDescription, healthGroup: HealthStatusGroup)(implicit ec: ExecutionContext) {
 
   def routes: Route =
-    (get & pathEndOrSingleSlash) {
-      complete(serviceDescription)
-    } ~ (pathPrefix("health") & get & pathEndOrSingleSlash) {
-      complete(healthGroup.check)
-    }
+    concat(
+      (get & pathEndOrSingleSlash) {
+        complete(description)
+      },
+      (pathPrefix("health") & get & pathEndOrSingleSlash) {
+        complete(healthGroup.check)
+      }
+    )
 }
 
 object AppInfoRoutes {

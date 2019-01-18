@@ -1,20 +1,17 @@
 package ch.epfl.bluebrain.nexus.admin.directives
 
-import akka.http.javadsl.server.CustomRejection
 import akka.http.scaladsl.model.headers.{HttpChallenges, OAuth2BearerToken}
 import akka.http.scaladsl.server.AuthenticationFailedRejection.CredentialsRejected
 import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.directives.FutureDirectives.onComplete
 import akka.http.scaladsl.server.directives.RouteDirectives.reject
-import ch.epfl.bluebrain.nexus.admin.CommonRejection
-import ch.epfl.bluebrain.nexus.admin.CommonRejection.DownstreamServiceError
-import ch.epfl.bluebrain.nexus.admin.directives.AuthDirectives._
-import ch.epfl.bluebrain.nexus.commons.types.HttpRejection.UnauthorizedAccess
-import ch.epfl.bluebrain.nexus.iam.client.IamClient
+import akka.http.scaladsl.server._
+import ch.epfl.bluebrain.nexus.admin.exceptions.AdminError.InternalError
 import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
 import ch.epfl.bluebrain.nexus.iam.client.types.{AuthToken, Permission}
+import ch.epfl.bluebrain.nexus.iam.client.{IamClient, IamClientError}
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
+import journal.Logger
 import monix.eval.Task
 import monix.execution.Scheduler
 
@@ -27,17 +24,32 @@ import scala.util.{Failure, Success}
   */
 abstract class AuthDirectives(iamClient: IamClient[Task])(implicit s: Scheduler) {
 
+  private val authRejection = AuthenticationFailedRejection(CredentialsRejected, HttpChallenges.oAuth2("*"))
+  private val logger        = Logger[this.type]
+
   /**
     * Checks if the caller has permissions on a provided ''resource''.
     *
     * @return forwards the provided resource [[Path]] if the caller has access.
     */
   def authorizeOn(resource: Path, permission: Permission)(implicit cred: Option[AuthToken]): Directive0 =
-    onComplete(iamClient.authorizeOn(resource, permission).runToFuture).flatMap {
-      case Success(_) => pass
-      // TODO: change this to Forbidden after adding it to common types and iam client
-      case Failure(UnauthorizedAccess) => reject(AuthorizationFailedRejection)
-      case Failure(err)                => reject(authorizationRejection(err))
+    onComplete(iamClient.hasPermission(resource, permission).runToFuture).flatMap {
+      case Success(true)                           => pass
+      case Success(false)                          => reject(AuthorizationFailedRejection)
+      case Failure(_: IamClientError.Unauthorized) => reject(authRejection)
+      case Failure(_: IamClientError.Forbidden)    => reject(AuthorizationFailedRejection)
+      case Failure(err: IamClientError.UnmarshallingError[_]) =>
+        val message = "Unmarshalling error when trying to check for permissions"
+        logger.error(message, err)
+        failWith(InternalError(message))
+      case Failure(err: IamClientError.UnknownError) =>
+        val message = "Unknown error when trying to check for permissions"
+        logger.error(message, err)
+        failWith(InternalError(message))
+      case Failure(err) =>
+        val message = "Unknown error when trying to check for permissions"
+        logger.error(message, err)
+        failWith(InternalError(message))
     }
 
   /**
@@ -45,12 +57,23 @@ abstract class AuthDirectives(iamClient: IamClient[Task])(implicit s: Scheduler)
     *
     * @return the [[Subject]] of the caller
     */
-  def authCaller(implicit cred: Option[AuthToken]): Directive1[Subject] =
+  def extractSubject(implicit cred: Option[AuthToken]): Directive1[Subject] =
     onComplete(iamClient.identities.runToFuture).flatMap {
-      case Success(caller) => provide(caller.subject)
-      case Failure(UnauthorizedAccess) =>
-        reject(AuthenticationFailedRejection(CredentialsRejected, HttpChallenges.oAuth2("*")))
-      case Failure(err) => reject(authorizationRejection(err))
+      case Success(caller)                         => provide(caller.subject)
+      case Failure(_: IamClientError.Unauthorized) => reject(authRejection)
+      case Failure(_: IamClientError.Forbidden)    => reject(AuthorizationFailedRejection)
+      case Failure(err: IamClientError.UnmarshallingError[_]) =>
+        val message = "Unmarshalling error when trying to extract the subject"
+        logger.error(message, err)
+        failWith(InternalError(message))
+      case Failure(err: IamClientError.UnknownError) =>
+        val message = "Unknown error when trying to extract the subject"
+        logger.error(message, err)
+        failWith(InternalError(message))
+      case Failure(err) =>
+        val message = "Unknown error when trying to extract the subject"
+        logger.error(message, err)
+        failWith(InternalError(message))
     }
 
   /**
@@ -61,22 +84,7 @@ abstract class AuthDirectives(iamClient: IamClient[Task])(implicit s: Scheduler)
   def extractToken: Directive1[Option[AuthToken]] =
     extractCredentials.flatMap {
       case Some(OAuth2BearerToken(value)) => provide(Some(AuthToken(value)))
-      case Some(_)                        => reject(AuthorizationFailedRejection)
+      case Some(_)                        => reject(authRejection)
       case _                              => provide(None)
     }
-
-}
-
-object AuthDirectives {
-
-  /**
-    * Signals that the authentication was rejected with an unexpected error.
-    *
-    * @param err the [[CommonRejection]]
-    */
-  final case class CustomAuthRejection(err: CommonRejection) extends CustomRejection
-
-  private def authorizationRejection(err: Throwable) =
-    CustomAuthRejection(
-      DownstreamServiceError(Option(err.getMessage).getOrElse("error while authenticating on the downstream service")))
 }

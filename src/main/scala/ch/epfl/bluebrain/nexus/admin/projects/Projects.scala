@@ -57,7 +57,7 @@ class Projects[F[_]](agg: Agg[F], index: ProjectCache[F], organizations: Organiz
   def create(organization: String, label: String, project: ProjectDescription)(
       implicit caller: Subject): F[ProjectMetaOrRejection] =
     organizations.fetch(organization).flatMap {
-      case Some(org) if org.deprecated => F.pure(Left(OrganizationIsDeprecated))
+      case Some(org) if org.deprecated => F.pure(Left(OrganizationIsDeprecated(organization)))
       case Some(org) =>
         index.getBy(organization, label).flatMap {
           case None =>
@@ -75,9 +75,9 @@ class Projects[F[_]](agg: Agg[F], index: ProjectCache[F], organizations: Organiz
                                         clock.instant,
                                         caller)
             evaluateAndUpdateIndex(command) <* retryStrategy(setOwnerPermissions(organization, label, caller))
-          case Some(_) => F.pure(Left(ProjectExists))
+          case Some(_) => F.pure(Left(ProjectAlreadyExists(organization, label)))
         }
-      case None => F.pure(Left(OrganizationNotFound))
+      case None => F.pure(Left(OrganizationNotFound(organization)))
     }
 
   def setPermissions(orgLabel: String, projectLabel: String, acls: AccessControlLists, subject: Subject): F[Unit] = {
@@ -112,7 +112,7 @@ class Projects[F[_]](agg: Agg[F], index: ProjectCache[F], organizations: Organiz
   def update(organization: String, label: String, project: ProjectDescription, rev: Long)(
       implicit caller: Subject): F[ProjectMetaOrRejection] =
     organizations.fetch(organization).flatMap {
-      case Some(org) if org.deprecated => F.pure(Left(OrganizationIsDeprecated))
+      case Some(org) if org.deprecated => F.pure(Left(OrganizationIsDeprecated(organization)))
       case Some(_) =>
         index.getBy(organization, label).flatMap {
           case Some(proj) =>
@@ -128,9 +128,9 @@ class Projects[F[_]](agg: Agg[F], index: ProjectCache[F], organizations: Organiz
               caller
             )
             evaluateAndUpdateIndex(cmd)
-          case None => F.pure(Left(ProjectNotFound))
+          case None => F.pure(Left(ProjectNotFound(organization, label)))
         }
-      case None => F.pure(Left(OrganizationNotFound))
+      case None => F.pure(Left(OrganizationNotFound(organization)))
     }
 
   /**
@@ -144,15 +144,15 @@ class Projects[F[_]](agg: Agg[F], index: ProjectCache[F], organizations: Organiz
     */
   def deprecate(organization: String, label: String, rev: Long)(implicit caller: Subject): F[ProjectMetaOrRejection] =
     organizations.fetch(organization).flatMap {
-      case Some(org) if org.deprecated => F.pure(Left(OrganizationIsDeprecated))
+      case Some(org) if org.deprecated => F.pure(Left(OrganizationIsDeprecated(organization)))
       case Some(_) =>
         index.getBy(organization, label).flatMap {
           case Some(proj) =>
             val cmd = DeprecateProject(proj.uuid, rev, clock.instant, caller)
             evaluateAndUpdateIndex(cmd)
-          case None => F.pure(Left(ProjectNotFound))
+          case None => F.pure(Left(ProjectNotFound(organization, label)))
         }
-      case None => F.pure(Left(OrganizationNotFound))
+      case None => F.pure(Left(OrganizationNotFound(organization)))
     }
 
   /**
@@ -172,7 +172,7 @@ class Projects[F[_]](agg: Agg[F], index: ProjectCache[F], organizations: Organiz
     * @return Some(project) if found, None otherwise
     */
   def fetch(uuid: UUID): F[Option[ProjectResource]] = agg.currentState(uuid.toString).flatMap {
-    case c: Current => toResource(c).map(_.toOption)
+    case c: Current => toResource(c).map(Some(_))
     case Initial    => F.pure(None)
   }
 
@@ -187,7 +187,7 @@ class Projects[F[_]](agg: Agg[F], index: ProjectCache[F], organizations: Organiz
   def fetch(organization: String, label: String, rev: Long): F[ProjectResourceOrRejection] =
     index.getBy(organization, label).flatMap {
       case Some(project) => fetch(project.uuid, rev)
-      case None          => F.pure(Left(ProjectNotFound))
+      case None          => F.pure(Left(ProjectNotFound(organization, label)))
     }
 
   /**
@@ -204,9 +204,9 @@ class Projects[F[_]](agg: Agg[F], index: ProjectCache[F], organizations: Organiz
         case (state, event)                          => Projects.next(state, event)
       }
       .flatMap {
-        case c: Current if c.rev == rev => toResource(c)
+        case c: Current if c.rev == rev => toResource(c).map(Right(_))
         case c: Current                 => F.pure(Left(IncorrectRev(c.rev, rev)))
-        case Initial                    => F.pure(Left(ProjectNotFound))
+        case Initial                    => F.pure(Left(ProjectNotFound(id)))
       }
   }
 
@@ -234,21 +234,20 @@ class Projects[F[_]](agg: Agg[F], index: ProjectCache[F], organizations: Organiz
       .evaluateS(command.id.toString, command)
       .flatMap {
         case Right(c: Current) =>
-          toResource(c).flatMap {
-            case Right(resource) => index.replace(c.id, resource) *> F.pure(Right(resource.discard))
-            case Left(rejection) => F.pure(Left(rejection))
+          toResource(c).flatMap { resource =>
+            index.replace(c.id, resource) *> F.pure(Right(resource.discard))
           }
         case Left(rejection) => F.pure(Left(rejection))
         case Right(Initial)  => F.raiseError(UnexpectedState(command.id.toString))
       }
 
-  private def toResource(c: Current): F[ProjectResourceOrRejection] = organizations.fetch(c.organizationUuid).map {
+  private def toResource(c: Current): F[ProjectResource] = organizations.fetch(c.organizationUuid).flatMap {
     case Some(org) =>
       val iri     = http.projectsIri + org.value.label + c.label
       val project = Project(c.label, org.uuid, org.value.label, c.description, c.apiMappings, c.base, c.vocab)
-      Right(ResourceF(iri, c.id, c.rev, c.deprecated, types, c.instant, c.subject, c.instant, c.subject, project))
+      F.pure(ResourceF(iri, c.id, c.rev, c.deprecated, types, c.instant, c.subject, c.instant, c.subject, project))
     case None =>
-      Left(OrganizationNotFound)
+      F.raiseError(UnexpectedState(s"Organization with uuid '${c.organizationUuid}' not found in cache"))
   }
 
 }
@@ -334,14 +333,14 @@ object Projects {
                            c.vocab,
                            c.instant,
                            c.subject))
-        case _ => Left(ProjectExists)
+        case _ => Left(ProjectAlreadyExists(c.organizationLabel, c.label))
       }
 
     private def updateProject(state: ProjectState, c: UpdateProject): Either[ProjectRejection, ProjectEvent] =
       state match {
-        case Initial                      => Left(ProjectNotFound)
+        case Initial                      => Left(ProjectNotFound(c.id))
         case s: Current if s.rev != c.rev => Left(IncorrectRev(s.rev, c.rev))
-        case s: Current if s.deprecated   => Left(ProjectIsDeprecated)
+        case s: Current if s.deprecated   => Left(ProjectIsDeprecated(c.id))
         case s: Current                   => updateProjectAfter(s, c)
       }
 
@@ -359,9 +358,9 @@ object Projects {
 
     private def deprecateProject(state: ProjectState, c: DeprecateProject): Either[ProjectRejection, ProjectEvent] =
       state match {
-        case Initial                      => Left(ProjectNotFound)
+        case Initial                      => Left(ProjectNotFound(c.id))
         case s: Current if s.rev != c.rev => Left(IncorrectRev(s.rev, c.rev))
-        case s: Current if s.deprecated   => Left(ProjectIsDeprecated)
+        case s: Current if s.deprecated   => Left(ProjectIsDeprecated(c.id))
         case s: Current                   => deprecateProjectAfter(s, c)
       }
 
