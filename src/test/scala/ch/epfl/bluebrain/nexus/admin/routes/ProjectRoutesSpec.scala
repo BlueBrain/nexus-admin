@@ -102,7 +102,7 @@ class ProjectRoutesSpec
       caller.subject,
       instant,
       caller.subject,
-      Organization("org", "Org description")
+      Organization("org", Some("Org description"))
     )
     val mappings = Map("nxv" -> url"https://bluebrain.github.io/nexus/vocabulary/".value,
                        "rdf" -> url"http://www.w3.org/1999/02/22-rdf-syntax-ns#".value)

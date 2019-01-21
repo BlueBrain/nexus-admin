@@ -31,9 +31,9 @@ class EventSerializerSpec
                              "rdf" -> url"http://www.w3.org/1999/02/22-rdf-syntax-ns#".value)
 
   private val data: Map[AnyRef, (String, Json)] = Map(
-    (OrganizationCreated(orgId, "myorg", "My organization", instant, subject),
+    (OrganizationCreated(orgId, "myorg", Some("My organization"), instant, subject),
      ("OrganizationEvent", jsonContentOf("/serializer/org-created.json"))),
-    (OrganizationUpdated(orgId, 42L, "myorg", "My organization", instant, subject),
+    (OrganizationUpdated(orgId, 42L, "myorg", Some("My organization"), instant, subject),
      ("OrganizationEvent", jsonContentOf("/serializer/org-updated.json"))),
     (OrganizationDeprecated(orgId, 42L, instant, subject),
      ("OrganizationEvent", jsonContentOf("/serializer/org-deprecated.json"))),

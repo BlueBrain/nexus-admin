@@ -40,7 +40,7 @@ class ProjectCacheSpec
 
   val orgIndex     = OrganizationCache[IO]
   val index        = ProjectCache[IO]
-  val organization = Organization(genString(), genString())
+  val organization = Organization(genString(), Some(genString()))
   val orgResource = ResourceF(
     url"http://nexus.example.com/v1/orgs/${organization.label}".value,
     UUID.randomUUID(),
@@ -81,11 +81,11 @@ class ProjectCacheSpec
     "list projects" in {
       val projectLabels        = (1 to 15).map(_ => genString())
       val orgLabel             = genString()
-      val projectsOrganization = Organization(orgLabel, "description")
+      val projectsOrganization = Organization(orgLabel, Some("description"))
 
       val projectLabels2        = (1 to 10).map(_ => genString())
       val orgLabel2             = genString()
-      val projectsOrganization2 = Organization(orgLabel2, "description2")
+      val projectsOrganization2 = Organization(orgLabel2, Some("description2"))
 
       val projectResources = projectLabels.map { label =>
         val project =

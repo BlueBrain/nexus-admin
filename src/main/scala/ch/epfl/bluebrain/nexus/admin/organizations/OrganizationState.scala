@@ -28,7 +28,7 @@ object OrganizationState {
     * @param id           the permanent identifier of the organization
     * @param rev          the organization revision
     * @param label        the organization label
-    * @param description  the organization description
+    * @param description  an optional description of the organization
     * @param deprecated   the deprecation status of the organization
     * @param createdAt    the instant when the organization was created
     * @param createdBy    the identity that created the organization
@@ -38,7 +38,7 @@ object OrganizationState {
   final case class Current(id: UUID,
                            rev: Long,
                            label: String,
-                           description: String,
+                           description: Option[String],
                            deprecated: Boolean,
                            createdAt: Instant,
                            createdBy: Subject,

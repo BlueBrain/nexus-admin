@@ -70,7 +70,7 @@ class OrganizationsSpec
   "Organizations operations bundle" should {
 
     "create and fetch organizations " in {
-      val organization = Organization(genString(), genString())
+      val organization = Organization(genString(), Some(genString()))
 
       mockIamCalls(organization.label)
 
@@ -97,7 +97,7 @@ class OrganizationsSpec
     }
 
     "not set permissions if user has all permissions on /" in {
-      val organization = Organization(genString(), genString())
+      val organization = Organization(genString(), None)
 
       val orgPath = Path.apply(s"/${organization.label}").right.value
       iamClient.permissions(iamCredentials) shouldReturn IO.pure(permissions)
@@ -122,7 +122,7 @@ class OrganizationsSpec
     }
 
     "not set permissions if user has all permissions on /orglabel" in {
-      val organization = Organization(genString(), genString())
+      val organization = Organization(genString(), None)
 
       val orgPath = Path.apply(s"/${organization.label}").right.value
       iamClient.permissions(iamCredentials) shouldReturn IO.pure(permissions)
@@ -146,7 +146,7 @@ class OrganizationsSpec
     }
 
     "set permissions when user doesn't have all permissions on /orglabel" in {
-      val organization = Organization(genString(), genString())
+      val organization = Organization(genString(), None)
 
       val orgPath = Path.apply(s"/${organization.label}").right.value
       val subject = User("username", "realm")
@@ -175,7 +175,7 @@ class OrganizationsSpec
     }
 
     "set permissions when user doesn't have all permissions on /" in {
-      val organization = Organization(genString(), genString())
+      val organization = Organization(genString(), None)
 
       val orgPath = Path.apply(s"/${organization.label}").right.value
       val subject = User("username", "realm")
@@ -212,13 +212,13 @@ class OrganizationsSpec
     }
 
     "update organization" in {
-      val organization = Organization(genString(), genString())
+      val organization = Organization(genString(), Some(genString()))
 
       mockIamCalls(organization.label)
 
       val metadata = orgs.create(organization).accepted
 
-      val updatedOrg = organization.copy(label = genString(), description = genString())
+      val updatedOrg = organization.copy(label = genString(), description = Some(genString()))
 
       val resource = orgs.update(organization.label, updatedOrg, 1L).accepted
 
@@ -250,7 +250,7 @@ class OrganizationsSpec
     }
 
     "deprecate organizations" in {
-      val organization = Organization(genString(), genString())
+      val organization = Organization(genString(), Some(genString()))
 
       mockIamCalls(organization.label)
 
@@ -264,13 +264,13 @@ class OrganizationsSpec
     }
 
     "fetch organizations by revision" in {
-      val organization = Organization(genString(), genString())
+      val organization = Organization(genString(), Some(genString()))
 
       mockIamCalls(organization.label)
 
       val metadata = orgs.create(organization).accepted
 
-      val updatedOrg = organization.copy(description = genString())
+      val updatedOrg = organization.copy(description = Some(genString()))
 
       orgs.update(updatedOrg.label, updatedOrg, 1L).accepted
 
@@ -289,19 +289,19 @@ class OrganizationsSpec
     }
 
     "reject update when revision is incorrect" in {
-      val organization = Organization(genString(), genString())
+      val organization = Organization(genString(), Some(genString()))
 
       mockIamCalls(organization.label)
 
       orgs.create(organization).unsafeRunSync()
 
-      val updatedOrg = organization.copy(description = genString())
+      val updatedOrg = organization.copy(description = Some(genString()))
 
       orgs.update(updatedOrg.label, updatedOrg, 2L).rejected[OrganizationRejection] shouldEqual IncorrectRev(1L, 2L)
     }
 
     "reject deprecation when revision is incorrect" in {
-      val organization = Organization(genString(), genString())
+      val organization = Organization(genString(), Some(genString()))
 
       mockIamCalls(organization.label)
 

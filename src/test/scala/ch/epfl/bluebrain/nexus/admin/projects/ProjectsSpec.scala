@@ -82,7 +82,7 @@ class ProjectsSpec
       caller,
       instant,
       caller,
-      Organization("org", "Org description")
+      Organization("org", Some("Org description"))
     )
     val payload  = ProjectDescription(desc, mappings, Some(base), Some(voc))
     val project  = Project("proj", orgId, "org", desc, mappings, base, voc)

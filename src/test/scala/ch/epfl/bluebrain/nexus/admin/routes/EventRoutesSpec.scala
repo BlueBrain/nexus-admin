@@ -69,7 +69,7 @@ class EventRoutesSpec
 
   val orgUuid            = UUID.fromString("d8cf3015-1bce-4dda-ba80-80cd4b5281e5")
   val orgLabel           = "thelabel"
-  val orgDescription     = "the description"
+  val orgDescription     = Option("the description")
   val projectUuid        = UUID.fromString("94463ac0-3e9b-4261-80f5-e4253956eee2")
   val projectLabel       = "theprojectlabel"
   val projectDescription = "the project description"
