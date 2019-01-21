@@ -124,7 +124,11 @@ class Organizations[F[_]](agg: Agg[F], index: OrganizationCache[F], iamClient: I
             case (state, event) if event.rev <= value => next(state, event)
             case (state, _)                           => state
           }
-          stateF.map(stateToResource)
+          stateF.flatMap {
+            case c: Current if c.rev == value => F.pure(stateToResource(c))
+            case _: Current                   => F.pure(None)
+            case Initial                      => F.pure(None)
+          }
         case None => F.pure(None)
       }
   }

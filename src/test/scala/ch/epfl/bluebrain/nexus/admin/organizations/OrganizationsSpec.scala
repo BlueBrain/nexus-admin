@@ -288,6 +288,18 @@ class OrganizationsSpec
       )
     }
 
+    "return none for requested organization revision higher than current" in {
+      val organization = Organization(genString(), Some(genString()))
+      mockIamCalls(organization.label)
+
+      orgs.create(organization).accepted
+      val updatedOrg = organization.copy(description = Some(genString()))
+      orgs.update(updatedOrg.label, updatedOrg, 1L).accepted
+      orgs.fetch(updatedOrg.label, Some(2L)).some
+
+      orgs.fetch(updatedOrg.label, Some(3L)).ioValue shouldEqual None
+    }
+
     "reject update when revision is incorrect" in {
       val organization = Organization(genString(), Some(genString()))
 
