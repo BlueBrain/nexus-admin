@@ -26,6 +26,7 @@ import ch.epfl.bluebrain.nexus.iam.client.IamClient
 import ch.epfl.bluebrain.nexus.iam.client.types.{AccessControlList, AccessControlLists, AuthToken, Permission}
 import ch.epfl.bluebrain.nexus.rdf.syntax.node.unsafe._
 import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
+import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
 import ch.epfl.bluebrain.nexus.sourcing.akka._
 
@@ -319,8 +320,16 @@ object Projects {
 
   private[projects] object Eval {
 
+    private def endsWithHashOrSlash(iri: AbsoluteIri): Boolean =
+      iri.asString.matches(".*(#|/)$")
+
+    private def invalidIriMessage(param: String) =
+      s"the Iri on the '$param' parameter should end with hash (#) or slash (/)/"
+
     private def createProject(state: ProjectState, c: CreateProject): Either[ProjectRejection, ProjectEvent] =
       state match {
+        case Initial if !endsWithHashOrSlash(c.base)  => Left(InvalidProjectFormat(invalidIriMessage("base")))
+        case Initial if !endsWithHashOrSlash(c.vocab) => Left(InvalidProjectFormat(invalidIriMessage("vocab")))
         case Initial =>
           Right(
             ProjectCreated(c.id,
@@ -338,10 +347,12 @@ object Projects {
 
     private def updateProject(state: ProjectState, c: UpdateProject): Either[ProjectRejection, ProjectEvent] =
       state match {
-        case Initial                      => Left(ProjectNotFound(c.id))
-        case s: Current if s.rev != c.rev => Left(IncorrectRev(s.rev, c.rev))
-        case s: Current if s.deprecated   => Left(ProjectIsDeprecated(c.id))
-        case s: Current                   => updateProjectAfter(s, c)
+        case Initial                                     => Left(ProjectNotFound(c.id))
+        case s: Current if s.rev != c.rev                => Left(IncorrectRev(s.rev, c.rev))
+        case s: Current if s.deprecated                  => Left(ProjectIsDeprecated(c.id))
+        case _: Current if !endsWithHashOrSlash(c.base)  => Left(InvalidProjectFormat(invalidIriMessage("base")))
+        case _: Current if !endsWithHashOrSlash(c.vocab) => Left(InvalidProjectFormat(invalidIriMessage("vocab")))
+        case s: Current                                  => updateProjectAfter(s, c)
       }
 
     private def updateProjectAfter(state: Current, c: UpdateProject): Either[ProjectRejection, ProjectEvent] =
