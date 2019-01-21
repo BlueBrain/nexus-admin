@@ -36,7 +36,7 @@ class OrganizationsIndexerSpec
       caller,
       instant,
       caller,
-      Organization("org", "Org description")
+      Organization("org", Some("Org description"))
     )
 
     val orgs: Organizations[IO]              = mock[Organizations[IO]]

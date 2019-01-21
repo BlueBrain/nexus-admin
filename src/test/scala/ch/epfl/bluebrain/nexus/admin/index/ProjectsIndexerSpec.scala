@@ -42,7 +42,7 @@ class ProjectsIndexerSpec
       caller,
       instant,
       caller,
-      Organization("org", "Org description")
+      Organization("org", Some("Org description"))
     )
     val proj = Project("proj", orgId, "org", Some("Project description"), mappings, base, voc)
     val project = ResourceF(url"http://nexus.example.com/v1/projects/org/proj".value,

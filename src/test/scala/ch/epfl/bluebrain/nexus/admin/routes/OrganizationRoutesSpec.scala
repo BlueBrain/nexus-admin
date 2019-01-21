@@ -71,7 +71,7 @@ class OrganizationRoutesSpec
     val path    = Path("/org").right.value
 
     val description  = Json.obj("description" -> Json.fromString("Org description"))
-    val organization = Organization("org", "Org description")
+    val organization = Organization("org", Some("Org description"))
     val resource = ResourceF(iri,
                              orgId,
                              1L,
@@ -95,6 +95,50 @@ class OrganizationRoutesSpec
 
       Put("/orgs/org", description) ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.Created
+        responseAs[Json].spaces2 shouldEqual jsonContentOf("/orgs/meta.json", replacements).spaces2
+      }
+    }
+
+    "create an organization without payload" in new Context {
+      iamClient.hasPermission(path, create)(any[Option[AuthToken]]) shouldReturn Task.pure(true)
+      iamClient.identities shouldReturn Task(caller)
+      organizations.create(organization.copy(description = None)) shouldReturn Task(Right(meta))
+
+      Put("/orgs/org") ~> addCredentials(cred) ~> routes ~> check {
+        status shouldEqual StatusCodes.Created
+        responseAs[Json].spaces2 shouldEqual jsonContentOf("/orgs/meta.json", replacements).spaces2
+      }
+    }
+
+    "create an organization with empty payload" in new Context {
+      iamClient.hasPermission(path, create)(any[Option[AuthToken]]) shouldReturn Task.pure(true)
+      iamClient.identities shouldReturn Task(caller)
+      organizations.create(organization.copy(description = None)) shouldReturn Task(Right(meta))
+
+      Put("/orgs/org", Json.obj()) ~> addCredentials(cred) ~> routes ~> check {
+        status shouldEqual StatusCodes.Created
+        responseAs[Json].spaces2 shouldEqual jsonContentOf("/orgs/meta.json", replacements).spaces2
+      }
+    }
+
+    "updates an organization" in new Context {
+      iamClient.hasPermission(path, write)(any[Option[AuthToken]]) shouldReturn Task.pure(true)
+      iamClient.identities shouldReturn Task(caller)
+      organizations.update(organization.label, organization, 2L) shouldReturn Task(Right(meta))
+
+      Put("/orgs/org?rev=2", description) ~> addCredentials(cred) ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
+        responseAs[Json].spaces2 shouldEqual jsonContentOf("/orgs/meta.json", replacements).spaces2
+      }
+    }
+
+    "updates an organization with empty payload" in new Context {
+      iamClient.hasPermission(path, write)(any[Option[AuthToken]]) shouldReturn Task.pure(true)
+      iamClient.identities shouldReturn Task(caller)
+      organizations.update(organization.label, organization.copy(description = None), 1L) shouldReturn Task(Right(meta))
+
+      Put("/orgs/org?rev=1", Json.obj()) ~> addCredentials(cred) ~> routes ~> check {
+        status shouldEqual StatusCodes.OK
         responseAs[Json].spaces2 shouldEqual jsonContentOf("/orgs/meta.json", replacements).spaces2
       }
     }

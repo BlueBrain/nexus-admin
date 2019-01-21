@@ -8,11 +8,14 @@ import ch.epfl.bluebrain.nexus.admin.config.AppConfig.tracing.trace
 import ch.epfl.bluebrain.nexus.admin.config.Permissions.orgs
 import ch.epfl.bluebrain.nexus.admin.directives.{AuthDirectives, QueryDirectives}
 import ch.epfl.bluebrain.nexus.admin.marshallers.instances._
-import ch.epfl.bluebrain.nexus.admin.organizations.{Organization, OrganizationDescription, Organizations}
+import ch.epfl.bluebrain.nexus.admin.organizations.{Organization, Organizations}
+import ch.epfl.bluebrain.nexus.admin.routes.OrganizationRoutes._
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF._
 import ch.epfl.bluebrain.nexus.iam.client.IamClient
 import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
+import io.circe.Decoder
+import io.circe.generic.semiauto.deriveDecoder
 import monix.eval.Task
 import monix.execution.Scheduler
 
@@ -57,6 +60,8 @@ class OrganizationRoutes(organizations: Organizations[Task])(
                   trace("updateOrganization") {
                     complete(organizations.update(orgLabel, Organization(orgLabel, org.description), rev).runToFuture)
                   }
+                } ~ trace("updateOrganization") {
+                  complete(organizations.update(orgLabel, Organization(orgLabel, None), rev).runToFuture)
                 }
               },
               // create
@@ -65,6 +70,8 @@ class OrganizationRoutes(organizations: Organizations[Task])(
                   trace("createOrganization") {
                     complete(organizations.create(Organization(orgLabel, org.description)).runWithStatus(Created))
                   }
+                } ~ trace("createOrganization") {
+                  complete(organizations.create(Organization(orgLabel, None)).runWithStatus(Created))
                 }
               }
             )
@@ -80,6 +87,17 @@ class OrganizationRoutes(organizations: Organizations[Task])(
 }
 
 object OrganizationRoutes {
+
+  /**
+    * Organization payload for creation and update requests.
+    *
+    * @param description an optional description
+    */
+  private[routes] final case class OrganizationDescription(description: Option[String])
+
+  private[routes] implicit val descriptionDecoder: Decoder[OrganizationDescription] =
+    deriveDecoder[OrganizationDescription]
+
   def apply(organizations: Organizations[Task])(
       implicit ic: IamClient[Task],
       icc: IamClientConfig,

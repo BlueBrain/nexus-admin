@@ -36,7 +36,7 @@ class OrganizationCacheSpec
   private implicit val keyStoreConfig   = appConfig.keyValueStore
 
   val index        = OrganizationCache[IO]
-  val organization = Organization(genString(), genString())
+  val organization = Organization(genString(), Some(genString()))
   val orgResource = ResourceF(
     url"http://nexus.example.com/v1/orgs/${organization.label}".value,
     UUID.randomUUID(),
@@ -64,7 +64,7 @@ class OrganizationCacheSpec
       val orgLabels = (1 to 50).map(_ => genString())
 
       val orgResources = orgLabels.map { label =>
-        val organization = Organization(label, genString())
+        val organization = Organization(label, Some(genString()))
         orgResource.copy(id = url"http://nexus.example.com/v1/orgs/${organization.label}".value,
                          uuid = UUID.randomUUID(),
                          value = organization)
