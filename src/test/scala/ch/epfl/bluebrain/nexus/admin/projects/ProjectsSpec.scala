@@ -70,8 +70,8 @@ class ProjectsSpec
     val iri    = url"http://nexus.example.com/v1/projects/org/proj".value
     val mappings = Map("nxv" -> url"https://bluebrain.github.io/nexus/vocabulary/".value,
                        "rdf" -> url"http://www.w3.org/1999/02/22-rdf-syntax-ns#type".value)
-    val base = url"https://nexus.example.com/base".value
-    val voc  = url"https://nexus.example.com/voc".value
+    val base = url"https://nexus.example.com/base/".value
+    val voc  = url"https://nexus.example.com/voc/".value
     val organization = ResourceF(
       url"http://nexus.example.com/v1/orgs/org".value,
       orgId,
@@ -147,6 +147,56 @@ class ProjectsSpec
         Some(resource.copy(uuid = deprecated.uuid, rev = 2L, deprecated = true)))
       projects.deprecate("org", "proj", 2L)(caller).rejected[ProjectRejection] shouldEqual ProjectIsDeprecated(
         deprecated.uuid)
+    }
+
+    "not create a project if the base parameter does not end with '#' or '/'" in new Context {
+      orgs.fetch("org") shouldReturn IO.pure(Some(organization))
+      orgs.fetch(orgId) shouldReturn IO.pure(Some(organization))
+      index.getBy("org", "proj") shouldReturn IO.pure(None)
+      mockIamCalls()
+      val wrongPayload = payload.copy(base = Some(url"http://example.com/a".value))
+      projects.create("org", "proj", wrongPayload)(caller).rejected[ProjectRejection] shouldEqual InvalidProjectFormat(
+        "the value of the project's 'base' parameter must end with hash (#) or slash (/)")
+    }
+
+    "not update a project if the base parameter does not end with '#' or '/'" in new Context {
+      orgs.fetch("org") shouldReturn IO.pure(Some(organization))
+      orgs.fetch(orgId) shouldReturn IO.pure(Some(organization))
+      index.getBy("org", "proj") shouldReturn IO.pure(None)
+      index.replace(any[UUID], any[ResourceF[Project]]) shouldReturn IO.pure(())
+      mockIamCalls()
+      val created = projects.create("org", "proj", payload)(caller).accepted
+      index.getBy("org", "proj") shouldReturn IO.pure(Some(resource.copy(uuid = created.uuid)))
+      val wrongPayload = payload.copy(base = Some(url"http://example.com/a".value))
+      projects
+        .update("org", "proj", wrongPayload, 1L)(caller)
+        .rejected[ProjectRejection] shouldEqual InvalidProjectFormat(
+        "the value of the project's 'base' parameter must end with hash (#) or slash (/)")
+    }
+
+    "not create a project if the vocab parameter does not end with '#' or '/'" in new Context {
+      orgs.fetch("org") shouldReturn IO.pure(Some(organization))
+      orgs.fetch(orgId) shouldReturn IO.pure(Some(organization))
+      index.getBy("org", "proj") shouldReturn IO.pure(None)
+      mockIamCalls()
+      val wrongPayload = payload.copy(vocab = Some(url"http://example.com/a".value))
+      projects.create("org", "proj", wrongPayload)(caller).rejected[ProjectRejection] shouldEqual InvalidProjectFormat(
+        "the value of the project's 'vocab' parameter must end with hash (#) or slash (/)")
+    }
+
+    "not update a project if the vocab parameter does not end with '#' or '/'" in new Context {
+      orgs.fetch("org") shouldReturn IO.pure(Some(organization))
+      orgs.fetch(orgId) shouldReturn IO.pure(Some(organization))
+      index.getBy("org", "proj") shouldReturn IO.pure(None)
+      index.replace(any[UUID], any[ResourceF[Project]]) shouldReturn IO.pure(())
+      mockIamCalls()
+      val created = projects.create("org", "proj", payload)(caller).accepted
+      index.getBy("org", "proj") shouldReturn IO.pure(Some(resource.copy(uuid = created.uuid)))
+      val wrongPayload = payload.copy(vocab = Some(url"http://example.com/a".value))
+      projects
+        .update("org", "proj", wrongPayload, 1L)(caller)
+        .rejected[ProjectRejection] shouldEqual InvalidProjectFormat(
+        "the value of the project's 'vocab' parameter must end with hash (#) or slash (/)")
     }
 
     "create a project" in new Context {
