@@ -324,7 +324,7 @@ object Projects {
       iri.asString.matches(".*(#|/)$")
 
     private def invalidIriMessage(param: String) =
-      s"the Iri on the '$param' parameter should end with hash (#) or slash (/)/"
+      s"the value of the project's '$param' parameter must end with hash (#) or slash (/)"
 
     private def createProject(state: ProjectState, c: CreateProject): Either[ProjectRejection, ProjectEvent] =
       state match {

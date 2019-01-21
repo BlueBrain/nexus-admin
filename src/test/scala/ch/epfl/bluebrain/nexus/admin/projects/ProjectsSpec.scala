@@ -156,7 +156,7 @@ class ProjectsSpec
       mockIamCalls()
       val wrongPayload = payload.copy(base = Some(url"http://example.com/a".value))
       projects.create("org", "proj", wrongPayload)(caller).rejected[ProjectRejection] shouldEqual InvalidProjectFormat(
-        "the Iri on the 'base' parameter should end with hash (#) or slash (/)/")
+        "the value of the project's 'base' parameter must end with hash (#) or slash (/)")
     }
 
     "not update a project if the base parameter does not end with '#' or '/'" in new Context {
@@ -171,7 +171,7 @@ class ProjectsSpec
       projects
         .update("org", "proj", wrongPayload, 1L)(caller)
         .rejected[ProjectRejection] shouldEqual InvalidProjectFormat(
-        "the Iri on the 'base' parameter should end with hash (#) or slash (/)/")
+        "the value of the project's 'base' parameter must end with hash (#) or slash (/)")
     }
 
     "not create a project if the vocab parameter does not end with '#' or '/'" in new Context {
@@ -181,7 +181,7 @@ class ProjectsSpec
       mockIamCalls()
       val wrongPayload = payload.copy(vocab = Some(url"http://example.com/a".value))
       projects.create("org", "proj", wrongPayload)(caller).rejected[ProjectRejection] shouldEqual InvalidProjectFormat(
-        "the Iri on the 'vocab' parameter should end with hash (#) or slash (/)/")
+        "the value of the project's 'vocab' parameter must end with hash (#) or slash (/)")
     }
 
     "not update a project if the vocab parameter does not end with '#' or '/'" in new Context {
@@ -196,7 +196,7 @@ class ProjectsSpec
       projects
         .update("org", "proj", wrongPayload, 1L)(caller)
         .rejected[ProjectRejection] shouldEqual InvalidProjectFormat(
-        "the Iri on the 'vocab' parameter should end with hash (#) or slash (/)/")
+        "the value of the project's 'vocab' parameter must end with hash (#) or slash (/)")
     }
 
     "create a project" in new Context {
