@@ -12,8 +12,8 @@ import ch.epfl.bluebrain.nexus.iam.client.types.{AuthToken, Permission}
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.syntax.node.unsafe._
 import ch.epfl.bluebrain.nexus.service.indexer.cache.KeyValueStoreConfig
-import ch.epfl.bluebrain.nexus.service.indexer.retryer.{RetryStrategy => IndexerRetryStrategy}
 import ch.epfl.bluebrain.nexus.service.indexer.retryer.RetryStrategy.Backoff
+import ch.epfl.bluebrain.nexus.service.indexer.retryer.{RetryStrategy => IndexerRetryStrategy}
 import ch.epfl.bluebrain.nexus.service.kamon.directives.TracingDirectives
 import ch.epfl.bluebrain.nexus.sourcing.akka.SourcingConfig.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.sourcing.akka.{RetryStrategy, SourcingConfig}
@@ -28,7 +28,6 @@ import scala.concurrent.duration.FiniteDuration
   * @param cluster        akka cluster configuration
   * @param persistence    persistence configuration
   * @param indexing       Indexing configuration
-  * @param kafka          Kafka configuration
   * @param keyValueStore  Distributed data configuration
   * @param sourcing       Sourcing configuration
   * @param iam            IAM configuration
@@ -41,7 +40,6 @@ final case class AppConfig(description: Description,
                            cluster: ClusterConfig,
                            persistence: PersistenceConfig,
                            indexing: IndexingConfig,
-                           kafka: KafkaConfig,
                            keyValueStore: KeyValueStoreConfig,
                            sourcing: SourcingConfig,
                            iam: IamClientConfig,

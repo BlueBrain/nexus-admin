@@ -23,6 +23,7 @@ import org.mockito.Mockito
 import org.mockito.integrations.scalatest.IdiomaticMockitoFixture
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
+import ch.epfl.bluebrain.nexus.commons.http.syntax.circe._
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
@@ -55,8 +56,9 @@ class AdminClientSpec
 
   private val client = new AdminClient[IO](config)
 
-  private val org  = jsonContentOf("/organization.json").as[Organization].right.value
-  private val proj = jsonContentOf("/project.json").as[Project].right.value
+  private val org       = jsonContentOf("/organization.json").as[Organization].right.value
+  private val orgNoDesc = jsonContentOf("/organization.json").removeKeys("description").as[Organization].right.value
+  private val proj      = jsonContentOf("/project.json").as[Project].right.value
 
   private def orgRequest(label: String) =
     Get(s"http://admin.nexus.example.com/v1/orgs/$label").addCredentials(token)
@@ -76,7 +78,24 @@ class AdminClientSpec
       client.fetchOrganization(orgLabel).some shouldEqual Organization(
         url"http://admin.nexus.example.com/v1/orgs/testorg".value,
         "testorg",
-        "Test organization",
+        Some("Test organization"),
+        UUID.fromString("504b6940-1b14-43a7-80e3-d08c52c3fc87"),
+        1L,
+        false,
+        Instant.parse("2018-12-19T11:31:30.00Z"),
+        url"http://iam.nexus.example.com/v1/realms/example-realm/users/example-user".value,
+        Instant.parse("2018-12-20T11:31:30.00Z"),
+        url"http://iam.nexus.example.com/v1/realms/example-realm/users/example-user2".value
+      )
+    }
+
+    "fetch organization without description" in {
+      val orgLabel = genString()
+      oc(orgRequest(orgLabel)) shouldReturn IO.pure(orgNoDesc)
+      client.fetchOrganization(orgLabel).some shouldEqual Organization(
+        url"http://admin.nexus.example.com/v1/orgs/testorg".value,
+        "testorg",
+        None,
         UUID.fromString("504b6940-1b14-43a7-80e3-d08c52c3fc87"),
         1L,
         false,

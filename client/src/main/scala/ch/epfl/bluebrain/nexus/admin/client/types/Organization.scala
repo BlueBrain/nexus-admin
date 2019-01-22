@@ -12,7 +12,7 @@ import io.circe.Decoder
   *
   * @param id           organization ID
   * @param label        organization label
-  * @param description  organization description
+  * @param description  organization optional description
   * @param uuid         organization permanent identifier
   * @param rev          organization revision
   * @param deprecated   organization deprecation status
@@ -23,7 +23,7 @@ import io.circe.Decoder
   */
 final case class Organization(id: AbsoluteIri,
                               label: String,
-                              description: String,
+                              description: Option[String],
                               uuid: UUID,
                               rev: Long,
                               deprecated: Boolean,
@@ -41,8 +41,8 @@ object Organization {
     Decoder.instance { hc =>
       for {
         id          <- hc.get[AbsoluteIri]("@id")
-        description <- hc.get[String]("description")
         label       <- hc.get[String]("_label")
+        description <- hc.get[Option[String]]("description")
         uuid        <- hc.get[String]("_uuid").map(UUID.fromString)
         rev         <- hc.get[Long]("_rev")
         deprecated  <- hc.get[Boolean]("_deprecated")

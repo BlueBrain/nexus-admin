@@ -20,7 +20,7 @@ class DecodersSpec extends WordSpecLike with Matchers with Resources with Either
   val subject            = User("uuid", "myrealm")
   val orgUuid            = UUID.fromString("d8cf3015-1bce-4dda-ba80-80cd4b5281e5")
   val orgLabel           = "thelabel"
-  val orgDescription     = "the description"
+  val orgDescription     = Some("the description")
   val projectLabel       = "theprojectlabel"
   val projectUuid        = UUID.fromString("94463ac0-3e9b-4261-80f5-e4253956eee2")
   val projectDescription = Some("the project description")
@@ -75,7 +75,7 @@ class DecodersSpec extends WordSpecLike with Matchers with Resources with Either
     }
     "decode organization updated event" in {
       val event: OrganizationEvent =
-        OrganizationUpdated(orgUuid, 2L, orgLabel, orgDescription, instant, subject)
+        OrganizationUpdated(orgUuid, 2L, orgLabel, None, instant, subject)
       val json = jsonContentOf("/events/organization-updated.json")
 
       json.as[Event].right.value shouldEqual event
