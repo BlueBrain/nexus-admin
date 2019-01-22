@@ -15,7 +15,7 @@ import io.circe.Decoder
   * @param description  organization description
   * @param uuid         organization permanent identifier
   * @param rev          organization revision
-  * @param deprecated   organization deprecation status
+  * @param deprecated   organization optional deprecation status
   * @param createdAt    [[Instant]] at which the organization was created
   * @param createdBy    ID of the subject that created the organization
   * @param updatedAt    [[Instant]] at which the organization was updated
@@ -23,7 +23,7 @@ import io.circe.Decoder
   */
 final case class Organization(id: AbsoluteIri,
                               label: String,
-                              description: String,
+                              description: Option[String],
                               uuid: UUID,
                               rev: Long,
                               deprecated: Boolean,
@@ -40,16 +40,25 @@ object Organization {
   implicit val organizationDecoder: Decoder[Organization] =
     Decoder.instance { hc =>
       for {
-        id          <- hc.get[AbsoluteIri]("@id")
-        description <- hc.get[String]("description")
-        label       <- hc.get[String]("_label")
-        uuid        <- hc.get[String]("_uuid").map(UUID.fromString)
-        rev         <- hc.get[Long]("_rev")
-        deprecated  <- hc.get[Boolean]("_deprecated")
-        createdBy   <- hc.get[AbsoluteIri]("_createdBy")
-        createdAt   <- hc.get[Instant]("_createdAt")
-        updatedBy   <- hc.get[AbsoluteIri]("_updatedBy")
-        updatedAt   <- hc.get[Instant]("_updatedAt")
-      } yield Organization(id, label, description, uuid, rev, deprecated, createdAt, createdBy, updatedAt, updatedBy)
+        id         <- hc.get[AbsoluteIri]("@id")
+        label      <- hc.get[String]("_label")
+        uuid       <- hc.get[String]("_uuid").map(UUID.fromString)
+        rev        <- hc.get[Long]("_rev")
+        deprecated <- hc.get[Boolean]("_deprecated")
+        createdBy  <- hc.get[AbsoluteIri]("_createdBy")
+        createdAt  <- hc.get[Instant]("_createdAt")
+        updatedBy  <- hc.get[AbsoluteIri]("_updatedBy")
+        updatedAt  <- hc.get[Instant]("_updatedAt")
+      } yield
+        Organization(id,
+                     label,
+                     hc.get[String]("description").toOption,
+                     uuid,
+                     rev,
+                     deprecated,
+                     createdAt,
+                     createdBy,
+                     updatedAt,
+                     updatedBy)
     }
 }

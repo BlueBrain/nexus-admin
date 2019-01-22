@@ -4,7 +4,6 @@
     "https://bluebrain.github.io/nexus/contexts/resource.json"
   ],
   "@type": "OrganizationUpdated",
-  "description": "the description",
   "_uuid": "d8cf3015-1bce-4dda-ba80-80cd4b5281e5",
   "_label": "thelabel",
   "_rev": 2,
