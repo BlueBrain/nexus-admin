@@ -14,7 +14,10 @@ import org.scalatest.{EitherValues, Matchers, WordSpecLike}
 //noinspection TypeAnnotation
 class DecodersSpec extends WordSpecLike with Matchers with Resources with EitherValues {
 
-  implicit val iamConfig = IamClientConfig(url"http://localhost:8080/v1".value)
+  implicit val iamConfig = IamClientConfig(
+    url"https://nexus.example.com/v1".value,
+    url"http://localhost:8080/v1".value,
+  )
 
   val instant            = Instant.EPOCH
   val subject            = User("uuid", "myrealm")
