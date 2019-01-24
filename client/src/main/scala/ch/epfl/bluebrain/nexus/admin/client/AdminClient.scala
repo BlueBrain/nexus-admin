@@ -17,8 +17,7 @@ import ch.epfl.bluebrain.nexus.commons.http.HttpClient.UntypedHttpClient
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport._
 import ch.epfl.bluebrain.nexus.iam.client.IamClientError.{Forbidden, Unauthorized}
 import ch.epfl.bluebrain.nexus.iam.client.types.AuthToken
-import ch.epfl.bluebrain.nexus.rdf.Iri.Path
-import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
+import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.syntax.akka._
 import io.circe.{DecodingFailure, ParsingFailure}
 import journal.Logger
@@ -47,7 +46,7 @@ class AdminClient[F[_]](cfg: AdminClientConfig)(
     * @return [[Project]] instance if it exists, [[None]] otherwise, wrapped in [[F]]
     */
   def fetchProject(organization: String, label: String)(implicit credentials: Option[AuthToken]): F[Option[Project]] =
-    pc(request("projects" / organization / label))
+    pc(request(cfg.projectsIri + organization + label))
       .map[Option[Project]](Some(_))
       .recoverWith {
         case UnknownError(StatusCodes.NotFound, _) => F.pure(None)
@@ -61,14 +60,14 @@ class AdminClient[F[_]](cfg: AdminClientConfig)(
     * @return [[Organization]] instance if it exists, [[None]] otherwise, wrapped in [[F]]
     */
   def fetchOrganization(label: String)(implicit credentials: Option[AuthToken]): F[Option[Organization]] =
-    oc(request("orgs" / label))
+    oc(request(cfg.orgsIri + label))
       .map[Option[Organization]](Some(_))
       .recoverWith {
         case UnknownError(StatusCodes.NotFound, _) => F.pure(None)
       }
 
-  private def request(path: Path)(implicit credentials: Option[AuthToken]): HttpRequest =
-    addCredentials(Get((cfg.baseUri + path).toAkkaUri))
+  private def request(iri: AbsoluteIri)(implicit credentials: Option[AuthToken]): HttpRequest =
+    addCredentials(Get(iri.toAkkaUri))
 
   private def addCredentials(request: HttpRequest)(implicit credentials: Option[AuthToken]): HttpRequest =
     credentials.map(token => request.addCredentials(OAuth2BearerToken(token.value))).getOrElse(request)
