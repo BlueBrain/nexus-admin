@@ -47,8 +47,11 @@ class AdminClientSpec
   implicit val ec: ExecutionContext  = system.dispatcher
   implicit val mt: ActorMaterializer = ActorMaterializer()
 
-  private val config = AdminClientConfig(url"http://admin.nexus.example.com/v1".value)
-  private val token  = OAuth2BearerToken("token")
+  private val config = AdminClientConfig(
+    url"https://nexus.example.com/v1".value,
+    url"http://admin.nexus.example.com/v1".value,
+  )
+  private val token = OAuth2BearerToken("token")
 
   private implicit val pc: HttpClient[IO, Project]      = mock[HttpClient[IO, Project]]
   private implicit val oc: HttpClient[IO, Organization] = mock[HttpClient[IO, Organization]]
