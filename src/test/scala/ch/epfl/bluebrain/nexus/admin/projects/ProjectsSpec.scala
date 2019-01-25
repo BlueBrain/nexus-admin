@@ -149,6 +149,17 @@ class ProjectsSpec
         deprecated.uuid)
     }
 
+    "not create a project if the project label cannot generate the correct base and vocab" in new Context {
+      orgs.fetch("org") shouldReturn IO.pure(Some(organization))
+      orgs.fetch(orgId) shouldReturn IO.pure(Some(organization))
+      index.getBy("org", "proj ") shouldReturn IO.pure(None)
+      mockIamCalls()
+      projects
+        .create("org", "proj ", payload.copy(base = None))(caller)
+        .rejected[ProjectRejection] shouldEqual InvalidProjectFormat(
+        "the value of the project's 'base' could not be generated properly from the provided project 'org/proj '")
+    }
+
     "not create a project if the base parameter does not end with '#' or '/'" in new Context {
       orgs.fetch("org") shouldReturn IO.pure(Some(organization))
       orgs.fetch(orgId) shouldReturn IO.pure(Some(organization))
@@ -458,7 +469,7 @@ class ProjectsSpec
   }
 
   private def mockIamCalls() = {
-    val orgPath = Path.apply("/org/proj").right.value
+    val orgPath: Path = "org" / "proj"
     iamClient.permissions(iamCredentials) shouldReturn IO.pure(permissions)
     iamClient.acls(orgPath, ancestors = true, self = false)(iamCredentials) shouldReturn IO
       .pure(AccessControlLists.empty)
