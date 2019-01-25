@@ -1,8 +1,9 @@
 package ch.epfl.bluebrain.nexus.admin.projects
 
-import ch.epfl.bluebrain.nexus.rdf.instances._
+import ch.epfl.bluebrain.nexus.admin.config.AppConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.rdf.Iri
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
+import ch.epfl.bluebrain.nexus.rdf.instances._
 import io.circe.{Decoder, DecodingFailure}
 
 /**
@@ -16,7 +17,20 @@ import io.circe.{Decoder, DecodingFailure}
 final case class ProjectDescription(description: Option[String],
                                     apiMappings: Map[String, AbsoluteIri],
                                     base: Option[AbsoluteIri],
-                                    vocab: Option[AbsoluteIri])
+                                    vocab: Option[AbsoluteIri]) {
+
+  /**
+    * @return the current base or a generated one based on the ''http.prefixIri'', ''organization'' and ''label''
+    */
+  def baseOrGenerated(organization: String, label: String)(implicit http: HttpConfig): Option[AbsoluteIri] =
+    base orElse Iri.absolute(s"${http.prefixIri.asString}/resources/$organization/$label/_/").toOption
+
+  /**
+    * @return the current vocab or a generated one based on the ''http.prefixIri'', ''organization'' and ''label''
+    */
+  def vocabOrGenerated(organization: String, label: String)(implicit http: HttpConfig): Option[AbsoluteIri] =
+    vocab orElse Iri.absolute(s"${http.prefixIri.asString}/vocabs/$organization/$label/").toOption
+}
 
 object ProjectDescription {
 

@@ -23,9 +23,8 @@ import ch.epfl.bluebrain.nexus.admin.types.ResourceF
 import ch.epfl.bluebrain.nexus.commons.types.search.Pagination
 import ch.epfl.bluebrain.nexus.commons.types.search.QueryResults.UnscoredQueryResults
 import ch.epfl.bluebrain.nexus.iam.client.IamClient
-import ch.epfl.bluebrain.nexus.iam.client.types.{AccessControlList, AccessControlLists, AuthToken, Permission}
-import ch.epfl.bluebrain.nexus.rdf.syntax.node.unsafe._
 import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
+import ch.epfl.bluebrain.nexus.iam.client.types.{AccessControlList, AccessControlLists, AuthToken, Permission}
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
 import ch.epfl.bluebrain.nexus.sourcing.akka._
@@ -46,6 +45,9 @@ class Projects[F[_]](agg: Agg[F], index: ProjectCache[F], organizations: Organiz
     retryStrategy: RetryStrategy[F]
 ) {
 
+  private def invalidIriGeneration(organization: String, label: String, param: String): String =
+    s"the value of the project's '$param' could not be generated properly from the provided project '$organization/$label'"
+
   /**
     * Creates a project.
     *
@@ -63,19 +65,18 @@ class Projects[F[_]](agg: Agg[F], index: ProjectCache[F], organizations: Organiz
         index.getBy(organization, label).flatMap {
           case None =>
             val projectId = UUID.randomUUID
-            val base      = project.base.getOrElse(url"${http.prefixIri.asUri}/resources/$organization/$label/_/".value)
-            val vocab     = project.vocab.getOrElse(url"${http.prefixIri.asUri}/vocabs/$organization/$label/".value)
-            val command = CreateProject(projectId,
-                                        label,
-                                        org.uuid,
-                                        organization,
-                                        project.description,
-                                        project.apiMappings,
-                                        base,
-                                        vocab,
-                                        clock.instant,
-                                        caller)
-            evaluateAndUpdateIndex(command) <* retryStrategy(setOwnerPermissions(organization, label, caller))
+            project.baseOrGenerated(organization, label) -> project.vocabOrGenerated(organization, label) match {
+              case (Some(base), Some(vocab)) =>
+                // format: off
+                val command = CreateProject(projectId, label, org.uuid, organization, project.description, project.apiMappings, base, vocab, clock.instant, caller)
+                // format: on
+                evaluateAndUpdateIndex(command) <* retryStrategy(setOwnerPermissions(organization, label, caller))
+              case (None, _) =>
+                F.pure(Left(InvalidProjectFormat(invalidIriGeneration(organization, label, "base"))))
+              case (_, None) =>
+                F.pure(Left(InvalidProjectFormat(invalidIriGeneration(organization, label, "vocab"))))
+            }
+
           case Some(_) => F.pure(Left(ProjectAlreadyExists(organization, label)))
         }
       case None => F.pure(Left(OrganizationNotFound(organization)))
