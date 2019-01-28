@@ -36,6 +36,8 @@ object OrganizationCache {
   /**
     * Creates a new organization index.
     */
-  def apply[F[_]: Timer](implicit as: ActorSystem, config: KeyValueStoreConfig, F: Async[F]): OrganizationCache[F] =
-    new OrganizationCache(storeWrappedError[F, OrganizationResource]("organizations", _.rev))
+  def apply[F[_]: Timer](implicit as: ActorSystem, config: KeyValueStoreConfig, F: Async[F]): OrganizationCache[F] = {
+    val function: (Long, OrganizationResource) => Long = { case (_, res) => res.rev }
+    new OrganizationCache(KeyValueStore.distributed("organizations", function, mapError))
+  }
 }

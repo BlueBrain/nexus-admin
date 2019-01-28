@@ -37,6 +37,13 @@ object AdminError {
   final case class UnexpectedError(reason: String) extends AdminError(reason)
 
   /**
+    * Signals an internal timeout.
+    *
+    * @param reason a descriptive message on the operation that timed out
+    */
+  final case class OperationTimedOut(reason: String) extends AdminError(reason)
+
+  /**
     * Generic wrapper for iam errors that should not be exposed to clients.
     *
     * @param reason the underlying error reason

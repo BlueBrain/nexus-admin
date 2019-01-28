@@ -2,17 +2,19 @@ package ch.epfl.bluebrain.nexus.admin.index
 
 import java.util.UUID
 
-import akka.actor.ActorSystem
 import cats.Monad
-import cats.effect.{Async, Timer}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.admin.exceptions.AdminError
-import ch.epfl.bluebrain.nexus.admin.exceptions.AdminError.InternalError
+import ch.epfl.bluebrain.nexus.admin.exceptions.AdminError.{InternalError, OperationTimedOut}
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF
 import ch.epfl.bluebrain.nexus.commons.types.search.Pagination
 import ch.epfl.bluebrain.nexus.commons.types.search.QueryResult.UnscoredQueryResult
 import ch.epfl.bluebrain.nexus.commons.types.search.QueryResults.UnscoredQueryResults
-import ch.epfl.bluebrain.nexus.service.indexer.cache.{KeyValueStore, KeyValueStoreConfig, OnKeyValueStoreChange}
+import ch.epfl.bluebrain.nexus.service.indexer.cache.KeyValueStoreError.{
+  DistributedDataError,
+  ReadWriteConsistencyTimeout
+}
+import ch.epfl.bluebrain.nexus.service.indexer.cache.{KeyValueStore, KeyValueStoreError}
 
 abstract class Cache[F[_], V](val store: KeyValueStore[F, UUID, ResourceF[V]])(implicit F: Monad[F]) {
 
@@ -50,23 +52,10 @@ abstract class Cache[F[_], V](val store: KeyValueStore[F, UUID, ResourceF[V]])(i
 
 object Cache {
 
-  private[index] def storeWrappedError[F[_]: Timer, V](
-      name: String,
-      f: V => Long)(implicit as: ActorSystem, config: KeyValueStoreConfig, F: Async[F]): KeyValueStore[F, UUID, V] =
-    new KeyValueStore[F, UUID, V] {
-      val underlying: KeyValueStore[F, UUID, V] = KeyValueStore.distributed(name, (_, resource) => f(resource))
-
-      override def put(key: UUID, value: V): F[Unit] =
-        underlying.put(key, value).recoverWith { case err => F.raiseError(InternalError(err.getMessage): AdminError) }
-      override def entries: F[Map[UUID, V]] =
-        underlying.entries.recoverWith { case err => F.raiseError(InternalError(err.getMessage): AdminError) }
-      override def remove(key: UUID): F[Unit] =
-        underlying.remove(key).recoverWith { case err => F.raiseError(InternalError(err.getMessage): AdminError) }
-      override def subscribe(value: OnKeyValueStoreChange[UUID, V]): F[KeyValueStore.Subscription] =
-        underlying.subscribe(value).recoverWith { case err => F.raiseError(InternalError(err.getMessage): AdminError) }
-      override def unsubscribe(subscription: KeyValueStore.Subscription): F[Unit] =
-        underlying.unsubscribe(subscription).recoverWith {
-          case err => F.raiseError(InternalError(err.getMessage): AdminError)
-        }
+  private[index] def mapError(cacheError: KeyValueStoreError): AdminError =
+    cacheError match {
+      case e: ReadWriteConsistencyTimeout =>
+        OperationTimedOut(s"Timeout while interacting with the cache due to '${e.timeout}'")
+      case e: DistributedDataError => InternalError(e.reason)
     }
 }
