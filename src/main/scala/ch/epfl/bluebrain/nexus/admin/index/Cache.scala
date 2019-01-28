@@ -10,10 +10,7 @@ import ch.epfl.bluebrain.nexus.admin.types.ResourceF
 import ch.epfl.bluebrain.nexus.commons.types.search.Pagination
 import ch.epfl.bluebrain.nexus.commons.types.search.QueryResult.UnscoredQueryResult
 import ch.epfl.bluebrain.nexus.commons.types.search.QueryResults.UnscoredQueryResults
-import ch.epfl.bluebrain.nexus.service.indexer.cache.KeyValueStoreError.{
-  DistributedDataError,
-  ReadWriteConsistencyTimeout
-}
+import ch.epfl.bluebrain.nexus.service.indexer.cache.KeyValueStoreError._
 import ch.epfl.bluebrain.nexus.service.indexer.cache.{KeyValueStore, KeyValueStoreError}
 
 abstract class Cache[F[_], V](val store: KeyValueStore[F, UUID, ResourceF[V]])(implicit F: Monad[F]) {
