@@ -56,6 +56,8 @@ object ProjectCache {
   /**
     * Creates a new project index.
     */
-  def apply[F[_]: Timer](implicit as: ActorSystem, config: KeyValueStoreConfig, F: Async[F]): ProjectCache[F] =
-    new ProjectCache(storeWrappedError[F, ProjectResource]("projects", _.rev))
+  def apply[F[_]: Timer](implicit as: ActorSystem, config: KeyValueStoreConfig, F: Async[F]): ProjectCache[F] = {
+    val function: (Long, ProjectResource) => Long = { case (_, res) => res.rev }
+    new ProjectCache(KeyValueStore.distributed("projects", function, mapError))
+  }
 }
