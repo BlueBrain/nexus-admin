@@ -207,8 +207,7 @@ class Projects[F[_]](agg: Agg[F], index: ProjectCache[F], organizations: Organiz
       }
       .flatMap {
         case c: Current if c.rev == rev => toResource(c).map(Right(_))
-        case c: Current                 => F.pure(Left(IncorrectRev(c.rev, rev)))
-        case Initial                    => F.pure(Left(ProjectNotFound(id)))
+        case _                          => F.pure(Left(ProjectNotFound(id)))
       }
   }
 

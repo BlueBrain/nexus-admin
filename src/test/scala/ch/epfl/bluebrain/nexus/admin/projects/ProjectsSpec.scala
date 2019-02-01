@@ -354,7 +354,7 @@ class ProjectsSpec
       index.getBy("org", "proj") shouldReturn IO.pure(Some(resource.copy(uuid = fetched.uuid)))
       projects.fetch("org", "proj", 1L).accepted shouldEqual fetched.copy(rev = 1L, value = project)
 
-      projects.fetch(created.uuid, 4L).rejected[ProjectRejection] shouldEqual IncorrectRev(3L, 4L)
+      projects.fetch(created.uuid, 4L).rejected[ProjectRejection] shouldEqual ProjectNotFound(created.uuid)
       private val uuid: UUID = UUID.randomUUID
       projects.fetch(uuid, 4L).rejected[ProjectRejection] shouldEqual ProjectNotFound(uuid)
     }
