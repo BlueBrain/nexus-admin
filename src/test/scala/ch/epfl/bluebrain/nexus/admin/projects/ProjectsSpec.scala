@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.admin.projects
 import java.time.{Clock, Instant, ZoneId}
 import java.util.UUID
 
-import cats.effect.{ContextShift, IO}
+import cats.effect.{ContextShift, IO, Timer}
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.admin.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.admin.index.ProjectCache
@@ -17,8 +17,9 @@ import ch.epfl.bluebrain.nexus.iam.client.types.Identity.User
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
 import ch.epfl.bluebrain.nexus.rdf.syntax.node.unsafe._
+import ch.epfl.bluebrain.nexus.service.test.ActorSystemFixture
 import ch.epfl.bluebrain.nexus.sourcing.Aggregate
-import ch.epfl.bluebrain.nexus.sourcing.akka.RetryStrategy
+import ch.epfl.bluebrain.nexus.sourcing.akka.{Retry, RetryStrategy}
 import org.mockito.MockitoSugar.reset
 import org.mockito.integrations.scalatest.IdiomaticMockitoFixture
 import org.scalatest._
@@ -28,7 +29,8 @@ import scala.concurrent.duration._
 
 //noinspection TypeAnnotation
 class ProjectsSpec
-    extends WordSpecLike
+    extends ActorSystemFixture("ProjectsSpec", true)
+    with WordSpecLike
     with BeforeAndAfterEach
     with IdiomaticMockitoFixture
     with Matchers
@@ -37,6 +39,7 @@ class ProjectsSpec
 
   override implicit val patienceConfig: PatienceConfig = PatienceConfig(3.seconds, 100.milliseconds)
   private implicit val ctx: ContextShift[IO]           = IO.contextShift(ExecutionContext.global)
+  private implicit val timer: Timer[IO]                = IO.timer(system.dispatcher)
   private implicit val httpConfig: HttpConfig          = HttpConfig("nexus", 80, "v1", "http://nexus.example.com")
   private implicit val iamCredentials                  = Some(AuthToken("token"))
 
@@ -51,9 +54,9 @@ class ProjectsSpec
   private val aggF: IO[Agg[IO]] =
     Aggregate.inMemoryF("projects-in-memory", ProjectState.Initial, Projects.next, Projects.Eval.apply[IO])
 
-  private implicit val permissions   = Set(Permission.unsafe("test/permission1"), Permission.unsafe("test/permission2"))
-  private implicit val retryStrategy = RetryStrategy.once[IO, Throwable]
-  private val projects               = aggF.map(agg => new Projects[IO](agg, index, orgs, iamClient)).unsafeRunSync()
+  private implicit val permissions                 = Set(Permission.unsafe("test/permission1"), Permission.unsafe("test/permission2"))
+  private implicit val retry: Retry[IO, Throwable] = Retry(RetryStrategy.Once(100 millis))
+  private val projects                             = aggF.map(agg => new Projects[IO](agg, index, orgs, iamClient)).unsafeRunSync()
 
   override protected def beforeEach(): Unit = {
     reset(orgs)

@@ -27,6 +27,7 @@ import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
 import ch.epfl.bluebrain.nexus.iam.client.types.{AccessControlList, AccessControlLists, AuthToken, Permission}
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
+import ch.epfl.bluebrain.nexus.sourcing.akka.syntax._
 import ch.epfl.bluebrain.nexus.sourcing.akka._
 
 /**
@@ -42,7 +43,7 @@ class Projects[F[_]](agg: Agg[F], index: ProjectCache[F], organizations: Organiz
     clock: Clock,
     iamCredentials: Option[AuthToken],
     ownerPermissions: Set[Permission],
-    retryStrategy: RetryStrategy[F]
+    retry: Retry[F, Throwable]
 ) {
 
   private def invalidIriGeneration(organization: String, label: String, param: String): String =
@@ -70,7 +71,7 @@ class Projects[F[_]](agg: Agg[F], index: ProjectCache[F], organizations: Organiz
                 // format: off
                 val command = CreateProject(projectId, label, org.uuid, organization, project.description, project.apiMappings, base, vocab, clock.instant, caller)
                 // format: on
-                evaluateAndUpdateIndex(command) <* retryStrategy(setOwnerPermissions(organization, label, caller))
+                evaluateAndUpdateIndex(command) <* setOwnerPermissions(organization, label, caller).retry
               case (None, _) =>
                 F.pure(Left(InvalidProjectFormat(invalidIriGeneration(organization, label, "base"))))
               case (_, None) =>
@@ -270,10 +271,10 @@ object Projects {
                                            appConfig: AppConfig)(implicit as: ActorSystem,
                                                                  mt: ActorMaterializer,
                                                                  clock: Clock = Clock.systemUTC): F[Projects[F]] = {
-    implicit val http: HttpConfig                           = appConfig.http
-    implicit val iamCredentials: Option[AuthToken]          = appConfig.serviceAccount.credentials
-    implicit val ownerPermissions: Set[Permission]          = appConfig.permissions.ownerPermissions
-    implicit val permissionsRetryStrategy: RetryStrategy[F] = appConfig.permissions.retryStrategy
+    implicit val http: HttpConfig                              = appConfig.http
+    implicit val iamCredentials: Option[AuthToken]             = appConfig.serviceAccount.credentials
+    implicit val ownerPermissions: Set[Permission]             = appConfig.permissions.ownerPermissions
+    implicit val permissionsRetryStrategy: Retry[F, Throwable] = Retry(appConfig.permissions.retry.retryStrategy)
 
     val aggF: F[Agg[F]] =
       AkkaAggregate.shardedF(
@@ -282,7 +283,7 @@ object Projects {
         next,
         Eval.apply[F],
         appConfig.sourcing.passivationStrategy(),
-        appConfig.sourcing.retryStrategy,
+        Retry(appConfig.sourcing.retry.retryStrategy),
         appConfig.sourcing.akkaSourcingConfig,
         appConfig.cluster.shards
       )
