@@ -2,8 +2,9 @@ package ch.epfl.bluebrain.nexus.admin.index
 
 import java.util.UUID
 
-import cats.Monad
+import cats.effect.Async
 import cats.implicits._
+import cats.{Monad, MonadError}
 import ch.epfl.bluebrain.nexus.admin.exceptions.AdminError
 import ch.epfl.bluebrain.nexus.admin.exceptions.AdminError.{InternalError, OperationTimedOut}
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF
@@ -48,6 +49,17 @@ abstract class Cache[F[_], V](val store: KeyValueStore[F, UUID, ResourceF[V]])(i
 }
 
 object Cache {
+
+  private[index] implicit def monadError[F[_]](implicit F: Async[F]): MonadError[F, AdminError] =
+    new MonadError[F, AdminError] {
+      override def handleErrorWith[A](fa: F[A])(f: AdminError => F[A]): F[A] = F.recoverWith(fa) {
+        case t: AdminError => f(t)
+      }
+      override def raiseError[A](e: AdminError): F[A]                  = F.raiseError(e)
+      override def pure[A](x: A): F[A]                                 = F.pure(x)
+      override def flatMap[A, B](fa: F[A])(f: A => F[B]): F[B]         = F.flatMap(fa)(f)
+      override def tailRecM[A, B](a: A)(f: A => F[Either[A, B]]): F[B] = F.tailRecM(a)(f)
+    }
 
   private[index] def mapError(cacheError: KeyValueStoreError): AdminError =
     cacheError match {

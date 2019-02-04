@@ -21,7 +21,7 @@ import ch.epfl.bluebrain.nexus.rdf.Iri.Path./
 import ch.epfl.bluebrain.nexus.rdf.syntax.node.unsafe._
 import ch.epfl.bluebrain.nexus.service.test.ActorSystemFixture
 import ch.epfl.bluebrain.nexus.sourcing.Aggregate
-import ch.epfl.bluebrain.nexus.sourcing.akka.RetryStrategy
+import ch.epfl.bluebrain.nexus.sourcing.akka.{Retry, RetryStrategy}
 import org.mockito.Mockito
 import org.mockito.integrations.scalatest.IdiomaticMockitoFixture
 import org.scalatest.{BeforeAndAfter, Matchers}
@@ -45,7 +45,7 @@ class OrganizationsSpec
   private implicit val clock: Clock          = Clock.fixed(Instant.ofEpochSecond(3600), ZoneId.systemDefault())
   private implicit val http: HttpConfig      = HttpConfig("some", 8080, "v1", "http://nexus.example.com")
   private implicit val ctx: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
-  implicit val timer: Timer[IO]              = IO.timer(system.dispatcher)
+  private implicit val timer: Timer[IO]      = IO.timer(system.dispatcher)
 
   private implicit val caller: Subject = Caller.anonymous.subject
   private val instant                  = clock.instant()
@@ -58,8 +58,8 @@ class OrganizationsSpec
   private val index     = OrganizationCache[IO]
   private val iamClient = mock[IamClient[IO]]
 
-  private implicit val permissions   = Set(Permission.unsafe("test/permission1"), Permission.unsafe("test/permission2"))
-  private implicit val retryStrategy = RetryStrategy.once[IO, Throwable]
+  private implicit val permissions                 = Set(Permission.unsafe("test/permission1"), Permission.unsafe("test/permission2"))
+  private implicit val retry: Retry[IO, Throwable] = Retry(RetryStrategy.Once(100 millis))
 
   private val orgs = aggF.map(new Organizations(_, index, iamClient)).unsafeRunSync()
 
@@ -226,7 +226,7 @@ class OrganizationsSpec
         url"http://nexus.example.com/v1/orgs/${updatedOrg.label}".value,
         metadata.uuid,
         2L,
-        false,
+        deprecated = false,
         Set(nxv.Organization.value),
         instant,
         caller,
@@ -238,7 +238,7 @@ class OrganizationsSpec
         url"http://nexus.example.com/v1/orgs/${updatedOrg.label}".value,
         metadata.uuid,
         2L,
-        false,
+        deprecated = false,
         Set(nxv.Organization.value),
         instant,
         caller,
@@ -278,7 +278,7 @@ class OrganizationsSpec
         url"http://nexus.example.com/v1/orgs/${organization.label}".value,
         metadata.uuid,
         1L,
-        false,
+        deprecated = false,
         Set(nxv.Organization.value),
         instant,
         caller,

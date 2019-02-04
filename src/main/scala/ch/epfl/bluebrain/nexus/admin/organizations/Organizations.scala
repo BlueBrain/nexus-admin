@@ -20,10 +20,11 @@ import ch.epfl.bluebrain.nexus.admin.organizations.Organizations.next
 import ch.epfl.bluebrain.nexus.commons.types.search.Pagination
 import ch.epfl.bluebrain.nexus.commons.types.search.QueryResults.UnscoredQueryResults
 import ch.epfl.bluebrain.nexus.iam.client.IamClient
-import ch.epfl.bluebrain.nexus.iam.client.types._
 import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
+import ch.epfl.bluebrain.nexus.iam.client.types._
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
-import ch.epfl.bluebrain.nexus.sourcing.akka.{AkkaAggregate, RetryStrategy}
+import ch.epfl.bluebrain.nexus.sourcing.akka.syntax._
+import ch.epfl.bluebrain.nexus.sourcing.akka.{AkkaAggregate, Retry}
 
 /**
   * Organizations operations bundle
@@ -34,7 +35,7 @@ class Organizations[F[_]](agg: Agg[F], index: OrganizationCache[F], iamClient: I
     http: HttpConfig,
     iamCredentials: Option[AuthToken],
     ownerPermissions: Set[Permission],
-    retryStrategy: RetryStrategy[F]
+    retry: Retry[F, Throwable]
 ) {
 
   /**
@@ -50,7 +51,7 @@ class Organizations[F[_]](agg: Agg[F], index: OrganizationCache[F], iamClient: I
       case None =>
         val cmd =
           CreateOrganization(UUID.randomUUID, organization.label, organization.description, clock.instant, caller)
-        evalAndUpdateIndex(cmd, organization) <* retryStrategy(setOwnerPermissions(organization.label, caller))
+        evalAndUpdateIndex(cmd, organization) <* setOwnerPermissions(organization.label, caller).retry
     }
 
   def setPermissions(orgLabel: String, acls: AccessControlLists, subject: Subject): F[Unit] = {
@@ -180,10 +181,10 @@ object Organizations {
       implicit cl: Clock = Clock.systemUTC(),
       as: ActorSystem,
       mt: ActorMaterializer): F[Organizations[F]] = {
-    implicit val http: HttpConfig                           = appConfig.http
-    implicit val iamCredentials: Option[AuthToken]          = appConfig.serviceAccount.credentials
-    implicit val ownerPermissions: Set[Permission]          = appConfig.permissions.ownerPermissions
-    implicit val permissionsRetryStrategy: RetryStrategy[F] = appConfig.permissions.retryStrategy
+    implicit val http: HttpConfig                              = appConfig.http
+    implicit val iamCredentials: Option[AuthToken]             = appConfig.serviceAccount.credentials
+    implicit val ownerPermissions: Set[Permission]             = appConfig.permissions.ownerPermissions
+    implicit val permissionsRetryStrategy: Retry[F, Throwable] = Retry(appConfig.permissions.retry.retryStrategy)
     val aggF: F[Agg[F]] =
       AkkaAggregate.sharded(
         "organizations",
@@ -191,7 +192,7 @@ object Organizations {
         next,
         evaluate[F],
         appConfig.sourcing.passivationStrategy(),
-        appConfig.sourcing.retryStrategy,
+        Retry(appConfig.sourcing.retry.retryStrategy),
         appConfig.sourcing.akkaSourcingConfig,
         appConfig.cluster.shards
       )

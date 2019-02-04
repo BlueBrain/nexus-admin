@@ -38,6 +38,6 @@ object OrganizationCache {
     */
   def apply[F[_]: Timer](implicit as: ActorSystem, config: KeyValueStoreConfig, F: Async[F]): OrganizationCache[F] = {
     val function: (Long, OrganizationResource) => Long = { case (_, res) => res.rev }
-    new OrganizationCache(KeyValueStore.distributed("organizations", function, mapError))
+    new OrganizationCache(KeyValueStore.distributed("organizations", function, mapError))(F)
   }
 }
