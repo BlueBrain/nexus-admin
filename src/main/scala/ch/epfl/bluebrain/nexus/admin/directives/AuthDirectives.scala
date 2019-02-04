@@ -87,7 +87,7 @@ abstract class AuthDirectives(iamClient: IamClient[Task])(implicit s: Scheduler)
   /**
     * Retrieves the caller ACLs.
     */
-  def extractCallerAcls(path: Path)(implicit cred: Option[AuthToken]): Directive1[AccessControlLists] = {
+  def extractCallerAcls(path: Path)(implicit cred: Option[AuthToken]): Directive1[AccessControlLists] =
     onComplete(iamClient.acls(path, ancestors = true, self = true).runToFuture).flatMap {
       case Success(result)                         => provide(result)
       case Failure(_: IamClientError.Unauthorized) => failWith(AuthenticationFailed)
@@ -97,7 +97,6 @@ abstract class AuthDirectives(iamClient: IamClient[Task])(implicit s: Scheduler)
         logger.error(message, err)
         failWith(InternalError(message))
     }
-  }
 
   /**
     * Attempts to extract an [[AuthToken]] from the http headers.
