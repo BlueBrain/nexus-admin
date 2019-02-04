@@ -28,7 +28,7 @@ scalafmt: {
 val rdfVersion                 = "0.2.33"
 val commonsVersion             = "0.10.42"
 val iamVersion                 = "1.0.1"
-val serviceVersion             = "0.10.29"
+val serviceVersion             = "0.10.30"
 val sourcingVersion            = "0.12.3"
 val akkaVersion                = "2.5.20"
 val akkaCorsVersion            = "0.3.4"

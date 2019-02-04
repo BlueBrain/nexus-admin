@@ -92,7 +92,7 @@ object ProjectsIndexer {
         .tag(TaggingAdapter.ProjectTag)
         .plugin(appConfig.persistence.queryJournalPlugin)
         .retry(appConfig.indexing.retry.retryStrategy)
-        .batch(appConfig.indexing.batchChunk, appConfig.indexing.batchTimeout)
+        .batch(appConfig.indexing.batch, appConfig.indexing.batchTimeout)
         .offset(Volatile)
         .index[ProjectEvent](indexer.index)
         .build)

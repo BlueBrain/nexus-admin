@@ -58,7 +58,7 @@ object OrganizationsIndexer {
         .tag(TaggingAdapter.OrganizationTag)
         .plugin(appConfig.persistence.queryJournalPlugin)
         .retry(appConfig.indexing.retry.retryStrategy)
-        .batch(appConfig.indexing.batchChunk, appConfig.indexing.batchTimeout)
+        .batch(appConfig.indexing.batch, appConfig.indexing.batchTimeout)
         .offset(Volatile)
         .index[OrganizationEvent](indexer.index)
         .build)
