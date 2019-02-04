@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.admin.Error.classNameOf
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig.{HttpConfig, PaginationConfig}
 import ch.epfl.bluebrain.nexus.admin.config.Permissions.orgs._
 import ch.epfl.bluebrain.nexus.admin.config.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.admin.config.{AppConfig, Settings}
+import ch.epfl.bluebrain.nexus.admin.config.{AppConfig, Permissions, Settings}
 import ch.epfl.bluebrain.nexus.admin.marshallers.instances._
 import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationRejection._
 import ch.epfl.bluebrain.nexus.admin.organizations.{Organization, Organizations}
@@ -23,7 +23,8 @@ import ch.epfl.bluebrain.nexus.commons.types.search.QueryResult.UnscoredQueryRes
 import ch.epfl.bluebrain.nexus.commons.types.search.QueryResults.UnscoredQueryResults
 import ch.epfl.bluebrain.nexus.iam.client.IamClient
 import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
-import ch.epfl.bluebrain.nexus.iam.client.types.{AuthToken, Caller, Identity}
+import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Anonymous
+import ch.epfl.bluebrain.nexus.iam.client.types._
 import ch.epfl.bluebrain.nexus.rdf.Iri
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
 import ch.epfl.bluebrain.nexus.rdf.syntax.node.unsafe._
@@ -64,6 +65,18 @@ class OrganizationRoutesSpec
     implicit val caller: Caller            = Caller(Identity.User("realm", "alice"), Set.empty)
     implicit val subject: Identity.Subject = caller.subject
     implicit val token: Some[AuthToken]    = Some(AuthToken("token"))
+
+    val acls: AccessControlLists = AccessControlLists(
+      Path./ -> ResourceAccessControlList(
+        url"http://localhost/".value,
+        1L,
+        Set.empty,
+        Instant.EPOCH,
+        Anonymous,
+        Instant.EPOCH,
+        Anonymous,
+        AccessControlList(Anonymous -> Set(Permissions.projects.read))
+      ))
 
     val cred = OAuth2BearerToken("token")
 
@@ -252,12 +265,13 @@ class OrganizationRoutesSpec
       iamClient.hasPermission(Path./, read)(any[Option[AuthToken]]) shouldReturn Task.pure(true)
       iamClient.hasPermission(Path.Empty, read)(any[Option[AuthToken]]) shouldReturn Task.pure(true)
       iamClient.identities shouldReturn Task(caller)
+      iamClient.acls(Path("/*").right.value, ancestors = true, self = true) shouldReturn Task(acls)
 
       val orgs = List(1, 2, 3).map { i =>
         val iri = Iri.Url(s"http://nexus.example.com/v1/orgs/org$i").right.value
         UnscoredQueryResult(resource.copy(id = iri, value = resource.value.copy(label = s"org$i")))
       }
-      organizations.list(Pagination(0, 50)) shouldReturn Task(UnscoredQueryResults(3, orgs))
+      organizations.list(Pagination(0, 50))(acls) shouldReturn Task(UnscoredQueryResults(3, orgs))
 
       Get("/orgs") ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.OK

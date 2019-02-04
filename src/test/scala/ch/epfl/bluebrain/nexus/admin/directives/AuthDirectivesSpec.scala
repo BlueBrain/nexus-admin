@@ -5,16 +5,16 @@ import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import ch.epfl.bluebrain.nexus.admin.{Error, ExpectedException}
 import ch.epfl.bluebrain.nexus.admin.Error._
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.admin.config.{AppConfig, Settings}
 import ch.epfl.bluebrain.nexus.admin.exceptions.AdminError
 import ch.epfl.bluebrain.nexus.admin.marshallers.instances._
 import ch.epfl.bluebrain.nexus.admin.routes.Routes
-import ch.epfl.bluebrain.nexus.iam.client.IamClient
+import ch.epfl.bluebrain.nexus.admin.{Error, ExpectedException}
 import ch.epfl.bluebrain.nexus.iam.client.types.Identity._
-import ch.epfl.bluebrain.nexus.iam.client.types.{AuthToken, Caller, Permission}
+import ch.epfl.bluebrain.nexus.iam.client.types.{AccessControlLists, AuthToken, Caller, Permission}
+import ch.epfl.bluebrain.nexus.iam.client.{IamClient, IamClientError}
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
 import monix.eval.Task
@@ -92,6 +92,46 @@ class AuthDirectivesSpec
         status shouldEqual StatusCodes.InternalServerError
         responseAs[Error] shouldEqual Error(classNameOf[AdminError.InternalError.type],
                                             "The system experienced an unexpected error, please try again later.")
+      }
+    }
+
+    "fail extracting acls when the client throws an error for caller acls" in {
+      implicit val token: Option[AuthToken] = None
+      iamClient.acls("*" / "*", true, true) shouldReturn Task.raiseError(
+        IamClientError.UnknownError(StatusCodes.InternalServerError, ""))
+      val route = Routes.wrap(directives.extractCallerAcls("*" / "*").apply(_ => complete("")))
+      Get("/") ~> route ~> check {
+        status shouldEqual StatusCodes.InternalServerError
+      }
+    }
+
+    "fail extracting acls when  the client returns Unauthorized for caller acls" in {
+      implicit val token: Option[AuthToken] = None
+      iamClient.acls("*" / "*", true, true) shouldReturn Task.raiseError(IamClientError.Unauthorized(""))
+      val route = Routes.wrap(directives.extractCallerAcls("*" / "*").apply(_ => complete("")))
+      Get("/") ~> route ~> check {
+        status shouldEqual StatusCodes.Unauthorized
+      }
+    }
+
+    "fail extracting acls when  the client returns Forbidden for caller acls" in {
+      implicit val token: Option[AuthToken] = None
+      iamClient.acls("*" / "*", true, true) shouldReturn Task.raiseError(IamClientError.Forbidden(""))
+      val route = Routes.wrap(directives.extractCallerAcls("*" / "*").apply(_ => complete("")))
+      Get("/") ~> route ~> check {
+        status shouldEqual StatusCodes.Forbidden
+      }
+    }
+
+    "extract caller acls" in {
+      implicit val token: Option[AuthToken] = None
+      iamClient.acls("*" / "*", true, true) shouldReturn Task.pure(AccessControlLists.empty)
+      val route = Routes.wrap(directives.extractCallerAcls("*" / "*").apply { acls =>
+        acls shouldEqual AccessControlLists.empty
+        complete(StatusCodes.Accepted)
+      })
+      Get("/") ~> route ~> check {
+        status shouldEqual StatusCodes.Accepted
       }
     }
   }

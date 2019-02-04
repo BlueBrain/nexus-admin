@@ -218,7 +218,7 @@ class Projects[F[_]](agg: Agg[F], index: ProjectCache[F], organizations: Organiz
     * @param pagination the pagination settings
     * @return a paginated results list
     */
-  def list(pagination: Pagination): F[UnscoredQueryResults[ProjectResource]] =
+  def list(pagination: Pagination)(implicit acls: AccessControlLists): F[UnscoredQueryResults[ProjectResource]] =
     index.list(pagination)
 
   /**
@@ -228,7 +228,8 @@ class Projects[F[_]](agg: Agg[F], index: ProjectCache[F], organizations: Organiz
     * @param pagination   the pagination settings
     * @return a paginated results list
     */
-  def list(organization: String, pagination: Pagination): F[UnscoredQueryResults[ProjectResource]] =
+  def list(organization: String, pagination: Pagination)(
+      implicit acls: AccessControlLists): F[UnscoredQueryResults[ProjectResource]] =
     index.list(organization, pagination)
 
   private def evaluateAndUpdateIndex(command: ProjectCommand): F[ProjectMetaOrRejection] =

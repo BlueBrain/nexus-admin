@@ -11,7 +11,7 @@ import ch.epfl.bluebrain.nexus.admin.Error
 import ch.epfl.bluebrain.nexus.admin.Error._
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig.{HttpConfig, PaginationConfig}
 import ch.epfl.bluebrain.nexus.admin.config.Vocabulary.nxv
-import ch.epfl.bluebrain.nexus.admin.config.{AppConfig, Settings}
+import ch.epfl.bluebrain.nexus.admin.config.{AppConfig, Permissions, Settings}
 import ch.epfl.bluebrain.nexus.admin.marshallers.instances._
 import ch.epfl.bluebrain.nexus.admin.organizations.Organization
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectRejection._
@@ -23,7 +23,8 @@ import ch.epfl.bluebrain.nexus.commons.types.search.QueryResult.UnscoredQueryRes
 import ch.epfl.bluebrain.nexus.commons.types.search.QueryResults.UnscoredQueryResults
 import ch.epfl.bluebrain.nexus.iam.client.IamClient
 import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
-import ch.epfl.bluebrain.nexus.iam.client.types.{AuthToken, Caller, Identity, Permission}
+import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Anonymous
+import ch.epfl.bluebrain.nexus.iam.client.types._
 import ch.epfl.bluebrain.nexus.rdf.Iri
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
@@ -65,6 +66,18 @@ class ProjectRoutesSpec
     implicit val caller: Caller            = Caller(Identity.User("realm", "alice"), Set.empty)
     implicit val subject: Identity.Subject = caller.subject
     implicit val token: Some[AuthToken]    = Some(AuthToken("token"))
+
+    val acls: AccessControlLists = AccessControlLists(
+      Path./ -> ResourceAccessControlList(
+        url"http://localhost/".value,
+        1L,
+        Set.empty,
+        Instant.EPOCH,
+        Anonymous,
+        Instant.EPOCH,
+        Anonymous,
+        AccessControlList(Anonymous -> Set(Permissions.projects.read))
+      ))
 
     val create = Permission.unsafe("projects/create")
     val read   = Permission.unsafe("projects/read")
@@ -293,11 +306,12 @@ class ProjectRoutesSpec
       iamClient.hasPermission(Path./, read)(any[Option[AuthToken]]) shouldReturn Task.pure(true)
       iamClient.hasPermission(Path.Empty, read)(any[Option[AuthToken]]) shouldReturn Task.pure(true)
       iamClient.identities shouldReturn Task(caller)
+      iamClient.acls("*" / "*", ancestors = true, self = true) shouldReturn Task(acls)
       val projs = List(1, 2, 3).map { i =>
         val iri = Iri.Url(s"http://nexus.example.com/v1/projects/org/label$i").right.value
         UnscoredQueryResult(resource.copy(id = iri, value = resource.value.copy(label = s"label$i")))
       }
-      projects.list(Pagination(0, 50)) shouldReturn Task(UnscoredQueryResults(3, projs))
+      projects.list(Pagination(0, 50))(acls) shouldReturn Task(UnscoredQueryResults(3, projs))
 
       Get("/projects") ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.OK
@@ -313,11 +327,12 @@ class ProjectRoutesSpec
       iamClient.hasPermission(Path("/org").right.value, read)(any[Option[AuthToken]]) shouldReturn Task.pure(true)
       iamClient.hasPermission(Path("/org/").right.value, read)(any[Option[AuthToken]]) shouldReturn Task.pure(true)
       iamClient.identities shouldReturn Task(caller)
+      iamClient.acls("*" / "*", ancestors = true, self = true) shouldReturn Task(acls)
       val projs = List(1, 2, 3).map { i =>
         val iri = Iri.Url(s"http://nexus.example.com/v1/projects/org/label$i").right.value
         UnscoredQueryResult(resource.copy(id = iri, value = resource.value.copy(label = s"label$i")))
       }
-      projects.list("org", Pagination(0, 50)) shouldReturn Task(UnscoredQueryResults(3, projs))
+      projects.list("org", Pagination(0, 50))(acls) shouldReturn Task(UnscoredQueryResults(3, projs))
 
       Get("/projects/org") ~> addCredentials(cred) ~> routes ~> check {
         status shouldEqual StatusCodes.OK

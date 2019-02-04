@@ -5,7 +5,7 @@ import java.util.UUID
 
 import akka.testkit._
 import cats.effect.{IO, Timer}
-import ch.epfl.bluebrain.nexus.admin.config.Settings
+import ch.epfl.bluebrain.nexus.admin.config.{Permissions, Settings}
 import ch.epfl.bluebrain.nexus.admin.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.admin.organizations.Organization
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF
@@ -14,10 +14,17 @@ import ch.epfl.bluebrain.nexus.commons.test.io.IOOptionValues
 import ch.epfl.bluebrain.nexus.commons.types.search.Pagination
 import ch.epfl.bluebrain.nexus.commons.types.search.QueryResult.UnscoredQueryResult
 import ch.epfl.bluebrain.nexus.commons.types.search.QueryResults.UnscoredQueryResults
-import ch.epfl.bluebrain.nexus.iam.client.types.Caller
+import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Anonymous
+import ch.epfl.bluebrain.nexus.iam.client.types.{
+  AccessControlList,
+  AccessControlLists,
+  Caller,
+  ResourceAccessControlList
+}
+import ch.epfl.bluebrain.nexus.rdf.Iri.Path
 import ch.epfl.bluebrain.nexus.rdf.syntax.node.unsafe._
 import ch.epfl.bluebrain.nexus.service.test.ActorSystemFixture
-import org.scalatest.{Inspectors, Matchers, OptionValues}
+import org.scalatest.{EitherValues, Inspectors, Matchers, OptionValues}
 
 import scala.concurrent.duration._
 
@@ -27,6 +34,7 @@ class OrganizationCacheSpec
     with Matchers
     with OptionValues
     with Inspectors
+    with EitherValues
     with IOOptionValues {
 
   private val instant                   = Instant.now()
@@ -52,7 +60,7 @@ class OrganizationCacheSpec
 
   override implicit def patienceConfig: PatienceConfig = PatienceConfig(3.seconds.dilated, 5.milliseconds)
 
-  "DistributedDataIndex" should {
+  "An organization cache" should {
 
     "index organization" in {
       index.replace(orgResource.uuid, orgResource).ioValue shouldEqual (())
@@ -61,6 +69,17 @@ class OrganizationCacheSpec
     }
 
     "list organizations" in {
+      implicit val acls: AccessControlLists = AccessControlLists(
+        Path./ -> ResourceAccessControlList(
+          url"http://localhost/".value,
+          1L,
+          Set.empty,
+          Instant.EPOCH,
+          Anonymous,
+          Instant.EPOCH,
+          Anonymous,
+          AccessControlList(Anonymous -> Set(Permissions.orgs.read))
+        ))
       val orgLabels = (1 to 50).map(_ => genString())
 
       val orgResources = orgLabels.map { label =>
@@ -78,7 +97,23 @@ class OrganizationCacheSpec
 
       val sortedOrgs = orgResources.sortBy(org => org.value.label).toList.map(UnscoredQueryResult(_))
 
+      val aclsOrg1 = AccessControlLists(
+        Path(s"/${orgLabels.head}").right.value -> ResourceAccessControlList(
+          url"http://localhost/".value,
+          1L,
+          Set.empty,
+          Instant.EPOCH,
+          Anonymous,
+          Instant.EPOCH,
+          Anonymous,
+          AccessControlList(Anonymous -> Set(Permissions.orgs.read))
+        ))
+
       index.list(Pagination(0, 100)).ioValue shouldEqual UnscoredQueryResults(51L, sortedOrgs)
+      index.list(Pagination(0, 100))(aclsOrg1).ioValue shouldEqual UnscoredQueryResults(
+        1L,
+        List(UnscoredQueryResult(orgResources.head)))
+      index.list(Pagination(0, 100))(AccessControlLists.empty).ioValue shouldEqual UnscoredQueryResults(0L, List.empty)
       index.list(Pagination(0, 10)).ioValue shouldEqual UnscoredQueryResults(51L, sortedOrgs.slice(0, 10))
       index.list(Pagination(10, 10)).ioValue shouldEqual UnscoredQueryResults(51L, sortedOrgs.slice(10, 20))
       index.list(Pagination(40, 20)).ioValue shouldEqual UnscoredQueryResults(51L, sortedOrgs.slice(40, 52))

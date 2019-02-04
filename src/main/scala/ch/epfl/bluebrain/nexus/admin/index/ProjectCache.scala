@@ -11,7 +11,9 @@ import ch.epfl.bluebrain.nexus.admin.projects.{Project, ProjectResource}
 import ch.epfl.bluebrain.nexus.commons.types.search.Pagination
 import ch.epfl.bluebrain.nexus.commons.types.search.QueryResult.UnscoredQueryResult
 import ch.epfl.bluebrain.nexus.commons.types.search.QueryResults.UnscoredQueryResults
+import ch.epfl.bluebrain.nexus.iam.client.types.AccessControlLists
 import ch.epfl.bluebrain.nexus.service.indexer.cache.{KeyValueStore, KeyValueStoreConfig}
+import ch.epfl.bluebrain.nexus.admin.config.Permissions._
 
 /**
   * The project cache backed by a KeyValueStore using akka Distributed Data
@@ -22,22 +24,42 @@ import ch.epfl.bluebrain.nexus.service.indexer.cache.{KeyValueStore, KeyValueSto
 class ProjectCache[F[_]](store: KeyValueStore[F, UUID, ProjectResource])(implicit F: Monad[F])
     extends Cache[F, Project](store) {
 
-  override implicit val ordering: Ordering[ProjectResource] = Ordering.by { proj: ProjectResource =>
+  private implicit val ordering: Ordering[ProjectResource] = Ordering.by { proj: ProjectResource =>
     s"${proj.value.organizationLabel}/${proj.value.label}"
   }
 
   /**
-    * Return the elements on the store within the ''pagination'' bounds
-    * and filtered by the provided organization label
+    * Return the elements on the store within the ''pagination'' bounds which are accessible by the provided acls with the permission 'projects/read'.
+    * The elements returned are filtered by the provided organization label.
     *
     * @param orgLabel the organization label
     * @param pagination the pagination
     */
-  def list(orgLabel: String, pagination: Pagination): F[UnscoredQueryResults[ProjectResource]] =
+  def list(orgLabel: String, pagination: Pagination)(
+      implicit acls: AccessControlLists): F[UnscoredQueryResults[ProjectResource]] =
     store.values.map { values =>
-      val filtered = values.filter(_.value.organizationLabel == orgLabel)
-      val count    = filtered.size.toLong
-      val result   = filtered.toList.sorted.slice(pagination.from.toInt, (pagination.from + pagination.size).toInt)
+      val filtered = values.filter { proj =>
+        proj.value.organizationLabel == orgLabel && acls.exists(proj.value.organizationLabel,
+                                                                proj.value.label,
+                                                                projects.read)
+      }
+      val count  = filtered.size.toLong
+      val result = filtered.toList.sorted.slice(pagination.from.toInt, (pagination.from + pagination.size).toInt)
+      UnscoredQueryResults(count, result.map(UnscoredQueryResult(_)))
+    }
+
+  /**
+    * Return the elements on the store within the ''pagination'' bounds which are accessible by the provided acls with the permission 'projects/read'.
+    *
+    * @param pagination the pagination
+    */
+  def list(pagination: Pagination)(implicit acls: AccessControlLists): F[UnscoredQueryResults[ProjectResource]] =
+    store.values.map { values =>
+      val filtered = values.filter { proj =>
+        acls.exists(proj.value.organizationLabel, proj.value.label, projects.read)
+      }
+      val count  = filtered.size.toLong
+      val result = filtered.toList.sorted.slice(pagination.from.toInt, (pagination.from + pagination.size).toInt)
       UnscoredQueryResults(count, result.map(UnscoredQueryResult(_)))
     }
 

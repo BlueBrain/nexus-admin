@@ -30,9 +30,9 @@ class OrganizationRoutes(organizations: Organizations[Task])(
   def routes: Route = (pathPrefix("orgs") & extractToken) { implicit token =>
     concat(
       // listing
-      (get & pathEndOrSingleSlash & paginated & authorizeOn(Path./, orgs.read)) { pagination =>
+      (get & pathEndOrSingleSlash & paginated & extractCallerAcls(anyOrg)) { (pagination, acls) =>
         trace("listOrganizations") {
-          complete(organizations.list(pagination).runToFuture)
+          complete(organizations.list(pagination)(acls).runToFuture)
         }
       },
       // fetch

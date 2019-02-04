@@ -5,8 +5,8 @@ import java.util.UUID
 
 import akka.testkit._
 import cats.effect.{IO, Timer}
-import ch.epfl.bluebrain.nexus.admin.config.Settings
 import ch.epfl.bluebrain.nexus.admin.config.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.admin.config.{Permissions, Settings}
 import ch.epfl.bluebrain.nexus.admin.organizations.Organization
 import ch.epfl.bluebrain.nexus.admin.projects.Project
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF
@@ -15,7 +15,9 @@ import ch.epfl.bluebrain.nexus.commons.test.io.IOOptionValues
 import ch.epfl.bluebrain.nexus.commons.types.search.Pagination
 import ch.epfl.bluebrain.nexus.commons.types.search.QueryResult.UnscoredQueryResult
 import ch.epfl.bluebrain.nexus.commons.types.search.QueryResults.UnscoredQueryResults
-import ch.epfl.bluebrain.nexus.iam.client.types.Caller
+import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Anonymous
+import ch.epfl.bluebrain.nexus.iam.client.types._
+import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
 import ch.epfl.bluebrain.nexus.rdf.syntax.node.unsafe._
 import ch.epfl.bluebrain.nexus.service.test.ActorSystemFixture
 import org.scalatest.{Inspectors, Matchers, OptionValues}
@@ -70,7 +72,7 @@ class ProjectCacheSpec
                                   subject,
                                   project)
 
-  "DistributedDataIndex" should {
+  "A project cache" should {
 
     "index project" in {
       index.replace(projectResource.uuid, projectResource).ioValue shouldEqual (())
@@ -79,6 +81,18 @@ class ProjectCacheSpec
     }
 
     "list projects" in {
+      implicit val acls: AccessControlLists = AccessControlLists(
+        / -> ResourceAccessControlList(
+          url"http://localhost/".value,
+          1L,
+          Set.empty,
+          Instant.EPOCH,
+          Anonymous,
+          Instant.EPOCH,
+          Anonymous,
+          AccessControlList(Anonymous -> Set(Permissions.projects.read))
+        ))
+
       val projectLabels        = (1 to 15).map(_ => genString())
       val orgLabel             = genString()
       val projectsOrganization = Organization(orgLabel, Some("description"))
@@ -104,6 +118,18 @@ class ProjectCacheSpec
           uuid = UUID.randomUUID(),
           value = project)
       }
+
+      val aclsProj1 = AccessControlLists(
+        orgLabel / projectLabels.head -> ResourceAccessControlList(
+          url"http://localhost/".value,
+          1L,
+          Set.empty,
+          Instant.EPOCH,
+          Anonymous,
+          Instant.EPOCH,
+          Anonymous,
+          AccessControlList(Anonymous -> Set(Permissions.projects.read))
+        ))
 
       val combined = projectResources ++ projectResources2
 
@@ -136,6 +162,10 @@ class ProjectCacheSpec
       index.list(orgLabel, Pagination(0, 100)).ioValue shouldEqual UnscoredQueryResults(15L, sortedProjects)
       index.list(orgLabel2, Pagination(0, 100)).ioValue shouldEqual UnscoredQueryResults(10L, sortedProjects2)
       index.list(orgLabel2, Pagination(0, 5)).ioValue shouldEqual UnscoredQueryResults(10L, sortedProjects2.slice(0, 5))
+      index.list(Pagination(0, 100))(AccessControlLists.empty).ioValue shouldEqual UnscoredQueryResults(0L, List.empty)
+      index.list(Pagination(0, 100))(aclsProj1).ioValue shouldEqual UnscoredQueryResults(
+        1L,
+        List(UnscoredQueryResult(projectResources.head)))
     }
   }
 }
