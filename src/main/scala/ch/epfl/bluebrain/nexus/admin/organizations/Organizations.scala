@@ -149,7 +149,7 @@ class Organizations[F[_]](agg: Agg[F], index: OrganizationCache[F], iamClient: I
     * @param pagination the pagination settings
     * @return a paginated results list
     */
-  def list(pagination: Pagination): F[UnscoredQueryResults[OrganizationResource]] =
+  def list(pagination: Pagination)(implicit acls: AccessControlLists): F[UnscoredQueryResults[OrganizationResource]] =
     index.list(pagination)
 
   private def eval(cmd: OrganizationCommand): F[OrganizationMetaOrRejection] =

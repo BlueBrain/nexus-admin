@@ -6,8 +6,13 @@ import akka.actor.ActorSystem
 import cats.Monad
 import cats.effect.{Async, Timer}
 import cats.implicits._
+import ch.epfl.bluebrain.nexus.admin.config.Permissions.orgs
 import ch.epfl.bluebrain.nexus.admin.index.Cache._
 import ch.epfl.bluebrain.nexus.admin.organizations.{Organization, OrganizationResource}
+import ch.epfl.bluebrain.nexus.commons.types.search.Pagination
+import ch.epfl.bluebrain.nexus.commons.types.search.QueryResult.UnscoredQueryResult
+import ch.epfl.bluebrain.nexus.commons.types.search.QueryResults.UnscoredQueryResults
+import ch.epfl.bluebrain.nexus.iam.client.types.AccessControlLists
 import ch.epfl.bluebrain.nexus.service.indexer.cache.{KeyValueStore, KeyValueStoreConfig}
 
 /**
@@ -19,9 +24,24 @@ import ch.epfl.bluebrain.nexus.service.indexer.cache.{KeyValueStore, KeyValueSto
 class OrganizationCache[F[_]](store: KeyValueStore[F, UUID, OrganizationResource])(implicit F: Monad[F])
     extends Cache[F, Organization](store) {
 
-  override implicit val ordering: Ordering[OrganizationResource] = Ordering.by { org: OrganizationResource =>
+  private implicit val ordering: Ordering[OrganizationResource] = Ordering.by { org: OrganizationResource =>
     org.value.label
   }
+
+  /**
+    * Return the elements on the store within the ''pagination'' bounds which are accessible by the provided acls with the permission 'projects/read'.
+    *
+    * @param pagination the pagination
+    */
+  def list(pagination: Pagination)(implicit acls: AccessControlLists): F[UnscoredQueryResults[OrganizationResource]] =
+    store.values.map { values =>
+      val filtered = values.filter { org =>
+        acls.exists(org.value.label, orgs.read)
+      }
+      val count  = filtered.size.toLong
+      val result = filtered.toList.sorted.slice(pagination.from.toInt, (pagination.from + pagination.size).toInt)
+      UnscoredQueryResults(count, result.map(UnscoredQueryResult(_)))
+    }
 
   /**
     * Attempts to fetch the organization resource with the provided ''label''

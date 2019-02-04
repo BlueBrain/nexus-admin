@@ -6,9 +6,10 @@ import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.directives.FutureDirectives.onComplete
 import ch.epfl.bluebrain.nexus.admin.exceptions.AdminError.{AuthenticationFailed, AuthorizationFailed, InternalError}
 import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
-import ch.epfl.bluebrain.nexus.iam.client.types.{AuthToken, Permission}
+import ch.epfl.bluebrain.nexus.iam.client.types.{AccessControlLists, AuthToken, Permission}
 import ch.epfl.bluebrain.nexus.iam.client.{IamClient, IamClientError}
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
+import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
 import journal.Logger
 import monix.eval.Task
 import monix.execution.Scheduler
@@ -69,6 +70,30 @@ abstract class AuthDirectives(iamClient: IamClient[Task])(implicit s: Scheduler)
         failWith(InternalError(message))
       case Failure(err) =>
         val message = "Unknown error when trying to extract the subject"
+        logger.error(message, err)
+        failWith(InternalError(message))
+    }
+
+  /**
+    * Path that's use as a regex to query the IAM client in case we want to return any organization
+    */
+  val anyOrg: Path = Path.Segment("*", Path./)
+
+  /**
+    * Path that's use as a regex to query the IAM client in case we want to return any project
+    */
+  val anyProject: Path = "*" / "*"
+
+  /**
+    * Retrieves the caller ACLs.
+    */
+  def extractCallerAcls(path: Path)(implicit cred: Option[AuthToken]): Directive1[AccessControlLists] =
+    onComplete(iamClient.acls(path, ancestors = true, self = true).runToFuture).flatMap {
+      case Success(result)                         => provide(result)
+      case Failure(_: IamClientError.Unauthorized) => failWith(AuthenticationFailed)
+      case Failure(_: IamClientError.Forbidden)    => failWith(AuthorizationFailed)
+      case Failure(err) =>
+        val message = "Error when trying to check for permissions"
         logger.error(message, err)
         failWith(InternalError(message))
     }

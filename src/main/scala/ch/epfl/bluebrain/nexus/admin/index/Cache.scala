@@ -3,32 +3,16 @@ package ch.epfl.bluebrain.nexus.admin.index
 import java.util.UUID
 
 import cats.effect.Async
-import cats.implicits._
 import cats.{Monad, MonadError}
 import ch.epfl.bluebrain.nexus.admin.exceptions.AdminError
 import ch.epfl.bluebrain.nexus.admin.exceptions.AdminError.{InternalError, OperationTimedOut}
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF
-import ch.epfl.bluebrain.nexus.commons.types.search.Pagination
-import ch.epfl.bluebrain.nexus.commons.types.search.QueryResult.UnscoredQueryResult
-import ch.epfl.bluebrain.nexus.commons.types.search.QueryResults.UnscoredQueryResults
+import ch.epfl.bluebrain.nexus.iam.client.types.{AccessControlLists, Permission}
+import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
 import ch.epfl.bluebrain.nexus.service.indexer.cache.KeyValueStoreError._
 import ch.epfl.bluebrain.nexus.service.indexer.cache.{KeyValueStore, KeyValueStoreError}
 
 abstract class Cache[F[_], V](val store: KeyValueStore[F, UUID, ResourceF[V]])(implicit F: Monad[F]) {
-
-  implicit def ordering: Ordering[ResourceF[V]]
-
-  /**
-    * Return the elements on the store within the ''pagination'' bounds.
-    *
-    * @param pagination the pagination
-    */
-  def list(pagination: Pagination): F[UnscoredQueryResults[ResourceF[V]]] =
-    store.values.map { values =>
-      val count = values.size.toLong
-      val list  = values.toList.sorted.slice(pagination.from.toInt, (pagination.from + pagination.size).toInt)
-      UnscoredQueryResults(count, list.map(UnscoredQueryResult(_)))
-    }
 
   /**
     * Attempts to fetch the resource with the provided ''id''
@@ -49,6 +33,38 @@ abstract class Cache[F[_], V](val store: KeyValueStore[F, UUID, ResourceF[V]])(i
 }
 
 object Cache {
+
+  private[index] final implicit class AclsSyntax(private val acls: AccessControlLists) extends AnyVal {
+
+    /**
+      * Checks if on the list of ACLs there are some which contains the provided ''permission'' on either the /
+      * or the provided ''organization'' or the provided ''project''
+      *
+      * @param organization the organization label
+      * @param project     the project label
+      * @param permission  the permissions to filter
+      * @return true if the conditions are met, false otherwise
+      */
+    def exists(organization: String, project: String, permission: Permission): Boolean =
+      acls.value.exists {
+        case (path, v) =>
+          (path == / || path == Segment(organization, /) || path == organization / project) &&
+            v.value.permissions.contains(permission)
+      }
+
+    /**
+      * Checks if on the list of ACLs there are some which contains the provided ''permission'' on either the /
+      * or the provided ''organization''
+      *
+      * @param organization the organization label
+      * @param permission  the permissions to filter
+      * @return true if the conditions are met, false otherwise
+      */
+    def exists(organization: String, permission: Permission): Boolean =
+      acls.value.exists {
+        case (path, v) => (path == / || path == Segment(organization, /)) && v.value.permissions.contains(permission)
+      }
+  }
 
   private[index] implicit def monadError[F[_]](implicit F: Async[F]): MonadError[F, AdminError] =
     new MonadError[F, AdminError] {
