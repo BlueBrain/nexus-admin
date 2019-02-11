@@ -3,8 +3,14 @@ package ch.epfl.bluebrain.nexus.admin.client.types.events
 import java.time.Instant
 import java.util.UUID
 
+import ch.epfl.bluebrain.nexus.iam.client.types.Identity
 import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
+import ch.epfl.bluebrain.nexus.rdf.Iri
+import ch.epfl.bluebrain.nexus.rdf.instances._
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
+import io.circe.Decoder
+import io.circe.generic.extras.Configuration
+import io.circe.generic.extras.semiauto.deriveDecoder
 
 /**
   * Enumeration of organization and project events.
@@ -167,4 +173,42 @@ object Event {
       instant: Instant,
       subject: Subject
   ) extends ProjectEvent
+
+  private implicit val config: Configuration = Configuration.default
+    .withDiscriminator("@type")
+    .copy(transformMemberNames = {
+      case "id"                => "_uuid"
+      case "label"             => "_label"
+      case "rev"               => "_rev"
+      case "instant"           => "_instant"
+      case "subject"           => "_subject"
+      case "organizationLabel" => "_organizationLabel"
+      case "organizationUuid"  => "_organizationUuid"
+      case other               => other
+    })
+
+  private implicit val subjectDecoder: Decoder[Subject] =
+    Decoder.decodeString.flatMap { id =>
+      Iri.absolute(id) match {
+        case Left(_) => Decoder.failedWithMessage(s"Couldn't decode iri from '$id'")
+        case Right(iri) =>
+          Identity(iri) match {
+            case Some(s: Subject) => Decoder.const(s)
+            case _                => Decoder.failedWithMessage(s"Couldn't decode subject from '$id'")
+          }
+      }
+    }
+
+  private final case class Mapping(prefix: String, namespace: AbsoluteIri)
+
+  private implicit val mappingDecoder: Decoder[Mapping] = deriveDecoder[Mapping]
+
+  private implicit val mapDecoder: Decoder[Map[String, AbsoluteIri]] =
+    Decoder.decodeList[Mapping].map(_.map(m => (m.prefix, m.namespace)).toMap)
+
+  /**
+    * [[Decoder]] for [[Event]]s.
+    */
+  implicit val eventDecoder: Decoder[Event] =
+    deriveDecoder[Event]
 }
