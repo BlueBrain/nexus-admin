@@ -2,16 +2,21 @@ package ch.epfl.bluebrain.nexus.admin.client
 
 import java.time.Instant
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicInteger
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.client.RequestBuilding.Get
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.stream.ActorMaterializer
+import akka.stream.scaladsl.Source
 import akka.testkit.TestKit
 import cats.effect.IO
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.admin.client.AdminClientError._
 import ch.epfl.bluebrain.nexus.admin.client.config.AdminClientConfig
+import ch.epfl.bluebrain.nexus.admin.client.types.events.Event._
+import ch.epfl.bluebrain.nexus.admin.client.types.events.{Event, OrganizationEvent, ProjectEvent}
 import ch.epfl.bluebrain.nexus.admin.client.types.{Organization, Project}
 import ch.epfl.bluebrain.nexus.commons.http.HttpClient
 import ch.epfl.bluebrain.nexus.commons.test.io.IOOptionValues
@@ -22,11 +27,13 @@ import ch.epfl.bluebrain.nexus.rdf.syntax.node.unsafe._
 import org.mockito.Mockito
 import org.mockito.integrations.scalatest.IdiomaticMockitoFixture
 import org.scalatest._
-import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import ch.epfl.bluebrain.nexus.commons.http.syntax.circe._
+import ch.epfl.bluebrain.nexus.rdf.Iri
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
+import scala.util.Random
 
 //noinspection NameBooleanParameters
 class AdminClientSpec
@@ -40,7 +47,8 @@ class AdminClientSpec
     with IOOptionValues
     with EitherValues
     with Inspectors
-    with Resources {
+    with Resources
+    with Eventually {
 
   override implicit val patienceConfig: PatienceConfig = PatienceConfig(5 seconds, 15 milliseconds)
 
@@ -56,8 +64,9 @@ class AdminClientSpec
   private implicit val pc: HttpClient[IO, Project]      = mock[HttpClient[IO, Project]]
   private implicit val oc: HttpClient[IO, Organization] = mock[HttpClient[IO, Organization]]
   private implicit val tokenOpt: Option[AuthToken]      = Option(AuthToken("token"))
+  private val source                                    = mock[EventSource[Event]]
 
-  private val client = new AdminClient[IO](config)
+  private val client = new AdminClient[IO](source, config)
 
   private val org       = jsonContentOf("/organization.json").as[Organization].right.value
   private val orgNoDesc = jsonContentOf("/organization.json").removeKeys("description").as[Organization].right.value
@@ -70,7 +79,7 @@ class AdminClientSpec
     Get(s"http://admin.nexus.example.com/v1/projects/$org/$label").addCredentials(token)
 
   before {
-    Mockito.reset(pc, oc)
+    Mockito.reset(pc, oc, source)
   }
 
   "The AdminClient" should {
@@ -176,6 +185,46 @@ class AdminClientSpec
         client.fetchProject(orgLabel, projectLabel).failed[Exception] shouldEqual ex
       }
     }
-  }
 
+    "reading from the events SSE" should {
+
+      abstract class Ctx {
+        val count = new AtomicInteger()
+        val resources = List(
+          "/events/organization-created.json",
+          "/events/organization-updated.json",
+          "/events/organization-deprecated.json",
+          "/events/project-created.json",
+          "/events/project-updated.json",
+          "/events/project-deprecated.json"
+        )
+
+        val eventsSource = Source(Random.shuffle(resources).map(jsonContentOf(_).as[Event].right.value))
+      }
+
+      "apply function when new organization event is received" in new Ctx {
+        val f: OrganizationEvent => IO[Unit] = {
+          case _: OrganizationCreated    => IO(count.addAndGet(1)) *> IO.unit
+          case _: OrganizationUpdated    => IO(count.addAndGet(2)) *> IO.unit
+          case _: OrganizationDeprecated => IO(count.addAndGet(3)) *> IO.unit
+        }
+        val eventsIri = Iri.url("http://admin.nexus.example.com/v1/orgs/events").right.value
+        source(eventsIri, None) shouldReturn eventsSource
+        client.organizationEvents(f)
+        eventually(count.get() shouldEqual 6)
+      }
+
+      "apply function when new project event is received" in new Ctx {
+        val f: ProjectEvent => IO[Unit] = {
+          case _: ProjectCreated    => IO(count.addAndGet(1)) *> IO.unit
+          case _: ProjectUpdated    => IO(count.addAndGet(2)) *> IO.unit
+          case _: ProjectDeprecated => IO(count.addAndGet(3)) *> IO.unit
+        }
+        val eventsIri = Iri.url("http://admin.nexus.example.com/v1/projects/events").right.value
+        source(eventsIri, None) shouldReturn eventsSource
+        client.projectEvents(f)
+        eventually(count.get() shouldEqual 6)
+      }
+    }
+  }
 }

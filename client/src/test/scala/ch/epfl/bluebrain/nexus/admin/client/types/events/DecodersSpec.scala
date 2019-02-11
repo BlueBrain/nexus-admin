@@ -4,7 +4,6 @@ import java.time.Instant
 import java.util.UUID
 
 import ch.epfl.bluebrain.nexus.admin.client.types.events.Event._
-import ch.epfl.bluebrain.nexus.admin.client.types.events.decoders._
 import ch.epfl.bluebrain.nexus.commons.test.Resources
 import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
 import ch.epfl.bluebrain.nexus.iam.client.types.Identity.User

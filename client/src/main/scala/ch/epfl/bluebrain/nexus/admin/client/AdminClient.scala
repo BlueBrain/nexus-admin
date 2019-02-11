@@ -5,12 +5,13 @@ import akka.http.scaladsl.client.RequestBuilding.Get
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
+import akka.stream.scaladsl.Sink
 import akka.stream.{ActorMaterializer, Materializer}
-import cats.MonadError
-import cats.effect.{IO, LiftIO}
+import cats.effect.{Effect, IO, LiftIO}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.admin.client.AdminClientError.{UnknownError, UnmarshallingError}
 import ch.epfl.bluebrain.nexus.admin.client.config.AdminClientConfig
+import ch.epfl.bluebrain.nexus.admin.client.types.events.{Event, OrganizationEvent, ProjectEvent}
 import ch.epfl.bluebrain.nexus.admin.client.types.{Organization, Project}
 import ch.epfl.bluebrain.nexus.commons.http.HttpClient
 import ch.epfl.bluebrain.nexus.commons.http.HttpClient.UntypedHttpClient
@@ -22,7 +23,7 @@ import ch.epfl.bluebrain.nexus.rdf.syntax.akka._
 import io.circe.{DecodingFailure, ParsingFailure}
 import journal.Logger
 
-import scala.concurrent.{ExecutionContext, ExecutionContextExecutor}
+import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
 import scala.reflect.ClassTag
 
 /**
@@ -30,9 +31,10 @@ import scala.reflect.ClassTag
   *
   * @param cfg configuration for the client
   */
-class AdminClient[F[_]](cfg: AdminClientConfig)(
+class AdminClient[F[_]] private[client] (source: EventSource[Event], cfg: AdminClientConfig)(
     implicit
-    F: MonadError[F, Throwable],
+    F: Effect[F],
+    mt: Materializer,
     pc: HttpClient[F, Project],
     oc: HttpClient[F, Organization],
 ) {
@@ -66,6 +68,54 @@ class AdminClient[F[_]](cfg: AdminClientConfig)(
         case UnknownError(StatusCodes.NotFound, _) => F.pure(None)
       }
 
+  /**
+    * It applies the provided function ''f'' to the Project Server-sent events (SSE)
+    *
+    * @param f      the function that gets executed when a new [[ProjectEvent]] appears
+    * @param offset the optional offset from where to start streaming the events
+    */
+  def projectEvents(f: ProjectEvent => F[Unit], offset: Option[String] = None)(
+      implicit cred: Option[AuthToken]): Unit = {
+    val pf: PartialFunction[Event, F[Unit]] = { case ev: ProjectEvent => f(ev) }
+    events(cfg.projectsIri + "events", pf, offset)
+  }
+
+  /**
+    * It applies the provided function ''f'' to the Organization Server-sent events (SSE)
+    *
+    * @param f      the function that gets executed when a new [[OrganizationEvent]] appears
+    * @param offset the optional offset from where to start streaming the events
+    */
+  def organizationEvents(f: OrganizationEvent => F[Unit], offset: Option[String] = None)(
+      implicit cred: Option[AuthToken]): Unit = {
+    val pf: PartialFunction[Event, F[Unit]] = { case ev: OrganizationEvent => f(ev) }
+    events(cfg.orgsIri + "events", pf, offset)
+  }
+
+  /**
+    * It applies the provided function ''f'' to the Server-sent events (SSE)
+    *
+    * @param f      the function that gets executed when a new [[Event]] appears
+    * @param offset the optional offset from where to start streaming the events
+    */
+  def events(f: Event => F[Unit], offset: Option[String] = None)(implicit cred: Option[AuthToken]): Unit = {
+    val pf: PartialFunction[Event, F[Unit]] = { case ev: Event => f(ev) }
+    events(cfg.internalIri + "events", pf, offset)
+  }
+
+  private def events(iri: AbsoluteIri, f: PartialFunction[Event, F[Unit]], offset: Option[String])(
+      implicit cred: Option[AuthToken]): Unit =
+    source(iri, offset)
+      .mapAsync(1) { event =>
+        f.lift(event) match {
+          case Some(evaluated) => F.toIO(evaluated).unsafeToFuture()
+          case _               => Future.unit
+        }
+      }
+      .to(Sink.ignore)
+      .mapMaterializedValue(_ => ())
+      .run()
+
   private def request(iri: AbsoluteIri)(implicit credentials: Option[AuthToken]): HttpRequest =
     addCredentials(Get(iri.toAkkaUri))
 
@@ -77,7 +127,7 @@ object AdminClient {
 
   private def httpClient[F[_], A: ClassTag](
       implicit L: LiftIO[F],
-      F: MonadError[F, Throwable],
+      F: Effect[F],
       ec: ExecutionContext,
       mt: Materializer,
       cl: UntypedHttpClient[F],
@@ -131,14 +181,14 @@ object AdminClient {
     * @param cfg configuration for the client
     * @return new instance of [[AdminClient]]
     */
-  def apply[F[_]: LiftIO](cfg: AdminClientConfig)(implicit F: MonadError[F, Throwable],
-                                                  as: ActorSystem): AdminClient[F] = {
+  def apply[F[_]: Effect](cfg: AdminClientConfig)(implicit as: ActorSystem): AdminClient[F] = {
     implicit val mt: ActorMaterializer        = ActorMaterializer()
     implicit val ec: ExecutionContextExecutor = as.dispatcher
     implicit val ucl: UntypedHttpClient[F]    = HttpClient.untyped[F]
 
     implicit val pc: HttpClient[F, Project]      = httpClient[F, Project]
     implicit val oc: HttpClient[F, Organization] = httpClient[F, Organization]
-    new AdminClient(cfg)
+    val sse: EventSource[Event]                  = EventSource[Event](cfg)
+    new AdminClient(sse, cfg)
   }
 }

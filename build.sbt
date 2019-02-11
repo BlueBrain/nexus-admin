@@ -25,6 +25,7 @@ scalafmt: {
  */
 
 // Dependency versions
+val alpakkaVersion             = "1.0-M2"
 val rdfVersion                 = "0.2.33"
 val commonsVersion             = "0.10.42"
 val iamVersion                 = "1.0.1"
@@ -39,8 +40,8 @@ val catsVersion                = "1.6.0"
 val circeVersion               = "0.11.1"
 val journalVersion             = "3.0.19"
 val logbackVersion             = "1.2.3"
-val mockitoVersion             = "1.0.10"
-val pureconfigVersion          = "0.10.1"
+val mockitoVersion             = "1.1.2"
+val pureconfigVersion          = "0.10.2"
 val scalaTestVersion           = "3.0.5"
 val kryoVersion                = "0.5.2"
 
@@ -68,6 +69,7 @@ lazy val akkaPersistenceMem   = "com.github.dnvriend"     %% "akka-persistence-i
 lazy val akkaSlf4j            = "com.typesafe.akka"       %% "akka-slf4j"                 % akkaVersion
 lazy val akkaStream           = "com.typesafe.akka"       %% "akka-stream"                % akkaVersion
 lazy val akkaTestkit          = "com.typesafe.akka"       %% "akka-testkit"               % akkaVersion
+lazy val alpakkaSSE           = "com.lightbend.akka"      %% "akka-stream-alpakka-sse"    % alpakkaVersion
 lazy val catsCore             = "org.typelevel"           %% "cats-core"                  % catsVersion
 lazy val circeCore            = "io.circe"                %% "circe-core"                 % circeVersion
 lazy val journalCore          = "io.verizon.journal"      %% "core"                       % journalVersion
@@ -127,6 +129,7 @@ lazy val client = project
     Test / testOptions    += Tests.Argument(TestFrameworks.ScalaTest, "-o", "-u", "target/test-reports"),
     libraryDependencies ++= Seq(
       akkaHttp,
+      alpakkaSSE,
       catsCore,
       circeCore,
       commonsHttp,
@@ -158,6 +161,7 @@ lazy val buildInfoSettings = Seq(
 inThisBuild(
   List(
     workbenchVersion := "0.3.2",
+    version          := "1.2.0",
     homepage         := Some(url("https://github.com/BlueBrain/nexus-admin")),
     licenses         := Seq("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt")),
     scmInfo          := Some(ScmInfo(url("https://github.com/BlueBrain/nexus-admin"), "scm:git:git@github.com:BlueBrain/nexus-admin.git")),
