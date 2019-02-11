@@ -161,7 +161,6 @@ lazy val buildInfoSettings = Seq(
 inThisBuild(
   List(
     workbenchVersion := "0.3.2",
-    version          := "1.2.0",
     homepage         := Some(url("https://github.com/BlueBrain/nexus-admin")),
     licenses         := Seq("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt")),
     scmInfo          := Some(ScmInfo(url("https://github.com/BlueBrain/nexus-admin"), "scm:git:git@github.com:BlueBrain/nexus-admin.git")),
