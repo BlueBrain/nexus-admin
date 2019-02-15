@@ -8,7 +8,8 @@ import akka.event.Logging
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Route
 import akka.stream.ActorMaterializer
-import ch.epfl.bluebrain.nexus.admin.config.Settings
+import cats.effect.Effect
+import ch.epfl.bluebrain.nexus.admin.config.{AppConfig, Settings}
 import ch.epfl.bluebrain.nexus.admin.index._
 import ch.epfl.bluebrain.nexus.admin.organizations.Organizations
 import ch.epfl.bluebrain.nexus.admin.projects.Projects
@@ -20,6 +21,7 @@ import kamon.Kamon
 import kamon.system.SystemMetrics
 import monix.eval.Task
 import monix.execution.Scheduler
+import monix.execution.schedulers.CanBlock
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -79,6 +81,7 @@ object Main {
 
     cluster.registerOnMemberUp {
       logger.info("==== Cluster is Live ====")
+      bootstrapIndexers(organizations, projects)
       val routes: Route = Routes(organizations, projects)
       val httpBinding   = Http().bindAndHandle(routes, appConfig.http.interface, appConfig.http.port)
 
@@ -99,12 +102,17 @@ object Main {
       SystemMetrics.stopCollecting()
     }
     // attempt to leave the cluster before shutting down
-    sys.addShutdownHook {
-      val _ = Await.result(as.terminate(), 10.seconds)
+    val _ = sys.addShutdownHook {
+      Await.result(as.terminate().map(_ => ())(as.dispatcher), 10 seconds)
     }
+  }
 
-    OrganizationsIndexer.start(organizations, orgIndex)
-    val _ = ProjectsIndexer.start(projects, organizations, projectIndex, orgIndex)
+  def bootstrapIndexers(orgs: Organizations[Task], projects: Projects[Task])(implicit as: ActorSystem,
+                                                                             cfg: AppConfig): Unit = {
+    implicit val eff: Effect[Task] = Task.catsEffect(Scheduler.global)
+    implicit val sc: Scheduler     = Scheduler.global
+    Organizations.indexer[Task](orgs).runSyncUnsafe()(Scheduler.global, CanBlock.permit)
+    Projects.indexer[Task](projects).runSyncUnsafe()(Scheduler.global, CanBlock.permit)
   }
 }
 // $COVERAGE-ON$

@@ -6,7 +6,7 @@ import java.util.UUID
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import cats.MonadError
-import cats.effect.{Async, ConcurrentEffect, Timer}
+import cats.effect.{Async, ConcurrentEffect, Effect, Timer}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig.HttpConfig
@@ -17,19 +17,23 @@ import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationEvent._
 import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationRejection._
 import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationState._
 import ch.epfl.bluebrain.nexus.admin.organizations.Organizations.next
+import ch.epfl.bluebrain.nexus.admin.persistence.TaggingAdapter
 import ch.epfl.bluebrain.nexus.commons.types.search.Pagination
 import ch.epfl.bluebrain.nexus.commons.types.search.QueryResults.UnscoredQueryResults
 import ch.epfl.bluebrain.nexus.iam.client.IamClient
 import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
 import ch.epfl.bluebrain.nexus.iam.client.types._
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
+import ch.epfl.bluebrain.nexus.service.indexer.persistence.{IndexerConfig, SequentialTagIndexer}
+import ch.epfl.bluebrain.nexus.service.indexer.persistence.OffsetStorage.Volatile
 import ch.epfl.bluebrain.nexus.sourcing.akka.syntax._
 import ch.epfl.bluebrain.nexus.sourcing.akka.{AkkaAggregate, Retry}
+import monix.execution.Scheduler
 
 /**
   * Organizations operations bundle
   */
-class Organizations[F[_]](agg: Agg[F], index: OrganizationCache[F], iamClient: IamClient[F])(
+class Organizations[F[_]](agg: Agg[F], private val index: OrganizationCache[F], iamClient: IamClient[F])(
     implicit F: MonadError[F, Throwable],
     clock: Clock,
     http: HttpConfig,
@@ -198,6 +202,24 @@ object Organizations {
       )
 
     aggF.map(new Organizations(_, index, iamClient))
+  }
+
+  def indexer[F[_]: Timer](organizations: Organizations[F])(implicit F: Effect[F],
+                                                            config: AppConfig,
+                                                            as: ActorSystem,
+                                                            sc: Scheduler): F[Unit] = {
+    val cfg = IndexerConfig
+      .builder[F]
+      .name("orgs-indexer")
+      .tag(TaggingAdapter.OrganizationTag)
+      .plugin(config.persistence.queryJournalPlugin)
+      .retry(config.indexing.retry.retryStrategy)
+      .batch(config.indexing.batch, config.indexing.batchTimeout)
+      .offset(Volatile)
+      .mapping((ev: OrganizationEvent) => organizations.fetch(ev.id))
+      .index(_.traverse(org => organizations.index.replace(org.uuid, org)) *> F.unit)
+      .build
+    F.delay(SequentialTagIndexer.start(cfg)) *> F.unit
   }
 
   private[organizations] def next(state: OrganizationState, ev: OrganizationEvent): OrganizationState =
