@@ -6,15 +6,14 @@ import java.util.UUID
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import cats.MonadError
-import cats.effect.{Async, ConcurrentEffect, Timer}
-import cats.syntax.apply._
-import cats.syntax.flatMap._
-import cats.syntax.functor._
+import cats.effect.{Async, ConcurrentEffect, Effect, Timer}
+import cats.implicits._
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.admin.exceptions.AdminError.UnexpectedState
 import ch.epfl.bluebrain.nexus.admin.index.ProjectCache
 import ch.epfl.bluebrain.nexus.admin.organizations.Organizations
+import ch.epfl.bluebrain.nexus.admin.persistence.TaggingAdapter
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectCommand._
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectEvent.{ProjectCreated, ProjectDeprecated, ProjectUpdated}
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectRejection._
@@ -27,8 +26,11 @@ import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
 import ch.epfl.bluebrain.nexus.iam.client.types.{AccessControlList, AccessControlLists, AuthToken, Permission}
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
+import ch.epfl.bluebrain.nexus.service.indexer.persistence.OffsetStorage.Volatile
+import ch.epfl.bluebrain.nexus.service.indexer.persistence.{IndexerConfig, SequentialTagIndexer}
 import ch.epfl.bluebrain.nexus.sourcing.akka.syntax._
 import ch.epfl.bluebrain.nexus.sourcing.akka._
+import monix.execution.Scheduler
 
 /**
   * The projects operations bundle.
@@ -37,7 +39,10 @@ import ch.epfl.bluebrain.nexus.sourcing.akka._
   * @param index the project and organization labels index
   * @tparam F    the effect type
   */
-class Projects[F[_]](agg: Agg[F], index: ProjectCache[F], organizations: Organizations[F], iamClient: IamClient[F])(
+class Projects[F[_]](agg: Agg[F],
+                     private val index: ProjectCache[F],
+                     organizations: Organizations[F],
+                     iamClient: IamClient[F])(
     implicit F: MonadError[F, Throwable],
     http: HttpConfig,
     clock: Clock,
@@ -289,6 +294,22 @@ object Projects {
         appConfig.cluster.shards
       )
     aggF.map(agg => new Projects(agg, index, organizations, iamClient))
+  }
+
+  def indexer[F[_]: Timer](
+      projects: Projects[F])(implicit F: Effect[F], config: AppConfig, as: ActorSystem, sc: Scheduler): F[Unit] = {
+    val cfg = IndexerConfig
+      .builder[F]
+      .name("orgs-indexer")
+      .tag(TaggingAdapter.OrganizationTag)
+      .plugin(config.persistence.queryJournalPlugin)
+      .retry(config.indexing.retry.retryStrategy)
+      .batch(config.indexing.batch, config.indexing.batchTimeout)
+      .offset(Volatile)
+      .mapping((ev: ProjectEvent) => projects.fetch(ev.id))
+      .index(_.traverse(project => projects.index.replace(project.uuid, project)) *> F.unit)
+      .build
+    F.delay(SequentialTagIndexer.start(cfg)) *> F.unit
   }
 
   /**
