@@ -300,8 +300,8 @@ object Projects {
       projects: Projects[F])(implicit F: Effect[F], config: AppConfig, as: ActorSystem, sc: Scheduler): F[Unit] = {
     val cfg = IndexerConfig
       .builder[F]
-      .name("orgs-indexer")
-      .tag(TaggingAdapter.OrganizationTag)
+      .name("projects-indexer")
+      .tag(TaggingAdapter.ProjectTag)
       .plugin(config.persistence.queryJournalPlugin)
       .retry(config.indexing.retry.retryStrategy)
       .batch(config.indexing.batch, config.indexing.batchTimeout)
