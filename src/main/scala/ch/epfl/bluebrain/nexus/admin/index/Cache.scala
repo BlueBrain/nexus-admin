@@ -7,10 +7,10 @@ import cats.{Monad, MonadError}
 import ch.epfl.bluebrain.nexus.admin.exceptions.AdminError
 import ch.epfl.bluebrain.nexus.admin.exceptions.AdminError.{InternalError, OperationTimedOut}
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF
+import ch.epfl.bluebrain.nexus.commons.cache.KeyValueStoreError._
+import ch.epfl.bluebrain.nexus.commons.cache.{KeyValueStore, KeyValueStoreError}
 import ch.epfl.bluebrain.nexus.iam.client.types.{AccessControlLists, Permission}
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
-import ch.epfl.bluebrain.nexus.service.indexer.cache.KeyValueStoreError._
-import ch.epfl.bluebrain.nexus.service.indexer.cache.{KeyValueStore, KeyValueStoreError}
 
 abstract class Cache[F[_], V](val store: KeyValueStore[F, UUID, ResourceF[V]])(implicit F: Monad[F]) {
 

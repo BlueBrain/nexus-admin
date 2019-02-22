@@ -3,8 +3,17 @@ package ch.epfl.bluebrain.nexus.admin.projects
 import java.time.Instant
 import java.util.UUID
 
+import ch.epfl.bluebrain.nexus.admin.config.Contexts._
+import ch.epfl.bluebrain.nexus.admin.config.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
 import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
+import ch.epfl.bluebrain.nexus.rdf.instances._
+import ch.epfl.bluebrain.nexus.rdf.syntax._
+import io.circe.generic.extras.Configuration
+import io.circe.generic.extras.semiauto._
+import io.circe.syntax._
+import io.circe.{Encoder, Json}
 
 import scala.collection.mutable.ListBuffer
 
@@ -107,15 +116,6 @@ object ProjectEvent {
   ) extends ProjectEvent
 
   object JsonLd {
-    import ch.epfl.bluebrain.nexus.admin.config.Contexts._
-    import ch.epfl.bluebrain.nexus.admin.config.Vocabulary.nxv
-    import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
-    import ch.epfl.bluebrain.nexus.rdf.instances._
-    import ch.epfl.bluebrain.nexus.rdf.syntax.circe.context._
-    import io.circe.generic.extras.Configuration
-    import io.circe.generic.extras.semiauto._
-    import io.circe.syntax._
-    import io.circe.{Encoder, Json}
 
     private implicit val config: Configuration = Configuration.default
       .withDiscriminator("@type")

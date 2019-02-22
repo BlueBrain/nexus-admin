@@ -14,10 +14,10 @@ import ch.epfl.bluebrain.nexus.admin.marshallers.instances._
 import ch.epfl.bluebrain.nexus.admin.organizations.{OrganizationRejection, Organizations}
 import ch.epfl.bluebrain.nexus.admin.projects.{ProjectRejection, Projects}
 import ch.epfl.bluebrain.nexus.admin.types.ResourceRejection
+import ch.epfl.bluebrain.nexus.commons.http.RejectionHandling
+import ch.epfl.bluebrain.nexus.commons.http.directives.PrefixDirectives.uriPrefix
 import ch.epfl.bluebrain.nexus.iam.client.IamClient
 import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
-import ch.epfl.bluebrain.nexus.service.http.RejectionHandling
-import ch.epfl.bluebrain.nexus.service.http.directives.PrefixDirectives.uriPrefix
 import ch.megard.akka.http.cors.scaladsl.CorsDirectives.{cors, corsRejectionHandler}
 import ch.megard.akka.http.cors.scaladsl.settings.CorsSettings
 import journal.Logger
@@ -45,6 +45,9 @@ object Routes {
       case AuthorizationFailed =>
         // suppress errors for authorization failures
         complete(AdminError.adminErrorStatusFrom(AuthorizationFailed) -> (AuthorizationFailed: AdminError))
+      case InvalidFormat =>
+        // suppress errors for invalid format
+        complete(AdminError.adminErrorStatusFrom(InvalidFormat) -> (InvalidFormat: AdminError))
       case err =>
         logger.error("Exception caught during routes processing ", err)
         val error: AdminError = InternalError("The system experienced an unexpected error, please try again later.")

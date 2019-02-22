@@ -3,7 +3,16 @@ package ch.epfl.bluebrain.nexus.admin.organizations
 import java.time.Instant
 import java.util.UUID
 
+import ch.epfl.bluebrain.nexus.admin.config.Contexts._
+import ch.epfl.bluebrain.nexus.admin.config.Vocabulary.nxv
+import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
 import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
+import ch.epfl.bluebrain.nexus.rdf.instances._
+import ch.epfl.bluebrain.nexus.rdf.syntax._
+import io.circe.generic.extras.Configuration
+import io.circe.generic.extras.semiauto._
+import io.circe.syntax._
+import io.circe.{Encoder, Json}
 
 /**
   * Enumeration of organization event states
@@ -89,15 +98,6 @@ object OrganizationEvent {
   ) extends OrganizationEvent
 
   object JsonLd {
-    import ch.epfl.bluebrain.nexus.admin.config.Contexts._
-    import ch.epfl.bluebrain.nexus.admin.config.Vocabulary.nxv
-    import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
-    import ch.epfl.bluebrain.nexus.rdf.syntax.circe.context._
-    import ch.epfl.bluebrain.nexus.rdf.instances._
-    import io.circe.generic.extras.Configuration
-    import io.circe.generic.extras.semiauto._
-    import io.circe.{Encoder, Json}
-    import io.circe.syntax._
 
     private implicit val config: Configuration = Configuration.default
       .withDiscriminator("@type")

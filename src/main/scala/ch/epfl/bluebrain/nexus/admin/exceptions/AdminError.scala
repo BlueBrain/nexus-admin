@@ -2,8 +2,8 @@ package ch.epfl.bluebrain.nexus.admin.exceptions
 
 import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.admin.config.Contexts._
-import ch.epfl.bluebrain.nexus.rdf.syntax.circe.context._
-import ch.epfl.bluebrain.nexus.service.http.directives.StatusFrom
+import ch.epfl.bluebrain.nexus.commons.http.directives.StatusFrom
+import ch.epfl.bluebrain.nexus.rdf.syntax._
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveEncoder
 import io.circe.{Encoder, Json}
@@ -28,13 +28,6 @@ object AdminError {
     * @param id ID of the resource
     */
   final case class UnexpectedState(id: String) extends AdminError(s"Unexpected resource state for resource with ID $id")
-
-  /**
-    * Signals that an unexpected error.
-    *
-    * @param reason the exception message
-    */
-  final case class UnexpectedError(reason: String) extends AdminError(reason)
 
   /**
     * Signals an internal timeout.
@@ -66,6 +59,11 @@ object AdminError {
   final case object AuthorizationFailed
       extends AdminError("The supplied authentication is not authorized to access this resource.")
 
+  /**
+    * Signals an error while decoding a JSON payload.
+    */
+  final case object InvalidFormat extends AdminError("The json representation is incorrectly formatted.")
+
   implicit val adminErrorEncoder: Encoder[AdminError] = {
     implicit val rejectionConfig: Configuration = Configuration.default.withDiscriminator("@type")
     val enc                                     = deriveEncoder[AdminError].mapJson(_ addContext errorCtxUri)
@@ -76,6 +74,7 @@ object AdminError {
     case NotFound             => StatusCodes.NotFound
     case AuthenticationFailed => StatusCodes.Unauthorized
     case AuthorizationFailed  => StatusCodes.Forbidden
+    case InvalidFormat        => StatusCodes.BadRequest
     case _                    => StatusCodes.InternalServerError
   }
 }

@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.admin.directives
 import akka.http.scaladsl.server.Directive1
 import akka.http.scaladsl.server.Directives._
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig.PaginationConfig
-import ch.epfl.bluebrain.nexus.commons.types.search.Pagination
+import ch.epfl.bluebrain.nexus.commons.search.Pagination
 
 /**
   * Collection of query specific directives.
