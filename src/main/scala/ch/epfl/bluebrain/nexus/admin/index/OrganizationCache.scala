@@ -9,11 +9,11 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.admin.config.Permissions.orgs
 import ch.epfl.bluebrain.nexus.admin.index.Cache._
 import ch.epfl.bluebrain.nexus.admin.organizations.{Organization, OrganizationResource}
-import ch.epfl.bluebrain.nexus.commons.types.search.Pagination
-import ch.epfl.bluebrain.nexus.commons.types.search.QueryResult.UnscoredQueryResult
-import ch.epfl.bluebrain.nexus.commons.types.search.QueryResults.UnscoredQueryResults
+import ch.epfl.bluebrain.nexus.commons.cache.{KeyValueStore, KeyValueStoreConfig}
+import ch.epfl.bluebrain.nexus.commons.search.Pagination
+import ch.epfl.bluebrain.nexus.commons.search.QueryResult.UnscoredQueryResult
+import ch.epfl.bluebrain.nexus.commons.search.QueryResults.UnscoredQueryResults
 import ch.epfl.bluebrain.nexus.iam.client.types.AccessControlLists
-import ch.epfl.bluebrain.nexus.service.indexer.cache.{KeyValueStore, KeyValueStoreConfig}
 
 /**
   * The organization cache backed by a KeyValueStore using akka Distributed Data

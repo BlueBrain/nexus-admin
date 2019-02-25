@@ -19,6 +19,7 @@ import ch.epfl.bluebrain.nexus.admin.client.types.events.Event._
 import ch.epfl.bluebrain.nexus.admin.client.types.events.{Event, OrganizationEvent, ProjectEvent}
 import ch.epfl.bluebrain.nexus.admin.client.types.{Organization, Project}
 import ch.epfl.bluebrain.nexus.commons.http.HttpClient
+import ch.epfl.bluebrain.nexus.commons.circe.syntax._
 import ch.epfl.bluebrain.nexus.commons.test.io.IOOptionValues
 import ch.epfl.bluebrain.nexus.commons.test.{Randomness, Resources}
 import ch.epfl.bluebrain.nexus.iam.client.IamClientError
@@ -28,7 +29,6 @@ import org.mockito.Mockito
 import org.mockito.integrations.scalatest.IdiomaticMockitoFixture
 import org.scalatest._
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
-import ch.epfl.bluebrain.nexus.commons.http.syntax.circe._
 import ch.epfl.bluebrain.nexus.rdf.Iri
 
 import scala.concurrent.ExecutionContext

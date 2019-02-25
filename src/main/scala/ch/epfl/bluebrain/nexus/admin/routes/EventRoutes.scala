@@ -11,7 +11,7 @@ import akka.http.scaladsl.model.sse.ServerSentEvent
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Directive1, PathMatcher0, Route}
 import akka.persistence.query.scaladsl.EventsByTagQuery
-import akka.persistence.query.{PersistenceQuery, _}
+import akka.persistence.query._
 import akka.stream.scaladsl.Source
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig.PersistenceConfig
@@ -23,6 +23,7 @@ import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationEvent.JsonLd._
 import ch.epfl.bluebrain.nexus.admin.persistence.TaggingAdapter._
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectEvent
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectEvent.JsonLd._
+import ch.epfl.bluebrain.nexus.commons.circe.syntax._
 import ch.epfl.bluebrain.nexus.iam.client.IamClient
 import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
 import ch.epfl.bluebrain.nexus.iam.client.types.Permission
@@ -97,7 +98,6 @@ class EventRoutes(
       }
 
   private def aToSse[A: Encoder](a: A, offset: Offset): ServerSentEvent = {
-    import ch.epfl.bluebrain.nexus.commons.http.syntax.circe._
     val json = a.asJson.sortKeys(AppConfig.orderedKeys)
     ServerSentEvent(
       data = json.pretty(printer),

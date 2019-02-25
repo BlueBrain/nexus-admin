@@ -10,10 +10,10 @@ import ch.epfl.bluebrain.nexus.admin.exceptions.AdminError.InternalError
 import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationRejection
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectRejection
 import ch.epfl.bluebrain.nexus.admin.types.ResourceRejection
+import ch.epfl.bluebrain.nexus.commons.circe.syntax._
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport.OrderedKeys
 import ch.epfl.bluebrain.nexus.commons.http.RdfMediaTypes._
-import ch.epfl.bluebrain.nexus.commons.http.syntax.circe._
-import ch.epfl.bluebrain.nexus.service.http.directives.StatusFrom
+import ch.epfl.bluebrain.nexus.commons.http.directives.StatusFrom
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport
 import io.circe._
 import io.circe.syntax._

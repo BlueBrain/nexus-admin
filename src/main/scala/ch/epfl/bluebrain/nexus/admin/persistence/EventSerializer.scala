@@ -5,9 +5,9 @@ import akka.serialization.SerializerWithStringManifest
 import ch.epfl.bluebrain.nexus.admin.config.Settings
 import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationEvent
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectEvent
+import ch.epfl.bluebrain.nexus.commons.serialization.AkkaCoproductSerializer
 import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
 import ch.epfl.bluebrain.nexus.rdf.instances._
-import ch.epfl.bluebrain.nexus.service.serialization.AkkaCoproductSerializer
 import io.circe.{Decoder, Encoder}
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.{deriveDecoder, deriveEncoder}

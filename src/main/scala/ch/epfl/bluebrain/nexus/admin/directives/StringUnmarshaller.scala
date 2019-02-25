@@ -1,13 +1,14 @@
 package ch.epfl.bluebrain.nexus.admin.directives
 
 import akka.http.scaladsl.unmarshalling.{FromStringUnmarshaller, Unmarshaller}
-import ch.epfl.bluebrain.nexus.commons.types.HttpRejection.WrongOrInvalidJson
+import ch.epfl.bluebrain.nexus.admin.exceptions.AdminError.InvalidFormat
 import io.circe.parser._
 import io.circe.{Decoder, Json}
-
-import scala.util.Try
+import journal.Logger
 
 object StringUnmarshaller {
+
+  private val logger = Logger[this.type]
 
   /**
     * String => Json array => `A`
@@ -33,7 +34,10 @@ object StringUnmarshaller {
     * @return unmarshaller for `A`
     */
   def unmarshallJson[A: Decoder]: FromStringUnmarshaller[A] = unmarshaller { value =>
-    parse(value).left.map(err => WrongOrInvalidJson(Try(err.message).toOption))
+    parse(value).left.map { err =>
+      logger.warn(s"Failed to convert string '$value' to Json", err)
+      InvalidFormat
+    }
   }
 
   private def unmarshaller[A](f: String => Either[Throwable, Json])(
