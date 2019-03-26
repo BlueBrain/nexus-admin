@@ -19,12 +19,11 @@ import ch.epfl.bluebrain.nexus.admin.client.types.events.Event._
 import ch.epfl.bluebrain.nexus.admin.client.types.events.{Event, OrganizationEvent, ProjectEvent}
 import ch.epfl.bluebrain.nexus.admin.client.types.{Organization, Project}
 import ch.epfl.bluebrain.nexus.commons.http.HttpClient
-import ch.epfl.bluebrain.nexus.commons.circe.syntax._
 import ch.epfl.bluebrain.nexus.commons.test.io.IOOptionValues
 import ch.epfl.bluebrain.nexus.commons.test.{Randomness, Resources}
 import ch.epfl.bluebrain.nexus.iam.client.IamClientError
 import ch.epfl.bluebrain.nexus.iam.client.types.AuthToken
-import ch.epfl.bluebrain.nexus.rdf.syntax.node.unsafe._
+import ch.epfl.bluebrain.nexus.rdf.syntax._
 import org.mockito.Mockito
 import org.mockito.integrations.scalatest.IdiomaticMockitoFixture
 import org.scalatest._
