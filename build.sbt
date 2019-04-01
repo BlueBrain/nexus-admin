@@ -25,30 +25,31 @@ scalafmt: {
  */
 
 // Dependency versions
-val alpakkaVersion             = "1.0-M3"
+val alpakkaVersion             = "1.0-RC1"
 val rdfVersion                 = "0.3.3"
 val commonsVersion             = "0.11.8"
-val iamVersion                 = "6920d6da"
-val sourcingVersion            = "0.13.0"
+val iamVersion                 = "abbfa9c7"
+val sourcingVersion            = "0.15.0"
 val akkaVersion                = "2.5.21"
-val akkaCorsVersion            = "0.3.4"
-val akkaHttpVersion            = "10.1.7"
-val akkaPersistenceCassVersion = "0.92"
+val akkaCorsVersion            = "0.4.0"
+val akkaHttpVersion            = "10.1.8"
+val akkaPersistenceCassVersion = "0.93"
 val akkaPersistenceMemVersion  = "2.5.15.1"
 val catsVersion                = "1.6.0"
 val circeVersion               = "0.11.1"
 val journalVersion             = "3.0.19"
 val logbackVersion             = "1.2.3"
 val mockitoVersion             = "1.2.1"
+val monixVersion               = "3.0.0-RC2"
 val pureconfigVersion          = "0.10.2"
-val scalaTestVersion           = "3.0.6"
+val scalaTestVersion           = "3.0.7"
 val kryoVersion                = "0.5.2"
 
 // Dependencies modules
 lazy val rdf                 = "ch.epfl.bluebrain.nexus" %% "rdf"                        % rdfVersion
 lazy val iamClient           = "ch.epfl.bluebrain.nexus" %% "iam-client"                 % iamVersion
 lazy val sourcingCore        = "ch.epfl.bluebrain.nexus" %% "sourcing-core"              % sourcingVersion
-lazy val sourcingStream      = "ch.epfl.bluebrain.nexus" %% "sourcing-stream"            % sourcingVersion
+lazy val sourcingProjections = "ch.epfl.bluebrain.nexus" %% "sourcing-projections"       % sourcingVersion
 lazy val commonsCore         = "ch.epfl.bluebrain.nexus" %% "commons-core"               % commonsVersion
 lazy val commonsTest         = "ch.epfl.bluebrain.nexus" %% "commons-test"               % commonsVersion
 lazy val akkaCluster         = "com.typesafe.akka"       %% "akka-cluster"               % akkaVersion
@@ -65,6 +66,7 @@ lazy val catsCore            = "org.typelevel"           %% "cats-core"         
 lazy val circeCore           = "io.circe"                %% "circe-core"                 % circeVersion
 lazy val journalCore         = "io.verizon.journal"      %% "core"                       % journalVersion
 lazy val mockito             = "org.mockito"             %% "mockito-scala"              % mockitoVersion
+lazy val monixEval           = "io.monix"                %% "monix-eval"                 % monixVersion
 lazy val logbackClassic      = "ch.qos.logback"          % "logback-classic"             % logbackVersion
 lazy val pureconfig          = "com.github.pureconfig"   %% "pureconfig"                 % pureconfigVersion
 lazy val kryo                = "com.github.romix.akka"   %% "akka-kryo-serialization"    % kryoVersion
@@ -90,10 +92,11 @@ lazy val admin = project
       journalCore,
       logbackClassic,
       kryo,
+      monixEval,
       pureconfig,
       rdf,
       sourcingCore,
-      sourcingStream,
+      sourcingProjections,
       akkaTestkit        % Test,
       akkaHttpTestKit    % Test,
       akkaPersistenceMem % Test,

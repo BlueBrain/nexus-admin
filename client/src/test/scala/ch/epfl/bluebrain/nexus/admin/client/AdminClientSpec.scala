@@ -203,9 +203,9 @@ class AdminClientSpec
 
       "apply function when new organization event is received" in new Ctx {
         val f: OrganizationEvent => IO[Unit] = {
-          case _: OrganizationCreated    => IO(count.addAndGet(1)) *> IO.unit
-          case _: OrganizationUpdated    => IO(count.addAndGet(2)) *> IO.unit
-          case _: OrganizationDeprecated => IO(count.addAndGet(3)) *> IO.unit
+          case _: OrganizationCreated    => IO(count.addAndGet(1)) >> IO.unit
+          case _: OrganizationUpdated    => IO(count.addAndGet(2)) >> IO.unit
+          case _: OrganizationDeprecated => IO(count.addAndGet(3)) >> IO.unit
         }
         val eventsIri = Iri.url("http://admin.nexus.example.com/v1/orgs/events").right.value
         source(eventsIri, None) shouldReturn eventsSource
@@ -215,9 +215,9 @@ class AdminClientSpec
 
       "apply function when new project event is received" in new Ctx {
         val f: ProjectEvent => IO[Unit] = {
-          case _: ProjectCreated    => IO(count.addAndGet(1)) *> IO.unit
-          case _: ProjectUpdated    => IO(count.addAndGet(2)) *> IO.unit
-          case _: ProjectDeprecated => IO(count.addAndGet(3)) *> IO.unit
+          case _: ProjectCreated    => IO(count.addAndGet(1)) >> IO.unit
+          case _: ProjectUpdated    => IO(count.addAndGet(2)) >> IO.unit
+          case _: ProjectDeprecated => IO(count.addAndGet(3)) >> IO.unit
         }
         val eventsIri = Iri.url("http://admin.nexus.example.com/v1/projects/events").right.value
         source(eventsIri, None) shouldReturn eventsSource

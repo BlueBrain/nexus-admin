@@ -24,12 +24,11 @@ import ch.epfl.bluebrain.nexus.iam.client.IamClient
 import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
 import ch.epfl.bluebrain.nexus.iam.client.types._
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
-import ch.epfl.bluebrain.nexus.sourcing.akka.AkkaAggregate
-import ch.epfl.bluebrain.nexus.sourcing.persistence.OffsetStorage.Volatile
-import ch.epfl.bluebrain.nexus.sourcing.persistence.{IndexerConfig, SequentialTagIndexer}
+import ch.epfl.bluebrain.nexus.sourcing.akka.{AkkaAggregate, SourcingConfig}
+import ch.epfl.bluebrain.nexus.sourcing.projections.ProgressStorage.Volatile
+import ch.epfl.bluebrain.nexus.sourcing.projections.{ProjectionConfig, TagProjection}
 import ch.epfl.bluebrain.nexus.sourcing.retry.Retry
 import ch.epfl.bluebrain.nexus.sourcing.retry.syntax._
-import monix.execution.Scheduler
 
 /**
   * Organizations operations bundle
@@ -167,7 +166,7 @@ class Organizations[F[_]](agg: Agg[F], private val index: OrganizationCache[F], 
   private def evalAndUpdateIndex(command: OrganizationCommand,
                                  organization: Organization): F[OrganizationMetaOrRejection] =
     eval(command).flatMap {
-      case Right(metadata) => index.replace(metadata.uuid, metadata.withValue(organization)) *> F.pure(Right(metadata))
+      case Right(metadata) => index.replace(metadata.uuid, metadata.withValue(organization)) >> F.pure(Right(metadata))
       case Left(rej)       => F.pure(Left(rej))
     }
 
@@ -205,11 +204,10 @@ object Organizations {
     aggF.map(new Organizations(_, index, iamClient))
   }
 
-  def indexer[F[_]: Timer](organizations: Organizations[F])(implicit F: Effect[F],
-                                                            config: AppConfig,
-                                                            as: ActorSystem,
-                                                            sc: Scheduler): F[Unit] = {
-    val cfg = IndexerConfig
+  def indexer[F[_]: Timer](
+      organizations: Organizations[F])(implicit F: Effect[F], config: AppConfig, as: ActorSystem): F[Unit] = {
+    implicit val sc: SourcingConfig = config.sourcing
+    val cfg = ProjectionConfig
       .builder[F]
       .name("orgs-indexer")
       .tag(TaggingAdapter.OrganizationTag)
@@ -218,9 +216,9 @@ object Organizations {
       .batch(config.indexing.batch, config.indexing.batchTimeout)
       .offset(Volatile)
       .mapping((ev: OrganizationEvent) => organizations.fetch(ev.id))
-      .index(_.traverse(org => organizations.index.replace(org.uuid, org)) *> F.unit)
+      .index(_.traverse(org => organizations.index.replace(org.uuid, org)) >> F.unit)
       .build
-    F.delay(SequentialTagIndexer.start(cfg)) *> F.unit
+    TagProjection.start(cfg) >> F.unit
   }
 
   private[organizations] def next(state: OrganizationState, ev: OrganizationEvent): OrganizationState =
