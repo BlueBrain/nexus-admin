@@ -110,7 +110,6 @@ object Main {
   def bootstrapIndexers(orgs: Organizations[Task], projects: Projects[Task])(implicit as: ActorSystem,
                                                                              cfg: AppConfig): Unit = {
     implicit val eff: Effect[Task] = Task.catsEffect(Scheduler.global)
-    implicit val sc: Scheduler     = Scheduler.global
     Organizations.indexer[Task](orgs).runSyncUnsafe()(Scheduler.global, CanBlock.permit)
     Projects.indexer[Task](projects).runSyncUnsafe()(Scheduler.global, CanBlock.permit)
   }

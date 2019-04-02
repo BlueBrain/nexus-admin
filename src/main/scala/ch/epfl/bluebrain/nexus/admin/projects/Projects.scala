@@ -27,11 +27,10 @@ import ch.epfl.bluebrain.nexus.iam.client.types.{AccessControlList, AccessContro
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
 import ch.epfl.bluebrain.nexus.sourcing.akka._
-import ch.epfl.bluebrain.nexus.sourcing.persistence.OffsetStorage.Volatile
-import ch.epfl.bluebrain.nexus.sourcing.persistence.{IndexerConfig, SequentialTagIndexer}
+import ch.epfl.bluebrain.nexus.sourcing.projections.ProgressStorage.Volatile
+import ch.epfl.bluebrain.nexus.sourcing.projections.{ProjectionConfig, TagProjection}
 import ch.epfl.bluebrain.nexus.sourcing.retry.Retry
 import ch.epfl.bluebrain.nexus.sourcing.retry.syntax._
-import monix.execution.Scheduler
 
 /**
   * The projects operations bundle.
@@ -244,7 +243,7 @@ class Projects[F[_]](agg: Agg[F],
       .flatMap {
         case Right(c: Current) =>
           toResource(c).flatMap { resource =>
-            index.replace(c.id, resource) *> F.pure(Right(resource.discard))
+            index.replace(c.id, resource) >> F.pure(Right(resource.discard))
           }
         case Left(rejection) => F.pure(Left(rejection))
         case Right(Initial)  => F.raiseError(UnexpectedState(command.id.toString))
@@ -298,8 +297,9 @@ object Projects {
   }
 
   def indexer[F[_]: Timer](
-      projects: Projects[F])(implicit F: Effect[F], config: AppConfig, as: ActorSystem, sc: Scheduler): F[Unit] = {
-    val cfg = IndexerConfig
+      projects: Projects[F])(implicit F: Effect[F], config: AppConfig, as: ActorSystem): F[Unit] = {
+    implicit val sc: SourcingConfig = config.sourcing
+    val cfg = ProjectionConfig
       .builder[F]
       .name("projects-indexer")
       .tag(TaggingAdapter.ProjectTag)
@@ -308,9 +308,9 @@ object Projects {
       .batch(config.indexing.batch, config.indexing.batchTimeout)
       .offset(Volatile)
       .mapping((ev: ProjectEvent) => projects.fetch(ev.id))
-      .index(_.traverse(project => projects.index.replace(project.uuid, project)) *> F.unit)
+      .index(_.traverse(project => projects.index.replace(project.uuid, project)) >> F.unit)
       .build
-    F.delay(SequentialTagIndexer.start(cfg)) *> F.unit
+    TagProjection.start(cfg) >> F.unit
   }
 
   /**
