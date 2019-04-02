@@ -310,7 +310,7 @@ object Projects {
       .mapping((ev: ProjectEvent) => projects.fetch(ev.id))
       .index(_.traverse(project => projects.index.replace(project.uuid, project)) >> F.unit)
       .build
-    TagProjection.start(cfg) >> F.unit
+    TagProjection.delay(cfg) >> F.unit
   }
 
   /**

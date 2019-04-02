@@ -218,7 +218,7 @@ object Organizations {
       .mapping((ev: OrganizationEvent) => organizations.fetch(ev.id))
       .index(_.traverse(org => organizations.index.replace(org.uuid, org)) >> F.unit)
       .build
-    TagProjection.start(cfg) >> F.unit
+    TagProjection.delay(cfg) >> F.unit
   }
 
   private[organizations] def next(state: OrganizationState, ev: OrganizationEvent): OrganizationState =
