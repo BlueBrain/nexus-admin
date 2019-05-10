@@ -18,10 +18,12 @@ import ch.epfl.bluebrain.nexus.admin.projects.ProjectCommand._
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectEvent.{ProjectCreated, ProjectDeprecated, ProjectUpdated}
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectRejection._
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectState._
+import ch.epfl.bluebrain.nexus.admin.routes.SearchParams
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF
 import ch.epfl.bluebrain.nexus.commons.search.Pagination
 import ch.epfl.bluebrain.nexus.commons.search.QueryResults.UnscoredQueryResults
 import ch.epfl.bluebrain.nexus.iam.client.IamClient
+import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
 import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
 import ch.epfl.bluebrain.nexus.iam.client.types.{AccessControlList, AccessControlLists, AuthToken, Permission}
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
@@ -45,6 +47,7 @@ class Projects[F[_]](agg: Agg[F],
                      iamClient: IamClient[F])(
     implicit F: MonadError[F, Throwable],
     http: HttpConfig,
+    iam: IamClientConfig,
     clock: Clock,
     iamCredentials: Option[AuthToken],
     ownerPermissions: Set[Permission],
@@ -220,22 +223,13 @@ class Projects[F[_]](agg: Agg[F],
   /**
     * Lists all indexed projects.
     *
+    * @param params     filter parameters of the project
     * @param pagination the pagination settings
     * @return a paginated results list
     */
-  def list(pagination: Pagination)(implicit acls: AccessControlLists): F[UnscoredQueryResults[ProjectResource]] =
-    index.list(pagination)
-
-  /**
-    * Lists all indexed projects within a given organization.
-    *
-    * @param organization the target organization
-    * @param pagination   the pagination settings
-    * @return a paginated results list
-    */
-  def list(organization: String, pagination: Pagination)(
+  def list(params: SearchParams, pagination: Pagination)(
       implicit acls: AccessControlLists): F[UnscoredQueryResults[ProjectResource]] =
-    index.list(organization, pagination)
+    index.list(params, pagination)
 
   private def evaluateAndUpdateIndex(command: ProjectCommand): F[ProjectMetaOrRejection] =
     agg
@@ -278,6 +272,7 @@ object Projects {
                                                                  mt: ActorMaterializer,
                                                                  clock: Clock = Clock.systemUTC): F[Projects[F]] = {
     implicit val http: HttpConfig                              = appConfig.http
+    implicit val iamClientConfig: IamClientConfig              = appConfig.iam
     implicit val iamCredentials: Option[AuthToken]             = appConfig.serviceAccount.credentials
     implicit val ownerPermissions: Set[Permission]             = appConfig.permissions.ownerPermissions
     implicit val permissionsRetryStrategy: Retry[F, Throwable] = Retry(appConfig.permissions.retry.retryStrategy)

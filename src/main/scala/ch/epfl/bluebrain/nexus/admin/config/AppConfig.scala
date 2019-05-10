@@ -187,7 +187,6 @@ object AppConfig {
       nxv.organizationUuid.prefix,
       nxv.organizationLabel.prefix,
       nxv.self.prefix,
-      nxv.constrainedBy.prefix,
       nxv.project.prefix,
       nxv.rev.prefix,
       nxv.deprecated.prefix,

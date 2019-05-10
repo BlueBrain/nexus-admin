@@ -15,6 +15,7 @@ import ch.epfl.bluebrain.nexus.commons.test.ActorSystemFixture
 import ch.epfl.bluebrain.nexus.commons.test.Randomness
 import ch.epfl.bluebrain.nexus.commons.test.io.{IOEitherValues, IOOptionValues}
 import ch.epfl.bluebrain.nexus.iam.client.IamClient
+import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
 import ch.epfl.bluebrain.nexus.iam.client.types._
 import ch.epfl.bluebrain.nexus.iam.client.types.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
@@ -42,8 +43,10 @@ class OrganizationsSpec
 
   override implicit val patienceConfig: PatienceConfig = PatienceConfig(3 seconds, 100 milliseconds)
 
-  private implicit val clock: Clock          = Clock.fixed(Instant.ofEpochSecond(3600), ZoneId.systemDefault())
-  private implicit val http: HttpConfig      = HttpConfig("some", 8080, "v1", "http://nexus.example.com")
+  private implicit val clock: Clock     = Clock.fixed(Instant.ofEpochSecond(3600), ZoneId.systemDefault())
+  private implicit val http: HttpConfig = HttpConfig("some", 8080, "v1", "http://nexus.example.com")
+  private implicit val iamClientConfig: IamClientConfig =
+    IamClientConfig(url"http://nexus.example.com".value, url"http://iam.nexus.example.com".value, 1 second)
   private implicit val ctx: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
   private implicit val timer: Timer[IO]      = IO.timer(system.dispatcher)
 

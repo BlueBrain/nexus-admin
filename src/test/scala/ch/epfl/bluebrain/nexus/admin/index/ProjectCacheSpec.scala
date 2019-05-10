@@ -9,6 +9,7 @@ import ch.epfl.bluebrain.nexus.admin.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.admin.config.{Permissions, Settings}
 import ch.epfl.bluebrain.nexus.admin.organizations.Organization
 import ch.epfl.bluebrain.nexus.admin.projects.Project
+import ch.epfl.bluebrain.nexus.admin.routes.SearchParams
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF
 import ch.epfl.bluebrain.nexus.commons.test.ActorSystemFixture
 import ch.epfl.bluebrain.nexus.commons.test.Randomness
@@ -38,6 +39,7 @@ class ProjectCacheSpec
   private implicit val timer: Timer[IO] = IO.timer(system.dispatcher)
   private implicit val subject          = Caller.anonymous.subject
   private implicit val appConfig        = Settings(system).appConfig
+  implicit val iamClientConfig          = appConfig.iam
   private implicit val keyStoreConfig   = appConfig.keyValueStore
 
   val orgIndex     = OrganizationCache[IO]
@@ -107,7 +109,9 @@ class ProjectCacheSpec
         projectResource.copy(
           id = url"http://nexus.example.com/v1/projects/${projectsOrganization.label}/${project.label}".value,
           uuid = UUID.randomUUID(),
-          value = project)
+          value = project,
+          deprecated = true
+        )
       }
 
       val projectResources2 = projectLabels2.map { label =>
@@ -157,15 +161,21 @@ class ProjectCacheSpec
           .toList
           .map(UnscoredQueryResult(_))
 
-      index.list(Pagination(0, 100)).ioValue shouldEqual UnscoredQueryResults(26L, sortedCombined)
+      index.list(SearchParams.empty, Pagination(0, 100)).ioValue shouldEqual
+        UnscoredQueryResults(26L, sortedCombined)
 
-      index.list(orgLabel, Pagination(0, 100)).ioValue shouldEqual UnscoredQueryResults(15L, sortedProjects)
-      index.list(orgLabel2, Pagination(0, 100)).ioValue shouldEqual UnscoredQueryResults(10L, sortedProjects2)
-      index.list(orgLabel2, Pagination(0, 5)).ioValue shouldEqual UnscoredQueryResults(10L, sortedProjects2.slice(0, 5))
-      index.list(Pagination(0, 100))(AccessControlLists.empty).ioValue shouldEqual UnscoredQueryResults(0L, List.empty)
-      index.list(Pagination(0, 100))(aclsProj1).ioValue shouldEqual UnscoredQueryResults(
-        1L,
-        List(UnscoredQueryResult(projectResources.head)))
+      index.list(SearchParams(Some(orgLabel)), Pagination(0, 100)).ioValue shouldEqual
+        UnscoredQueryResults(15L, sortedProjects)
+      index.list(SearchParams(deprecated = Some(true)), Pagination(0, 100)).ioValue shouldEqual
+        UnscoredQueryResults(15L, sortedProjects)
+      index.list(SearchParams(Some(orgLabel2)), Pagination(0, 100)).ioValue shouldEqual
+        UnscoredQueryResults(10L, sortedProjects2)
+      index.list(SearchParams(Some(orgLabel2)), Pagination(0, 5)).ioValue shouldEqual
+        UnscoredQueryResults(10L, sortedProjects2.slice(0, 5))
+      index.list(SearchParams.empty, Pagination(0, 100))(AccessControlLists.empty, iamClientConfig).ioValue shouldEqual
+        UnscoredQueryResults(0L, List.empty)
+      index.list(SearchParams.empty, Pagination(0, 100))(aclsProj1, iamClientConfig).ioValue shouldEqual
+        UnscoredQueryResults(1L, List(UnscoredQueryResult(projectResources.head)))
     }
   }
 }

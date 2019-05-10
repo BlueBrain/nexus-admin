@@ -8,6 +8,7 @@ import cats.effect.{IO, Timer}
 import ch.epfl.bluebrain.nexus.admin.config.{Permissions, Settings}
 import ch.epfl.bluebrain.nexus.admin.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.admin.organizations.Organization
+import ch.epfl.bluebrain.nexus.admin.routes.SearchParams
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF
 import ch.epfl.bluebrain.nexus.commons.test.ActorSystemFixture
 import ch.epfl.bluebrain.nexus.commons.test.Randomness
@@ -36,6 +37,7 @@ class OrganizationCacheSpec
   private implicit val timer: Timer[IO] = IO.timer(system.dispatcher)
   private implicit val subject          = Caller.anonymous.subject
   private implicit val appConfig        = Settings(system).appConfig
+  implicit val iamClientConfig          = appConfig.iam
   private implicit val keyStoreConfig   = appConfig.keyValueStore
 
   val index        = OrganizationCache[IO]
@@ -77,11 +79,14 @@ class OrganizationCacheSpec
         ))
       val orgLabels = (1 to 50).map(_ => genString())
 
-      val orgResources = orgLabels.map { label =>
-        val organization = Organization(label, Some(genString()))
-        orgResource.copy(id = url"http://nexus.example.com/v1/orgs/${organization.label}".value,
-                         uuid = UUID.randomUUID(),
-                         value = organization)
+      val orgResources = orgLabels.zipWithIndex.map {
+        case (label, idx) =>
+          val organization = Organization(label, Some(genString()))
+          orgResource.copy(id = url"http://nexus.example.com/v1/orgs/${organization.label}".value,
+                           uuid = UUID.randomUUID(),
+                           deprecated = idx > 24,
+                           rev = idx.toLong,
+                           value = organization)
       } :+ orgResource
 
       orgResources.foreach(org => index.replace(org.uuid, org).ioValue)
@@ -90,7 +95,9 @@ class OrganizationCacheSpec
         index.getBy(org.value.label).some shouldEqual org
       }
 
-      val sortedOrgs = orgResources.sortBy(org => org.value.label).toList.map(UnscoredQueryResult(_))
+      val sortedOrgs               = orgResources.sortBy(org => org.value.label).toList.map(UnscoredQueryResult(_))
+      val sortedOrgsNotDeprecated  = sortedOrgs.filterNot(_.source.deprecated)
+      def sortedOrgsRev(rev: Long) = sortedOrgsNotDeprecated.filter(_.source.rev == rev)
 
       val aclsOrg1 = AccessControlLists(
         Path(s"/${orgLabels.head}").right.value -> ResourceAccessControlList(
@@ -104,14 +111,22 @@ class OrganizationCacheSpec
           AccessControlList(Anonymous -> Set(Permissions.orgs.read))
         ))
 
-      index.list(Pagination(0, 100)).ioValue shouldEqual UnscoredQueryResults(51L, sortedOrgs)
-      index.list(Pagination(0, 100))(aclsOrg1).ioValue shouldEqual UnscoredQueryResults(
-        1L,
-        List(UnscoredQueryResult(orgResources.head)))
-      index.list(Pagination(0, 100))(AccessControlLists.empty).ioValue shouldEqual UnscoredQueryResults(0L, List.empty)
-      index.list(Pagination(0, 10)).ioValue shouldEqual UnscoredQueryResults(51L, sortedOrgs.slice(0, 10))
-      index.list(Pagination(10, 10)).ioValue shouldEqual UnscoredQueryResults(51L, sortedOrgs.slice(10, 20))
-      index.list(Pagination(40, 20)).ioValue shouldEqual UnscoredQueryResults(51L, sortedOrgs.slice(40, 52))
+      index.list(SearchParams.empty, Pagination(0, 100)).ioValue shouldEqual UnscoredQueryResults(51L, sortedOrgs)
+      index.list(SearchParams(deprecated = Some(false)), Pagination(0, 100)).ioValue shouldEqual
+        UnscoredQueryResults(26L, sortedOrgsNotDeprecated)
+      index.list(SearchParams(rev = Some(24), deprecated = Some(false)), Pagination(0, 100)).ioValue shouldEqual
+        UnscoredQueryResults(1L, sortedOrgsRev(24))
+      index.list(SearchParams.empty, Pagination(0, 100))(aclsOrg1, iamClientConfig).ioValue shouldEqual
+        UnscoredQueryResults(1L, List(UnscoredQueryResult(orgResources.head)))
+      index
+        .list(SearchParams.empty, Pagination(0, 100))(AccessControlLists.empty, iamClientConfig)
+        .ioValue shouldEqual UnscoredQueryResults(0L, List.empty)
+      index.list(SearchParams.empty, Pagination(0, 10)).ioValue shouldEqual
+        UnscoredQueryResults(51L, sortedOrgs.slice(0, 10))
+      index.list(SearchParams.empty, Pagination(10, 10)).ioValue shouldEqual
+        UnscoredQueryResults(51L, sortedOrgs.slice(10, 20))
+      index.list(SearchParams.empty, Pagination(40, 20)).ioValue shouldEqual
+        UnscoredQueryResults(51L, sortedOrgs.slice(40, 52))
     }
 
     "index updated organization" in {

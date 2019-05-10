@@ -34,7 +34,7 @@ import monix.eval.Task
 import monix.execution.Scheduler.global
 import org.mockito.integrations.scalatest.IdiomaticMockitoFixture
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{EitherValues, Matchers, WordSpecLike}
+import org.scalatest.{EitherValues, Inspectors, Matchers, WordSpecLike}
 
 //noinspection TypeAnnotation
 class ProjectRoutesSpec
@@ -44,7 +44,8 @@ class ProjectRoutesSpec
     with ScalaFutures
     with EitherValues
     with Resources
-    with Matchers {
+    with Matchers
+    with Inspectors {
 
   private val iamClient = mock[IamClient[Task]]
   private val projects  = mock[Projects[Task]]
@@ -311,19 +312,17 @@ class ProjectRoutesSpec
         val iri = Iri.Url(s"http://nexus.example.com/v1/projects/org/label$i").right.value
         UnscoredQueryResult(resource.copy(id = iri, value = resource.value.copy(label = s"label$i")))
       }
-      projects.list(Pagination(0, 50))(acls) shouldReturn Task(UnscoredQueryResults(3, projs))
+      projects.list(SearchParams.empty, Pagination(0, 50))(acls) shouldReturn Task(UnscoredQueryResults(3, projs))
 
-      Get("/projects") ~> addCredentials(cred) ~> routes ~> check {
-        status shouldEqual StatusCodes.OK
-        responseAs[Json].spaces2 shouldEqual jsonContentOf("/projects/listing.json", replacements).spaces2
-      }
-      Get("/projects/") ~> addCredentials(cred) ~> routes ~> check {
-        status shouldEqual StatusCodes.OK
-        responseAs[Json].spaces2 shouldEqual jsonContentOf("/projects/listing.json", replacements).spaces2
+      forAll(List("/projects", "/projects/")) { endpoint =>
+        Get(endpoint) ~> addCredentials(cred) ~> routes ~> check {
+          status shouldEqual StatusCodes.OK
+          responseAs[Json].spaces2 shouldEqual jsonContentOf("/projects/listing.json", replacements).spaces2
+        }
       }
     }
 
-    "list an organization projects" in new Context {
+    "list deprecated projects on an organization with revision 1" in new Context {
       iamClient.hasPermission(Path("/org").right.value, read)(any[Option[AuthToken]]) shouldReturn Task.pure(true)
       iamClient.hasPermission(Path("/org/").right.value, read)(any[Option[AuthToken]]) shouldReturn Task.pure(true)
       iamClient.identities shouldReturn Task(caller)
@@ -332,15 +331,14 @@ class ProjectRoutesSpec
         val iri = Iri.Url(s"http://nexus.example.com/v1/projects/org/label$i").right.value
         UnscoredQueryResult(resource.copy(id = iri, value = resource.value.copy(label = s"label$i")))
       }
-      projects.list("org", Pagination(0, 50))(acls) shouldReturn Task(UnscoredQueryResults(3, projs))
+      projects.list(SearchParams(Some("org"), deprecated = Some(true), rev = Some(1L)), Pagination(0, 50))(acls) shouldReturn Task(
+        UnscoredQueryResults(3, projs))
 
-      Get("/projects/org") ~> addCredentials(cred) ~> routes ~> check {
-        status shouldEqual StatusCodes.OK
-        responseAs[Json].spaces2 shouldEqual jsonContentOf("/projects/listing.json", replacements).spaces2
-      }
-      Get("/projects/org/") ~> addCredentials(cred) ~> routes ~> check {
-        status shouldEqual StatusCodes.OK
-        responseAs[Json].spaces2 shouldEqual jsonContentOf("/projects/listing.json", replacements).spaces2
+      forAll(List("/projects/org?deprecated=true&rev=1", "/projects/org/?deprecated=true&rev=1")) { endpoint =>
+        Get(endpoint) ~> addCredentials(cred) ~> routes ~> check {
+          status shouldEqual StatusCodes.OK
+          responseAs[Json].spaces2 shouldEqual jsonContentOf("/projects/listing.json", replacements).spaces2
+        }
       }
     }
 

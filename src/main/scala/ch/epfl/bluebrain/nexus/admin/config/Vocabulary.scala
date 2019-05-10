@@ -36,7 +36,6 @@ object Vocabulary {
     val updatedAt         = Metadata("updatedAt")
     val createdBy         = Metadata("createdBy")
     val updatedBy         = Metadata("updatedBy")
-    val constrainedBy     = Metadata("constrainedBy")
     val self              = Metadata("self")
     val project           = Metadata("project")
     val total             = Metadata("total")

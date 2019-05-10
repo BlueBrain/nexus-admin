@@ -27,16 +27,17 @@ class ProjectRoutes(projects: Projects[Task])(
   def routes: Route = (pathPrefix("projects") & extractToken) { implicit token =>
     concat(
       // list all projects
-      (get & pathEndOrSingleSlash & paginated & extractCallerAcls(anyProject)) { (pagination, acls) =>
-        trace("listAllProjects") {
-          complete(projects.list(pagination)(acls).runToFuture)
-        }
+      (get & pathEndOrSingleSlash & paginated & searchParams & extractCallerAcls(anyProject)) {
+        (pagination, params, acls) =>
+          trace("listAllProjects") {
+            complete(projects.list(params, pagination)(acls).runToFuture)
+          }
       },
       // list projects in organization
-      (get & pathPrefix(Segment) & pathEndOrSingleSlash & paginated & extractCallerAcls(anyProject)) {
-        (orgLabel, pagination, acls) =>
+      (get & pathPrefix(Segment) & pathEndOrSingleSlash & paginated & searchParams & extractCallerAcls(anyProject)) {
+        (orgLabel, pagination, params, acls) =>
           trace("listProjectsInOrganization") {
-            complete(projects.list(orgLabel, pagination)(acls).runToFuture)
+            complete(projects.list(params.copy(organizationLabel = Some(orgLabel)), pagination)(acls).runToFuture)
           }
       },
       // fetch

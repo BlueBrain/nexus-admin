@@ -18,9 +18,11 @@ import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationRejection._
 import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationState._
 import ch.epfl.bluebrain.nexus.admin.organizations.Organizations.next
 import ch.epfl.bluebrain.nexus.admin.persistence.TaggingAdapter
+import ch.epfl.bluebrain.nexus.admin.routes.SearchParams
 import ch.epfl.bluebrain.nexus.commons.search.Pagination
 import ch.epfl.bluebrain.nexus.commons.search.QueryResults.UnscoredQueryResults
 import ch.epfl.bluebrain.nexus.iam.client.IamClient
+import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
 import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
 import ch.epfl.bluebrain.nexus.iam.client.types._
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
@@ -37,6 +39,7 @@ class Organizations[F[_]](agg: Agg[F], private val index: OrganizationCache[F], 
     implicit F: MonadError[F, Throwable],
     clock: Clock,
     http: HttpConfig,
+    iam: IamClientConfig,
     iamCredentials: Option[AuthToken],
     ownerPermissions: Set[Permission],
     retry: Retry[F, Throwable]
@@ -150,11 +153,13 @@ class Organizations[F[_]](agg: Agg[F], private val index: OrganizationCache[F], 
   /**
     * Lists all indexed organizations.
     *
+    * @param params     filter parameters of the organization
     * @param pagination the pagination settings
     * @return a paginated results list
     */
-  def list(pagination: Pagination)(implicit acls: AccessControlLists): F[UnscoredQueryResults[OrganizationResource]] =
-    index.list(pagination)
+  def list(params: SearchParams, pagination: Pagination)(
+      implicit acls: AccessControlLists): F[UnscoredQueryResults[OrganizationResource]] =
+    index.list(params, pagination)
 
   private def eval(cmd: OrganizationCommand): F[OrganizationMetaOrRejection] =
     agg.evaluateS(cmd.id.toString, cmd).flatMap {
@@ -186,6 +191,7 @@ object Organizations {
       as: ActorSystem,
       mt: ActorMaterializer): F[Organizations[F]] = {
     implicit val http: HttpConfig                              = appConfig.http
+    implicit val iamClientConfig: IamClientConfig              = appConfig.iam
     implicit val iamCredentials: Option[AuthToken]             = appConfig.serviceAccount.credentials
     implicit val ownerPermissions: Set[Permission]             = appConfig.permissions.ownerPermissions
     implicit val permissionsRetryStrategy: Retry[F, Throwable] = Retry(appConfig.permissions.retry.retryStrategy)

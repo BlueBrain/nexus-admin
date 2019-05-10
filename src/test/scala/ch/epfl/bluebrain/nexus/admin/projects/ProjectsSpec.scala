@@ -13,6 +13,7 @@ import ch.epfl.bluebrain.nexus.admin.types.ResourceF
 import ch.epfl.bluebrain.nexus.commons.test.ActorSystemFixture
 import ch.epfl.bluebrain.nexus.commons.test.io.{IOEitherValues, IOOptionValues}
 import ch.epfl.bluebrain.nexus.iam.client.IamClient
+import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
 import ch.epfl.bluebrain.nexus.iam.client.types._
 import ch.epfl.bluebrain.nexus.iam.client.types.Identity.User
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
@@ -41,7 +42,9 @@ class ProjectsSpec
   private implicit val ctx: ContextShift[IO]           = IO.contextShift(ExecutionContext.global)
   private implicit val timer: Timer[IO]                = IO.timer(system.dispatcher)
   private implicit val httpConfig: HttpConfig          = HttpConfig("nexus", 80, "v1", "http://nexus.example.com")
-  private implicit val iamCredentials                  = Some(AuthToken("token"))
+  private implicit val iamClientConfig: IamClientConfig =
+    IamClientConfig(url"http://nexus.example.com".value, url"http://iam.nexus.example.com".value, 1 second)
+  private implicit val iamCredentials = Some(AuthToken("token"))
 
   private val instant               = Instant.now
   private implicit val clock: Clock = Clock.fixed(instant, ZoneId.systemDefault)

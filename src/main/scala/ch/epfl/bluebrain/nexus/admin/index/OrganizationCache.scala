@@ -9,10 +9,13 @@ import cats.implicits._
 import ch.epfl.bluebrain.nexus.admin.config.Permissions.orgs
 import ch.epfl.bluebrain.nexus.admin.index.Cache._
 import ch.epfl.bluebrain.nexus.admin.organizations.{Organization, OrganizationResource}
+import ch.epfl.bluebrain.nexus.admin.routes.SearchParams
+import ch.epfl.bluebrain.nexus.admin.types.ResourceF
 import ch.epfl.bluebrain.nexus.commons.cache.{KeyValueStore, KeyValueStoreConfig}
 import ch.epfl.bluebrain.nexus.commons.search.Pagination
 import ch.epfl.bluebrain.nexus.commons.search.QueryResult.UnscoredQueryResult
 import ch.epfl.bluebrain.nexus.commons.search.QueryResults.UnscoredQueryResults
+import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
 import ch.epfl.bluebrain.nexus.iam.client.types.AccessControlLists
 
 /**
@@ -31,12 +34,22 @@ class OrganizationCache[F[_]](store: KeyValueStore[F, UUID, OrganizationResource
   /**
     * Return the elements on the store within the ''pagination'' bounds which are accessible by the provided acls with the permission 'projects/read'.
     *
+    * @param params     the filter parameters
     * @param pagination the pagination
     */
-  def list(pagination: Pagination)(implicit acls: AccessControlLists): F[UnscoredQueryResults[OrganizationResource]] =
+  def list(params: SearchParams, pagination: Pagination)(
+      implicit acls: AccessControlLists,
+      config: IamClientConfig): F[UnscoredQueryResults[OrganizationResource]] =
     store.values.map { values =>
-      val filtered = values.filter { org =>
-        acls.exists(org.value.label, orgs.read)
+      val filtered = values.filter {
+        case ResourceF(_, _, rev, deprecated, types, _, createdBy, _, updatedBy, organization: Organization) =>
+          params.organizationLabel.forall(_ == organization.label) &&
+            params.deprecated.forall(_ == deprecated) &&
+            params.createdBy.forall(_ == createdBy.id) &&
+            params.updatedBy.forall(_ == updatedBy.id) &&
+            params.rev.forall(_ == rev) &&
+            params.types.subsetOf(types) &&
+            acls.exists(organization.label, orgs.read)
       }
       val count  = filtered.size.toLong
       val result = filtered.toList.sorted.slice(pagination.from.toInt, (pagination.from + pagination.size).toInt)
