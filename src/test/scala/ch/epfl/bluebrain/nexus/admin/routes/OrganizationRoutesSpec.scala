@@ -33,7 +33,7 @@ import monix.eval.Task
 import monix.execution.Scheduler.global
 import org.mockito.integrations.scalatest.IdiomaticMockitoFixture
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{EitherValues, Matchers, WordSpecLike}
+import org.scalatest.{EitherValues, Inspectors, Matchers, WordSpecLike}
 
 //noinspection TypeAnnotation
 class OrganizationRoutesSpec
@@ -43,7 +43,8 @@ class OrganizationRoutesSpec
     with ScalaFutures
     with EitherValues
     with Resources
-    with Matchers {
+    with Matchers
+    with Inspectors {
 
   private val iamClient     = mock[IamClient[Task]]
   private val organizations = mock[Organizations[Task]]
@@ -271,15 +272,34 @@ class OrganizationRoutesSpec
         val iri = Iri.Url(s"http://nexus.example.com/v1/orgs/org$i").right.value
         UnscoredQueryResult(resource.copy(id = iri, value = resource.value.copy(label = s"org$i")))
       }
-      organizations.list(Pagination(0, 50))(acls) shouldReturn Task(UnscoredQueryResults(3, orgs))
+      organizations.list(SearchParams.empty, Pagination(0, 50))(acls) shouldReturn Task(UnscoredQueryResults(3, orgs))
 
-      Get("/orgs") ~> addCredentials(cred) ~> routes ~> check {
-        status shouldEqual StatusCodes.OK
-        responseAs[Json].spaces2 shouldEqual jsonContentOf("/orgs/listing.json", replacements).spaces2
+      forAll(List("/orgs", "/orgs/")) { endpoint =>
+        Get(endpoint) ~> addCredentials(cred) ~> routes ~> check {
+          status shouldEqual StatusCodes.OK
+          responseAs[Json].spaces2 shouldEqual jsonContentOf("/orgs/listing.json", replacements).spaces2
+        }
       }
-      Get("/orgs/") ~> addCredentials(cred) ~> routes ~> check {
-        status shouldEqual StatusCodes.OK
-        responseAs[Json].spaces2 shouldEqual jsonContentOf("/orgs/listing.json", replacements).spaces2
+    }
+
+    "list deprecated organizations" in new Context {
+      iamClient.hasPermission(Path./, read)(any[Option[AuthToken]]) shouldReturn Task.pure(true)
+      iamClient.hasPermission(Path.Empty, read)(any[Option[AuthToken]]) shouldReturn Task.pure(true)
+      iamClient.identities shouldReturn Task(caller)
+      iamClient.acls(Path("/*").right.value, ancestors = true, self = true) shouldReturn Task(acls)
+
+      val orgs = List(1, 2, 3).map { i =>
+        val iri = Iri.Url(s"http://nexus.example.com/v1/orgs/org$i").right.value
+        UnscoredQueryResult(resource.copy(id = iri, value = resource.value.copy(label = s"org$i")))
+      }
+      organizations.list(SearchParams(deprecated = Some(true)), Pagination(0, 50))(acls) shouldReturn Task(
+        UnscoredQueryResults(3, orgs))
+
+      forAll(List("/orgs?deprecated=true", "/orgs/?deprecated=true")) { endpoint =>
+        Get(endpoint) ~> addCredentials(cred) ~> routes ~> check {
+          status shouldEqual StatusCodes.OK
+          responseAs[Json].spaces2 shouldEqual jsonContentOf("/orgs/listing.json", replacements).spaces2
+        }
       }
     }
 
