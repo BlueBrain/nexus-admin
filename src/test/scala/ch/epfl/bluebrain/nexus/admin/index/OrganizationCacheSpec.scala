@@ -95,11 +95,9 @@ class OrganizationCacheSpec
         index.getBy(org.value.label).some shouldEqual org
       }
 
-      val sortedOrgs              = orgResources.sortBy(org => org.value.label).toList.map(UnscoredQueryResult(_))
-      val sortedOrgsNotDeprecated = sortedOrgs.collect { case result if !result.source.deprecated => result }
-      def sortedOrgsRev(rev: Long) = sortedOrgsNotDeprecated.collect {
-        case result if result.source.rev == rev => result
-      }
+      val sortedOrgs               = orgResources.sortBy(org => org.value.label).toList.map(UnscoredQueryResult(_))
+      val sortedOrgsNotDeprecated  = sortedOrgs.filter(!_.source.deprecated)
+      def sortedOrgsRev(rev: Long) = sortedOrgsNotDeprecated.filter(_.source.rev == rev)
 
       val aclsOrg1 = AccessControlLists(
         Path(s"/${orgLabels.head}").right.value -> ResourceAccessControlList(
