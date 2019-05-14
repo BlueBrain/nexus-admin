@@ -33,7 +33,7 @@ import ch.epfl.bluebrain.nexus.rdf.syntax.node.unsafe._
 import io.circe.Json
 import monix.eval.Task
 import monix.execution.Scheduler.global
-import org.mockito.IdiomaticMockito
+import org.mockito.{ArgumentMatchersSugar, IdiomaticMockito}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{EitherValues, Inspectors, Matchers, WordSpecLike}
 
@@ -41,6 +41,7 @@ import org.scalatest.{EitherValues, Inspectors, Matchers, WordSpecLike}
 class ProjectRoutesSpec
     extends WordSpecLike
     with IdiomaticMockito
+    with ArgumentMatchersSugar
     with ScalatestRouteTest
     with ScalaFutures
     with EitherValues
