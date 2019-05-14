@@ -7,6 +7,8 @@ import ch.epfl.bluebrain.nexus.admin.config.AppConfig.PaginationConfig
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig.tracing.trace
 import ch.epfl.bluebrain.nexus.admin.config.Permissions.{projects => pp}
 import ch.epfl.bluebrain.nexus.admin.directives.{AuthDirectives, QueryDirectives}
+import ch.epfl.bluebrain.nexus.admin.directives.PathDirectives._
+import ch.epfl.bluebrain.nexus.admin.index.{OrganizationCache, ProjectCache}
 import ch.epfl.bluebrain.nexus.admin.marshallers.instances._
 import ch.epfl.bluebrain.nexus.admin.projects.{ProjectDescription, Projects}
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF._
@@ -18,6 +20,8 @@ import monix.execution.Scheduler
 
 class ProjectRoutes(projects: Projects[Task])(
     implicit ic: IamClient[Task],
+    orgCache: OrganizationCache[Task],
+    projCache: ProjectCache[Task],
     icc: IamClientConfig,
     pagination: PaginationConfig,
     s: Scheduler
@@ -26,6 +30,59 @@ class ProjectRoutes(projects: Projects[Task])(
 
   def routes: Route = (pathPrefix("projects") & extractToken) { implicit token =>
     concat(
+      // fetch
+      (get & project & pathEndOrSingleSlash) {
+        case (orgLabel, projectLabel) =>
+          authorizeOn(pathOf(orgLabel, projectLabel), pp.read).apply {
+            parameter('rev.as[Long].?) {
+              case Some(rev) =>
+                trace("getProjectRev") {
+                  complete(projects.fetch(orgLabel, projectLabel, rev).runToFuture)
+
+                }
+              case None =>
+                trace("getProject") {
+                  complete(projects.fetch(orgLabel, projectLabel).runNotFound)
+
+                }
+            }
+          }
+      },
+      // writes
+      extractSubject.apply { implicit subject =>
+        concat(
+          (project & pathEndOrSingleSlash) {
+            case (orgLabel, projectLabel) =>
+              concat(
+                // deprecate
+                (delete & parameter('rev.as[Long]) & authorizeOn(pathOf(orgLabel, projectLabel), pp.write)) { rev =>
+                  trace("deprecateProject") {
+                    complete(projects.deprecate(orgLabel, projectLabel, rev).runToFuture)
+                  }
+                },
+                // update
+                (put & parameter('rev.as[Long]) & authorizeOn(pathOf(orgLabel, projectLabel), pp.write)) { rev =>
+                  entity(as[ProjectDescription]) { project =>
+                    trace("updateProject") {
+                      complete(projects.update(orgLabel, projectLabel, project, rev).runToFuture)
+                    }
+                  }
+                }
+              )
+          },
+          // create
+          (pathPrefix(Segment / Segment) & pathEndOrSingleSlash) { (orgLabel, projectLabel) =>
+            (put & authorizeOn(pathOf(orgLabel), pp.create)) {
+              entity(as[ProjectDescription]) { project =>
+                trace("createProject") {
+                  complete(projects.create(orgLabel, projectLabel, project).runWithStatus(Created))
+                }
+              }
+            }
+          }
+        )
+
+      },
       // list all projects
       (get & pathEndOrSingleSlash & paginated & searchParams & extractCallerAcls(anyProject)) {
         (pagination, params, acls) =>
@@ -34,58 +91,11 @@ class ProjectRoutes(projects: Projects[Task])(
           }
       },
       // list projects in organization
-      (get & pathPrefix(Segment) & pathEndOrSingleSlash & paginated & searchParams & extractCallerAcls(anyProject)) {
+      (get & org & pathEndOrSingleSlash & paginated & searchParams & extractCallerAcls(anyProject)) {
         (orgLabel, pagination, params, acls) =>
           trace("listProjectsInOrganization") {
             complete(projects.list(params.copy(organizationLabel = Some(orgLabel)), pagination)(acls).runToFuture)
           }
-      },
-      // fetch
-      (get & pathPrefix(Segment / Segment) & pathEndOrSingleSlash) { (orgLabel, projectLabel) =>
-        authorizeOn(pathOf(orgLabel, projectLabel), pp.read).apply {
-          parameter('rev.as[Long].?) {
-            case Some(rev) =>
-              trace("getProjectRev") {
-                complete(projects.fetch(orgLabel, projectLabel, rev).runToFuture)
-
-              }
-            case None =>
-              trace("getProject") {
-                complete(projects.fetch(orgLabel, projectLabel).runNotFound)
-
-              }
-          }
-        }
-      },
-      // writes
-      (pathPrefix(Segment / Segment) & pathEndOrSingleSlash) { (orgLabel, projectLabel) =>
-        extractSubject.apply {
-          implicit subject =>
-            concat(
-              // deprecate
-              (delete & parameter('rev.as[Long]) & authorizeOn(pathOf(orgLabel, projectLabel), pp.write)) { rev =>
-                trace("deprecateProject") {
-                  complete(projects.deprecate(orgLabel, projectLabel, rev).runToFuture)
-                }
-              },
-              // update
-              (put & parameter('rev.as[Long]) & authorizeOn(pathOf(orgLabel, projectLabel), pp.write)) { rev =>
-                entity(as[ProjectDescription]) { project =>
-                  trace("updateProject") {
-                    complete(projects.update(orgLabel, projectLabel, project, rev).runToFuture)
-                  }
-                }
-              },
-              // create
-              (put & authorizeOn(pathOf(orgLabel), pp.create)) {
-                entity(as[ProjectDescription]) { project =>
-                  trace("createProject") {
-                    complete(projects.create(orgLabel, projectLabel, project).runWithStatus(Created))
-                  }
-                }
-              }
-            )
-        }
       }
     )
   }
@@ -104,6 +114,8 @@ class ProjectRoutes(projects: Projects[Task])(
 object ProjectRoutes {
   def apply(projects: Projects[Task])(
       implicit ic: IamClient[Task],
+      orgCache: OrganizationCache[Task],
+      projCache: ProjectCache[Task],
       icc: IamClientConfig,
       pagination: PaginationConfig,
       s: Scheduler

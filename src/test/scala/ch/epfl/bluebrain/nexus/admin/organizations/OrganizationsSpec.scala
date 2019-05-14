@@ -23,8 +23,7 @@ import ch.epfl.bluebrain.nexus.rdf.Iri.Path./
 import ch.epfl.bluebrain.nexus.rdf.syntax.node.unsafe._
 import ch.epfl.bluebrain.nexus.sourcing.Aggregate
 import ch.epfl.bluebrain.nexus.sourcing.retry.{Retry, RetryStrategy}
-import org.mockito.Mockito
-import org.mockito.integrations.scalatest.IdiomaticMockitoFixture
+import org.mockito.{ArgumentMatchersSugar, IdiomaticMockito, Mockito}
 import org.scalatest.{BeforeAndAfter, Matchers}
 import org.scalatest.concurrent.ScalaFutures
 
@@ -38,7 +37,8 @@ class OrganizationsSpec
     with IOOptionValues
     with IOEitherValues
     with Matchers
-    with IdiomaticMockitoFixture
+    with IdiomaticMockito
+    with ArgumentMatchersSugar
     with BeforeAndAfter {
 
   override implicit val patienceConfig: PatienceConfig = PatienceConfig(3 seconds, 100 milliseconds)

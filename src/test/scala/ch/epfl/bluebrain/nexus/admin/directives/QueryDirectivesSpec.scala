@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.admin.config.AppConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.admin.config.{AppConfig, Settings}
 import ch.epfl.bluebrain.nexus.admin.routes.Routes
 import ch.epfl.bluebrain.nexus.commons.search.Pagination
-import org.mockito.integrations.scalatest.IdiomaticMockitoFixture
+import org.mockito.IdiomaticMockito
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{EitherValues, Matchers, WordSpecLike}
 
@@ -17,7 +17,7 @@ class QueryDirectivesSpec
     with Matchers
     with ScalaFutures
     with EitherValues
-    with IdiomaticMockitoFixture {
+    with IdiomaticMockito {
 
   private val appConfig: AppConfig      = Settings(system).appConfig
   private implicit val http: HttpConfig = appConfig.http

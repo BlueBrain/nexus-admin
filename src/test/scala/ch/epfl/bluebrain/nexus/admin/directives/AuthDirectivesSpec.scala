@@ -19,7 +19,7 @@ import ch.epfl.bluebrain.nexus.rdf.Iri.Path
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
 import monix.eval.Task
 import monix.execution.Scheduler.global
-import org.mockito.integrations.scalatest.IdiomaticMockitoFixture
+import org.mockito.IdiomaticMockito
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{Matchers, WordSpecLike}
 
@@ -28,7 +28,7 @@ class AuthDirectivesSpec
     with ScalatestRouteTest
     with Matchers
     with ScalaFutures
-    with IdiomaticMockitoFixture {
+    with IdiomaticMockito {
 
   private val iamClient  = mock[IamClient[Task]]
   private val directives = new AuthDirectives(iamClient)(global) {}

@@ -13,6 +13,7 @@ import ch.epfl.bluebrain.nexus.admin.config.AppConfig.{HttpConfig, PaginationCon
 import ch.epfl.bluebrain.nexus.admin.config.Permissions.orgs._
 import ch.epfl.bluebrain.nexus.admin.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.admin.config.{AppConfig, Permissions, Settings}
+import ch.epfl.bluebrain.nexus.admin.index.OrganizationCache
 import ch.epfl.bluebrain.nexus.admin.marshallers.instances._
 import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationRejection._
 import ch.epfl.bluebrain.nexus.admin.organizations.{Organization, Organizations}
@@ -31,14 +32,15 @@ import ch.epfl.bluebrain.nexus.rdf.syntax.node.unsafe._
 import io.circe.Json
 import monix.eval.Task
 import monix.execution.Scheduler.global
-import org.mockito.integrations.scalatest.IdiomaticMockitoFixture
+import org.mockito.{ArgumentMatchersSugar, IdiomaticMockito}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{EitherValues, Inspectors, Matchers, WordSpecLike}
 
 //noinspection TypeAnnotation
 class OrganizationRoutesSpec
     extends WordSpecLike
-    with IdiomaticMockitoFixture
+    with IdiomaticMockito
+    with ArgumentMatchersSugar
     with ScalatestRouteTest
     with ScalaFutures
     with EitherValues
@@ -46,8 +48,9 @@ class OrganizationRoutesSpec
     with Matchers
     with Inspectors {
 
-  private val iamClient     = mock[IamClient[Task]]
-  private val organizations = mock[Organizations[Task]]
+  private val iamClient         = mock[IamClient[Task]]
+  private val organizationCache = mock[OrganizationCache[Task]]
+  private val organizations     = mock[Organizations[Task]]
 
   private val appConfig: AppConfig            = Settings(system).appConfig
   private implicit val httpConfig: HttpConfig = appConfig.http
@@ -58,7 +61,11 @@ class OrganizationRoutesSpec
 
   private val routes =
     Routes.wrap(
-      OrganizationRoutes(organizations)(iamClient, iamClientConfig, PaginationConfig(50, 100), global).routes
+      OrganizationRoutes(organizations)(iamClient,
+                                        organizationCache,
+                                        iamClientConfig,
+                                        PaginationConfig(50, 100),
+                                        global).routes
     )
 
   //noinspection TypeAnnotation
@@ -185,10 +192,13 @@ class OrganizationRoutesSpec
       iamClient.hasPermission(path, read)(any[Option[AuthToken]]) shouldReturn Task.pure(true)
       iamClient.identities shouldReturn Task(caller)
       organizations.fetch("org") shouldReturn Task(Some(resource))
-
-      Get("/orgs/org") ~> addCredentials(cred) ~> routes ~> check {
-        status shouldEqual StatusCodes.OK
-        responseAs[Json].spaces2 shouldEqual jsonContentOf("/orgs/resource.json", replacements).spaces2
+      organizationCache.get(resource.uuid) shouldReturn Task(Some(resource))
+      val endpoints = List("/orgs/org", s"/orgs/${resource.uuid}")
+      forAll(endpoints) { endpoint =>
+        Get(endpoint) ~> addCredentials(cred) ~> routes ~> check {
+          status shouldEqual StatusCodes.OK
+          responseAs[Json].spaces2 shouldEqual jsonContentOf("/orgs/resource.json", replacements).spaces2
+        }
       }
     }
 

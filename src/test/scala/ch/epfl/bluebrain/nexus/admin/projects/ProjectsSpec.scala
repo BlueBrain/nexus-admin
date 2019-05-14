@@ -21,8 +21,7 @@ import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
 import ch.epfl.bluebrain.nexus.rdf.syntax.node.unsafe._
 import ch.epfl.bluebrain.nexus.sourcing.Aggregate
 import ch.epfl.bluebrain.nexus.sourcing.retry.{Retry, RetryStrategy}
-import org.mockito.MockitoSugar.reset
-import org.mockito.integrations.scalatest.IdiomaticMockitoFixture
+import org.mockito.{ArgumentMatchersSugar, IdiomaticMockito, MockitoSugar}
 import org.scalatest._
 
 import scala.concurrent.ExecutionContext
@@ -33,7 +32,8 @@ class ProjectsSpec
     extends ActorSystemFixture("ProjectsSpec", true)
     with WordSpecLike
     with BeforeAndAfterEach
-    with IdiomaticMockitoFixture
+    with IdiomaticMockito
+    with ArgumentMatchersSugar
     with Matchers
     with IOEitherValues
     with IOOptionValues {
@@ -62,9 +62,9 @@ class ProjectsSpec
   private val projects                             = aggF.map(agg => new Projects[IO](agg, index, orgs, iamClient)).unsafeRunSync()
 
   override protected def beforeEach(): Unit = {
-    reset(orgs)
-    reset(index)
-    reset(iamClient)
+    MockitoSugar.reset(orgs)
+    MockitoSugar.reset(index)
+    MockitoSugar.reset(iamClient)
   }
 
 //noinspection TypeAnnotation,NameBooleanParameters

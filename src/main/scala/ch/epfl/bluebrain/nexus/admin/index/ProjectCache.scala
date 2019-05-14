@@ -65,6 +65,15 @@ class ProjectCache[F[_]](store: KeyValueStore[F, UUID, ProjectResource])(implici
     */
   def getBy(org: String, proj: String): F[Option[ProjectResource]] =
     store.findValue(r => r.value.organizationLabel == org && r.value.label == proj)
+
+  /**
+    * Attempts to fetch the resource with the provided ''projUuid'' and ''orgUuid''
+    *
+    * @param orgUuid  the organization id
+    * @param projUuid the project id
+    */
+  def get(orgUuid: UUID, projUuid: UUID): F[Option[ProjectResource]] =
+    get(projUuid).map(_.filter(_.value.organizationUuid == orgUuid))
 }
 
 object ProjectCache {
