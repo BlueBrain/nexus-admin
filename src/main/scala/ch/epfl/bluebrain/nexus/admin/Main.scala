@@ -74,10 +74,10 @@ object Main {
       case Nil      => List(cluster.selfAddress)
       case nonEmpty => nonEmpty
     }
-    val orgIndex: OrganizationCache[Task]  = OrganizationCache[Task]
-    val projectIndex: ProjectCache[Task]   = ProjectCache[Task]
-    val organizations: Organizations[Task] = Organizations[Task](orgIndex, iamClient, appConfig).runSyncUnsafe()
-    val projects: Projects[Task]           = Projects(projectIndex, organizations, iamClient, appConfig).runSyncUnsafe()
+    implicit val orgIndex: OrganizationCache[Task] = OrganizationCache[Task]
+    implicit val projectIndex: ProjectCache[Task]  = ProjectCache[Task]
+    val organizations: Organizations[Task]         = Organizations[Task](orgIndex, iamClient, appConfig).runSyncUnsafe()
+    val projects: Projects[Task]                   = Projects(projectIndex, organizations, iamClient, appConfig).runSyncUnsafe()
 
     cluster.registerOnMemberUp {
       logger.info("==== Cluster is Live ====")

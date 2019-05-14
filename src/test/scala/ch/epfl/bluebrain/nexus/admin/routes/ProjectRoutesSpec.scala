@@ -12,6 +12,7 @@ import ch.epfl.bluebrain.nexus.admin.Error._
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig.{HttpConfig, PaginationConfig}
 import ch.epfl.bluebrain.nexus.admin.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.admin.config.{AppConfig, Permissions, Settings}
+import ch.epfl.bluebrain.nexus.admin.index.{OrganizationCache, ProjectCache}
 import ch.epfl.bluebrain.nexus.admin.marshallers.instances._
 import ch.epfl.bluebrain.nexus.admin.organizations.Organization
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectRejection._
@@ -48,6 +49,8 @@ class ProjectRoutesSpec
     with Inspectors {
 
   private val iamClient = mock[IamClient[Task]]
+  private val orgCache  = mock[OrganizationCache[Task]]
+  private val projCache = mock[ProjectCache[Task]]
   private val projects  = mock[Projects[Task]]
 
   private val appConfig: AppConfig            = Settings(system).appConfig
@@ -59,7 +62,7 @@ class ProjectRoutesSpec
 
   private val routes =
     Routes.wrap(
-      ProjectRoutes(projects)(iamClient, iamClientConfig, PaginationConfig(50, 100), global).routes
+      ProjectRoutes(projects)(iamClient, orgCache, projCache, iamClientConfig, PaginationConfig(50, 100), global).routes
     )
 
   //noinspection TypeAnnotation
@@ -265,10 +268,13 @@ class ProjectRoutesSpec
       iamClient.hasPermission("org" / "label", read)(any[Option[AuthToken]]) shouldReturn Task.pure(true)
       iamClient.identities shouldReturn Task(caller)
       projects.fetch("org", "label") shouldReturn Task(Some(resource))
-
-      Get("/projects/org/label") ~> addCredentials(cred) ~> routes ~> check {
-        status shouldEqual StatusCodes.OK
-        responseAs[Json].spaces2 shouldEqual jsonContentOf("/projects/resource.json", replacements).spaces2
+      projCache.get(resource.value.organizationUuid, resource.uuid) shouldReturn Task(Some(resource))
+      val endpoints = List("/projects/org/label", s"/projects/${resource.value.organizationUuid}/${resource.uuid}")
+      forAll(endpoints) { endpoint =>
+        Get(endpoint) ~> addCredentials(cred) ~> routes ~> check {
+          status shouldEqual StatusCodes.OK
+          responseAs[Json].spaces2 shouldEqual jsonContentOf("/projects/resource.json", replacements).spaces2
+        }
       }
     }
 

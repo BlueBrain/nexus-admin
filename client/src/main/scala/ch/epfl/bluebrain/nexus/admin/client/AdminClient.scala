@@ -1,5 +1,7 @@
 package ch.epfl.bluebrain.nexus.admin.client
 
+import java.util.UUID
+
 import akka.actor.ActorSystem
 import akka.http.scaladsl.client.RequestBuilding.Get
 import akka.http.scaladsl.model._
@@ -55,6 +57,17 @@ class AdminClient[F[_]] private[client] (source: EventSource[Event], cfg: AdminC
       }
 
   /**
+    * Fetch [[Project]].
+    *
+    * @param organization uuid of the organization to which the project belongs.
+    * @param uuid         project uuid
+    * @param credentials  optional access token
+    * @return [[Project]] instance if it exists, [[None]] otherwise, wrapped in [[F]]
+    */
+  def fetchProject(organization: UUID, uuid: UUID)(implicit credentials: Option[AuthToken]): F[Option[Project]] =
+    fetchProject(organization.toString, uuid.toString)
+
+  /**
     * Fetch [[Organization]].
     *
     * @param label organization label
@@ -67,6 +80,16 @@ class AdminClient[F[_]] private[client] (source: EventSource[Event], cfg: AdminC
       .recoverWith {
         case UnknownError(StatusCodes.NotFound, _) => F.pure(None)
       }
+
+  /**
+    * Fetch [[Organization]].
+    *
+    * @param uuid         organization uuid
+    * @param credentials  optional access token
+    * @return [[Organization]] instance if it exists, [[None]] otherwise, wrapped in [[F]]
+    */
+  def fetchOrganization(uuid: UUID)(implicit credentials: Option[AuthToken]): F[Option[Organization]] =
+    fetchOrganization(uuid.toString)
 
   /**
     * It applies the provided function ''f'' to the Project Server-sent events (SSE)

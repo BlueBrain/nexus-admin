@@ -6,7 +6,9 @@ import akka.http.scaladsl.server.Route
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig.PaginationConfig
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig.tracing.trace
 import ch.epfl.bluebrain.nexus.admin.config.Permissions.orgs
+import ch.epfl.bluebrain.nexus.admin.directives.PathDirectives._
 import ch.epfl.bluebrain.nexus.admin.directives.{AuthDirectives, QueryDirectives}
+import ch.epfl.bluebrain.nexus.admin.index.OrganizationCache
 import ch.epfl.bluebrain.nexus.admin.marshallers.instances._
 import ch.epfl.bluebrain.nexus.admin.organizations.{Organization, Organizations}
 import ch.epfl.bluebrain.nexus.admin.routes.OrganizationRoutes._
@@ -21,6 +23,7 @@ import monix.execution.Scheduler
 
 class OrganizationRoutes(organizations: Organizations[Task])(
     implicit ic: IamClient[Task],
+    cache: OrganizationCache[Task],
     icc: IamClientConfig,
     pc: PaginationConfig,
     s: Scheduler
@@ -29,15 +32,8 @@ class OrganizationRoutes(organizations: Organizations[Task])(
 
   def routes: Route = (pathPrefix("orgs") & extractToken) { implicit token =>
     concat(
-      // listing
-      (get & pathEndOrSingleSlash & paginated & searchParams & extractCallerAcls(anyOrg)) {
-        (pagination, params, acls) =>
-          trace("listOrganizations") {
-            complete(organizations.list(params, pagination)(acls).runToFuture)
-          }
-      },
       // fetch
-      (get & pathPrefix(Segment) & pathEndOrSingleSlash & parameter('rev.as[Long].?)) { (orgLabel, optRev) =>
+      (get & org & pathEndOrSingleSlash & parameter('rev.as[Long].?)) { (orgLabel, optRev) =>
         authorizeOn(pathOf(orgLabel), orgs.read).apply {
           trace("fetchOrganization") {
             complete(organizations.fetch(orgLabel, optRev).runNotFound)
@@ -45,38 +41,49 @@ class OrganizationRoutes(organizations: Organizations[Task])(
         }
       },
       // writes
-      (pathPrefix(Segment) & pathEndOrSingleSlash) { orgLabel =>
-        extractSubject.apply {
-          implicit subject =>
-            concat(
-              // deprecate
-              (delete & parameter('rev.as[Long]) & authorizeOn(pathOf(orgLabel), orgs.write)) { rev =>
-                trace("deprecateOrganization") {
-                  complete(organizations.deprecate(orgLabel, rev).runToFuture)
-                }
-              },
-              // update
-              (put & parameter('rev.as[Long]) & authorizeOn(pathOf(orgLabel), orgs.write)) { rev =>
-                entity(as[OrganizationDescription]) { org =>
-                  trace("updateOrganization") {
-                    complete(organizations.update(orgLabel, Organization(orgLabel, org.description), rev).runToFuture)
+      extractSubject.apply { implicit subject =>
+        concat(
+          (org & pathEndOrSingleSlash) {
+            orgLabel =>
+              concat(
+                // deprecate
+                (delete & parameter('rev.as[Long]) & authorizeOn(pathOf(orgLabel), orgs.write)) { rev =>
+                  trace("deprecateOrganization") {
+                    complete(organizations.deprecate(orgLabel, rev).runToFuture)
                   }
-                } ~ trace("updateOrganization") {
-                  complete(organizations.update(orgLabel, Organization(orgLabel, None), rev).runToFuture)
-                }
-              },
-              // create
-              (put & authorizeOn(pathOf(orgLabel), orgs.create)) {
-                entity(as[OrganizationDescription]) { org =>
-                  trace("createOrganization") {
-                    complete(organizations.create(Organization(orgLabel, org.description)).runWithStatus(Created))
+                },
+                // update
+                (put & parameter('rev.as[Long]) & authorizeOn(pathOf(orgLabel), orgs.write)) { rev =>
+                  entity(as[OrganizationDescription]) { org =>
+                    trace("updateOrganization") {
+                      complete(organizations.update(orgLabel, Organization(orgLabel, org.description), rev).runToFuture)
+                    }
+                  } ~ trace("updateOrganization") {
+                    complete(organizations.update(orgLabel, Organization(orgLabel, None), rev).runToFuture)
                   }
-                } ~ trace("createOrganization") {
-                  complete(organizations.create(Organization(orgLabel, None)).runWithStatus(Created))
                 }
+              )
+          },
+          // create
+          (pathPrefix(Segment) & pathEndOrSingleSlash) { orgLabel =>
+            (put & authorizeOn(pathOf(orgLabel), orgs.create)) {
+              entity(as[OrganizationDescription]) { org =>
+                trace("createOrganization") {
+                  complete(organizations.create(Organization(orgLabel, org.description)).runWithStatus(Created))
+                }
+              } ~ trace("createOrganization") {
+                complete(organizations.create(Organization(orgLabel, None)).runWithStatus(Created))
               }
-            )
-        }
+            }
+          }
+        )
+      },
+      // listing
+      (get & pathEndOrSingleSlash & paginated & searchParams & extractCallerAcls(anyOrg)) {
+        (pagination, params, acls) =>
+          trace("listOrganizations") {
+            complete(organizations.list(params, pagination)(acls).runToFuture)
+          }
       }
     )
   }
@@ -101,6 +108,7 @@ object OrganizationRoutes {
 
   def apply(organizations: Organizations[Task])(
       implicit ic: IamClient[Task],
+      cache: OrganizationCache[Task],
       icc: IamClientConfig,
       pagination: PaginationConfig,
       s: Scheduler

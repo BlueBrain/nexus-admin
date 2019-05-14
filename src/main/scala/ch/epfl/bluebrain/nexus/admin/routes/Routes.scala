@@ -10,6 +10,7 @@ import ch.epfl.bluebrain.nexus.admin.config.AppConfig
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig.{HttpConfig, PaginationConfig, PersistenceConfig}
 import ch.epfl.bluebrain.nexus.admin.exceptions.AdminError
 import ch.epfl.bluebrain.nexus.admin.exceptions.AdminError._
+import ch.epfl.bluebrain.nexus.admin.index.{OrganizationCache, ProjectCache}
 import ch.epfl.bluebrain.nexus.admin.marshallers.instances._
 import ch.epfl.bluebrain.nexus.admin.organizations.{OrganizationRejection, Organizations}
 import ch.epfl.bluebrain.nexus.admin.projects.{ProjectRejection, Projects}
@@ -98,7 +99,11 @@ object Routes {
   final def apply(
       orgs: Organizations[Task],
       projects: Projects[Task]
-  )(implicit as: ActorSystem, cfg: AppConfig, ic: IamClient[Task]): Route = {
+  )(implicit as: ActorSystem,
+    cfg: AppConfig,
+    ic: IamClient[Task],
+    orgCache: OrganizationCache[Task],
+    projCache: ProjectCache[Task]): Route = {
     implicit val hc: HttpConfig        = cfg.http
     implicit val pc: PersistenceConfig = cfg.persistence
     implicit val icc: IamClientConfig  = cfg.iam
