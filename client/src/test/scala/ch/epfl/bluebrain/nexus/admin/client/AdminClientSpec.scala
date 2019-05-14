@@ -25,7 +25,7 @@ import ch.epfl.bluebrain.nexus.iam.client.IamClientError
 import ch.epfl.bluebrain.nexus.iam.client.types.AuthToken
 import ch.epfl.bluebrain.nexus.rdf.syntax._
 import org.mockito.Mockito
-import org.mockito.integrations.scalatest.IdiomaticMockitoFixture
+import org.mockito.IdiomaticMockito
 import org.scalatest._
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import ch.epfl.bluebrain.nexus.rdf.Iri
@@ -41,7 +41,7 @@ class AdminClientSpec
     with Matchers
     with ScalaFutures
     with BeforeAndAfter
-    with IdiomaticMockitoFixture
+    with IdiomaticMockito
     with Randomness
     with IOOptionValues
     with EitherValues

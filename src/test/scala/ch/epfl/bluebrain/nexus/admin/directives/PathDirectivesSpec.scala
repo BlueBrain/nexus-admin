@@ -6,7 +6,7 @@ import java.util.UUID
 import akka.http.scaladsl.server.Directives.{complete, get}
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import org.mockito.integrations.scalatest.IdiomaticMockitoFixture
+import org.mockito.IdiomaticMockito
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{EitherValues, Matchers, WordSpecLike}
 import ch.epfl.bluebrain.nexus.admin.directives.PathDirectives._
@@ -25,7 +25,7 @@ class PathDirectivesSpec
     with Matchers
     with ScalaFutures
     with EitherValues
-    with IdiomaticMockitoFixture {
+    with IdiomaticMockito {
 
   private implicit val orgCache: OrganizationCache[Task] = mock[OrganizationCache[Task]]
   private implicit val projCache: ProjectCache[Task]     = mock[ProjectCache[Task]]

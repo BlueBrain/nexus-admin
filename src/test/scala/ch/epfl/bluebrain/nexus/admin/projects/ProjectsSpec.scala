@@ -22,7 +22,7 @@ import ch.epfl.bluebrain.nexus.rdf.syntax.node.unsafe._
 import ch.epfl.bluebrain.nexus.sourcing.Aggregate
 import ch.epfl.bluebrain.nexus.sourcing.retry.{Retry, RetryStrategy}
 import org.mockito.MockitoSugar.reset
-import org.mockito.integrations.scalatest.IdiomaticMockitoFixture
+import org.mockito.IdiomaticMockito
 import org.scalatest._
 
 import scala.concurrent.ExecutionContext
@@ -33,7 +33,7 @@ class ProjectsSpec
     extends ActorSystemFixture("ProjectsSpec", true)
     with WordSpecLike
     with BeforeAndAfterEach
-    with IdiomaticMockitoFixture
+    with IdiomaticMockito
     with Matchers
     with IOEitherValues
     with IOOptionValues {
