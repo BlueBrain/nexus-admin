@@ -53,7 +53,7 @@ class ProjectCache[F[_]](store: KeyValueStore[F, UUID, ProjectResource])(implici
             acls.exists(project.organizationLabel, project.label, projects.read)
       }
       val count  = filtered.size.toLong
-      val result = filtered.toList.sorted.slice(pagination.from.toInt, (pagination.from + pagination.size).toInt)
+      val result = filtered.toList.sorted.slice(pagination.from, (pagination.from + pagination.size))
       UnscoredQueryResults(count, result.map(UnscoredQueryResult(_)))
     }
 
