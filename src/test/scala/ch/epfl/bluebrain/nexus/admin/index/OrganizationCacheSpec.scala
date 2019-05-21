@@ -10,10 +10,10 @@ import ch.epfl.bluebrain.nexus.admin.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.admin.organizations.Organization
 import ch.epfl.bluebrain.nexus.admin.routes.SearchParams
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF
+import ch.epfl.bluebrain.nexus.commons.search.FromPagination
 import ch.epfl.bluebrain.nexus.commons.test.ActorSystemFixture
 import ch.epfl.bluebrain.nexus.commons.test.Randomness
 import ch.epfl.bluebrain.nexus.commons.test.io.IOOptionValues
-import ch.epfl.bluebrain.nexus.commons.search.Pagination
 import ch.epfl.bluebrain.nexus.commons.search.QueryResult.UnscoredQueryResult
 import ch.epfl.bluebrain.nexus.commons.search.QueryResults.UnscoredQueryResults
 import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Anonymous
@@ -111,21 +111,21 @@ class OrganizationCacheSpec
           AccessControlList(Anonymous -> Set(Permissions.orgs.read))
         ))
 
-      index.list(SearchParams.empty, Pagination(0, 100)).ioValue shouldEqual UnscoredQueryResults(51L, sortedOrgs)
-      index.list(SearchParams(deprecated = Some(false)), Pagination(0, 100)).ioValue shouldEqual
+      index.list(SearchParams.empty, FromPagination(0, 100)).ioValue shouldEqual UnscoredQueryResults(51L, sortedOrgs)
+      index.list(SearchParams(deprecated = Some(false)), FromPagination(0, 100)).ioValue shouldEqual
         UnscoredQueryResults(26L, sortedOrgsNotDeprecated)
-      index.list(SearchParams(rev = Some(24), deprecated = Some(false)), Pagination(0, 100)).ioValue shouldEqual
+      index.list(SearchParams(rev = Some(24), deprecated = Some(false)), FromPagination(0, 100)).ioValue shouldEqual
         UnscoredQueryResults(1L, sortedOrgsRev(24))
-      index.list(SearchParams.empty, Pagination(0, 100))(aclsOrg1, iamClientConfig).ioValue shouldEqual
+      index.list(SearchParams.empty, FromPagination(0, 100))(aclsOrg1, iamClientConfig).ioValue shouldEqual
         UnscoredQueryResults(1L, List(UnscoredQueryResult(orgResources.head)))
       index
-        .list(SearchParams.empty, Pagination(0, 100))(AccessControlLists.empty, iamClientConfig)
+        .list(SearchParams.empty, FromPagination(0, 100))(AccessControlLists.empty, iamClientConfig)
         .ioValue shouldEqual UnscoredQueryResults(0L, List.empty)
-      index.list(SearchParams.empty, Pagination(0, 10)).ioValue shouldEqual
+      index.list(SearchParams.empty, FromPagination(0, 10)).ioValue shouldEqual
         UnscoredQueryResults(51L, sortedOrgs.slice(0, 10))
-      index.list(SearchParams.empty, Pagination(10, 10)).ioValue shouldEqual
+      index.list(SearchParams.empty, FromPagination(10, 10)).ioValue shouldEqual
         UnscoredQueryResults(51L, sortedOrgs.slice(10, 20))
-      index.list(SearchParams.empty, Pagination(40, 20)).ioValue shouldEqual
+      index.list(SearchParams.empty, FromPagination(40, 20)).ioValue shouldEqual
         UnscoredQueryResults(51L, sortedOrgs.slice(40, 52))
     }
 

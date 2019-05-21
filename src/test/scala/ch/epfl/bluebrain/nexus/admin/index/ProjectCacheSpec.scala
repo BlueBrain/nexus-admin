@@ -11,10 +11,10 @@ import ch.epfl.bluebrain.nexus.admin.organizations.Organization
 import ch.epfl.bluebrain.nexus.admin.projects.Project
 import ch.epfl.bluebrain.nexus.admin.routes.SearchParams
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF
+import ch.epfl.bluebrain.nexus.commons.search.FromPagination
 import ch.epfl.bluebrain.nexus.commons.test.ActorSystemFixture
 import ch.epfl.bluebrain.nexus.commons.test.Randomness
 import ch.epfl.bluebrain.nexus.commons.test.io.IOOptionValues
-import ch.epfl.bluebrain.nexus.commons.search.Pagination
 import ch.epfl.bluebrain.nexus.commons.search.QueryResult.UnscoredQueryResult
 import ch.epfl.bluebrain.nexus.commons.search.QueryResults.UnscoredQueryResults
 import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Anonymous
@@ -161,20 +161,22 @@ class ProjectCacheSpec
           .toList
           .map(UnscoredQueryResult(_))
 
-      index.list(SearchParams.empty, Pagination(0, 100)).ioValue shouldEqual
+      index.list(SearchParams.empty, FromPagination(0, 100)).ioValue shouldEqual
         UnscoredQueryResults(26L, sortedCombined)
 
-      index.list(SearchParams(Some(orgLabel)), Pagination(0, 100)).ioValue shouldEqual
+      index.list(SearchParams(Some(orgLabel)), FromPagination(0, 100)).ioValue shouldEqual
         UnscoredQueryResults(15L, sortedProjects)
-      index.list(SearchParams(deprecated = Some(true)), Pagination(0, 100)).ioValue shouldEqual
+      index.list(SearchParams(deprecated = Some(true)), FromPagination(0, 100)).ioValue shouldEqual
         UnscoredQueryResults(15L, sortedProjects)
-      index.list(SearchParams(Some(orgLabel2)), Pagination(0, 100)).ioValue shouldEqual
+      index.list(SearchParams(Some(orgLabel2)), FromPagination(0, 100)).ioValue shouldEqual
         UnscoredQueryResults(10L, sortedProjects2)
-      index.list(SearchParams(Some(orgLabel2)), Pagination(0, 5)).ioValue shouldEqual
+      index.list(SearchParams(Some(orgLabel2)), FromPagination(0, 5)).ioValue shouldEqual
         UnscoredQueryResults(10L, sortedProjects2.slice(0, 5))
-      index.list(SearchParams.empty, Pagination(0, 100))(AccessControlLists.empty, iamClientConfig).ioValue shouldEqual
+      index
+        .list(SearchParams.empty, FromPagination(0, 100))(AccessControlLists.empty, iamClientConfig)
+        .ioValue shouldEqual
         UnscoredQueryResults(0L, List.empty)
-      index.list(SearchParams.empty, Pagination(0, 100))(aclsProj1, iamClientConfig).ioValue shouldEqual
+      index.list(SearchParams.empty, FromPagination(0, 100))(aclsProj1, iamClientConfig).ioValue shouldEqual
         UnscoredQueryResults(1L, List(UnscoredQueryResult(projectResources.head)))
     }
   }

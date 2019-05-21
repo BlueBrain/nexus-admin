@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.admin.projects.{Project, ProjectResource}
 import ch.epfl.bluebrain.nexus.admin.routes.SearchParams
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF
 import ch.epfl.bluebrain.nexus.commons.cache.{KeyValueStore, KeyValueStoreConfig}
-import ch.epfl.bluebrain.nexus.commons.search.Pagination
+import ch.epfl.bluebrain.nexus.commons.search.FromPagination
 import ch.epfl.bluebrain.nexus.commons.search.QueryResult.UnscoredQueryResult
 import ch.epfl.bluebrain.nexus.commons.search.QueryResults.UnscoredQueryResults
 import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
@@ -38,7 +38,7 @@ class ProjectCache[F[_]](store: KeyValueStore[F, UUID, ProjectResource])(implici
     * @param params the filter parameters
     * @param pagination the pagination
     */
-  def list(params: SearchParams, pagination: Pagination)(
+  def list(params: SearchParams, pagination: FromPagination)(
       implicit acls: AccessControlLists,
       config: IamClientConfig): F[UnscoredQueryResults[ProjectResource]] =
     store.values.map { values =>

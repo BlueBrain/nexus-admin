@@ -6,7 +6,7 @@ import ch.epfl.bluebrain.nexus.admin.config.Vocabulary._
 import ch.epfl.bluebrain.nexus.commons.cache.KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport.OrderedKeys
 import ch.epfl.bluebrain.nexus.commons.kamon.directives.TracingDirectives
-import ch.epfl.bluebrain.nexus.commons.search.Pagination
+import ch.epfl.bluebrain.nexus.commons.search.FromPagination
 import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
 import ch.epfl.bluebrain.nexus.iam.client.types.{AuthToken, Permission}
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
@@ -159,7 +159,7 @@ object AppConfig {
     * @param maxSize the maximum results size
     */
   final case class PaginationConfig(size: Int, maxSize: Int) {
-    val default: Pagination = Pagination(0, size)
+    val default: FromPagination = FromPagination(0, size)
   }
 
   val orderedKeys = OrderedKeys(

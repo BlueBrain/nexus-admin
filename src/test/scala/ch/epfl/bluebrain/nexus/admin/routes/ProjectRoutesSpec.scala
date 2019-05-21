@@ -18,8 +18,8 @@ import ch.epfl.bluebrain.nexus.admin.organizations.Organization
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectRejection._
 import ch.epfl.bluebrain.nexus.admin.projects.{Project, ProjectDescription, Projects}
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF
+import ch.epfl.bluebrain.nexus.commons.search.FromPagination
 import ch.epfl.bluebrain.nexus.commons.test.Resources
-import ch.epfl.bluebrain.nexus.commons.search.Pagination
 import ch.epfl.bluebrain.nexus.commons.search.QueryResult.UnscoredQueryResult
 import ch.epfl.bluebrain.nexus.commons.search.QueryResults.UnscoredQueryResults
 import ch.epfl.bluebrain.nexus.iam.client.IamClient
@@ -319,7 +319,7 @@ class ProjectRoutesSpec
         val iri = Iri.Url(s"http://nexus.example.com/v1/projects/org/label$i").right.value
         UnscoredQueryResult(resource.copy(id = iri, value = resource.value.copy(label = s"label$i")))
       }
-      projects.list(SearchParams.empty, Pagination(0, 50))(acls) shouldReturn Task(UnscoredQueryResults(3, projs))
+      projects.list(SearchParams.empty, FromPagination(0, 50))(acls) shouldReturn Task(UnscoredQueryResults(3, projs))
 
       forAll(List("/projects", "/projects/")) { endpoint =>
         Get(endpoint) ~> addCredentials(cred) ~> routes ~> check {
@@ -338,7 +338,7 @@ class ProjectRoutesSpec
         val iri = Iri.Url(s"http://nexus.example.com/v1/projects/org/label$i").right.value
         UnscoredQueryResult(resource.copy(id = iri, value = resource.value.copy(label = s"label$i")))
       }
-      projects.list(SearchParams(Some("org"), deprecated = Some(true), rev = Some(1L)), Pagination(0, 50))(acls) shouldReturn Task(
+      projects.list(SearchParams(Some("org"), deprecated = Some(true), rev = Some(1L)), FromPagination(0, 50))(acls) shouldReturn Task(
         UnscoredQueryResults(3, projs))
 
       forAll(List("/projects/org?deprecated=true&rev=1", "/projects/org/?deprecated=true&rev=1")) { endpoint =>
