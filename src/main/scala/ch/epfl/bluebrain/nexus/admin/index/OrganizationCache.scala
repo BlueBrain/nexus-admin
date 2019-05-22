@@ -12,7 +12,7 @@ import ch.epfl.bluebrain.nexus.admin.organizations.{Organization, OrganizationRe
 import ch.epfl.bluebrain.nexus.admin.routes.SearchParams
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF
 import ch.epfl.bluebrain.nexus.commons.cache.{KeyValueStore, KeyValueStoreConfig}
-import ch.epfl.bluebrain.nexus.commons.search.Pagination
+import ch.epfl.bluebrain.nexus.commons.search.FromPagination
 import ch.epfl.bluebrain.nexus.commons.search.QueryResult.UnscoredQueryResult
 import ch.epfl.bluebrain.nexus.commons.search.QueryResults.UnscoredQueryResults
 import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
@@ -37,7 +37,7 @@ class OrganizationCache[F[_]](store: KeyValueStore[F, UUID, OrganizationResource
     * @param params     the filter parameters
     * @param pagination the pagination
     */
-  def list(params: SearchParams, pagination: Pagination)(
+  def list(params: SearchParams, pagination: FromPagination)(
       implicit acls: AccessControlLists,
       config: IamClientConfig): F[UnscoredQueryResults[OrganizationResource]] =
     store.values.map { values =>
@@ -52,7 +52,7 @@ class OrganizationCache[F[_]](store: KeyValueStore[F, UUID, OrganizationResource
             acls.exists(organization.label, orgs.read)
       }
       val count  = filtered.size.toLong
-      val result = filtered.toList.sorted.slice(pagination.from.toInt, (pagination.from + pagination.size).toInt)
+      val result = filtered.toList.sorted.slice(pagination.from, (pagination.from + pagination.size))
       UnscoredQueryResults(count, result.map(UnscoredQueryResult(_)))
     }
 

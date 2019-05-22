@@ -20,7 +20,7 @@ import ch.epfl.bluebrain.nexus.admin.projects.ProjectRejection._
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectState._
 import ch.epfl.bluebrain.nexus.admin.routes.SearchParams
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF
-import ch.epfl.bluebrain.nexus.commons.search.Pagination
+import ch.epfl.bluebrain.nexus.commons.search.FromPagination
 import ch.epfl.bluebrain.nexus.commons.search.QueryResults.UnscoredQueryResults
 import ch.epfl.bluebrain.nexus.iam.client.IamClient
 import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
@@ -227,7 +227,7 @@ class Projects[F[_]](agg: Agg[F],
     * @param pagination the pagination settings
     * @return a paginated results list
     */
-  def list(params: SearchParams, pagination: Pagination)(
+  def list(params: SearchParams, pagination: FromPagination)(
       implicit acls: AccessControlLists): F[UnscoredQueryResults[ProjectResource]] =
     index.list(params, pagination)
 

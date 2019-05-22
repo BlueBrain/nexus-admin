@@ -6,7 +6,7 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig.HttpConfig
 import ch.epfl.bluebrain.nexus.admin.config.{AppConfig, Settings}
 import ch.epfl.bluebrain.nexus.admin.routes.Routes
-import ch.epfl.bluebrain.nexus.commons.search.Pagination
+import ch.epfl.bluebrain.nexus.commons.search.FromPagination
 import org.mockito.IdiomaticMockito
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.{EitherValues, Matchers, WordSpecLike}
@@ -27,30 +27,30 @@ class QueryDirectivesSpec
 
   "Query directives" should {
     "handle pagination" in {
-      def paginated(from: Long, size: Int) =
+      def paginated(from: Int, size: Int) =
         Routes.wrap(
           (get & QueryDirectives.paginated(AppConfig.PaginationConfig(50, 100))) { pagination =>
-            pagination shouldEqual Pagination(from, size)
+            pagination shouldEqual FromPagination(from, size)
             complete(StatusCodes.Accepted)
           }
         )
 
-      Get("/") ~> routes(paginated(0L, 50)) ~> check {
+      Get("/") ~> routes(paginated(0, 50)) ~> check {
         status shouldEqual StatusCodes.Accepted
       }
-      Get("/?size=42") ~> routes(paginated(0L, 42)) ~> check {
+      Get("/?size=42") ~> routes(paginated(0, 42)) ~> check {
         status shouldEqual StatusCodes.Accepted
       }
-      Get("/?from=1") ~> routes(paginated(1L, 50)) ~> check {
+      Get("/?from=1") ~> routes(paginated(1, 50)) ~> check {
         status shouldEqual StatusCodes.Accepted
       }
-      Get("/?from=1&size=42") ~> routes(paginated(1L, 42)) ~> check {
+      Get("/?from=1&size=42") ~> routes(paginated(1, 42)) ~> check {
         status shouldEqual StatusCodes.Accepted
       }
-      Get("/?from=1&size=-42") ~> routes(paginated(1L, 0)) ~> check {
+      Get("/?from=1&size=-42") ~> routes(paginated(1, 0)) ~> check {
         status shouldEqual StatusCodes.Accepted
       }
-      Get("/?from=1&size=500") ~> routes(paginated(1L, 100)) ~> check {
+      Get("/?from=1&size=500") ~> routes(paginated(1, 100)) ~> check {
         status shouldEqual StatusCodes.Accepted
       }
     }
