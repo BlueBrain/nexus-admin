@@ -114,7 +114,7 @@ object ResourceF {
   implicit def uqrsEncoder[A: Encoder](
       implicit iamClientConfig: IamClientConfig): Encoder[UnscoredQueryResults[ResourceF[A]]] = {
     Encoder.encodeJson.contramap {
-      case UnscoredQueryResults(total, results) =>
+      case UnscoredQueryResults(total, results, _) =>
         Json.obj(
           "@context"         -> Json.arr(adminCtxUri.asJson, resourceCtxUri.asJson, searchCtxUri.asJson),
           nxv.total.prefix   -> Json.fromLong(total),
