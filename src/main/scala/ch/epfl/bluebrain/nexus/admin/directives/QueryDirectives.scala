@@ -43,8 +43,7 @@ trait QueryDirectives {
 
   private def toField(optString: Option[String]): Option[Field] =
     optString.flatMap {
-      case string if string.isEmpty                                                       => None
-      case string if string.startsWith("'") && string.endsWith("'") && string.length == 2 => None
+      case string if string.isEmpty || string == "''" => None
       case string if string.startsWith("'") && string.endsWith("'") =>
         Some(Field(string.drop(1).dropRight(1), exactMatch = true))
       case string => Some(Field(string, exactMatch = false))

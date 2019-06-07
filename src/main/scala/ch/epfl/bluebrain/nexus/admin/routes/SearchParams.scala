@@ -31,7 +31,7 @@ object SearchParams {
     * @param value      the field
     * @param exactMatch the matching strategy
     */
-  case class Field(value: String, exactMatch: Boolean) {
+  final case class Field(value: String, exactMatch: Boolean) {
 
     def matches(that: String): Boolean =
       if (exactMatch) that == value else that.toLowerCase.contains(value.toLowerCase)
