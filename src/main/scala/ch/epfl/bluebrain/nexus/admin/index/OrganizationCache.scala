@@ -43,7 +43,7 @@ class OrganizationCache[F[_]](store: KeyValueStore[F, UUID, OrganizationResource
     store.values.map { values =>
       val filtered = values.filter {
         case ResourceF(_, _, rev, deprecated, types, _, createdBy, _, updatedBy, organization: Organization) =>
-          params.organizationLabel.forall(_ == organization.label) &&
+          params.organizationLabel.forall(_.matches(organization.label)) &&
             params.deprecated.forall(_ == deprecated) &&
             params.createdBy.forall(_ == createdBy.id) &&
             params.updatedBy.forall(_ == updatedBy.id) &&

@@ -10,6 +10,7 @@ import ch.epfl.bluebrain.nexus.admin.config.{Permissions, Settings}
 import ch.epfl.bluebrain.nexus.admin.organizations.Organization
 import ch.epfl.bluebrain.nexus.admin.projects.Project
 import ch.epfl.bluebrain.nexus.admin.routes.SearchParams
+import ch.epfl.bluebrain.nexus.admin.routes.SearchParams.Field
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF
 import ch.epfl.bluebrain.nexus.commons.search.FromPagination
 import ch.epfl.bluebrain.nexus.commons.test.ActorSystemFixture
@@ -164,13 +165,19 @@ class ProjectCacheSpec
       index.list(SearchParams.empty, FromPagination(0, 100)).ioValue shouldEqual
         UnscoredQueryResults(26L, sortedCombined)
 
-      index.list(SearchParams(Some(orgLabel)), FromPagination(0, 100)).ioValue shouldEqual
+      index.list(SearchParams(Some(Field(orgLabel, exactMatch = true))), FromPagination(0, 100)).ioValue shouldEqual
         UnscoredQueryResults(15L, sortedProjects)
+      index
+        .list(SearchParams(Some(Field(orgLabel, exactMatch = true)),
+                           Some(Field(sortedProjects(0).source.value.label, exactMatch = true))),
+              FromPagination(0, 100))
+        .ioValue shouldEqual
+        UnscoredQueryResults(1L, List(sortedProjects(0)))
       index.list(SearchParams(deprecated = Some(true)), FromPagination(0, 100)).ioValue shouldEqual
         UnscoredQueryResults(15L, sortedProjects)
-      index.list(SearchParams(Some(orgLabel2)), FromPagination(0, 100)).ioValue shouldEqual
+      index.list(SearchParams(Some(Field(orgLabel2, exactMatch = true))), FromPagination(0, 100)).ioValue shouldEqual
         UnscoredQueryResults(10L, sortedProjects2)
-      index.list(SearchParams(Some(orgLabel2)), FromPagination(0, 5)).ioValue shouldEqual
+      index.list(SearchParams(Some(Field(orgLabel2, exactMatch = true))), FromPagination(0, 5)).ioValue shouldEqual
         UnscoredQueryResults(10L, sortedProjects2.slice(0, 5))
       index
         .list(SearchParams.empty, FromPagination(0, 100))(AccessControlLists.empty, iamClientConfig)

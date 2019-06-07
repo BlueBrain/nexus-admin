@@ -11,6 +11,7 @@ import ch.epfl.bluebrain.nexus.admin.directives.PathDirectives._
 import ch.epfl.bluebrain.nexus.admin.index.{OrganizationCache, ProjectCache}
 import ch.epfl.bluebrain.nexus.admin.marshallers.instances._
 import ch.epfl.bluebrain.nexus.admin.projects.{ProjectDescription, Projects}
+import ch.epfl.bluebrain.nexus.admin.routes.SearchParams.Field
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF._
 import ch.epfl.bluebrain.nexus.iam.client.IamClient
 import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
@@ -84,17 +85,18 @@ class ProjectRoutes(projects: Projects[Task])(
 
       },
       // list all projects
-      (get & pathEndOrSingleSlash & paginated & searchParams & extractCallerAcls(anyProject)) {
+      (get & pathEndOrSingleSlash & paginated & searchParamsProjects & extractCallerAcls(anyProject)) {
         (pagination, params, acls) =>
           trace("listAllProjects") {
             complete(projects.list(params, pagination)(acls).runToFuture)
           }
       },
       // list projects in organization
-      (get & org & pathEndOrSingleSlash & paginated & searchParams & extractCallerAcls(anyProject)) {
+      (get & org & pathEndOrSingleSlash & paginated & searchParamsProjects & extractCallerAcls(anyProject)) {
         (orgLabel, pagination, params, acls) =>
           trace("listProjectsInOrganization") {
-            complete(projects.list(params.copy(organizationLabel = Some(orgLabel)), pagination)(acls).runToFuture)
+            val orgField = Some(Field(orgLabel, exactMatch = true))
+            complete(projects.list(params.copy(organizationLabel = orgField), pagination)(acls).runToFuture)
           }
       }
     )

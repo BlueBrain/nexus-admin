@@ -5,6 +5,7 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.unmarshalling.Unmarshaller
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig.PaginationConfig
 import ch.epfl.bluebrain.nexus.admin.routes.SearchParams
+import ch.epfl.bluebrain.nexus.admin.routes.SearchParams.Field
 import ch.epfl.bluebrain.nexus.commons.search.FromPagination
 import ch.epfl.bluebrain.nexus.rdf.Iri
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
@@ -25,16 +26,38 @@ trait QueryDirectives {
     }
 
   /**
-    * @return the extracted search parameters from the request query parameters.
+    * @return the extracted search parameters from the request query parameters for projects listings.
     */
-  def searchParams: Directive1[SearchParams] =
+  def searchParamsProjects: Directive1[SearchParams] =
+    parameter('label.as[String].?).flatMap { label =>
+      searchParams.map(_.copy(projectLabel = toField(label)))
+    }
+
+  /**
+    * @return the extracted search parameters from the request query parameters for organizations listings.
+    */
+  def searchParamsOrgs: Directive1[SearchParams] =
+    parameter('label.as[String].?).flatMap { label =>
+      searchParams.map(_.copy(organizationLabel = toField(label)))
+    }
+
+  private def toField(optString: Option[String]): Option[Field] =
+    optString.flatMap {
+      case string if string.isEmpty                                                       => None
+      case string if string.startsWith("'") && string.endsWith("'") && string.length == 2 => None
+      case string if string.startsWith("'") && string.endsWith("'") =>
+        Some(Field(string.drop(1).dropRight(1), exactMatch = true))
+      case string => Some(Field(string, exactMatch = false))
+    }
+
+  private def searchParams: Directive1[SearchParams] =
     (parameter('deprecated.as[Boolean].?) &
       parameter('rev.as[Long].?) &
       parameter('createdBy.as[AbsoluteIri].?) &
       parameter('updatedBy.as[AbsoluteIri].?) &
       parameter('type.as[AbsoluteIri].*)).tmap {
       case (deprecated, rev, createdBy, updatedBy, types) =>
-        SearchParams(None, deprecated, rev, createdBy, updatedBy, types.toSet)
+        SearchParams(None, None, deprecated, rev, createdBy, updatedBy, types.toSet)
     }
 
   private implicit def iriFromStringUnmarshaller: Unmarshaller[String, AbsoluteIri] =

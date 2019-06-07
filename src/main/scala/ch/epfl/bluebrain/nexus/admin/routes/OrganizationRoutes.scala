@@ -79,7 +79,7 @@ class OrganizationRoutes(organizations: Organizations[Task])(
         )
       },
       // listing
-      (get & pathEndOrSingleSlash & paginated & searchParams & extractCallerAcls(anyOrg)) {
+      (get & pathEndOrSingleSlash & paginated & searchParamsOrgs & extractCallerAcls(anyOrg)) {
         (pagination, params, acls) =>
           trace("listOrganizations") {
             complete(organizations.list(params, pagination)(acls).runToFuture)
