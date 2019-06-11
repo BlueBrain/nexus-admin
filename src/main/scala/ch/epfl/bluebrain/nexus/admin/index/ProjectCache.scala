@@ -44,7 +44,8 @@ class ProjectCache[F[_]](store: KeyValueStore[F, UUID, ProjectResource])(implici
     store.values.map { values =>
       val filtered = values.filter {
         case ResourceF(_, _, rev, deprecated, types, _, createdBy, _, updatedBy, project: Project) =>
-          params.organizationLabel.forall(_ == project.organizationLabel) &&
+          params.organizationLabel.forall(_.matches(project.organizationLabel)) &&
+            params.projectLabel.forall(_.matches(project.label)) &&
             params.deprecated.forall(_ == deprecated) &&
             params.createdBy.forall(_ == createdBy.id) &&
             params.updatedBy.forall(_ == updatedBy.id) &&
