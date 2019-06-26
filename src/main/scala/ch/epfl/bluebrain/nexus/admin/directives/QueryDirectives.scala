@@ -30,7 +30,7 @@ trait QueryDirectives {
     */
   def searchParamsProjects: Directive1[SearchParams] =
     parameter('label.as[String].?).flatMap { label =>
-      searchParams.map(_.copy(projectLabel = toField(label)))
+      searchParams.map(_.copy(projectLabel = label.filter(_.nonEmpty).map(Field(_))))
     }
 
   /**
@@ -38,15 +38,7 @@ trait QueryDirectives {
     */
   def searchParamsOrgs: Directive1[SearchParams] =
     parameter('label.as[String].?).flatMap { label =>
-      searchParams.map(_.copy(organizationLabel = toField(label)))
-    }
-
-  private def toField(optString: Option[String]): Option[Field] =
-    optString.flatMap {
-      case string if string.isEmpty || string == "''" => None
-      case string if string.startsWith("'") && string.endsWith("'") =>
-        Some(Field(string.drop(1).dropRight(1), exactMatch = true))
-      case string => Some(Field(string, exactMatch = false))
+      searchParams.map(_.copy(organizationLabel = label.filter(_.nonEmpty).map(Field(_))))
     }
 
   private def searchParams: Directive1[SearchParams] =
