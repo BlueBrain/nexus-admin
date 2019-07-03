@@ -64,7 +64,13 @@ class ProjectRoutesSpec
 
   private val routes =
     Routes.wrap(
-      ProjectRoutes(projects)(iamClient, orgCache, projCache, iamClientConfig, PaginationConfig(50, 100), global).routes
+      ProjectRoutes(projects)(iamClient,
+                              orgCache,
+                              projCache,
+                              iamClientConfig,
+                              httpConfig,
+                              PaginationConfig(50, 100),
+                              global).routes
     )
 
   //noinspection TypeAnnotation

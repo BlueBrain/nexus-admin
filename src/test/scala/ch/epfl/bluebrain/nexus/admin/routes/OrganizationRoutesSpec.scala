@@ -64,6 +64,7 @@ class OrganizationRoutesSpec
       OrganizationRoutes(organizations)(iamClient,
                                         organizationCache,
                                         iamClientConfig,
+                                        httpConfig,
                                         PaginationConfig(50, 100),
                                         global).routes
     )

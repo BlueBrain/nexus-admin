@@ -26,8 +26,8 @@ scalafmt: {
 
 // Dependency versions
 val alpakkaVersion             = "1.0.2"
-val commonsVersion             = "0.13.0"
-val iamVersion                 = "13aa0a5a"
+val commonsVersion             = "0.15.0"
+val iamVersion                 = "0c1ce980"
 val sourcingVersion            = "0.16.3"
 val akkaVersion                = "2.5.23"
 val akkaCorsVersion            = "0.4.1"
@@ -39,7 +39,7 @@ val circeVersion               = "0.11.1"
 val journalVersion             = "3.0.19"
 val logbackVersion             = "1.2.3"
 val mockitoVersion             = "1.5.11"
-val monixVersion               = "3.0.0-RC2"
+val monixVersion               = "3.0.0-RC3"
 val pureconfigVersion          = "0.11.1"
 val scalaTestVersion           = "3.0.7"
 val kryoVersion                = "0.5.2"
@@ -48,6 +48,7 @@ val kryoVersion                = "0.5.2"
 lazy val iamClient           = "ch.epfl.bluebrain.nexus" %% "iam-client"                 % iamVersion
 lazy val sourcingProjections = "ch.epfl.bluebrain.nexus" %% "sourcing-projections"       % sourcingVersion
 lazy val commonsCore         = "ch.epfl.bluebrain.nexus" %% "commons-core"               % commonsVersion
+lazy val commonsKamon        = "ch.epfl.bluebrain.nexus" %% "commons-kamon"              % commonsVersion
 lazy val commonsTest         = "ch.epfl.bluebrain.nexus" %% "commons-test"               % commonsVersion
 lazy val akkaCluster         = "com.typesafe.akka"       %% "akka-cluster"               % akkaVersion
 lazy val akkaHttp            = "com.typesafe.akka"       %% "akka-http"                  % akkaHttpVersion
@@ -85,6 +86,7 @@ lazy val admin = project
       akkaStream,
       catsCore,
       circeCore,
+      commonsKamon,
       iamClient,
       journalCore,
       logbackClassic,
@@ -98,7 +100,8 @@ lazy val admin = project
       commonsTest        % Test,
       mockito            % Test
     ),
-    resolvers += "dnvriend" at "http://dl.bintray.com/dnvriend/maven"
+    resolvers += "dnvriend" at "http://dl.bintray.com/dnvriend/maven",
+    resolvers += "bogdanromanx" at "http://dl.bintray.com/bogdanromanx/maven"
   )
 
 lazy val client = project
@@ -138,10 +141,9 @@ lazy val buildInfoSettings = Seq(
 
 inThisBuild(
   List(
-    workbenchVersion := "0.3.2",
-    homepage         := Some(url("https://github.com/BlueBrain/nexus-admin")),
-    licenses         := Seq("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt")),
-    scmInfo          := Some(ScmInfo(url("https://github.com/BlueBrain/nexus-admin"), "scm:git:git@github.com:BlueBrain/nexus-admin.git")),
+    homepage := Some(url("https://github.com/BlueBrain/nexus-admin")),
+    licenses := Seq("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0.txt")),
+    scmInfo  := Some(ScmInfo(url("https://github.com/BlueBrain/nexus-admin"), "scm:git:git@github.com:BlueBrain/nexus-admin.git")),
     developers := List(
       Developer("bogdanromanx", "Bogdan Roman", "noreply@epfl.ch", url("https://bluebrain.epfl.ch/")),
       Developer("hygt", "Henry Genet", "noreply@epfl.ch", url("https://bluebrain.epfl.ch/")),

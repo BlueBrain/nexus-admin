@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.admin.directives
 import java.util.UUID
 
 import akka.http.scaladsl.server.Directive1
-import akka.http.scaladsl.server.Directives.{pathPrefix, _}
+import akka.http.scaladsl.server.Directives._
 import ch.epfl.bluebrain.nexus.admin.index.{OrganizationCache, ProjectCache}
 import monix.eval.Task
 import monix.execution.Scheduler

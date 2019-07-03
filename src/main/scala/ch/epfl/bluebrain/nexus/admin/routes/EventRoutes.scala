@@ -15,7 +15,6 @@ import akka.persistence.query._
 import akka.stream.scaladsl.Source
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig.PersistenceConfig
-import ch.epfl.bluebrain.nexus.admin.config.AppConfig.tracing._
 import ch.epfl.bluebrain.nexus.admin.config.Permissions._
 import ch.epfl.bluebrain.nexus.admin.directives.AuthDirectives
 import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationEvent
@@ -67,9 +66,7 @@ class EventRoutes(
       extractToken { implicit token =>
         authorizeOn(Path./, permission).apply {
           lastEventId { offset =>
-            trace(s"${tag}Events") {
-              complete(source(tag, offset, toSse))
-            }
+            complete(source(tag, offset, toSse))
           }
         }
       }
