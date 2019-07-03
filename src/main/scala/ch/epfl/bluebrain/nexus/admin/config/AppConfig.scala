@@ -5,7 +5,6 @@ import ch.epfl.bluebrain.nexus.admin.config.AppConfig._
 import ch.epfl.bluebrain.nexus.admin.config.Vocabulary._
 import ch.epfl.bluebrain.nexus.commons.cache.KeyValueStoreConfig
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport.OrderedKeys
-import ch.epfl.bluebrain.nexus.commons.kamon.directives.TracingDirectives
 import ch.epfl.bluebrain.nexus.commons.search.FromPagination
 import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
 import ch.epfl.bluebrain.nexus.iam.client.types.{AuthToken, Permission}
@@ -197,7 +196,5 @@ object AppConfig {
       nxv.instant.prefix,
       nxv.subject.prefix,
     ))
-
-  val tracing = new TracingDirectives()
 
 }
