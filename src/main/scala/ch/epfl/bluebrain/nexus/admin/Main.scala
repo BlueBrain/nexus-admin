@@ -79,6 +79,10 @@ object Main {
     val organizations: Organizations[Task]         = Organizations[Task](orgIndex, iamClient, appConfig).runSyncUnsafe()
     val projects: Projects[Task]                   = Projects(projectIndex, organizations, iamClient, appConfig).runSyncUnsafe()
 
+    if (sys.env.getOrElse("REPAIR_FROM_MESSAGES", "false").toBoolean) {
+      Task.fromFuture(RepairFromMessages.repair(organizations, projects)).runSyncUnsafe()
+    }
+
     cluster.registerOnMemberUp {
       logger.info("==== Cluster is Live ====")
       bootstrapIndexers(organizations, projects)
