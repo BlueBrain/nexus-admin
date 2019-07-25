@@ -27,6 +27,7 @@ import journal.Logger
 
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
 import scala.reflect.ClassTag
+import scala.util.control.NonFatal
 
 /**
   * Admin client.
@@ -158,8 +159,14 @@ object AdminClient {
   ): HttpClient[F, A] = new HttpClient[F, A] {
     private val logger = Logger(s"AdminHttpClient[${implicitly[ClassTag[A]]}]")
 
+    private def handleError[B](req: HttpRequest): Throwable => F[B] = {
+      case NonFatal(th) =>
+        logger.error(s"Unexpected response for ADMIN call. Request: '${req.method} ${req.uri}'", th)
+        F.raiseError(UnknownError(StatusCodes.InternalServerError, th.getMessage))
+    }
+
     override def apply(req: HttpRequest): F[A] =
-      cl.apply(req).flatMap { resp =>
+      cl(req).handleErrorWith(handleError(req)).flatMap { resp =>
         resp.status match {
           case StatusCodes.Unauthorized =>
             cl.toString(resp.entity).flatMap { entityAsString =>
