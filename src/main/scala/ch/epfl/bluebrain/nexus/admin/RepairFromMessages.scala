@@ -23,8 +23,10 @@ object RepairFromMessages {
 
   private val log = Logger[RepairFromMessages.type]
 
-  def repair(o: Organizations[Task],
-             p: Projects[Task])(implicit as: ActorSystem, mt: ActorMaterializer, sc: Scheduler): Future[Unit] = {
+  def repair(
+      o: Organizations[Task],
+      p: Projects[Task]
+  )(implicit as: ActorSystem, mt: ActorMaterializer, sc: Scheduler): Future[Unit] = {
     val pq = PersistenceQuery(as).readJournalFor[CassandraReadJournal](CassandraReadJournal.Identifier)
 
     pq.currentPersistenceIds()

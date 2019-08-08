@@ -23,8 +23,10 @@ class AppInfoRoutesSpec extends WordSpecLike with Matchers with ScalatestRouteTe
     "return the appropriate service description" in {
       Get("/") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
-        responseAs[Json] shouldEqual Json.obj("name"    -> Json.fromString(description.name),
-                                              "version" -> Json.fromString(description.version))
+        responseAs[Json] shouldEqual Json.obj(
+          "name"    -> Json.fromString(description.name),
+          "version" -> Json.fromString(description.version)
+        )
       }
     }
 
@@ -42,8 +44,10 @@ class AppInfoRoutesSpec extends WordSpecLike with Matchers with ScalatestRouteTe
       cassandra.check shouldReturn Future.successful(Inaccessible)
       Get("/health") ~> routes ~> check {
         status shouldEqual StatusCodes.OK
-        responseAs[Json] shouldEqual Json.obj("cluster"   -> Json.fromString("inaccessible"),
-                                              "cassandra" -> Json.fromString("inaccessible"))
+        responseAs[Json] shouldEqual Json.obj(
+          "cluster"   -> Json.fromString("inaccessible"),
+          "cassandra" -> Json.fromString("inaccessible")
+        )
       }
     }
   }

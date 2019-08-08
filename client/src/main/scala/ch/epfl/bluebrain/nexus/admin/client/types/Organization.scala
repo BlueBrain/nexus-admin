@@ -21,16 +21,18 @@ import io.circe.Decoder
   * @param updatedAt    [[Instant]] at which the organization was updated
   * @param updatedBy    ID of the subject that updated the organization
   */
-final case class Organization(id: AbsoluteIri,
-                              label: String,
-                              description: Option[String],
-                              uuid: UUID,
-                              rev: Long,
-                              deprecated: Boolean,
-                              createdAt: Instant,
-                              createdBy: AbsoluteIri,
-                              updatedAt: Instant,
-                              updatedBy: AbsoluteIri)
+final case class Organization(
+    id: AbsoluteIri,
+    label: String,
+    description: Option[String],
+    uuid: UUID,
+    rev: Long,
+    deprecated: Boolean,
+    createdAt: Instant,
+    createdBy: AbsoluteIri,
+    updatedAt: Instant,
+    updatedBy: AbsoluteIri
+)
 
 object Organization {
 

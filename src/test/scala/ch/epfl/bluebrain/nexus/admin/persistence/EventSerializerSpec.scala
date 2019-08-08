@@ -27,22 +27,36 @@ class EventSerializerSpec
   private val subject = Identity.User("alice", "bbp")
   private val base    = url"http://localhost:8080/base".value
   private val voc     = url"http://localhost:8080/voc".value
-  private val mappings = Map("nxv" -> url"https://bluebrain.github.io/nexus/vocabulary/".value,
-                             "rdf" -> url"http://www.w3.org/1999/02/22-rdf-syntax-ns#".value)
+  private val mappings = Map(
+    "nxv" -> url"https://bluebrain.github.io/nexus/vocabulary/".value,
+    "rdf" -> url"http://www.w3.org/1999/02/22-rdf-syntax-ns#".value
+  )
 
   private val data: Map[AnyRef, (String, Json)] = Map(
-    (OrganizationCreated(orgId, "myorg", Some("My organization"), instant, subject),
-     ("OrganizationEvent", jsonContentOf("/serializer/org-created.json"))),
-    (OrganizationUpdated(orgId, 42L, "myorg", Some("My organization"), instant, subject),
-     ("OrganizationEvent", jsonContentOf("/serializer/org-updated.json"))),
-    (OrganizationDeprecated(orgId, 42L, instant, subject),
-     ("OrganizationEvent", jsonContentOf("/serializer/org-deprecated.json"))),
-    (ProjectCreated(projId, "myproj", orgId, "myorg", None, mappings, base, voc, instant, subject),
-     ("ProjectEvent", jsonContentOf("/serializer/project-created.json"))),
-    (ProjectUpdated(projId, "myproj", Some("My project"), mappings, base, voc, 42L, instant, subject),
-     ("ProjectEvent", jsonContentOf("/serializer/project-updated.json"))),
-    (ProjectDeprecated(projId, 42L, instant, subject),
-     ("ProjectEvent", jsonContentOf("/serializer/project-deprecated.json")))
+    (
+      OrganizationCreated(orgId, "myorg", Some("My organization"), instant, subject),
+      ("OrganizationEvent", jsonContentOf("/serializer/org-created.json"))
+    ),
+    (
+      OrganizationUpdated(orgId, 42L, "myorg", Some("My organization"), instant, subject),
+      ("OrganizationEvent", jsonContentOf("/serializer/org-updated.json"))
+    ),
+    (
+      OrganizationDeprecated(orgId, 42L, instant, subject),
+      ("OrganizationEvent", jsonContentOf("/serializer/org-deprecated.json"))
+    ),
+    (
+      ProjectCreated(projId, "myproj", orgId, "myorg", None, mappings, base, voc, instant, subject),
+      ("ProjectEvent", jsonContentOf("/serializer/project-created.json"))
+    ),
+    (
+      ProjectUpdated(projId, "myproj", Some("My project"), mappings, base, voc, 42L, instant, subject),
+      ("ProjectEvent", jsonContentOf("/serializer/project-updated.json"))
+    ),
+    (
+      ProjectDeprecated(projId, 42L, instant, subject),
+      ("ProjectEvent", jsonContentOf("/serializer/project-deprecated.json"))
+    )
   )
 
   "An EventSerializer" should {

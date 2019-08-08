@@ -58,22 +58,26 @@ class ProjectCacheSpec
     subject,
     organization
   )
-  val mappings = Map("nxv" -> url"https://bluebrain.github.io/nexus/vocabulary/".value,
-                     "rdf" -> url"http://www.w3.org/1999/02/22-rdf-syntax-ns#type".value)
+  val mappings = Map(
+    "nxv" -> url"https://bluebrain.github.io/nexus/vocabulary/".value,
+    "rdf" -> url"http://www.w3.org/1999/02/22-rdf-syntax-ns#type".value
+  )
   val base = url"http://nexus.example.com/base".value
   val voc  = url"http://nexus.example.com/voc".value
   val project =
     Project(genString(), UUID.randomUUID(), organization.label, Some(genString()), mappings, base, voc)
-  val projectResource = ResourceF(url"http://nexus.example.com/v1/orgs/org".value,
-                                  UUID.randomUUID(),
-                                  1L,
-                                  false,
-                                  Set(nxv.Project.value),
-                                  instant,
-                                  subject,
-                                  instant,
-                                  subject,
-                                  project)
+  val projectResource = ResourceF(
+    url"http://nexus.example.com/v1/orgs/org".value,
+    UUID.randomUUID(),
+    1L,
+    false,
+    Set(nxv.Project.value),
+    instant,
+    subject,
+    instant,
+    subject,
+    project
+  )
 
   "A project cache" should {
 
@@ -94,7 +98,8 @@ class ProjectCacheSpec
           Instant.EPOCH,
           Anonymous,
           AccessControlList(Anonymous -> Set(Permissions.projects.read))
-        ))
+        )
+      )
 
       val projectLabels        = (1 to 15).map(_ => genString())
       val orgLabel             = genString()
@@ -121,7 +126,8 @@ class ProjectCacheSpec
         projectResource.copy(
           id = url"http://nexus.example.com/v1/projects/${projectsOrganization.label}/${project.label}".value,
           uuid = UUID.randomUUID(),
-          value = project)
+          value = project
+        )
       }
 
       val aclsProj1 = AccessControlLists(
@@ -134,7 +140,8 @@ class ProjectCacheSpec
           Instant.EPOCH,
           Anonymous,
           AccessControlList(Anonymous -> Set(Permissions.projects.read))
-        ))
+        )
+      )
 
       val combined = projectResources ++ projectResources2
 
@@ -168,9 +175,13 @@ class ProjectCacheSpec
       index.list(SearchParams(Some(Field(orgLabel, exactMatch = true))), FromPagination(0, 100)).ioValue shouldEqual
         UnscoredQueryResults(15L, sortedProjects)
       index
-        .list(SearchParams(Some(Field(orgLabel, exactMatch = true)),
-                           Some(Field(sortedProjects(0).source.value.label, exactMatch = true))),
-              FromPagination(0, 100))
+        .list(
+          SearchParams(
+            Some(Field(orgLabel, exactMatch = true)),
+            Some(Field(sortedProjects(0).source.value.label, exactMatch = true))
+          ),
+          FromPagination(0, 100)
+        )
         .ioValue shouldEqual
         UnscoredQueryResults(1L, List(sortedProjects(0)))
       index.list(SearchParams(deprecated = Some(true)), FromPagination(0, 100)).ioValue shouldEqual

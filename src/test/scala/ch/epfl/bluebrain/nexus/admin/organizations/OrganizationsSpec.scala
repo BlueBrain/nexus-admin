@@ -117,7 +117,8 @@ class OrganizationsSpec
               caller,
               AccessControlList(caller -> permissions)
             )
-          ))
+          )
+        )
 
       orgs.create(organization).accepted
       iamClient.putAcls(*, *, *)(*) wasNever called
@@ -142,7 +143,8 @@ class OrganizationsSpec
               caller,
               AccessControlList(caller -> permissions)
             )
-          ))
+          )
+        )
 
       orgs.create(organization).accepted
       iamClient.putAcls(*, *, *)(*) wasNever called
@@ -165,14 +167,19 @@ class OrganizationsSpec
               caller,
               Instant.now(),
               caller,
-              AccessControlList(subject -> Set(Permission.unsafe("test/permission1")),
-                                caller  -> Set(Permission.unsafe("test/permission2")))
+              AccessControlList(
+                subject -> Set(Permission.unsafe("test/permission1")),
+                caller  -> Set(Permission.unsafe("test/permission2"))
+              )
             )
-          ))
+          )
+        )
 
-      iamClient.putAcls(orgPath,
-                        AccessControlList(subject -> Set(Permission.unsafe("test/permission1")), caller -> permissions),
-                        Some(1L))(iamCredentials) shouldReturn IO.unit
+      iamClient.putAcls(
+        orgPath,
+        AccessControlList(subject -> Set(Permission.unsafe("test/permission1")), caller -> permissions),
+        Some(1L)
+      )(iamCredentials) shouldReturn IO.unit
       orgs.create(organization).accepted
 
     }
@@ -206,11 +213,14 @@ class OrganizationsSpec
               caller,
               AccessControlList(subject -> Set(Permission.unsafe("test/permission1")))
             )
-          ))
+          )
+        )
 
-      iamClient.putAcls(orgPath,
-                        AccessControlList(subject -> Set(Permission.unsafe("test/permission1")), caller -> permissions),
-                        Some(1L))(iamCredentials) shouldReturn IO.unit
+      iamClient.putAcls(
+        orgPath,
+        AccessControlList(subject -> Set(Permission.unsafe("test/permission1")), caller -> permissions),
+        Some(1L)
+      )(iamCredentials) shouldReturn IO.unit
       orgs.create(organization).accepted
     }
 

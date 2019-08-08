@@ -61,7 +61,8 @@ object AppInfoRoutes {
     * @return a new [[AppInfoRoutes]] instance
     */
   def apply(description: Description, cluster: ClusterHealthChecker, cassandra: CassandraHealthChecker)(
-      implicit ec: ExecutionContext): AppInfoRoutes =
+      implicit ec: ExecutionContext
+  ): AppInfoRoutes =
     new AppInfoRoutes(ServiceDescription(description.name, description.version), HealthStatusGroup(cluster, cassandra))
 
 }

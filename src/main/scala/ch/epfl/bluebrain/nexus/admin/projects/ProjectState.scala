@@ -31,18 +31,19 @@ object ProjectState {
     * @param subject      the identity associated with this state
     * @param deprecated   the deprecation status
     */
-  final case class Current(id: UUID,
-                           label: String,
-                           organizationUuid: UUID,
-                           organizationLabel: String,
-                           description: Option[String],
-                           apiMappings: Map[String, AbsoluteIri],
-                           base: AbsoluteIri,
-                           vocab: AbsoluteIri,
-                           rev: Long,
-                           instant: Instant,
-                           subject: Subject,
-                           deprecated: Boolean)
-      extends ProjectState
+  final case class Current(
+      id: UUID,
+      label: String,
+      organizationUuid: UUID,
+      organizationLabel: String,
+      description: Option[String],
+      apiMappings: Map[String, AbsoluteIri],
+      base: AbsoluteIri,
+      vocab: AbsoluteIri,
+      rev: Long,
+      instant: Instant,
+      subject: Subject,
+      deprecated: Boolean
+  ) extends ProjectState
 
 }

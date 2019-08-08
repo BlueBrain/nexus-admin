@@ -99,11 +99,13 @@ object Routes {
   final def apply(
       orgs: Organizations[Task],
       projects: Projects[Task]
-  )(implicit as: ActorSystem,
-    cfg: AppConfig,
-    ic: IamClient[Task],
-    orgCache: OrganizationCache[Task],
-    projCache: ProjectCache[Task]): Route = {
+  )(
+      implicit as: ActorSystem,
+      cfg: AppConfig,
+      ic: IamClient[Task],
+      orgCache: OrganizationCache[Task],
+      projCache: ProjectCache[Task]
+  ): Route = {
     implicit val hc: HttpConfig        = cfg.http
     implicit val pc: PersistenceConfig = cfg.persistence
     implicit val icc: IamClientConfig  = cfg.iam

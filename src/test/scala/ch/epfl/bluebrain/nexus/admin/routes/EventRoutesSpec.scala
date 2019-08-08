@@ -101,7 +101,7 @@ class EventRoutesSpec
       2L,
       instant,
       subject
-    ),
+    )
   )
 
   val projectEvents = List(
@@ -133,19 +133,19 @@ class EventRoutesSpec
       2L,
       instant,
       subject
-    ),
+    )
   )
 
   val orgEventsJsons = Vector(
     jsonContentOf("/events/org-created.json"),
     jsonContentOf("/events/org-updated.json"),
-    jsonContentOf("/events/org-deprecated.json"),
+    jsonContentOf("/events/org-deprecated.json")
   )
 
   val projectEventsJsons = Vector(
     jsonContentOf("/events/project-created.json"),
     jsonContentOf("/events/project-updated.json"),
-    jsonContentOf("/events/project-deprecated.json"),
+    jsonContentOf("/events/project-deprecated.json")
   )
 
   def eventStreamFor(jsons: Vector[Json], drop: Int = 0): String =
@@ -210,7 +210,7 @@ class EventRoutesSpec
         "/orgs/events",
         "/orgs/events/",
         "/projects/events",
-        "/projects/events/",
+        "/projects/events/"
       )
       forAll(endpoints) { path =>
         Get(path) ~> routes ~> check {
@@ -226,7 +226,7 @@ object EventRoutesSpec {
 
   //noinspection TypeAnnotation
   class TestableEventRoutes(
-      events: List[Any],
+      events: List[Any]
   )(implicit as: ActorSystem, hc: HttpConfig, pc: PersistenceConfig, ic: IamClientConfig, cl: IamClient[Task])
       extends EventRoutes() {
 
@@ -234,7 +234,7 @@ object EventRoutesSpec {
 
     private val envelopes = events.zipWithIndex.map {
       case (ev, idx) =>
-        EventEnvelope(Sequence(idx.toLong), "persistenceid", 1l, ev)
+        EventEnvelope(Sequence(idx.toLong), "persistenceid", 1L, ev)
     }
 
     override protected def source(
