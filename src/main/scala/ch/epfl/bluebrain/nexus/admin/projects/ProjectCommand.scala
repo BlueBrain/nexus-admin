@@ -40,17 +40,18 @@ object ProjectCommand {
     * @param instant           the timestamp associated to this command
     * @param subject           the identity associated to this command
     */
-  final case class CreateProject(id: UUID,
-                                 label: String,
-                                 organizationUuid: UUID,
-                                 organizationLabel: String,
-                                 description: Option[String],
-                                 apiMappings: Map[String, AbsoluteIri],
-                                 base: AbsoluteIri,
-                                 vocab: AbsoluteIri,
-                                 instant: Instant,
-                                 subject: Subject)
-      extends ProjectCommand
+  final case class CreateProject(
+      id: UUID,
+      label: String,
+      organizationUuid: UUID,
+      organizationLabel: String,
+      description: Option[String],
+      apiMappings: Map[String, AbsoluteIri],
+      base: AbsoluteIri,
+      vocab: AbsoluteIri,
+      instant: Instant,
+      subject: Subject
+  ) extends ProjectCommand
 
   /**
     * Command that signals the intent to update a project.
@@ -65,16 +66,17 @@ object ProjectCommand {
     * @param instant     the timestamp associated to this command
     * @param subject     the identity associated to this command
     */
-  final case class UpdateProject(id: UUID,
-                                 label: String,
-                                 description: Option[String],
-                                 apiMappings: Map[String, AbsoluteIri],
-                                 base: AbsoluteIri,
-                                 vocab: AbsoluteIri,
-                                 rev: Long,
-                                 instant: Instant,
-                                 subject: Subject)
-      extends ProjectCommand
+  final case class UpdateProject(
+      id: UUID,
+      label: String,
+      description: Option[String],
+      apiMappings: Map[String, AbsoluteIri],
+      base: AbsoluteIri,
+      vocab: AbsoluteIri,
+      rev: Long,
+      instant: Instant,
+      subject: Subject
+  ) extends ProjectCommand
 
   /**
     * Command that signals the intent to deprecate a project.

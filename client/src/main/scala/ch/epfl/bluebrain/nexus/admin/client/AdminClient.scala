@@ -39,7 +39,7 @@ class AdminClient[F[_]] private[client] (source: EventSource[Event], cfg: AdminC
     F: Effect[F],
     mt: Materializer,
     pc: HttpClient[F, Project],
-    oc: HttpClient[F, Organization],
+    oc: HttpClient[F, Organization]
 ) {
 
   /**
@@ -99,7 +99,8 @@ class AdminClient[F[_]] private[client] (source: EventSource[Event], cfg: AdminC
     * @param offset the optional offset from where to start streaming the events
     */
   def projectEvents(f: ProjectEvent => F[Unit], offset: Option[String] = None)(
-      implicit cred: Option[AuthToken]): Unit = {
+      implicit cred: Option[AuthToken]
+  ): Unit = {
     val pf: PartialFunction[Event, F[Unit]] = { case ev: ProjectEvent => f(ev) }
     events(cfg.projectsIri + "events", pf, offset)
   }
@@ -111,7 +112,8 @@ class AdminClient[F[_]] private[client] (source: EventSource[Event], cfg: AdminC
     * @param offset the optional offset from where to start streaming the events
     */
   def organizationEvents(f: OrganizationEvent => F[Unit], offset: Option[String] = None)(
-      implicit cred: Option[AuthToken]): Unit = {
+      implicit cred: Option[AuthToken]
+  ): Unit = {
     val pf: PartialFunction[Event, F[Unit]] = { case ev: OrganizationEvent => f(ev) }
     events(cfg.orgsIri + "events", pf, offset)
   }
@@ -128,7 +130,8 @@ class AdminClient[F[_]] private[client] (source: EventSource[Event], cfg: AdminC
   }
 
   private def events(iri: AbsoluteIri, f: PartialFunction[Event, F[Unit]], offset: Option[String])(
-      implicit cred: Option[AuthToken]): Unit =
+      implicit cred: Option[AuthToken]
+  ): Unit =
     source(iri, offset)
       .mapAsync(1) { event =>
         f.lift(event) match {
@@ -181,18 +184,19 @@ object AdminClient {
             val value = L.liftIO(IO.fromFuture(IO(um(resp.entity))))
             value.recoverWith {
               case pf: ParsingFailure =>
-                logger.error(
-                  s"Failed to parse a successful response of '${req.method.name()} ${req.getUri().toString}'.")
+                logger
+                  .error(s"Failed to parse a successful response of '${req.method.name()} ${req.getUri().toString}'.")
                 F.raiseError[A](UnmarshallingError(pf.getMessage()))
               case df: DecodingFailure =>
-                logger.error(
-                  s"Failed to decode a successful response of '${req.method.name()} ${req.getUri().toString}'.")
+                logger
+                  .error(s"Failed to decode a successful response of '${req.method.name()} ${req.getUri().toString}'.")
                 F.raiseError(UnmarshallingError(df.getMessage()))
             }
           case other =>
             cl.toString(resp.entity).flatMap { entityAsString =>
               logger.error(
-                s"Received '${other.value}' when accessing '${req.method.name()} ${req.uri.toString()}', response entity as string: '$entityAsString.'")
+                s"Received '${other.value}' when accessing '${req.method.name()} ${req.uri.toString()}', response entity as string: '$entityAsString.'"
+              )
               F.raiseError[A](UnknownError(other, entityAsString))
             }
         }

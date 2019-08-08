@@ -76,17 +76,20 @@ class OrganizationCacheSpec
           Instant.EPOCH,
           Anonymous,
           AccessControlList(Anonymous -> Set(Permissions.orgs.read))
-        ))
+        )
+      )
       val orgLabels = (1 to 50).map(_ => genString())
 
       val orgResources = orgLabels.zipWithIndex.map {
         case (label, idx) =>
           val organization = Organization(label, Some(genString()))
-          orgResource.copy(id = url"http://nexus.example.com/v1/orgs/${organization.label}".value,
-                           uuid = UUID.randomUUID(),
-                           deprecated = idx > 24,
-                           rev = idx.toLong,
-                           value = organization)
+          orgResource.copy(
+            id = url"http://nexus.example.com/v1/orgs/${organization.label}".value,
+            uuid = UUID.randomUUID(),
+            deprecated = idx > 24,
+            rev = idx.toLong,
+            value = organization
+          )
       } :+ orgResource
 
       orgResources.foreach(org => index.replace(org.uuid, org).ioValue)
@@ -109,7 +112,8 @@ class OrganizationCacheSpec
           Instant.EPOCH,
           Anonymous,
           AccessControlList(Anonymous -> Set(Permissions.orgs.read))
-        ))
+        )
+      )
 
       index.list(SearchParams.empty, FromPagination(0, 100)).ioValue shouldEqual UnscoredQueryResults(51L, sortedOrgs)
       index.list(SearchParams(deprecated = Some(false)), FromPagination(0, 100)).ioValue shouldEqual

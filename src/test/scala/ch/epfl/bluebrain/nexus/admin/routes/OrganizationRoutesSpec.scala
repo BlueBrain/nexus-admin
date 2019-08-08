@@ -56,17 +56,19 @@ class OrganizationRoutesSpec
   private implicit val httpConfig: HttpConfig = appConfig.http
   private implicit val iamClientConfig: IamClientConfig = IamClientConfig(
     url"https://nexus.example.com/v1".value,
-    url"http://localhost:8080/v1".value,
+    url"http://localhost:8080/v1".value
   )
 
   private val routes =
     Routes.wrap(
-      OrganizationRoutes(organizations)(iamClient,
-                                        organizationCache,
-                                        iamClientConfig,
-                                        httpConfig,
-                                        PaginationConfig(50, 100),
-                                        global).routes
+      OrganizationRoutes(organizations)(
+        iamClient,
+        organizationCache,
+        iamClientConfig,
+        httpConfig,
+        PaginationConfig(50, 100),
+        global
+      ).routes
     )
 
   //noinspection TypeAnnotation
@@ -85,7 +87,8 @@ class OrganizationRoutesSpec
         Instant.EPOCH,
         Anonymous,
         AccessControlList(Anonymous -> Set(Permissions.projects.read))
-      ))
+      )
+    )
 
     val cred = OAuth2BearerToken("token")
 
@@ -97,16 +100,18 @@ class OrganizationRoutesSpec
 
     val description  = Json.obj("description" -> Json.fromString("Org description"))
     val organization = Organization("org", Some("Org description"))
-    val resource = ResourceF(iri,
-                             orgId,
-                             1L,
-                             deprecated = false,
-                             types,
-                             instant,
-                             caller.subject,
-                             instant,
-                             caller.subject,
-                             organization)
+    val resource = ResourceF(
+      iri,
+      orgId,
+      1L,
+      deprecated = false,
+      types,
+      instant,
+      caller.subject,
+      instant,
+      caller.subject,
+      organization
+    )
     val meta         = resource.discard
     val replacements = Map(quote("{instant}") -> instant.toString, quote("{uuid}") -> orgId.toString)
   }
@@ -284,7 +289,8 @@ class OrganizationRoutesSpec
         UnscoredQueryResult(resource.copy(id = iri, value = resource.value.copy(label = s"org$i")))
       }
       organizations.list(SearchParams.empty, FromPagination(0, 50))(acls) shouldReturn Task(
-        UnscoredQueryResults(3, orgs))
+        UnscoredQueryResults(3, orgs)
+      )
 
       forAll(List("/orgs", "/orgs/")) { endpoint =>
         Get(endpoint) ~> addCredentials(cred) ~> routes ~> check {
@@ -305,7 +311,8 @@ class OrganizationRoutesSpec
         UnscoredQueryResult(resource.copy(id = iri, value = resource.value.copy(label = s"org$i")))
       }
       organizations.list(SearchParams(deprecated = Some(true)), FromPagination(0, 50))(acls) shouldReturn Task(
-        UnscoredQueryResults(3, orgs))
+        UnscoredQueryResults(3, orgs)
+      )
 
       forAll(List("/orgs?deprecated=true", "/orgs/?deprecated=true")) { endpoint =>
         Get(endpoint) ~> addCredentials(cred) ~> routes ~> check {

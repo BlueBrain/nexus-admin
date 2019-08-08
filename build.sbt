@@ -164,6 +164,7 @@ inThisBuild(
     releaseEarlyWith              := BintrayPublisher,
     releaseEarlyNoGpg             := true,
     releaseEarlyEnableSyncToMaven := false
-  ))
+  )
+)
 
 addCommandAlias("review", ";clean;scalafmtCheck;scalafmtSbtCheck;test:scalafmtCheck;coverage;scapegoat;test;coverageReport;coverageAggregate")

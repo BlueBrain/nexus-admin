@@ -47,7 +47,8 @@ object OrganizationRejection {
     */
   final case class IncorrectRev(expected: Long, provided: Long)
       extends OrganizationRejection(
-        s"Incorrect revision '$provided' provided, expected '$expected', the organization may have been updated since last seen.")
+        s"Incorrect revision '$provided' provided, expected '$expected', the organization may have been updated since last seen."
+      )
 
   implicit val organizationRejectionEncoder: Encoder[OrganizationRejection] = {
     implicit val rejectionConfig: Configuration = Configuration.default.withDiscriminator("@type")
