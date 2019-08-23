@@ -37,9 +37,10 @@ class OrganizationCache[F[_]](store: KeyValueStore[F, UUID, OrganizationResource
     * @param params     the filter parameters
     * @param pagination the pagination
     */
-  def list(params: SearchParams, pagination: FromPagination)(
-      implicit acls: AccessControlLists,
-      config: IamClientConfig): F[UnscoredQueryResults[OrganizationResource]] =
+  def list(
+      params: SearchParams,
+      pagination: FromPagination
+  )(implicit acls: AccessControlLists, config: IamClientConfig): F[UnscoredQueryResults[OrganizationResource]] =
     store.values.map { values =>
       val filtered = values.filter {
         case ResourceF(_, _, rev, deprecated, types, _, createdBy, _, updatedBy, organization: Organization) =>

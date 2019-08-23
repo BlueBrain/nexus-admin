@@ -27,21 +27,23 @@ import io.circe.{Decoder, DecodingFailure}
   * @param updatedAt         [[Instant]] at which the project was updated
   * @param updatedBy         ID of the subject that updated the project
   */
-final case class Project(id: AbsoluteIri,
-                         label: String,
-                         organizationLabel: String,
-                         description: Option[String],
-                         base: AbsoluteIri,
-                         vocab: AbsoluteIri,
-                         apiMappings: Map[String, AbsoluteIri],
-                         uuid: UUID,
-                         organizationUuid: UUID,
-                         rev: Long,
-                         deprecated: Boolean,
-                         createdAt: Instant,
-                         createdBy: AbsoluteIri,
-                         updatedAt: Instant,
-                         updatedBy: AbsoluteIri)
+final case class Project(
+    id: AbsoluteIri,
+    label: String,
+    organizationLabel: String,
+    description: Option[String],
+    base: AbsoluteIri,
+    vocab: AbsoluteIri,
+    apiMappings: Map[String, AbsoluteIri],
+    uuid: UUID,
+    organizationUuid: UUID,
+    rev: Long,
+    deprecated: Boolean,
+    createdAt: Instant,
+    createdBy: AbsoluteIri,
+    updatedAt: Instant,
+    updatedBy: AbsoluteIri
+)
 
 object Project {
 
@@ -77,21 +79,22 @@ object Project {
         createdAt  <- hc.get[Instant]("_createdAt")
         updatedBy  <- hc.get[AbsoluteIri]("_updatedBy")
         updatedAt  <- hc.get[Instant]("_updatedAt")
-      } yield
-        Project(id,
-                label,
-                orgLabel,
-                description,
-                base,
-                vocab,
-                apiMap,
-                uuid,
-                orgUuid,
-                rev,
-                deprecated,
-                createdAt,
-                createdBy,
-                updatedAt,
-                updatedBy)
+      } yield Project(
+        id,
+        label,
+        orgLabel,
+        description,
+        base,
+        vocab,
+        apiMap,
+        uuid,
+        orgUuid,
+        rev,
+        deprecated,
+        createdAt,
+        createdBy,
+        updatedAt,
+        updatedBy
+      )
     }
 }

@@ -38,9 +38,10 @@ class ProjectCache[F[_]](store: KeyValueStore[F, UUID, ProjectResource])(implici
     * @param params the filter parameters
     * @param pagination the pagination
     */
-  def list(params: SearchParams, pagination: FromPagination)(
-      implicit acls: AccessControlLists,
-      config: IamClientConfig): F[UnscoredQueryResults[ProjectResource]] =
+  def list(
+      params: SearchParams,
+      pagination: FromPagination
+  )(implicit acls: AccessControlLists, config: IamClientConfig): F[UnscoredQueryResults[ProjectResource]] =
     store.values.map { values =>
       val filtered = values.filter {
         case ResourceF(_, _, rev, deprecated, types, _, createdBy, _, updatedBy, project: Project) =>

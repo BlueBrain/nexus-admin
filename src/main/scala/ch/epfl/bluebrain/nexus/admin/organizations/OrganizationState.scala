@@ -35,16 +35,17 @@ object OrganizationState {
     * @param updatedAt    the instant when the organization was last updated
     * @param updatedBy    the identity that last updated the organization
     */
-  final case class Current(id: UUID,
-                           rev: Long,
-                           label: String,
-                           description: Option[String],
-                           deprecated: Boolean,
-                           createdAt: Instant,
-                           createdBy: Subject,
-                           updatedAt: Instant,
-                           updatedBy: Subject)
-      extends OrganizationState {
+  final case class Current(
+      id: UUID,
+      rev: Long,
+      label: String,
+      description: Option[String],
+      deprecated: Boolean,
+      createdAt: Instant,
+      createdBy: Subject,
+      updatedAt: Instant,
+      updatedBy: Subject
+  ) extends OrganizationState {
 
     /**
       * Convert the state into [[ResourceF]].
@@ -53,16 +54,18 @@ object OrganizationState {
       * @return [[Organization]] wrapped in [[ResourceF]]
       */
     def toResource(implicit http: HttpConfig): OrganizationResource =
-      ResourceF(http.orgsBaseIri + label,
-                id,
-                rev,
-                deprecated,
-                Set(nxv.Organization.value),
-                createdAt,
-                createdBy,
-                updatedAt,
-                updatedBy,
-                Organization(label, description))
+      ResourceF(
+        http.orgsBaseIri + label,
+        id,
+        rev,
+        deprecated,
+        Set(nxv.Organization.value),
+        createdAt,
+        createdBy,
+        updatedAt,
+        updatedBy,
+        Organization(label, description)
+      )
 
     /**
       * Convert the state into [[ResourceMetadata]]
@@ -71,15 +74,16 @@ object OrganizationState {
       * @return [[ResourceMetadata]] for the [[Organization]]
       */
     def toResourceMetadata(implicit http: HttpConfig): ResourceMetadata =
-      ResourceF.unit(http.orgsBaseIri + label,
-                     id,
-                     rev,
-                     deprecated,
-                     Set(nxv.Organization.value),
-                     createdAt,
-                     createdBy,
-                     updatedAt,
-                     updatedBy,
+      ResourceF.unit(
+        http.orgsBaseIri + label,
+        id,
+        rev,
+        deprecated,
+        Set(nxv.Organization.value),
+        createdAt,
+        createdBy,
+        updatedAt,
+        updatedBy
       )
   }
 

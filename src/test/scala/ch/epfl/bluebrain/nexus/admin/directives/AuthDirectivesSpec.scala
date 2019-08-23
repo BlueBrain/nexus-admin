@@ -83,22 +83,27 @@ class AuthDirectivesSpec
       iamClient.hasPermission(path, permission)(None) shouldReturn Task.pure(false)
       Get("/") ~> authorizeOnRoute(path, permission)(None) ~> check {
         status shouldEqual StatusCodes.Forbidden
-        responseAs[Error] shouldEqual Error("AuthorizationFailed",
-                                            "The supplied authentication is not authorized to access this resource.")
+        responseAs[Error] shouldEqual Error(
+          "AuthorizationFailed",
+          "The supplied authentication is not authorized to access this resource."
+        )
       }
 
       iamClient.hasPermission(path2, permission)(None) shouldReturn Task.raiseError(ExpectedException)
       Get("/") ~> authorizeOnRoute(path2, permission)(None) ~> check {
         status shouldEqual StatusCodes.InternalServerError
-        responseAs[Error] shouldEqual Error(classNameOf[AdminError.InternalError.type],
-                                            "The system experienced an unexpected error, please try again later.")
+        responseAs[Error] shouldEqual Error(
+          classNameOf[AdminError.InternalError.type],
+          "The system experienced an unexpected error, please try again later."
+        )
       }
     }
 
     "fail extracting acls when the client throws an error for caller acls" in {
       implicit val token: Option[AuthToken] = None
       iamClient.acls("*" / "*", true, true) shouldReturn Task.raiseError(
-        IamClientError.UnknownError(StatusCodes.InternalServerError, ""))
+        IamClientError.UnknownError(StatusCodes.InternalServerError, "")
+      )
       val route = Routes.wrap(directives.extractCallerAcls("*" / "*").apply(_ => complete("")))
       Get("/") ~> route ~> check {
         status shouldEqual StatusCodes.InternalServerError

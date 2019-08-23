@@ -25,11 +25,11 @@ scalafmt: {
  */
 
 // Dependency versions
-val alpakkaVersion             = "1.1.0"
-val commonsVersion             = "0.17.0"
-val iamVersion                 = "1.1.1"
-val sourcingVersion            = "0.16.3"
-val akkaVersion                = "2.5.23"
+val alpakkaVersion             = "1.1.1"
+val commonsVersion             = "0.17.6"
+val iamVersion                 = "310fb2cd"
+val sourcingVersion            = "0.16.5"
+val akkaVersion                = "2.5.25"
 val akkaCorsVersion            = "0.4.1"
 val akkaHttpVersion            = "10.1.9"
 val akkaPersistenceCassVersion = "0.99"
@@ -38,7 +38,7 @@ val catsVersion                = "1.6.1"
 val circeVersion               = "0.11.1"
 val journalVersion             = "3.0.19"
 val logbackVersion             = "1.2.3"
-val mockitoVersion             = "1.5.12"
+val mockitoVersion             = "1.5.14"
 val monixVersion               = "3.0.0-RC3"
 val pureconfigVersion          = "0.11.1"
 val scalaTestVersion           = "3.0.7"
@@ -164,6 +164,7 @@ inThisBuild(
     releaseEarlyWith              := BintrayPublisher,
     releaseEarlyNoGpg             := true,
     releaseEarlyEnableSyncToMaven := false
-  ))
+  )
+)
 
 addCommandAlias("review", ";clean;scalafmtCheck;scalafmtSbtCheck;test:scalafmtCheck;coverage;scapegoat;test;coverageReport;coverageAggregate")

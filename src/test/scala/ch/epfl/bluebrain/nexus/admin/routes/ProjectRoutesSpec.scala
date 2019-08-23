@@ -59,18 +59,20 @@ class ProjectRoutesSpec
   private implicit val httpConfig: HttpConfig = appConfig.http
   private implicit val iamClientConfig = IamClientConfig(
     url"https://nexus.example.com/v1".value,
-    url"http://localhost:8080/v1".value,
+    url"http://localhost:8080/v1".value
   )
 
   private val routes =
     Routes.wrap(
-      ProjectRoutes(projects)(iamClient,
-                              orgCache,
-                              projCache,
-                              iamClientConfig,
-                              httpConfig,
-                              PaginationConfig(50, 100),
-                              global).routes
+      ProjectRoutes(projects)(
+        iamClient,
+        orgCache,
+        projCache,
+        iamClientConfig,
+        httpConfig,
+        PaginationConfig(50, 100),
+        global
+      ).routes
     )
 
   //noinspection TypeAnnotation
@@ -89,7 +91,8 @@ class ProjectRoutesSpec
         Instant.EPOCH,
         Anonymous,
         AccessControlList(Anonymous -> Set(Permissions.projects.read))
-      ))
+      )
+    )
 
     val create = Permission.unsafe("projects/create")
     val read   = Permission.unsafe("projects/read")
@@ -132,24 +135,30 @@ class ProjectRoutesSpec
       caller.subject,
       Organization("org", Some("Org description"))
     )
-    val mappings = Map("nxv" -> url"https://bluebrain.github.io/nexus/vocabulary/".value,
-                       "rdf" -> url"http://www.w3.org/1999/02/22-rdf-syntax-ns#".value)
+    val mappings = Map(
+      "nxv" -> url"https://bluebrain.github.io/nexus/vocabulary/".value,
+      "rdf" -> url"http://www.w3.org/1999/02/22-rdf-syntax-ns#".value
+    )
     val project = ProjectDescription(desc, mappings, Some(base), Some(voc))
     val resource =
-      ResourceF(iri,
-                projId,
-                1L,
-                deprecated = false,
-                types,
-                instant,
-                caller.subject,
-                instant,
-                caller.subject,
-                Project("label", orgId, "org", desc, mappings, base, voc))
+      ResourceF(
+        iri,
+        projId,
+        1L,
+        deprecated = false,
+        types,
+        instant,
+        caller.subject,
+        instant,
+        caller.subject,
+        Project("label", orgId, "org", desc, mappings, base, voc)
+      )
     val meta = resource.discard
-    val replacements = Map(quote("{instant}") -> instant.toString,
-                           quote("{uuid}")    -> projId.toString,
-                           quote("{orgUuid}") -> orgId.toString)
+    val replacements = Map(
+      quote("{instant}") -> instant.toString,
+      quote("{uuid}")    -> projId.toString,
+      quote("{orgUuid}") -> orgId.toString
+    )
   }
 
   "Project routes" should {
@@ -345,8 +354,10 @@ class ProjectRoutesSpec
         val iri = Iri.Url(s"http://nexus.example.com/v1/projects/org/label$i").right.value
         UnscoredQueryResult(resource.copy(id = iri, value = resource.value.copy(label = s"label$i")))
       }
-      projects.list(SearchParams(Some(Field("org", exactMatch = true)), deprecated = Some(true), rev = Some(1L)),
-                    FromPagination(0, 50))(acls) shouldReturn Task(UnscoredQueryResults(3, projs))
+      projects.list(
+        SearchParams(Some(Field("org", exactMatch = true)), deprecated = Some(true), rev = Some(1L)),
+        FromPagination(0, 50)
+      )(acls) shouldReturn Task(UnscoredQueryResults(3, projs))
 
       forAll(List("/projects/org?deprecated=true&rev=1", "/projects/org/?deprecated=true&rev=1")) { endpoint =>
         Get(endpoint) ~> addCredentials(cred) ~> routes ~> check {

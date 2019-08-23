@@ -112,7 +112,8 @@ object ResourceF {
     }
 
   implicit def uqrsEncoder[A: Encoder](
-      implicit iamClientConfig: IamClientConfig): Encoder[UnscoredQueryResults[ResourceF[A]]] = {
+      implicit iamClientConfig: IamClientConfig
+  ): Encoder[UnscoredQueryResults[ResourceF[A]]] = {
     Encoder.encodeJson.contramap {
       case UnscoredQueryResults(total, results, _) =>
         Json.obj(

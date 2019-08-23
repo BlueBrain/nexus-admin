@@ -74,8 +74,10 @@ class ProjectsSpec
     val orgId  = UUID.randomUUID
     val projId = UUID.randomUUID
     val iri    = url"http://nexus.example.com/v1/projects/org/proj".value
-    val mappings = Map("nxv" -> url"https://bluebrain.github.io/nexus/vocabulary/".value,
-                       "rdf" -> url"http://www.w3.org/1999/02/22-rdf-syntax-ns#type".value)
+    val mappings = Map(
+      "nxv" -> url"https://bluebrain.github.io/nexus/vocabulary/".value,
+      "rdf" -> url"http://www.w3.org/1999/02/22-rdf-syntax-ns#type".value
+    )
     val base = url"https://nexus.example.com/base/".value
     val voc  = url"https://nexus.example.com/voc/".value
     val organization = ResourceF(
@@ -102,27 +104,33 @@ class ProjectsSpec
       index.getBy("org", "proj") shouldReturn IO.pure(Some(resource))
       projects.create("org", "proj", payload)(caller).rejected[ProjectRejection] shouldEqual ProjectAlreadyExists(
         "org",
-        "proj")
+        "proj"
+      )
     }
 
     "not create a project if its organization is deprecated" in new Context {
       orgs.fetch("org") shouldReturn IO.pure(Some(organization.copy(deprecated = true)))
       projects.create("org", "proj", payload)(caller).rejected[ProjectRejection] shouldEqual OrganizationIsDeprecated(
-        "org")
+        "org"
+      )
     }
 
     "not update a project if it doesn't exists" in new Context {
       orgs.fetch("org") shouldReturn IO.pure(Some(organization))
       index.getBy("org", "proj") shouldReturn IO.pure(None)
-      projects.update("org", "proj", payload, 1L)(caller).rejected[ProjectRejection] shouldEqual ProjectNotFound("org",
-                                                                                                                 "proj")
+      projects.update("org", "proj", payload, 1L)(caller).rejected[ProjectRejection] shouldEqual ProjectNotFound(
+        "org",
+        "proj"
+      )
     }
 
     "not deprecate a project if it doesn't exists" in new Context {
       orgs.fetch("org") shouldReturn IO.pure(Some(organization))
       index.getBy("org", "proj") shouldReturn IO.pure(None)
-      projects.deprecate("org", "proj", 1L)(caller).rejected[ProjectRejection] shouldEqual ProjectNotFound("org",
-                                                                                                           "proj")
+      projects.deprecate("org", "proj", 1L)(caller).rejected[ProjectRejection] shouldEqual ProjectNotFound(
+        "org",
+        "proj"
+      )
     }
 
     "not update a project if it's deprecated" in new Context {
@@ -135,9 +143,11 @@ class ProjectsSpec
       index.getBy("org", "proj") shouldReturn IO.pure(Some(resource.copy(uuid = created.uuid)))
       val deprecated = projects.deprecate("org", "proj", 1L)(caller).accepted
       index.getBy("org", "proj") shouldReturn IO.pure(
-        Some(resource.copy(uuid = deprecated.uuid, rev = 2L, deprecated = true)))
+        Some(resource.copy(uuid = deprecated.uuid, rev = 2L, deprecated = true))
+      )
       projects.update("org", "proj", payload, 2L)(caller).rejected[ProjectRejection] shouldEqual ProjectIsDeprecated(
-        deprecated.uuid)
+        deprecated.uuid
+      )
     }
 
     "not deprecate a project if it's already deprecated" in new Context {
@@ -150,9 +160,11 @@ class ProjectsSpec
       index.getBy("org", "proj") shouldReturn IO.pure(Some(resource.copy(uuid = created.uuid)))
       val deprecated = projects.deprecate("org", "proj", 1L)(caller).accepted
       index.getBy("org", "proj") shouldReturn IO.pure(
-        Some(resource.copy(uuid = deprecated.uuid, rev = 2L, deprecated = true)))
+        Some(resource.copy(uuid = deprecated.uuid, rev = 2L, deprecated = true))
+      )
       projects.deprecate("org", "proj", 2L)(caller).rejected[ProjectRejection] shouldEqual ProjectIsDeprecated(
-        deprecated.uuid)
+        deprecated.uuid
+      )
     }
 
     "not create a project if the project label cannot generate the correct base and vocab" in new Context {
@@ -163,7 +175,8 @@ class ProjectsSpec
       projects
         .create("org", "proj ", payload.copy(base = None))(caller)
         .rejected[ProjectRejection] shouldEqual InvalidProjectFormat(
-        "the value of the project's 'base' could not be generated properly from the provided project 'org/proj '")
+        "the value of the project's 'base' could not be generated properly from the provided project 'org/proj '"
+      )
     }
 
     "not create a project if the base parameter does not end with '#' or '/'" in new Context {
@@ -173,7 +186,8 @@ class ProjectsSpec
       mockIamCalls()
       val wrongPayload = payload.copy(base = Some(url"http://example.com/a".value))
       projects.create("org", "proj", wrongPayload)(caller).rejected[ProjectRejection] shouldEqual InvalidProjectFormat(
-        "the value of the project's 'base' parameter must end with hash (#) or slash (/)")
+        "the value of the project's 'base' parameter must end with hash (#) or slash (/)"
+      )
     }
 
     "not update a project if the base parameter does not end with '#' or '/'" in new Context {
@@ -188,7 +202,8 @@ class ProjectsSpec
       projects
         .update("org", "proj", wrongPayload, 1L)(caller)
         .rejected[ProjectRejection] shouldEqual InvalidProjectFormat(
-        "the value of the project's 'base' parameter must end with hash (#) or slash (/)")
+        "the value of the project's 'base' parameter must end with hash (#) or slash (/)"
+      )
     }
 
     "not create a project if the vocab parameter does not end with '#' or '/'" in new Context {
@@ -198,7 +213,8 @@ class ProjectsSpec
       mockIamCalls()
       val wrongPayload = payload.copy(vocab = Some(url"http://example.com/a".value))
       projects.create("org", "proj", wrongPayload)(caller).rejected[ProjectRejection] shouldEqual InvalidProjectFormat(
-        "the value of the project's 'vocab' parameter must end with hash (#) or slash (/)")
+        "the value of the project's 'vocab' parameter must end with hash (#) or slash (/)"
+      )
     }
 
     "not update a project if the vocab parameter does not end with '#' or '/'" in new Context {
@@ -213,7 +229,8 @@ class ProjectsSpec
       projects
         .update("org", "proj", wrongPayload, 1L)(caller)
         .rejected[ProjectRejection] shouldEqual InvalidProjectFormat(
-        "the value of the project's 'vocab' parameter must end with hash (#) or slash (/)")
+        "the value of the project's 'vocab' parameter must end with hash (#) or slash (/)"
+      )
     }
 
     "create a project" in new Context {
@@ -278,7 +295,8 @@ class ProjectsSpec
       updated.updatedBy shouldEqual caller
 
       index.getBy("org", "proj") shouldReturn IO.pure(
-        Some(resource.copy(uuid = created.uuid, rev = 2L, value = project.copy(description = Some("New description")))))
+        Some(resource.copy(uuid = created.uuid, rev = 2L, value = project.copy(description = Some("New description"))))
+      )
 
       val updatedProject2 = payload.copy(description = None)
 
@@ -385,7 +403,8 @@ class ProjectsSpec
               caller,
               AccessControlList(caller -> permissions)
             )
-          ))
+          )
+        )
 
       projects.create("org", "proj", payload)(caller).accepted
       iamClient.putAcls(*, *, *)(*) wasNever called
@@ -412,7 +431,8 @@ class ProjectsSpec
               caller,
               AccessControlList(caller -> permissions)
             )
-          ))
+          )
+        )
 
       projects.create("org", "proj", payload)(caller).accepted
       iamClient.putAcls(*, *, *)(*) wasNever called
@@ -438,7 +458,8 @@ class ProjectsSpec
               caller,
               AccessControlList(caller -> permissions)
             )
-          ))
+          )
+        )
 
       projects.create("org", "proj", payload)(caller).accepted
       iamClient.putAcls(*, *, *)(*) wasNever called
@@ -463,14 +484,19 @@ class ProjectsSpec
               caller,
               Instant.now(),
               caller,
-              AccessControlList(subject -> Set(Permission.unsafe("test/permission1")),
-                                caller  -> Set(Permission.unsafe("test/permission2")))
+              AccessControlList(
+                subject -> Set(Permission.unsafe("test/permission1")),
+                caller  -> Set(Permission.unsafe("test/permission2"))
+              )
             )
-          ))
+          )
+        )
 
-      iamClient.putAcls("org" / "proj",
-                        AccessControlList(subject -> Set(Permission.unsafe("test/permission1")), caller -> permissions),
-                        Some(1L))(iamCredentials) shouldReturn IO.unit
+      iamClient.putAcls(
+        "org" / "proj",
+        AccessControlList(subject -> Set(Permission.unsafe("test/permission1")), caller -> permissions),
+        Some(1L)
+      )(iamCredentials) shouldReturn IO.unit
     }
   }
 

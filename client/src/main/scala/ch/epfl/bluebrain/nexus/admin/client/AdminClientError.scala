@@ -15,7 +15,8 @@ object AdminClientError {
 
   final case class UnmarshallingError[A: ClassTag](reason: String)
       extends AdminClientError(
-        s"Unable to parse or decode the response from Admin to a '${implicitly[ClassTag[A]]}' due to '$reason'.")
+        s"Unable to parse or decode the response from Admin to a '${implicitly[ClassTag[A]]}' due to '$reason'."
+      )
 
   final case class UnknownError(status: StatusCode, entityAsString: String)
       extends AdminClientError("The request did not complete successfully.")

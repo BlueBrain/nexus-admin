@@ -91,12 +91,14 @@ class Organizations[F[_]](agg: Agg[F], private val index: OrganizationCache[F], 
     * @return
     */
   def update(label: String, organization: Organization, rev: Long)(
-      implicit caller: Subject): F[OrganizationMetaOrRejection] =
+      implicit caller: Subject
+  ): F[OrganizationMetaOrRejection] =
     index.getBy(label).flatMap {
       case Some(org) =>
         evalAndUpdateIndex(
           UpdateOrganization(org.uuid, rev, organization.label, organization.description, clock.instant, caller),
-          organization)
+          organization
+        )
       case None => F.pure(Left(OrganizationNotFound(label)))
     }
 
@@ -158,7 +160,8 @@ class Organizations[F[_]](agg: Agg[F], private val index: OrganizationCache[F], 
     * @return a paginated results list
     */
   def list(params: SearchParams, pagination: FromPagination)(
-      implicit acls: AccessControlLists): F[UnscoredQueryResults[OrganizationResource]] =
+      implicit acls: AccessControlLists
+  ): F[UnscoredQueryResults[OrganizationResource]] =
     index.list(params, pagination)
 
   private def eval(cmd: OrganizationCommand): F[OrganizationMetaOrRejection] =
@@ -168,8 +171,10 @@ class Organizations[F[_]](agg: Agg[F], private val index: OrganizationCache[F], 
       case Left(rejection)   => F.pure(Left(rejection))
     }
 
-  private def evalAndUpdateIndex(command: OrganizationCommand,
-                                 organization: Organization): F[OrganizationMetaOrRejection] =
+  private def evalAndUpdateIndex(
+      command: OrganizationCommand,
+      organization: Organization
+  ): F[OrganizationMetaOrRejection] =
     eval(command).flatMap {
       case Right(metadata) => index.replace(metadata.uuid, metadata.withValue(organization)) >> F.pure(Right(metadata))
       case Left(rej)       => F.pure(Left(rej))
@@ -186,10 +191,11 @@ object Organizations {
   /**
     * Construct ''Organization'' wrapped on an ''F'' type based on akka clustered [[Agg]].
     */
-  def apply[F[_]: ConcurrentEffect: Timer](index: OrganizationCache[F], iamClient: IamClient[F], appConfig: AppConfig)(
-      implicit cl: Clock = Clock.systemUTC(),
-      as: ActorSystem,
-      mt: ActorMaterializer): F[Organizations[F]] = {
+  def apply[F[_]: ConcurrentEffect: Timer](
+      index: OrganizationCache[F],
+      iamClient: IamClient[F],
+      appConfig: AppConfig
+  )(implicit cl: Clock = Clock.systemUTC(), as: ActorSystem, mt: ActorMaterializer): F[Organizations[F]] = {
     implicit val http: HttpConfig                              = appConfig.http
     implicit val iamClientConfig: IamClientConfig              = appConfig.iam
     implicit val iamCredentials: Option[AuthToken]             = appConfig.serviceAccount.credentials
@@ -211,7 +217,8 @@ object Organizations {
   }
 
   def indexer[F[_]: Timer](
-      organizations: Organizations[F])(implicit F: Effect[F], config: AppConfig, as: ActorSystem): F[Unit] = {
+      organizations: Organizations[F]
+  )(implicit F: Effect[F], config: AppConfig, as: ActorSystem): F[Unit] = {
     implicit val sc: SourcingConfig = config.sourcing
     val cfg = ProjectionConfig
       .builder[F]
@@ -242,7 +249,8 @@ object Organizations {
     }
 
   private[organizations] def evaluate[F[_]](state: OrganizationState, command: OrganizationCommand)(
-      implicit F: Async[F]): F[EventOrRejection] = {
+      implicit F: Async[F]
+  ): F[EventOrRejection] = {
 
     def create(c: CreateOrganization): EventOrRejection = state match {
       case Initial => Right(OrganizationCreated(c.id, c.label, c.description, c.instant, c.subject))

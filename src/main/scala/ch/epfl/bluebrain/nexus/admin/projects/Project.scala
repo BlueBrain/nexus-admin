@@ -16,13 +16,15 @@ import io.circe.{Encoder, Json}
   * @param base              the base IRI for generated resource IDs
   * @param vocab             an optional vocabulary for resources with no context
   */
-final case class Project(label: String,
-                         organizationUuid: UUID,
-                         organizationLabel: String,
-                         description: Option[String],
-                         apiMappings: Map[String, AbsoluteIri],
-                         base: AbsoluteIri,
-                         vocab: AbsoluteIri) {
+final case class Project(
+    label: String,
+    organizationUuid: UUID,
+    organizationLabel: String,
+    description: Option[String],
+    apiMappings: Map[String, AbsoluteIri],
+    base: AbsoluteIri,
+    vocab: AbsoluteIri
+) {
 
   /**
     * @return full label for the project (including organization).

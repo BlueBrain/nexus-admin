@@ -15,7 +15,7 @@ class DecodersSpec extends WordSpecLike with Matchers with Resources with Either
 
   implicit val iamConfig = IamClientConfig(
     url"https://nexus.example.com/v1".value,
-    url"http://localhost:8080/v1".value,
+    url"http://localhost:8080/v1".value
   )
 
   val instant            = Instant.EPOCH
@@ -37,16 +37,18 @@ class DecodersSpec extends WordSpecLike with Matchers with Resources with Either
 
     "decode project created event" in {
       val event: ProjectEvent =
-        ProjectCreated(projectUuid,
-                       projectLabel,
-                       orgUuid,
-                       orgLabel,
-                       projectDescription,
-                       mappings,
-                       base,
-                       vocab,
-                       instant,
-                       subject)
+        ProjectCreated(
+          projectUuid,
+          projectLabel,
+          orgUuid,
+          orgLabel,
+          projectDescription,
+          mappings,
+          base,
+          vocab,
+          instant,
+          subject
+        )
       val json = jsonContentOf("/events/project-created.json")
 
       json.as[Event].right.value shouldEqual event
