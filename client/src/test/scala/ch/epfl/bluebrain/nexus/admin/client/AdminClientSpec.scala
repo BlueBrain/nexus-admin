@@ -56,7 +56,7 @@ class AdminClientSpec
 
   private val config = AdminClientConfig(
     url"https://nexus.example.com/v1".value,
-    url"http://admin.nexus.example.com/v1".value,
+    url"http://admin.nexus.example.com/v1".value
   )
   private val token = OAuth2BearerToken("token")
 

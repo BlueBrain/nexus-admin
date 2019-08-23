@@ -51,12 +51,13 @@ object OrganizationEvent {
     * @param instant      the instant when this event was created
     * @param subject      the subject which created this event
     */
-  final case class OrganizationCreated(id: UUID,
-                                       label: String,
-                                       description: Option[String],
-                                       instant: Instant,
-                                       subject: Subject)
-      extends OrganizationEvent {
+  final case class OrganizationCreated(
+      id: UUID,
+      label: String,
+      description: Option[String],
+      instant: Instant,
+      subject: Subject
+  ) extends OrganizationEvent {
 
     /**
       *  the revision number that this event generates
@@ -74,13 +75,14 @@ object OrganizationEvent {
     * @param instant      the instant when this event was created
     * @param subject      the subject which created this event
     */
-  final case class OrganizationUpdated(id: UUID,
-                                       rev: Long,
-                                       label: String,
-                                       description: Option[String],
-                                       instant: Instant,
-                                       subject: Subject)
-      extends OrganizationEvent
+  final case class OrganizationUpdated(
+      id: UUID,
+      rev: Long,
+      label: String,
+      description: Option[String],
+      instant: Instant,
+      subject: Subject
+  ) extends OrganizationEvent
 
   /**
     *  Event representing organization deprecation.

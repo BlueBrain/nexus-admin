@@ -53,7 +53,7 @@ class EventRoutes(
     concat(
       routesFor("orgs" / "events", OrganizationTag, orgs.read, typedEventToSse[OrganizationEvent]),
       routesFor("projects" / "events", ProjectTag, projects.read, typedEventToSse[ProjectEvent]),
-      routesFor("events", EventTag, events.read, eventToSse),
+      routesFor("events", EventTag, events.read, eventToSse)
     )
 
   private def routesFor(

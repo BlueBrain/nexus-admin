@@ -40,8 +40,9 @@ object StringUnmarshaller {
     }
   }
 
-  private def unmarshaller[A](f: String => Either[Throwable, Json])(
-      implicit dec: Decoder[A]): FromStringUnmarshaller[A] =
+  private def unmarshaller[A](
+      f: String => Either[Throwable, Json]
+  )(implicit dec: Decoder[A]): FromStringUnmarshaller[A] =
     Unmarshaller.strict[String, A] {
       case "" => throw Unmarshaller.NoContentException
       case string =>

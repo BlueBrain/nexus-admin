@@ -82,8 +82,9 @@ class QueryDirectivesSpec
         responseAs[SearchParams] shouldEqual SearchParams.empty
       }
 
-      Get(s"/?rev=1&deprecated=true&label=myLabel&type=${encode(type1)}&type=${encode(type2)}&createdBy=${encode(
-        createdBy)}&updatedBy=${encode(updatedBy)}") ~> routes(projectParams) ~> check {
+      Get(
+        s"/?rev=1&deprecated=true&label=myLabel&type=${encode(type1)}&type=${encode(type2)}&createdBy=${encode(createdBy)}&updatedBy=${encode(updatedBy)}"
+      ) ~> routes(projectParams) ~> check {
         responseAs[SearchParams] shouldEqual
           SearchParams(
             rev = Some(1L),

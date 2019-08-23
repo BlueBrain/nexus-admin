@@ -14,10 +14,12 @@ import io.circe.{Decoder, DecodingFailure}
   * @param base        an optional base IRI for generated resource IDs
   * @param vocab       an optional vocabulary for resources with no context
   */
-final case class ProjectDescription(description: Option[String],
-                                    apiMappings: Map[String, AbsoluteIri],
-                                    base: Option[AbsoluteIri],
-                                    vocab: Option[AbsoluteIri]) {
+final case class ProjectDescription(
+    description: Option[String],
+    apiMappings: Map[String, AbsoluteIri],
+    base: Option[AbsoluteIri],
+    vocab: Option[AbsoluteIri]
+) {
 
   /**
     * @return the current base or a generated one based on the ''http.prefixIri'', ''organization'' and ''label''
