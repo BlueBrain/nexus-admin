@@ -20,7 +20,7 @@
     }
   ],
   "description": "Test project",
-  "_label": "testproject",
+  "_label": "{label}",
   "_organizationLabel": "testorg",
   "_organizationUuid": "504b6940-1b14-43a7-80e3-d08c52c3fc87",
   "_uuid": "db7cee63-3f93-4d4a-9cc2-ebdace7f3b4f",

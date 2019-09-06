@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.admin.client.types
 import java.time.Instant
 import java.util.UUID
 
+import cats.Show
 import ch.epfl.bluebrain.nexus.rdf.Iri
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.instances._
@@ -56,6 +57,8 @@ object Project {
       iri       <- Iri.absolute(namespace).left.map(err => DecodingFailure(err, hc.history))
     } yield Mapping(prefix, iri)
   }
+
+  implicit val projectShow: Show[Project] = Show.show(project => s"${project.organizationLabel}/${project.label}")
 
   /**
     * JSON decoder for [[Project]].

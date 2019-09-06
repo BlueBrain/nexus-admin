@@ -4,6 +4,7 @@ import java.util.UUID
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.client.RequestBuilding.Get
+import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
@@ -19,10 +20,13 @@ import ch.epfl.bluebrain.nexus.commons.http.HttpClient
 import ch.epfl.bluebrain.nexus.commons.http.HttpClient.UntypedHttpClient
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport._
 import ch.epfl.bluebrain.nexus.commons.rdf.syntax._
+import ch.epfl.bluebrain.nexus.commons.search.QueryResult.UnscoredQueryResult
+import ch.epfl.bluebrain.nexus.commons.search.QueryResults._
+import ch.epfl.bluebrain.nexus.commons.search.{FromPagination, QueryResult, QueryResults}
 import ch.epfl.bluebrain.nexus.iam.client.IamClientError.{Forbidden, Unauthorized}
 import ch.epfl.bluebrain.nexus.iam.client.types.AuthToken
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
-import io.circe.{DecodingFailure, ParsingFailure}
+import io.circe.{Decoder, DecodingFailure, ParsingFailure}
 import journal.Logger
 
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
@@ -39,6 +43,7 @@ class AdminClient[F[_]] private[client] (source: EventSource[Event], cfg: AdminC
     F: Effect[F],
     mt: Materializer,
     pc: HttpClient[F, Project],
+    pcQr: HttpClient[F, QueryResults[Project]],
     oc: HttpClient[F, Organization]
 ) {
 
@@ -56,6 +61,44 @@ class AdminClient[F[_]] private[client] (source: EventSource[Event], cfg: AdminC
       .recoverWith {
         case UnknownError(StatusCodes.NotFound, _) => F.pure(None)
       }
+
+  /**
+    * Fetch all the [[Project]] from a provided organization.
+    *
+    * @param organization label of the organization to which the project belongs.
+    * @param credentials  optional access token
+    * @return list of [[Project]] instance wrapped in [[F]]
+    */
+  def fetchProjects(organization: String)(implicit credentials: Option[AuthToken]): F[QueryResults[Project]] = {
+    val size: Int = 30
+
+    def inner(results: List[QueryResult[Project]] = List.empty, from: Int = 0): F[QueryResults[Project]] =
+      fetchProjects(organization, FromPagination(from, size)).flatMap {
+        case res if res.results.isEmpty                                  => F.pure(res)
+        case res if res.total.toInt == (res.results.size + results.size) => F.pure(res.copyWith(results ++ res.results))
+        case res                                                         => inner(results ++ res.results, from + size)
+      }
+    inner()
+  }
+
+  /**
+    * Fetch all the [[Project]] from a provided organization.
+    *
+    * @param organization label of the organization to which the project belongs.
+    * @param page  the pagination information
+    * @param credentials  optional access token
+    * @return list of [[Project]] instance wrapped in [[F]]
+    */
+  def fetchProjects(organization: String, page: FromPagination)(
+      implicit credentials: Option[AuthToken]
+  ): F[QueryResults[Project]] = {
+    val uri = (cfg.projectsIri + organization).toAkkaUri
+      .withQuery(Query("from" -> page.from.toString, "size" -> page.size.toString))
+    pcQr(request(uri)).recoverWith {
+      case UnknownError(StatusCodes.NotFound, _) =>
+        F.pure(UnscoredQueryResults(0L, List.empty[QueryResult[Project]]))
+    }
+  }
 
   /**
     * Fetch [[Project]].
@@ -144,7 +187,10 @@ class AdminClient[F[_]] private[client] (source: EventSource[Event], cfg: AdminC
       .run()
 
   private def request(iri: AbsoluteIri)(implicit credentials: Option[AuthToken]): HttpRequest =
-    addCredentials(Get(iri.toAkkaUri))
+    request(iri.toAkkaUri)
+
+  private def request(uri: Uri)(implicit credentials: Option[AuthToken]): HttpRequest =
+    addCredentials(Get(uri))
 
   private def addCredentials(request: HttpRequest)(implicit credentials: Option[AuthToken]): HttpRequest =
     credentials.map(token => request.addCredentials(OAuth2BearerToken(token.value))).getOrElse(request)
@@ -216,13 +262,21 @@ object AdminClient {
     * @return new instance of [[AdminClient]]
     */
   def apply[F[_]: Effect](cfg: AdminClientConfig)(implicit as: ActorSystem): AdminClient[F] = {
-    implicit val mt: ActorMaterializer        = ActorMaterializer()
-    implicit val ec: ExecutionContextExecutor = as.dispatcher
-    implicit val ucl: UntypedHttpClient[F]    = HttpClient.untyped[F]
-
-    implicit val pc: HttpClient[F, Project]      = httpClient[F, Project]
-    implicit val oc: HttpClient[F, Organization] = httpClient[F, Organization]
-    val sse: EventSource[Event]                  = EventSource[Event](cfg)
+    implicit val mt: ActorMaterializer                      = ActorMaterializer()
+    implicit val ec: ExecutionContextExecutor               = as.dispatcher
+    implicit val ucl: UntypedHttpClient[F]                  = HttpClient.untyped[F]
+    implicit val pc: HttpClient[F, Project]                 = httpClient[F, Project]
+    implicit val pcQr: HttpClient[F, QueryResults[Project]] = httpClient[F, QueryResults[Project]]
+    implicit val oc: HttpClient[F, Organization]            = httpClient[F, Organization]
+    val sse: EventSource[Event]                             = EventSource[Event](cfg)
     new AdminClient(sse, cfg)
   }
+
+  private implicit def queryResultsDecoder[A](implicit dec: Decoder[A]): Decoder[QueryResults[A]] =
+    Decoder.instance { hc =>
+      for {
+        total   <- hc.get[Long]("_total")
+        results <- hc.get[List[A]]("_results")
+      } yield UnscoredQueryResults(total, results.map(UnscoredQueryResult(_)))
+    }
 }

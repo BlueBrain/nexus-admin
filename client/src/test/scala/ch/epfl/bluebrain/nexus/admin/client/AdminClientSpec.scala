@@ -3,6 +3,7 @@ package ch.epfl.bluebrain.nexus.admin.client
 import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.regex.Pattern.quote
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.client.RequestBuilding.Get
@@ -19,6 +20,9 @@ import ch.epfl.bluebrain.nexus.admin.client.types.events.Event._
 import ch.epfl.bluebrain.nexus.admin.client.types.events.{Event, OrganizationEvent, ProjectEvent}
 import ch.epfl.bluebrain.nexus.admin.client.types.{Organization, Project}
 import ch.epfl.bluebrain.nexus.commons.http.HttpClient
+import ch.epfl.bluebrain.nexus.commons.search.QueryResult.UnscoredQueryResult
+import ch.epfl.bluebrain.nexus.commons.search.QueryResults
+import ch.epfl.bluebrain.nexus.commons.search.QueryResults.UnscoredQueryResults
 import ch.epfl.bluebrain.nexus.commons.test.io.IOOptionValues
 import ch.epfl.bluebrain.nexus.commons.test.{Randomness, Resources}
 import ch.epfl.bluebrain.nexus.iam.client.IamClientError
@@ -60,16 +64,18 @@ class AdminClientSpec
   )
   private val token = OAuth2BearerToken("token")
 
-  private implicit val pc: HttpClient[IO, Project]      = mock[HttpClient[IO, Project]]
-  private implicit val oc: HttpClient[IO, Organization] = mock[HttpClient[IO, Organization]]
-  private implicit val tokenOpt: Option[AuthToken]      = Option(AuthToken("token"))
-  private val source                                    = mock[EventSource[Event]]
+  private implicit val pc: HttpClient[IO, Project]                 = mock[HttpClient[IO, Project]]
+  private implicit val pcQr: HttpClient[IO, QueryResults[Project]] = mock[HttpClient[IO, QueryResults[Project]]]
+  private implicit val oc: HttpClient[IO, Organization]            = mock[HttpClient[IO, Organization]]
+  private implicit val tokenOpt: Option[AuthToken]                 = Option(AuthToken("token"))
+  private val source                                               = mock[EventSource[Event]]
 
   private val client = new AdminClient[IO](source, config)
 
   private val org       = jsonContentOf("/organization.json").as[Organization].right.value
   private val orgNoDesc = jsonContentOf("/organization.json").removeKeys("description").as[Organization].right.value
-  private val proj      = jsonContentOf("/project.json").as[Project].right.value
+  private def proj(label: String = "testproject") =
+    jsonContentOf("/project.json", Map(quote("{label}") -> label)).as[Project].right.value
 
   private def orgRequest(label: String) =
     Get(s"http://admin.nexus.example.com/v1/orgs/$label").addCredentials(token)
@@ -77,8 +83,11 @@ class AdminClientSpec
   private def projRequest(org: String, label: String) =
     Get(s"http://admin.nexus.example.com/v1/projects/$org/$label").addCredentials(token)
 
+  private def projListRequest(org: String, from: Int, size: Int) =
+    Get(s"http://admin.nexus.example.com/v1/projects/$org?from=$from&size=$size").addCredentials(token)
+
   before {
-    Mockito.reset(pc, oc, source)
+    Mockito.reset(pc, pcQr, oc, source)
   }
 
   "The AdminClient" should {
@@ -140,7 +149,7 @@ class AdminClientSpec
     "fetch a project" in {
       val orgLabel     = genString()
       val projectLabel = genString()
-      pc(projRequest(orgLabel, projectLabel)) shouldReturn IO.pure(proj)
+      pc(projRequest(orgLabel, projectLabel)) shouldReturn IO.pure(proj())
       client.fetchProject(orgLabel, projectLabel).some shouldEqual Project(
         url"http://admin.nexus.example.com/v1/projects/testorg/testproject".value,
         "testproject",
@@ -161,6 +170,31 @@ class AdminClientSpec
         Instant.parse("2018-12-20T11:31:30.00Z"),
         url"http://iam.nexus.example.com/v1/realms/example-realm/users/example-user2".value
       )
+    }
+
+    "fetch projects" in {
+      val orgLabel  = genString()
+      val projects1 = List.tabulate(30)(n => proj(s"label-$n")).map(UnscoredQueryResult(_))
+      val projects2 = List.tabulate(30)(n => proj(s"label-${n + 31}")).map(UnscoredQueryResult(_))
+      val projects3 = List.tabulate(10)(n => proj(s"label-${n + 61}")).map(UnscoredQueryResult(_))
+      pcQr(projListRequest(orgLabel, 0, 30)) shouldReturn IO.pure(UnscoredQueryResults(70L, projects1))
+      pcQr(projListRequest(orgLabel, 30, 30)) shouldReturn IO.pure(UnscoredQueryResults(70L, projects2))
+      pcQr(projListRequest(orgLabel, 60, 30)) shouldReturn IO.pure(UnscoredQueryResults(70L, projects3))
+
+      val allQueryResults = UnscoredQueryResults(70L, projects1 ++ projects2 ++ projects3)
+      client.fetchProjects(orgLabel).ioValue shouldEqual allQueryResults
+    }
+
+    "fetch projects returns when project does not exist" in {
+      val orgLabel = genString()
+      pcQr(projListRequest(orgLabel, 0, 30)) shouldReturn IO.raiseError(UnknownError(StatusCodes.NotFound, ""))
+      client.fetchProjects(orgLabel).ioValue shouldEqual UnscoredQueryResults(0L, List.empty)
+    }
+
+    "fetch projects empty list" in {
+      val orgLabel = genString()
+      pcQr(projListRequest(orgLabel, 0, 30)) shouldReturn IO.pure(UnscoredQueryResults(0L, List.empty))
+      client.fetchProjects(orgLabel).ioValue shouldEqual UnscoredQueryResults(0L, List.empty)
     }
 
     "return None if the project doesn't exist" in {
