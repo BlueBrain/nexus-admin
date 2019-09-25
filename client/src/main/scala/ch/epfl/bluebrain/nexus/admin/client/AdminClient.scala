@@ -206,7 +206,8 @@ object AdminClient {
       cl: UntypedHttpClient[F],
       um: FromEntityUnmarshaller[A]
   ): HttpClient[F, A] = new HttpClient[F, A] {
-    private val logger = Logger(s"AdminHttpClient[${implicitly[ClassTag[A]]}]")
+    private val logger                = Logger(s"AdminHttpClient[${implicitly[ClassTag[A]]}]")
+    private implicit val contextShift = IO.contextShift(ec)
 
     private def handleError[B](req: HttpRequest): Throwable => F[B] = {
       case NonFatal(th) =>

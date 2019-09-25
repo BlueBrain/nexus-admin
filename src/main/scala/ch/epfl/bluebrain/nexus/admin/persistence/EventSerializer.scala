@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
 import ch.epfl.bluebrain.nexus.rdf.instances._
 import io.circe.{Decoder, Encoder}
 import io.circe.generic.extras.Configuration
-import io.circe.generic.extras.semiauto.{deriveDecoder, deriveEncoder}
+import io.circe.generic.extras.semiauto.{deriveConfiguredDecoder, deriveConfiguredEncoder}
 import shapeless.{:+:, CNil}
 
 class EventSerializer(system: ExtendedActorSystem) extends SerializerWithStringManifest {
@@ -19,10 +19,10 @@ class EventSerializer(system: ExtendedActorSystem) extends SerializerWithStringM
 
   private implicit val config: Configuration = Configuration.default.withDiscriminator("@type")
 
-  private implicit val projectEventDecoder: Decoder[ProjectEvent]           = deriveDecoder[ProjectEvent]
-  private implicit val projectEventEncoder: Encoder[ProjectEvent]           = deriveEncoder[ProjectEvent]
-  private implicit val organizationEventDecoder: Decoder[OrganizationEvent] = deriveDecoder[OrganizationEvent]
-  private implicit val organizationEventEncoder: Encoder[OrganizationEvent] = deriveEncoder[OrganizationEvent]
+  private implicit val projectEventDecoder: Decoder[ProjectEvent]           = deriveConfiguredDecoder[ProjectEvent]
+  private implicit val projectEventEncoder: Encoder[ProjectEvent]           = deriveConfiguredEncoder[ProjectEvent]
+  private implicit val organizationEventDecoder: Decoder[OrganizationEvent] = deriveConfiguredDecoder[OrganizationEvent]
+  private implicit val organizationEventEncoder: Encoder[OrganizationEvent] = deriveConfiguredEncoder[OrganizationEvent]
 
   private val serializer = new AkkaCoproductSerializer[OrganizationEvent :+: ProjectEvent :+: CNil](1129)
 

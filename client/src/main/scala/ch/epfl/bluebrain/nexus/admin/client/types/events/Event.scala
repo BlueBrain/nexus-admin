@@ -10,7 +10,7 @@ import ch.epfl.bluebrain.nexus.rdf.instances._
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import io.circe.Decoder
 import io.circe.generic.extras.Configuration
-import io.circe.generic.extras.semiauto.deriveDecoder
+import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
 
 /**
   * Enumeration of organization and project events.
@@ -201,7 +201,7 @@ object Event {
 
   private final case class Mapping(prefix: String, namespace: AbsoluteIri)
 
-  private implicit val mappingDecoder: Decoder[Mapping] = deriveDecoder[Mapping]
+  private implicit val mappingDecoder: Decoder[Mapping] = deriveConfiguredDecoder[Mapping]
 
   private implicit val mapDecoder: Decoder[Map[String, AbsoluteIri]] =
     Decoder.decodeList[Mapping].map(_.map(m => (m.prefix, m.namespace)).toMap)
@@ -210,5 +210,5 @@ object Event {
     * [[Decoder]] for [[Event]]s.
     */
   implicit val eventDecoder: Decoder[Event] =
-    deriveDecoder[Event]
+    deriveConfiguredDecoder[Event]
 }

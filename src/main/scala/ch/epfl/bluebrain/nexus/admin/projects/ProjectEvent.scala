@@ -147,7 +147,7 @@ object ProjectEvent {
 
     final implicit def projectEventEncoder(implicit ic: IamClientConfig): Encoder[ProjectEvent] =
       Encoder.encodeJson.contramap[ProjectEvent] { ev =>
-        deriveEncoder[ProjectEvent]
+        deriveConfiguredEncoder[ProjectEvent]
           .mapJson { json =>
             val rev = Json.obj(nxv.rev.prefix -> Json.fromLong(ev.rev))
             json

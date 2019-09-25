@@ -117,7 +117,7 @@ object OrganizationEvent {
 
     final implicit def orgEventEncoder(implicit ic: IamClientConfig): Encoder[OrganizationEvent] =
       Encoder.encodeJson.contramap[OrganizationEvent] { ev =>
-        deriveEncoder[OrganizationEvent]
+        deriveConfiguredEncoder[OrganizationEvent]
           .mapJson { json =>
             val rev = Json.obj(nxv.rev.prefix -> Json.fromLong(ev.rev))
             json
