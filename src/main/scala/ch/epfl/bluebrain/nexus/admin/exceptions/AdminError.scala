@@ -5,7 +5,7 @@ import ch.epfl.bluebrain.nexus.admin.config.Contexts._
 import ch.epfl.bluebrain.nexus.commons.http.directives.StatusFrom
 import ch.epfl.bluebrain.nexus.rdf.syntax._
 import io.circe.generic.extras.Configuration
-import io.circe.generic.extras.semiauto.deriveEncoder
+import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.{Encoder, Json}
 
 /**
@@ -66,7 +66,7 @@ object AdminError {
 
   implicit val adminErrorEncoder: Encoder[AdminError] = {
     implicit val rejectionConfig: Configuration = Configuration.default.withDiscriminator("@type")
-    val enc                                     = deriveEncoder[AdminError].mapJson(_ addContext errorCtxUri)
+    val enc                                     = deriveConfiguredEncoder[AdminError].mapJson(_ addContext errorCtxUri)
     Encoder.instance(r => enc(r) deepMerge Json.obj("reason" -> Json.fromString(r.msg)))
   }
 

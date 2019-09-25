@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.admin.types.ResourceRejection
 import ch.epfl.bluebrain.nexus.commons.http.directives.StatusFrom
 import ch.epfl.bluebrain.nexus.rdf.syntax._
 import io.circe.generic.extras.Configuration
-import io.circe.generic.extras.semiauto.deriveEncoder
+import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.{Encoder, Json}
 
 sealed abstract class ProjectRejection(val msg: String) extends ResourceRejection
@@ -71,7 +71,7 @@ object ProjectRejection {
 
   implicit val projectRejectionEncoder: Encoder[ProjectRejection] = {
     implicit val rejectionConfig: Configuration = Configuration.default.withDiscriminator("@type")
-    val enc                                     = deriveEncoder[ProjectRejection].mapJson(_ addContext errorCtxUri)
+    val enc                                     = deriveConfiguredEncoder[ProjectRejection].mapJson(_ addContext errorCtxUri)
     Encoder.instance(r => enc(r) deepMerge Json.obj("reason" -> Json.fromString(r.msg)))
   }
 

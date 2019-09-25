@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.rdf.syntax.node.unsafe._
 import com.typesafe.config.Config
 import pureconfig.generic.auto._
 import pureconfig.ConvertHelpers.catchReadError
-import pureconfig.{loadConfigOrThrow, ConfigConvert}
+import pureconfig.{ConfigConvert, ConfigSource}
 
 /**
   * Akka settings extension to expose application configuration.  It typically uses the configuration instance of the
@@ -24,7 +24,8 @@ class Settings(config: Config) extends Extension {
   private implicit val absoluteIriConverter: ConfigConvert[AbsoluteIri] =
     ConfigConvert.viaString[AbsoluteIri](catchReadError(s => url"$s".value), _.toString)
 
-  val appConfig: AppConfig = loadConfigOrThrow[AppConfig](config, "app")
+  val appConfig: AppConfig =
+    ConfigSource.fromConfig(config).at("app").loadOrThrow[AppConfig]
 }
 
 object Settings extends ExtensionId[Settings] with ExtensionIdProvider {
