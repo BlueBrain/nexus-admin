@@ -18,7 +18,7 @@ import ch.epfl.bluebrain.nexus.admin.client.AdminClientError._
 import ch.epfl.bluebrain.nexus.admin.client.config.AdminClientConfig
 import ch.epfl.bluebrain.nexus.admin.client.types.events.Event._
 import ch.epfl.bluebrain.nexus.admin.client.types.events.{Event, OrganizationEvent, ProjectEvent}
-import ch.epfl.bluebrain.nexus.admin.client.types.{Organization, Project}
+import ch.epfl.bluebrain.nexus.admin.client.types.{Organization, Project, ServiceDescription}
 import ch.epfl.bluebrain.nexus.commons.http.HttpClient
 import ch.epfl.bluebrain.nexus.commons.search.QueryResult.UnscoredQueryResult
 import ch.epfl.bluebrain.nexus.commons.search.QueryResults
@@ -59,16 +59,18 @@ class AdminClientSpec
   implicit val mt: ActorMaterializer = ActorMaterializer()
 
   private val config = AdminClientConfig(
-    url"https://nexus.example.com/v1".value,
-    url"http://admin.nexus.example.com/v1".value
+    url"https://nexus.example.com".value,
+    url"http://admin.nexus.example.com".value,
+    "v1"
   )
   private val token = OAuth2BearerToken("token")
 
-  private implicit val pc: HttpClient[IO, Project]                 = mock[HttpClient[IO, Project]]
-  private implicit val pcQr: HttpClient[IO, QueryResults[Project]] = mock[HttpClient[IO, QueryResults[Project]]]
-  private implicit val oc: HttpClient[IO, Organization]            = mock[HttpClient[IO, Organization]]
-  private implicit val tokenOpt: Option[AuthToken]                 = Option(AuthToken("token"))
-  private val source                                               = mock[EventSource[Event]]
+  private implicit val pc: HttpClient[IO, Project]                           = mock[HttpClient[IO, Project]]
+  private implicit val pcQr: HttpClient[IO, QueryResults[Project]]           = mock[HttpClient[IO, QueryResults[Project]]]
+  private implicit val oc: HttpClient[IO, Organization]                      = mock[HttpClient[IO, Organization]]
+  private implicit val serviceDescClient: HttpClient[IO, ServiceDescription] = mock[HttpClient[IO, ServiceDescription]]
+  private implicit val tokenOpt: Option[AuthToken]                           = Option(AuthToken("token"))
+  private val source                                                         = mock[EventSource[Event]]
 
   private val client = new AdminClient[IO](source, config)
 
@@ -87,10 +89,22 @@ class AdminClientSpec
     Get(s"http://admin.nexus.example.com/v1/projects/$org?from=$from&size=$size").addCredentials(token)
 
   before {
-    Mockito.reset(pc, pcQr, oc, source)
+    Mockito.reset(pc, pcQr, oc, source, serviceDescClient)
   }
 
   "The AdminClient" should {
+
+    "fetch service description" in {
+      val serviceDescription = ServiceDescription("admin", genString())
+      serviceDescClient(Get("http://admin.nexus.example.com")) shouldReturn IO.pure(serviceDescription)
+      client.serviceDescription.ioValue shouldEqual serviceDescription
+    }
+
+    "failed to fetch service description" in {
+      val exception = new RuntimeException()
+      serviceDescClient(Get("http://admin.nexus.example.com")) shouldReturn IO.raiseError(exception)
+      client.serviceDescription.failed[RuntimeException] shouldEqual exception
+    }
 
     "fetch organization" in {
       val orgLabel = genString()

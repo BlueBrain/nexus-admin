@@ -43,7 +43,7 @@ class ProjectsSpec
   private implicit val timer: Timer[IO]                = IO.timer(system.dispatcher)
   private implicit val httpConfig: HttpConfig          = HttpConfig("nexus", 80, "v1", "http://nexus.example.com")
   private implicit val iamClientConfig: IamClientConfig =
-    IamClientConfig(url"http://nexus.example.com".value, url"http://iam.nexus.example.com".value, 1 second)
+    IamClientConfig(url"http://nexus.example.com".value, url"http://iam.nexus.example.com".value, "v1", 1 second)
   private implicit val iamCredentials = Some(AuthToken("token"))
 
   private val instant               = Instant.now

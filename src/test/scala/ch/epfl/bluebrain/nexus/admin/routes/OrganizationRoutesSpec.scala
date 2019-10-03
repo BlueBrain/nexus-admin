@@ -55,8 +55,9 @@ class OrganizationRoutesSpec
   private val appConfig: AppConfig            = Settings(system).appConfig
   private implicit val httpConfig: HttpConfig = appConfig.http
   private implicit val iamClientConfig: IamClientConfig = IamClientConfig(
-    url"https://nexus.example.com/v1".value,
-    url"http://localhost:8080/v1".value
+    url"https://nexus.example.com".value,
+    url"http://localhost:8080".value,
+    "v1"
   )
 
   private val routes =
