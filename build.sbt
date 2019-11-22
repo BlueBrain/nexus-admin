@@ -25,24 +25,24 @@ scalafmt: {
  */
 
 // Dependency versions
-val alpakkaVersion             = "1.1.1"
-val commonsVersion             = "0.17.15"
-val iamVersion                 = "580662f3"
-val sourcingVersion            = "0.16.6"
-val akkaVersion                = "2.5.25"
-val akkaCorsVersion            = "0.4.1"
+val alpakkaVersion             = "1.1.2"
+val commonsVersion             = "0.18.0"
+val iamVersion                 = "1.2.0+3-c97886d1"
+val sourcingVersion            = "0.17.0"
+val akkaVersion                = "2.6.0"
+val akkaCorsVersion            = "0.4.2"
 val akkaHttpVersion            = "10.1.10"
-val akkaPersistenceCassVersion = "0.99"
+val akkaPersistenceCassVersion = "0.100"
 val akkaPersistenceMemVersion  = "2.5.15.2"
 val catsVersion                = "2.0.0"
-val circeVersion               = "0.12.1"
+val circeVersion               = "0.12.3"
 val journalVersion             = "3.0.19"
 val logbackVersion             = "1.2.3"
-val mockitoVersion             = "1.5.17"
-val monixVersion               = "3.0.0"
-val pureconfigVersion          = "0.12.0"
+val mockitoVersion             = "1.7.1"
+val monixVersion               = "3.1.0"
+val pureconfigVersion          = "0.12.1"
 val scalaTestVersion           = "3.0.8"
-val kryoVersion                = "0.5.2"
+val kryoVersion                = "1.0.0"
 
 // Dependencies modules
 lazy val iamClient           = "ch.epfl.bluebrain.nexus" %% "iam-client"                 % iamVersion
@@ -68,7 +68,7 @@ lazy val mockito             = "org.mockito"             %% "mockito-scala"     
 lazy val monixEval           = "io.monix"                %% "monix-eval"                 % monixVersion
 lazy val logbackClassic      = "ch.qos.logback"          % "logback-classic"             % logbackVersion
 lazy val pureconfig          = "com.github.pureconfig"   %% "pureconfig"                 % pureconfigVersion
-lazy val kryo                = "com.github.romix.akka"   %% "akka-kryo-serialization"    % kryoVersion
+lazy val kryo                = "io.altoo"                %% "akka-kryo-serialization"    % kryoVersion
 
 lazy val admin = project
   .in(file("."))
@@ -102,7 +102,7 @@ lazy val admin = project
       commonsTest        % Test,
       mockito            % Test
     ),
-    resolvers += "dnvriend" at "http://dl.bintray.com/dnvriend/maven",
+    resolvers += "dnvriend" at "https://dl.bintray.com/dnvriend/maven",
     mappings in Universal := {
       val universalMappings = (mappings in Universal).value
       universalMappings.foldLeft(Vector.empty[(File, String)]) {

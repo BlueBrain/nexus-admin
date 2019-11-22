@@ -9,8 +9,7 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.unmarshalling.FromEntityUnmarshaller
 import akka.stream.scaladsl.Sink
-import akka.stream.{ActorMaterializer, Materializer}
-import cats.effect.{Effect, IO, LiftIO}
+import cats.effect.{ContextShift, Effect, IO, LiftIO}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.admin.client.AdminClientError.{UnknownError, UnmarshallingError}
 import ch.epfl.bluebrain.nexus.admin.client.config.AdminClientConfig
@@ -41,7 +40,7 @@ import scala.util.control.NonFatal
 class AdminClient[F[_]] private[client] (source: EventSource[Event], cfg: AdminClientConfig)(
     implicit
     F: Effect[F],
-    mt: Materializer,
+    as: ActorSystem,
     serviceDescClient: HttpClient[F, ServiceDescription],
     pc: HttpClient[F, Project],
     pcQr: HttpClient[F, QueryResults[Project]],
@@ -208,13 +207,13 @@ object AdminClient {
   private def httpClient[F[_], A: ClassTag](
       implicit L: LiftIO[F],
       F: Effect[F],
+      as: ActorSystem,
       ec: ExecutionContext,
-      mt: Materializer,
       cl: UntypedHttpClient[F],
       um: FromEntityUnmarshaller[A]
   ): HttpClient[F, A] = new HttpClient[F, A] {
-    private val logger                = Logger(s"AdminHttpClient[${implicitly[ClassTag[A]]}]")
-    private implicit val contextShift = IO.contextShift(ec)
+    private val logger                                  = Logger(s"AdminHttpClient[${implicitly[ClassTag[A]]}]")
+    private implicit val contextShift: ContextShift[IO] = IO.contextShift(ec)
 
     private def handleError[B](req: HttpRequest): Throwable => F[B] = {
       case NonFatal(th) =>
@@ -270,7 +269,6 @@ object AdminClient {
     * @return new instance of [[AdminClient]]
     */
   def apply[F[_]: Effect](cfg: AdminClientConfig)(implicit as: ActorSystem): AdminClient[F] = {
-    implicit val mt: ActorMaterializer                                = ActorMaterializer()
     implicit val ec: ExecutionContextExecutor                         = as.dispatcher
     implicit val ucl: UntypedHttpClient[F]                            = HttpClient.untyped[F]
     implicit val pc: HttpClient[F, Project]                           = httpClient[F, Project]
