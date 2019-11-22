@@ -9,7 +9,6 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.client.RequestBuilding.Get
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
-import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Source
 import akka.testkit.TestKit
 import cats.effect.IO
@@ -55,8 +54,7 @@ class AdminClientSpec
 
   override implicit val patienceConfig: PatienceConfig = PatienceConfig(5 seconds, 15 milliseconds)
 
-  implicit val ec: ExecutionContext  = system.dispatcher
-  implicit val mt: ActorMaterializer = ActorMaterializer()
+  implicit val ec: ExecutionContext = system.dispatcher
 
   private val config = AdminClientConfig(
     url"https://nexus.example.com".value,

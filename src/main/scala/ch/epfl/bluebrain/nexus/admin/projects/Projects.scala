@@ -4,7 +4,6 @@ import java.time.Clock
 import java.util.UUID
 
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
 import cats.MonadError
 import cats.effect.{Async, ConcurrentEffect, Effect, Timer}
 import cats.implicits._
@@ -275,7 +274,7 @@ object Projects {
       organizations: Organizations[F],
       iamClient: IamClient[F],
       appConfig: AppConfig
-  )(implicit as: ActorSystem, mt: ActorMaterializer, clock: Clock = Clock.systemUTC): F[Projects[F]] = {
+  )(implicit as: ActorSystem, clock: Clock = Clock.systemUTC): F[Projects[F]] = {
     implicit val http: HttpConfig                              = appConfig.http
     implicit val iamClientConfig: IamClientConfig              = appConfig.iam
     implicit val iamCredentials: Option[AuthToken]             = appConfig.serviceAccount.credentials

@@ -7,7 +7,6 @@ import akka.cluster.Cluster
 import akka.event.Logging
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Route
-import akka.stream.ActorMaterializer
 import cats.effect.Effect
 import ch.epfl.bluebrain.nexus.admin.config.{AppConfig, Settings}
 import ch.epfl.bluebrain.nexus.admin.index._
@@ -61,13 +60,12 @@ object Main {
     val config = loadConfig()
     setupMonitoring(config)
 
-    implicit val appConfig             = new Settings(config).appConfig
-    implicit val storeConfig           = appConfig.keyValueStore
-    implicit val as: ActorSystem       = ActorSystem(appConfig.description.fullName, config)
-    implicit val mt: ActorMaterializer = ActorMaterializer()
-    implicit val scheduler: Scheduler  = Scheduler.global
-    implicit val iamConfig             = appConfig.iam
-    implicit val iamClient             = IamClient[Task]
+    implicit val appConfig            = new Settings(config).appConfig
+    implicit val storeConfig          = appConfig.keyValueStore
+    implicit val as: ActorSystem      = ActorSystem(appConfig.description.fullName, config)
+    implicit val scheduler: Scheduler = Scheduler.global
+    implicit val iamConfig            = appConfig.iam
+    implicit val iamClient            = IamClient[Task]
 
     val logger = Logging(as, getClass)
 
