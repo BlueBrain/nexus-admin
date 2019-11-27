@@ -73,7 +73,7 @@ object Main {
 
     val seeds: List[Address] = appConfig.cluster.seeds.toList
       .flatMap(_.split(","))
-      .map(addr => AddressFromURIString(s"akka.tcp://${appConfig.description.fullName}@$addr")) match {
+      .map(addr => AddressFromURIString(s"akka://${appConfig.description.fullName}@$addr")) match {
       case Nil      => List(cluster.selfAddress)
       case nonEmpty => nonEmpty
     }

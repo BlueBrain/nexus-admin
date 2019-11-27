@@ -76,8 +76,10 @@ lazy val admin = project
   .enablePlugins(BuildInfoPlugin, ServicePackagingPlugin)
   .aggregate(client)
   .settings(
-    name       := "admin",
-    moduleName := "admin",
+    name                 := "admin",
+    moduleName           := "admin",
+    Docker / packageName := "nexus-admin",
+    resolvers            += "dnvriend" at "https://dl.bintray.com/dnvriend/maven",
     libraryDependencies ++= Seq(
       akkaCluster,
       akkaDowning,
@@ -101,17 +103,7 @@ lazy val admin = project
       akkaPersistenceMem % Test,
       commonsTest        % Test,
       mockito            % Test
-    ),
-    resolvers += "dnvriend" at "https://dl.bintray.com/dnvriend/maven",
-    mappings in Universal := {
-      val universalMappings = (mappings in Universal).value
-      universalMappings.foldLeft(Vector.empty[(File, String)]) {
-        case (acc, (file, filename)) if filename.contains("kanela-agent") =>
-          acc :+ (file, "lib/instrumentation-agent.jar")
-        case (acc, other) =>
-          acc :+ other
-      }
-    }
+    )
   )
 
 lazy val client = project
