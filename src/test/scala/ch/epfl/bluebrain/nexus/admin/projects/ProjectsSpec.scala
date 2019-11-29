@@ -4,7 +4,8 @@ import java.time.{Clock, Instant, ZoneId}
 import java.util.UUID
 
 import cats.effect.{ContextShift, IO, Timer}
-import ch.epfl.bluebrain.nexus.admin.config.AppConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.admin.config.AppConfig._
+import ch.epfl.bluebrain.nexus.admin.config.Settings
 import ch.epfl.bluebrain.nexus.admin.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.admin.index.ProjectCache
 import ch.epfl.bluebrain.nexus.admin.organizations.{Organization, Organizations}
@@ -20,7 +21,6 @@ import ch.epfl.bluebrain.nexus.rdf.Iri.Path
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
 import ch.epfl.bluebrain.nexus.rdf.syntax.node.unsafe._
 import ch.epfl.bluebrain.nexus.sourcing.Aggregate
-import ch.epfl.bluebrain.nexus.sourcing.retry.{Retry, RetryStrategy}
 import org.mockito.{ArgumentMatchersSugar, IdiomaticMockito, MockitoSugar}
 import org.scalatest._
 
@@ -41,13 +41,14 @@ class ProjectsSpec
   override implicit val patienceConfig: PatienceConfig = PatienceConfig(3.seconds, 100.milliseconds)
   private implicit val ctx: ContextShift[IO]           = IO.contextShift(ExecutionContext.global)
   private implicit val timer: Timer[IO]                = IO.timer(system.dispatcher)
-  private implicit val httpConfig: HttpConfig          = HttpConfig("nexus", 80, "v1", "http://nexus.example.com")
-  private implicit val iamClientConfig: IamClientConfig =
-    IamClientConfig(url"http://nexus.example.com".value, url"http://iam.nexus.example.com".value, "v1", 1 second)
-  private implicit val iamCredentials = Some(AuthToken("token"))
+  private implicit val iamCredentials                  = Some(AuthToken("token"))
 
   private val instant               = Instant.now
   private implicit val clock: Clock = Clock.fixed(instant, ZoneId.systemDefault)
+  private implicit val appConfig = Settings(system).appConfig.copy(
+    http = HttpConfig("nexus", 80, "v1", "http://nexus.example.com"),
+    iam = IamClientConfig(url"http://nexus.example.com".value, url"http://iam.nexus.example.com".value, "v1", 1 second)
+  )
 
   private val index     = mock[ProjectCache[IO]]
   private val orgs      = mock[Organizations[IO]]
@@ -57,15 +58,11 @@ class ProjectsSpec
   private val aggF: IO[Agg[IO]] =
     Aggregate.inMemoryF("projects-in-memory", ProjectState.Initial, Projects.next, Projects.Eval.apply[IO])
 
-  private implicit val permissions                 = Set(Permission.unsafe("test/permission1"), Permission.unsafe("test/permission2"))
-  private implicit val retry: Retry[IO, Throwable] = Retry(RetryStrategy.Once(100 millis))
-  private val projects                             = aggF.map(agg => new Projects[IO](agg, index, orgs, iamClient)).unsafeRunSync()
+  private implicit val permissions = Set(Permission.unsafe("test/permission1"), Permission.unsafe("test/permission2"))
+  private val projects             = aggF.map(agg => new Projects[IO](agg, index, orgs, iamClient)).unsafeRunSync()
 
-  override protected def beforeEach(): Unit = {
-    MockitoSugar.reset(orgs)
-    MockitoSugar.reset(index)
-    MockitoSugar.reset(iamClient)
-  }
+  override protected def beforeEach(): Unit =
+    MockitoSugar.reset(orgs, index, iamClient)
 
 //noinspection TypeAnnotation,NameBooleanParameters
   trait Context {

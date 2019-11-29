@@ -79,8 +79,8 @@ object Main {
     }
     implicit val orgIndex: OrganizationCache[Task] = OrganizationCache[Task]
     implicit val projectIndex: ProjectCache[Task]  = ProjectCache[Task]
-    val organizations: Organizations[Task]         = Organizations[Task](orgIndex, iamClient, appConfig).runSyncUnsafe()
-    val projects: Projects[Task]                   = Projects(projectIndex, organizations, iamClient, appConfig).runSyncUnsafe()
+    val organizations: Organizations[Task]         = Organizations[Task](orgIndex, iamClient).runSyncUnsafe()
+    val projects: Projects[Task]                   = Projects(projectIndex, organizations, iamClient).runSyncUnsafe()
 
     cluster.registerOnMemberUp {
       logger.info("==== Cluster is Live ====")

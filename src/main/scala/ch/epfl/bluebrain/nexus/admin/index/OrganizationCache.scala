@@ -4,7 +4,7 @@ import java.util.UUID
 
 import akka.actor.ActorSystem
 import cats.Monad
-import cats.effect.{Async, Timer}
+import cats.effect.{Effect, Timer}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.admin.config.Permissions.orgs
 import ch.epfl.bluebrain.nexus.admin.index.Cache._
@@ -24,7 +24,7 @@ import ch.epfl.bluebrain.nexus.iam.client.types.AccessControlLists
   * @param store the underlying Distributed Data LWWMap store.
   * @tparam F the effect type ''F[_]''
   */
-class OrganizationCache[F[_]](store: KeyValueStore[F, UUID, OrganizationResource])(implicit F: Monad[F])
+class OrganizationCache[F[_]: Monad](store: KeyValueStore[F, UUID, OrganizationResource])
     extends Cache[F, Organization](store) {
 
   private implicit val ordering: Ordering[OrganizationResource] = Ordering.by { org: OrganizationResource =>
@@ -53,7 +53,7 @@ class OrganizationCache[F[_]](store: KeyValueStore[F, UUID, OrganizationResource
             acls.exists(organization.label, orgs.read)
       }
       val count  = filtered.size.toLong
-      val result = filtered.toList.sorted.slice(pagination.from, (pagination.from + pagination.size))
+      val result = filtered.toList.sorted.slice(pagination.from, pagination.from + pagination.size)
       UnscoredQueryResults(count, result.map(UnscoredQueryResult(_)))
     }
 
@@ -70,8 +70,8 @@ object OrganizationCache {
   /**
     * Creates a new organization index.
     */
-  def apply[F[_]: Timer](implicit as: ActorSystem, config: KeyValueStoreConfig, F: Async[F]): OrganizationCache[F] = {
+  def apply[F[_]: Effect: Timer](implicit as: ActorSystem, config: KeyValueStoreConfig): OrganizationCache[F] = {
     val function: (Long, OrganizationResource) => Long = { case (_, res) => res.rev }
-    new OrganizationCache(KeyValueStore.distributed("organizations", function, mapError))(F)
+    new OrganizationCache(KeyValueStore.distributed("organizations", function))
   }
 }

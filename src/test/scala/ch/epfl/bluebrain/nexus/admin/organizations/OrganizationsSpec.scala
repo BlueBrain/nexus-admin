@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.admin.organizations
 import java.time.{Clock, Instant, ZoneId}
 
 import cats.effect.{ContextShift, IO, Timer}
-import ch.epfl.bluebrain.nexus.admin.config.AppConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.admin.config.AppConfig._
 import ch.epfl.bluebrain.nexus.admin.config.Settings
 import ch.epfl.bluebrain.nexus.admin.config.Vocabulary.nxv
 import ch.epfl.bluebrain.nexus.admin.index.OrganizationCache
@@ -22,7 +22,6 @@ import ch.epfl.bluebrain.nexus.rdf.Iri.Path
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path./
 import ch.epfl.bluebrain.nexus.rdf.syntax.node.unsafe._
 import ch.epfl.bluebrain.nexus.sourcing.Aggregate
-import ch.epfl.bluebrain.nexus.sourcing.retry.{Retry, RetryStrategy}
 import org.mockito.{ArgumentMatchersSugar, IdiomaticMockito, Mockito}
 import org.scalatest.{BeforeAndAfter, Matchers}
 import org.scalatest.concurrent.ScalaFutures
@@ -43,26 +42,24 @@ class OrganizationsSpec
 
   override implicit val patienceConfig: PatienceConfig = PatienceConfig(3 seconds, 100 milliseconds)
 
-  private implicit val clock: Clock     = Clock.fixed(Instant.ofEpochSecond(3600), ZoneId.systemDefault())
-  private implicit val http: HttpConfig = HttpConfig("some", 8080, "v1", "http://nexus.example.com")
-  private implicit val iamClientConfig: IamClientConfig =
-    IamClientConfig(url"http://nexus.example.com".value, url"http://iam.nexus.example.com".value, "v1", 1 second)
+  private implicit val clock: Clock          = Clock.fixed(Instant.ofEpochSecond(3600), ZoneId.systemDefault())
   private implicit val ctx: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
   private implicit val timer: Timer[IO]      = IO.timer(system.dispatcher)
 
   private implicit val caller: Subject = Caller.anonymous.subject
   private val instant                  = clock.instant()
-  private implicit val appConfig       = Settings(system).appConfig
-  private implicit val keyStoreConfig  = appConfig.keyValueStore
-  private implicit val iamCredentials  = Some(AuthToken("token"))
+  private implicit val appConfig = Settings(system).appConfig.copy(
+    http = HttpConfig("some", 8080, "v1", "http://nexus.example.com"),
+    iam = IamClientConfig(url"http://nexus.example.com".value, url"http://iam.nexus.example.com".value, "v1", 1 second)
+  )
+  private implicit val iamCredentials = Some(AuthToken("token"))
 
   private val aggF: IO[Agg[IO]] = Aggregate.inMemory[IO, String]("organizations", Initial, next, evaluate[IO])
 
   private val index     = OrganizationCache[IO]
   private val iamClient = mock[IamClient[IO]]
 
-  private implicit val permissions                 = Set(Permission.unsafe("test/permission1"), Permission.unsafe("test/permission2"))
-  private implicit val retry: Retry[IO, Throwable] = Retry(RetryStrategy.Once(100 millis))
+  private implicit val permissions = Set(Permission.unsafe("test/permission1"), Permission.unsafe("test/permission2"))
 
   private val orgs = aggF.map(new Organizations(_, index, iamClient)).unsafeRunSync()
 

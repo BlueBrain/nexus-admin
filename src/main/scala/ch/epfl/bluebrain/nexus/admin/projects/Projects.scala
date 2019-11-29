@@ -4,13 +4,16 @@ import java.time.Clock
 import java.util.UUID
 
 import akka.actor.ActorSystem
-import cats.MonadError
+import akka.persistence.query.scaladsl.EventsByTagQuery
+import akka.persistence.query.{NoOffset, PersistenceQuery}
+import akka.stream.scaladsl.Source
 import cats.effect.{Async, ConcurrentEffect, Effect, Timer}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig
-import ch.epfl.bluebrain.nexus.admin.config.AppConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.admin.config.AppConfig._
 import ch.epfl.bluebrain.nexus.admin.exceptions.AdminError.UnexpectedState
 import ch.epfl.bluebrain.nexus.admin.index.ProjectCache
+import ch.epfl.bluebrain.nexus.admin.instances._
 import ch.epfl.bluebrain.nexus.admin.organizations.Organizations
 import ch.epfl.bluebrain.nexus.admin.persistence.TaggingAdapter
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectCommand._
@@ -28,10 +31,13 @@ import ch.epfl.bluebrain.nexus.iam.client.types.{AccessControlList, AccessContro
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
 import ch.epfl.bluebrain.nexus.sourcing.akka._
-import ch.epfl.bluebrain.nexus.sourcing.projections.ProgressStorage.Volatile
-import ch.epfl.bluebrain.nexus.sourcing.projections.{ProjectionConfig, TagProjection}
-import ch.epfl.bluebrain.nexus.sourcing.retry.Retry
-import ch.epfl.bluebrain.nexus.sourcing.retry.syntax._
+import ch.epfl.bluebrain.nexus.sourcing.projections.ProgressFlow.{PairMsg, ProgressFlowElem}
+import ch.epfl.bluebrain.nexus.sourcing.projections.{Message, StreamSupervisor}
+import retry.CatsEffect._
+import retry.RetryPolicy
+import retry.syntax.all._
+
+import scala.concurrent.ExecutionContext
 
 /**
   * The projects operations bundle.
@@ -40,20 +46,22 @@ import ch.epfl.bluebrain.nexus.sourcing.retry.syntax._
   * @param index the project and organization labels index
   * @tparam F    the effect type
   */
-class Projects[F[_]](
+class Projects[F[_]: Timer](
     agg: Agg[F],
     private val index: ProjectCache[F],
     organizations: Organizations[F],
     iamClient: IamClient[F]
 )(
-    implicit F: MonadError[F, Throwable],
+    implicit F: Effect[F],
     http: HttpConfig,
     iam: IamClientConfig,
     clock: Clock,
+    permissionsConfig: PermissionsConfig,
     iamCredentials: Option[AuthToken],
-    ownerPermissions: Set[Permission],
-    retry: Retry[F, Throwable]
+    ownerPermissions: Set[Permission]
 ) {
+
+  private implicit val retryPolicy: RetryPolicy[F] = permissionsConfig.retry.retryPolicy[F]
 
   private def invalidIriGeneration(organization: String, label: String, param: String): String =
     s"the value of the project's '$param' could not be generated properly from the provided project '$organization/$label'"
@@ -81,7 +89,8 @@ class Projects[F[_]](
                 // format: off
                 val command = CreateProject(projectId, label, org.uuid, organization, project.description, project.apiMappings, base, vocab, clock.instant, caller)
                 // format: on
-                evaluateAndUpdateIndex(command) <* setOwnerPermissions(organization, label, caller).retry
+                evaluateAndUpdateIndex(command) <* setOwnerPermissions(organization, label, caller)
+                  .retryingOnAllErrors[Throwable]
               case (None, _) =>
                 F.pure(Left(InvalidProjectFormat(invalidIriGeneration(organization, label, "base"))))
               case (_, None) =>
@@ -272,14 +281,11 @@ object Projects {
   def apply[F[_]: ConcurrentEffect: Timer](
       index: ProjectCache[F],
       organizations: Organizations[F],
-      iamClient: IamClient[F],
-      appConfig: AppConfig
-  )(implicit as: ActorSystem, clock: Clock = Clock.systemUTC): F[Projects[F]] = {
-    implicit val http: HttpConfig                              = appConfig.http
-    implicit val iamClientConfig: IamClientConfig              = appConfig.iam
-    implicit val iamCredentials: Option[AuthToken]             = appConfig.serviceAccount.credentials
-    implicit val ownerPermissions: Set[Permission]             = appConfig.permissions.ownerPermissions
-    implicit val permissionsRetryStrategy: Retry[F, Throwable] = Retry(appConfig.permissions.retry.retryStrategy)
+      iamClient: IamClient[F]
+  )(implicit appConfig: AppConfig, as: ActorSystem, clock: Clock = Clock.systemUTC): F[Projects[F]] = {
+    implicit val iamCredentials: Option[AuthToken] = appConfig.serviceAccount.credentials
+    implicit val ownerPermissions: Set[Permission] = appConfig.permissions.ownerPermissions
+    implicit val retryPolicy: RetryPolicy[F]       = appConfig.sourcing.retry.retryPolicy[F]
 
     val aggF: F[Agg[F]] =
       AkkaAggregate.shardedF(
@@ -288,7 +294,6 @@ object Projects {
         next,
         Eval.apply[F],
         appConfig.sourcing.passivationStrategy(),
-        Retry(appConfig.sourcing.retry.retryStrategy),
         appConfig.sourcing.akkaSourcingConfig,
         appConfig.cluster.shards
       )
@@ -298,19 +303,27 @@ object Projects {
   def indexer[F[_]: Timer](
       projects: Projects[F]
   )(implicit F: Effect[F], config: AppConfig, as: ActorSystem): F[Unit] = {
-    implicit val sc: SourcingConfig = config.sourcing
-    val cfg = ProjectionConfig
-      .builder[F]
-      .name("projects-indexer")
-      .tag(TaggingAdapter.ProjectTag)
-      .plugin(config.persistence.queryJournalPlugin)
-      .retry(config.indexing.retry.retryStrategy)
-      .batch(config.indexing.batch, config.indexing.batchTimeout)
-      .offset(Volatile)
-      .mapping((ev: ProjectEvent) => projects.fetch(ev.id))
-      .index(_.traverse(project => projects.index.replace(project.uuid, project)) >> F.unit)
-      .build
-    TagProjection.delay(cfg) >> F.unit
+    implicit val sc: SourcingConfig   = config.sourcing
+    implicit val ec: ExecutionContext = as.dispatcher
+
+    val projectionId = "projects-indexer"
+    val source: Source[PairMsg[Any], _] = PersistenceQuery(as)
+      .readJournalFor[EventsByTagQuery](config.persistence.queryJournalPlugin)
+      .eventsByTag(TaggingAdapter.ProjectTag, NoOffset)
+      .map[PairMsg[Any]](e => Right(Message(e, projectionId)))
+
+    val flow = ProgressFlowElem[F, Any]
+      .collectCast[ProjectEvent]
+      .groupedWithin(config.indexing.batch, config.indexing.batchTimeout)
+      .distinct()
+      .mergeEmit()
+      .mapAsync(ev => projects.fetch(ev.id))
+      .collectSome[ProjectResource]
+      .runAsync(project => projects.index.replace(project.uuid, project))()
+      .flow
+      .map(_ => ())
+
+    F.delay[StreamSupervisor[F, Unit]](StreamSupervisor.startSingleton(F.delay(source.via(flow)), projectionId)) >> F.unit
   }
 
   /**
