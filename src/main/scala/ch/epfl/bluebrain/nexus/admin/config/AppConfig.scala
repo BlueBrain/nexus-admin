@@ -12,6 +12,7 @@ import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.syntax.node.unsafe._
 import ch.epfl.bluebrain.nexus.sourcing.akka.SourcingConfig
 import ch.epfl.bluebrain.nexus.sourcing.akka.SourcingConfig.RetryStrategyConfig
+import ch.epfl.bluebrain.nexus.sourcing.projections.IndexingConfig
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -121,15 +122,6 @@ object AppConfig {
   final case class PersistenceConfig(journalPlugin: String, snapshotStorePlugin: String, queryJournalPlugin: String)
 
   /**
-    * Indexing configuration
-    *
-    * @param batch        the maximum number of events taken on each batch
-    * @param batchTimeout the maximum amount of time to wait for the number of events to be taken on each batch
-    * @param retry        the retry configuration when indexing failures
-    */
-  final case class IndexingConfig(batch: Int, batchTimeout: FiniteDuration, retry: RetryStrategyConfig)
-
-  /**
     * Kafka configuration.
     *
     * @param topic  topic to publish events.
@@ -201,5 +193,10 @@ object AppConfig {
       nxv.subject.prefix
     )
   )
+
+  implicit def toHttpConfig(implicit config: AppConfig): HttpConfig               = config.http
+  implicit def toIamConfig(implicit config: AppConfig): IamClientConfig           = config.iam
+  implicit def toPermissionsConfig(implicit config: AppConfig): PermissionsConfig = config.permissions
+  implicit def toKeyValueStore(implicit config: AppConfig): KeyValueStoreConfig   = config.keyValueStore
 
 }

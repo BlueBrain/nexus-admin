@@ -4,13 +4,16 @@ import java.time.Clock
 import java.util.UUID
 
 import akka.actor.ActorSystem
-import cats.MonadError
+import akka.persistence.query.scaladsl.EventsByTagQuery
+import akka.persistence.query.{NoOffset, PersistenceQuery}
+import akka.stream.scaladsl.Source
 import cats.effect.{Async, ConcurrentEffect, Effect, Timer}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig
-import ch.epfl.bluebrain.nexus.admin.config.AppConfig.HttpConfig
+import ch.epfl.bluebrain.nexus.admin.config.AppConfig.{HttpConfig, PermissionsConfig, _}
 import ch.epfl.bluebrain.nexus.admin.exceptions.AdminError.UnexpectedState
 import ch.epfl.bluebrain.nexus.admin.index.OrganizationCache
+import ch.epfl.bluebrain.nexus.admin.instances._
 import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationCommand._
 import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationEvent._
 import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationRejection._
@@ -26,23 +29,28 @@ import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
 import ch.epfl.bluebrain.nexus.iam.client.types._
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
 import ch.epfl.bluebrain.nexus.sourcing.akka.{AkkaAggregate, SourcingConfig}
-import ch.epfl.bluebrain.nexus.sourcing.projections.ProgressStorage.Volatile
-import ch.epfl.bluebrain.nexus.sourcing.projections.{ProjectionConfig, TagProjection}
-import ch.epfl.bluebrain.nexus.sourcing.retry.Retry
-import ch.epfl.bluebrain.nexus.sourcing.retry.syntax._
+import ch.epfl.bluebrain.nexus.sourcing.projections.ProgressFlow.{PairMsg, ProgressFlowElem}
+import ch.epfl.bluebrain.nexus.sourcing.projections.{Message, StreamSupervisor}
+import retry.CatsEffect._
+import retry.RetryPolicy
+import retry.syntax.all._
+
+import scala.concurrent.ExecutionContext
 
 /**
   * Organizations operations bundle
   */
-class Organizations[F[_]](agg: Agg[F], private val index: OrganizationCache[F], iamClient: IamClient[F])(
-    implicit F: MonadError[F, Throwable],
+class Organizations[F[_]: Timer](agg: Agg[F], private val index: OrganizationCache[F], iamClient: IamClient[F])(
+    implicit F: Effect[F],
     clock: Clock,
+    permissionsConfig: PermissionsConfig,
     http: HttpConfig,
     iam: IamClientConfig,
     iamCredentials: Option[AuthToken],
-    ownerPermissions: Set[Permission],
-    retry: Retry[F, Throwable]
+    ownerPermissions: Set[Permission]
 ) {
+
+  private implicit val retryPolicy: RetryPolicy[F] = permissionsConfig.retry.retryPolicy[F]
 
   /**
     * Create an organization.
@@ -57,7 +65,8 @@ class Organizations[F[_]](agg: Agg[F], private val index: OrganizationCache[F], 
       case None =>
         val cmd =
           CreateOrganization(UUID.randomUUID, organization.label, organization.description, clock.instant, caller)
-        evalAndUpdateIndex(cmd, organization) <* setOwnerPermissions(organization.label, caller).retry
+        evalAndUpdateIndex(cmd, organization) <* setOwnerPermissions(organization.label, caller)
+          .retryingOnAllErrors[Throwable]
     }
 
   def setPermissions(orgLabel: String, acls: AccessControlLists, subject: Subject): F[Unit] = {
@@ -192,14 +201,11 @@ object Organizations {
     */
   def apply[F[_]: ConcurrentEffect: Timer](
       index: OrganizationCache[F],
-      iamClient: IamClient[F],
-      appConfig: AppConfig
-  )(implicit cl: Clock = Clock.systemUTC(), as: ActorSystem): F[Organizations[F]] = {
-    implicit val http: HttpConfig                              = appConfig.http
-    implicit val iamClientConfig: IamClientConfig              = appConfig.iam
-    implicit val iamCredentials: Option[AuthToken]             = appConfig.serviceAccount.credentials
-    implicit val ownerPermissions: Set[Permission]             = appConfig.permissions.ownerPermissions
-    implicit val permissionsRetryStrategy: Retry[F, Throwable] = Retry(appConfig.permissions.retry.retryStrategy)
+      iamClient: IamClient[F]
+  )(implicit appConfig: AppConfig, cl: Clock = Clock.systemUTC(), as: ActorSystem): F[Organizations[F]] = {
+    implicit val iamCredentials: Option[AuthToken] = appConfig.serviceAccount.credentials
+    implicit val ownerPermissions: Set[Permission] = appConfig.permissions.ownerPermissions
+    implicit val retryPolicy: RetryPolicy[F]       = appConfig.sourcing.retry.retryPolicy[F]
     val aggF: F[Agg[F]] =
       AkkaAggregate.sharded(
         "organizations",
@@ -207,7 +213,6 @@ object Organizations {
         next,
         evaluate[F],
         appConfig.sourcing.passivationStrategy(),
-        Retry(appConfig.sourcing.retry.retryStrategy),
         appConfig.sourcing.akkaSourcingConfig,
         appConfig.cluster.shards
       )
@@ -218,19 +223,27 @@ object Organizations {
   def indexer[F[_]: Timer](
       organizations: Organizations[F]
   )(implicit F: Effect[F], config: AppConfig, as: ActorSystem): F[Unit] = {
-    implicit val sc: SourcingConfig = config.sourcing
-    val cfg = ProjectionConfig
-      .builder[F]
-      .name("orgs-indexer")
-      .tag(TaggingAdapter.OrganizationTag)
-      .plugin(config.persistence.queryJournalPlugin)
-      .retry(config.indexing.retry.retryStrategy)
-      .batch(config.indexing.batch, config.indexing.batchTimeout)
-      .offset(Volatile)
-      .mapping((ev: OrganizationEvent) => organizations.fetch(ev.id))
-      .index(_.traverse(org => organizations.index.replace(org.uuid, org)) >> F.unit)
-      .build
-    TagProjection.delay(cfg) >> F.unit
+    implicit val sc: SourcingConfig   = config.sourcing
+    implicit val ec: ExecutionContext = as.dispatcher
+
+    val projectionId = "orgs-indexer"
+    val source: Source[PairMsg[Any], _] = PersistenceQuery(as)
+      .readJournalFor[EventsByTagQuery](config.persistence.queryJournalPlugin)
+      .eventsByTag(TaggingAdapter.OrganizationTag, NoOffset)
+      .map[PairMsg[Any]](e => Right(Message(e, projectionId)))
+
+    val flow = ProgressFlowElem[F, Any]
+      .collectCast[OrganizationEvent]
+      .groupedWithin(config.indexing.batch, config.indexing.batchTimeout)
+      .distinct()
+      .mergeEmit()
+      .mapAsync(ev => organizations.fetch(ev.id))
+      .collectSome[OrganizationResource]
+      .runAsync(org => organizations.index.replace(org.uuid, org))()
+      .flow
+      .map(_ => ())
+
+    F.delay[StreamSupervisor[F, Unit]](StreamSupervisor.startSingleton(F.delay(source.via(flow)), projectionId)) >> F.unit
   }
 
   private[organizations] def next(state: OrganizationState, ev: OrganizationEvent): OrganizationState =

@@ -4,7 +4,7 @@ import java.util.UUID
 
 import akka.actor.ActorSystem
 import cats.Monad
-import cats.effect.{Async, Timer}
+import cats.effect.{Effect, Timer}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.admin.config.Permissions._
 import ch.epfl.bluebrain.nexus.admin.index.Cache._
@@ -24,8 +24,7 @@ import ch.epfl.bluebrain.nexus.iam.client.types.AccessControlLists
   * @param store the underlying Distributed Data LWWMap store.
   * @tparam F the effect type ''F[_]''
   */
-class ProjectCache[F[_]](store: KeyValueStore[F, UUID, ProjectResource])(implicit F: Monad[F])
-    extends Cache[F, Project](store) {
+class ProjectCache[F[_]: Monad](store: KeyValueStore[F, UUID, ProjectResource]) extends Cache[F, Project](store) {
 
   private implicit val ordering: Ordering[ProjectResource] = Ordering.by { proj: ProjectResource =>
     s"${proj.value.organizationLabel}/${proj.value.label}"
@@ -55,7 +54,7 @@ class ProjectCache[F[_]](store: KeyValueStore[F, UUID, ProjectResource])(implici
             acls.exists(project.organizationLabel, project.label, projects.read)
       }
       val count  = filtered.size.toLong
-      val result = filtered.toList.sorted.slice(pagination.from, (pagination.from + pagination.size))
+      val result = filtered.toList.sorted.slice(pagination.from, pagination.from + pagination.size)
       UnscoredQueryResults(count, result.map(UnscoredQueryResult(_)))
     }
 
@@ -83,8 +82,8 @@ object ProjectCache {
   /**
     * Creates a new project index.
     */
-  def apply[F[_]: Timer](implicit as: ActorSystem, config: KeyValueStoreConfig, F: Async[F]): ProjectCache[F] = {
+  def apply[F[_]: Effect: Timer](implicit as: ActorSystem, config: KeyValueStoreConfig): ProjectCache[F] = {
     val function: (Long, ProjectResource) => Long = { case (_, res) => res.rev }
-    new ProjectCache(KeyValueStore.distributed("projects", function, mapError))(F)
+    new ProjectCache(KeyValueStore.distributed("projects", function))
   }
 }

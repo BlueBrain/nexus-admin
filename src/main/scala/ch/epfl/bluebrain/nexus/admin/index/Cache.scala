@@ -2,17 +2,13 @@ package ch.epfl.bluebrain.nexus.admin.index
 
 import java.util.UUID
 
-import cats.effect.Async
-import cats.{Monad, MonadError}
-import ch.epfl.bluebrain.nexus.admin.exceptions.AdminError
-import ch.epfl.bluebrain.nexus.admin.exceptions.AdminError.{InternalError, OperationTimedOut}
+import cats.Monad
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF
-import ch.epfl.bluebrain.nexus.commons.cache.KeyValueStoreError._
-import ch.epfl.bluebrain.nexus.commons.cache.{KeyValueStore, KeyValueStoreError}
+import ch.epfl.bluebrain.nexus.commons.cache.KeyValueStore
 import ch.epfl.bluebrain.nexus.iam.client.types.{AccessControlLists, Permission}
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
 
-abstract class Cache[F[_], V](val store: KeyValueStore[F, UUID, ResourceF[V]])(implicit F: Monad[F]) {
+abstract class Cache[F[_]: Monad, V](val store: KeyValueStore[F, UUID, ResourceF[V]]) {
 
   /**
     * Attempts to fetch the resource with the provided ''id''
@@ -65,22 +61,4 @@ object Cache {
         case (path, v) => (path == / || path == Segment(organization, /)) && v.value.permissions.contains(permission)
       }
   }
-
-  private[index] implicit def monadError[F[_]](implicit F: Async[F]): MonadError[F, AdminError] =
-    new MonadError[F, AdminError] {
-      override def handleErrorWith[A](fa: F[A])(f: AdminError => F[A]): F[A] = F.recoverWith(fa) {
-        case t: AdminError => f(t)
-      }
-      override def raiseError[A](e: AdminError): F[A]                  = F.raiseError(e)
-      override def pure[A](x: A): F[A]                                 = F.pure(x)
-      override def flatMap[A, B](fa: F[A])(f: A => F[B]): F[B]         = F.flatMap(fa)(f)
-      override def tailRecM[A, B](a: A)(f: A => F[Either[A, B]]): F[B] = F.tailRecM(a)(f)
-    }
-
-  private[index] def mapError(cacheError: KeyValueStoreError): AdminError =
-    cacheError match {
-      case e: ReadWriteConsistencyTimeout =>
-        OperationTimedOut(s"Timeout while interacting with the cache due to '${e.timeout}'")
-      case e: DistributedDataError => InternalError(e.reason)
-    }
 }
