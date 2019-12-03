@@ -1,4 +1,5 @@
 package ch.epfl.bluebrain.nexus.admin.directives
+
 import java.net.URLEncoder
 import java.util.UUID
 
@@ -12,16 +13,18 @@ import ch.epfl.bluebrain.nexus.admin.routes.SearchParams.Field
 import ch.epfl.bluebrain.nexus.admin.routes.{Routes, SearchParams}
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport._
 import ch.epfl.bluebrain.nexus.commons.search.FromPagination
+import ch.epfl.bluebrain.nexus.commons.test.EitherValues
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.syntax._
 import ch.epfl.bluebrain.nexus.rdf.instances._
 import io.circe.generic.auto._
 import org.mockito.IdiomaticMockito
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{EitherValues, Matchers, WordSpecLike}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
 class QueryDirectivesSpec
-    extends WordSpecLike
+    extends AnyWordSpecLike
     with ScalatestRouteTest
     with Matchers
     with ScalaFutures

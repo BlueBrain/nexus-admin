@@ -7,11 +7,12 @@ import ch.epfl.bluebrain.nexus.admin.routes.HealthChecker._
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport._
 import io.circe.Json
 import org.mockito.IdiomaticMockito
-import org.scalatest.{Matchers, WordSpecLike}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
 import scala.concurrent.Future
 
-class AppInfoRoutesSpec extends WordSpecLike with Matchers with ScalatestRouteTest with IdiomaticMockito {
+class AppInfoRoutesSpec extends AnyWordSpecLike with Matchers with ScalatestRouteTest with IdiomaticMockito {
 
   private val cassandra   = mock[CassandraHealthChecker]
   private val cluster     = mock[ClusterHealthChecker]

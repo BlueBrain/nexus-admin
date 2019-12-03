@@ -6,13 +6,13 @@ import java.util.UUID
 import akka.actor.ExtendedActorSystem
 import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationEvent._
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectEvent._
-import ch.epfl.bluebrain.nexus.commons.test.ActorSystemFixture
-import ch.epfl.bluebrain.nexus.commons.test.Resources
+import ch.epfl.bluebrain.nexus.commons.test.{ActorSystemFixture, EitherValues, Resources}
 import ch.epfl.bluebrain.nexus.iam.client.types.Identity
 import ch.epfl.bluebrain.nexus.rdf.syntax.node.unsafe._
 import io.circe.Json
 import io.circe.parser.parse
-import org.scalatest.{EitherValues, Inspectors, Matchers}
+import org.scalatest.Inspectors
+import org.scalatest.matchers.should.Matchers
 
 class EventSerializerSpec
     extends ActorSystemFixture("EventSerializerSpec")
@@ -72,7 +72,7 @@ class EventSerializerSpec
     "correctly serialize known serializer" in {
       forAll(data.toList) {
         case (event, (_, json)) =>
-          parse(new String(serializer.toBinary(event))).right.value shouldEqual json
+          parse(new String(serializer.toBinary(event))).rightValue shouldEqual json
       }
     }
 
@@ -95,7 +95,7 @@ class EventSerializerSpec
       forAll(data.toList) {
         case (event, (manifest, repr)) =>
           intercept[IllegalArgumentException] {
-            serializer.fromBinary((repr + "typo").getBytes, manifest) shouldEqual event
+            serializer.fromBinary((repr.spaces2 + "typo").getBytes, manifest) shouldEqual event
           }
       }
     }

@@ -37,7 +37,7 @@ class ProjectRoutes(projects: Projects[Task])(
         case (orgLabel, projectLabel) =>
           traceOne {
             authorizeOn(pathOf(orgLabel, projectLabel), pp.read).apply {
-              parameter('rev.as[Long].?) {
+              parameter("rev".as[Long].?) {
                 case Some(rev) =>
                   complete(projects.fetch(orgLabel, projectLabel, rev).runToFuture)
                 case None =>
@@ -54,11 +54,11 @@ class ProjectRoutes(projects: Projects[Task])(
               traceOne {
                 concat(
                   // deprecate
-                  (delete & parameter('rev.as[Long]) & authorizeOn(pathOf(orgLabel, projectLabel), pp.write)) { rev =>
+                  (delete & parameter("rev".as[Long]) & authorizeOn(pathOf(orgLabel, projectLabel), pp.write)) { rev =>
                     complete(projects.deprecate(orgLabel, projectLabel, rev).runToFuture)
                   },
                   // update
-                  (put & parameter('rev.as[Long]) & authorizeOn(pathOf(orgLabel, projectLabel), pp.write)) { rev =>
+                  (put & parameter("rev".as[Long]) & authorizeOn(pathOf(orgLabel, projectLabel), pp.write)) { rev =>
                     entity(as[ProjectDescription]) { project =>
                       complete(projects.update(orgLabel, projectLabel, project, rev).runToFuture)
                     }

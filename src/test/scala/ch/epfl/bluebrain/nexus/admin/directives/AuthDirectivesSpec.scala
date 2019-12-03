@@ -21,10 +21,11 @@ import monix.eval.Task
 import monix.execution.Scheduler.global
 import org.mockito.IdiomaticMockito
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{Matchers, WordSpecLike}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
 class AuthDirectivesSpec
-    extends WordSpecLike
+    extends AnyWordSpecLike
     with ScalatestRouteTest
     with Matchers
     with ScalaFutures

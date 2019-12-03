@@ -8,11 +8,13 @@ import ch.epfl.bluebrain.nexus.admin.projects.ProjectEvent
 import ch.epfl.bluebrain.nexus.commons.serialization.AkkaCoproductSerializer
 import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
 import ch.epfl.bluebrain.nexus.rdf.instances._
+import com.github.ghik.silencer.silent
 import io.circe.{Decoder, Encoder}
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.{deriveConfiguredDecoder, deriveConfiguredEncoder}
 import shapeless.{:+:, CNil}
 
+@silent // implicits are not recognized as being used
 class EventSerializer(system: ExtendedActorSystem) extends SerializerWithStringManifest {
 
   private implicit val iamClientConfig: IamClientConfig = Settings(system).appConfig.iam

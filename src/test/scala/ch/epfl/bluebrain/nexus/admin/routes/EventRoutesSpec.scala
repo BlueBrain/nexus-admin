@@ -17,7 +17,7 @@ import ch.epfl.bluebrain.nexus.admin.config.Settings
 import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationEvent._
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectEvent._
 import ch.epfl.bluebrain.nexus.admin.routes.EventRoutesSpec.TestableEventRoutes
-import ch.epfl.bluebrain.nexus.commons.test.Resources
+import ch.epfl.bluebrain.nexus.commons.test.{EitherValues, Resources}
 import ch.epfl.bluebrain.nexus.iam.client.IamClient
 import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
 import ch.epfl.bluebrain.nexus.iam.client.types.Identity.User
@@ -29,14 +29,16 @@ import io.circe.Json
 import monix.eval.Task
 import org.mockito.matchers.MacroBasedMatchers
 import org.mockito.{IdiomaticMockito, Mockito}
-import org.scalatest._
+import org.scalatest.{BeforeAndAfter, Inspectors, OptionValues}
 import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
 import scala.concurrent.duration._
 
 //noinspection TypeAnnotation
 class EventRoutesSpec
-    extends WordSpecLike
+    extends AnyWordSpecLike
     with Matchers
     with ScalatestRouteTest
     with BeforeAndAfter
@@ -48,7 +50,7 @@ class EventRoutesSpec
     with Inspectors
     with IdiomaticMockito {
 
-  override implicit def patienceConfig: PatienceConfig = PatienceConfig(3 second, 100 milliseconds)
+  override implicit def patienceConfig: PatienceConfig = PatienceConfig(3.second, 100.milliseconds)
 
   override def testConfig: Config = ConfigFactory.load("test.conf")
 
@@ -154,7 +156,7 @@ class EventRoutesSpec
       .map {
         case (json, idx) =>
           val data  = json.noSpaces
-          val event = json.hcursor.get[String]("@type").right.value
+          val event = json.hcursor.get[String]("@type").rightValue
           val id    = idx
           s"""data:$data
              |event:$event

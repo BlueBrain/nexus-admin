@@ -22,7 +22,8 @@ import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.iam.client.types._
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
 import ch.epfl.bluebrain.nexus.rdf.syntax.node.unsafe._
-import org.scalatest.{Inspectors, Matchers, OptionValues}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.{Inspectors, OptionValues}
 
 import scala.concurrent.duration._
 

@@ -12,9 +12,9 @@ import ch.epfl.bluebrain.nexus.admin.client.config.AdminClientConfig
 import ch.epfl.bluebrain.nexus.commons.rdf.syntax._
 import ch.epfl.bluebrain.nexus.iam.client.types.AuthToken
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
+import com.typesafe.scalalogging.Logger
 import io.circe.Decoder
 import io.circe.parser.decode
-import journal.Logger
 
 import scala.concurrent.{ExecutionContext, Future}
 

@@ -9,6 +9,7 @@ import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
 import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
 import ch.epfl.bluebrain.nexus.rdf.instances._
 import ch.epfl.bluebrain.nexus.rdf.syntax._
+import com.github.ghik.silencer.silent
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto._
 import io.circe.syntax._
@@ -101,6 +102,7 @@ object OrganizationEvent {
 
   object JsonLd {
 
+    @silent
     private implicit val config: Configuration = Configuration.default
       .withDiscriminator("@type")
       .copy(transformMemberNames = {
@@ -112,9 +114,11 @@ object OrganizationEvent {
         case other            => other
       })
 
+    @silent
     private implicit def subjectIdEncoder(implicit ic: IamClientConfig): Encoder[Subject] =
       Encoder.encodeJson.contramap(_.id.asJson)
 
+    @silent
     final implicit def orgEventEncoder(implicit ic: IamClientConfig): Encoder[OrganizationEvent] =
       Encoder.encodeJson.contramap[OrganizationEvent] { ev =>
         deriveConfiguredEncoder[OrganizationEvent]

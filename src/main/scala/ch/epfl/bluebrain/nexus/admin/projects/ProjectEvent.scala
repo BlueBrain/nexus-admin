@@ -10,6 +10,7 @@ import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.instances._
 import ch.epfl.bluebrain.nexus.rdf.syntax._
+import com.github.ghik.silencer.silent
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto._
 import io.circe.syntax._
@@ -116,36 +117,33 @@ object ProjectEvent {
   ) extends ProjectEvent
 
   object JsonLd {
-
-    private implicit val config: Configuration = Configuration.default
-      .withDiscriminator("@type")
-      .copy(transformMemberNames = {
-        case nxv.`@id`.name             => nxv.uuid.prefix
-        case nxv.label.name             => nxv.label.prefix
-        case nxv.organizationUuid.name  => nxv.organizationUuid.prefix
-        case nxv.organizationLabel.name => nxv.organizationLabel.prefix
-        case nxv.rev.name               => nxv.rev.prefix
-        case nxv.instant.name           => nxv.instant.prefix
-        case nxv.subject.name           => nxv.subject.prefix
-        case other                      => other
-      })
-
-    private implicit def subjectIdEncoder(implicit ic: IamClientConfig): Encoder[Subject] =
-      Encoder.encodeJson.contramap(_.id.asJson)
-
-    private implicit val apiMappingEncoder: Encoder[Map[String, AbsoluteIri]] =
-      Encoder.encodeJson.contramap { map =>
-        Json.arr(
-          map
-            .foldLeft(ListBuffer.newBuilder[Json]) {
-              case (acc, (prefix, namespace)) =>
-                acc += Json.obj(nxv.prefix.name -> Json.fromString(prefix), nxv.namespace.name -> namespace.asJson)
-            }
-            .result(): _*
-        )
-      }
-
-    final implicit def projectEventEncoder(implicit ic: IamClientConfig): Encoder[ProjectEvent] =
+    @silent // implicits are not recognized as being used
+    final implicit def projectEventEncoder(implicit ic: IamClientConfig): Encoder[ProjectEvent] = {
+      implicit val config: Configuration = Configuration.default
+        .withDiscriminator("@type")
+        .copy(transformMemberNames = {
+          case nxv.`@id`.name             => nxv.uuid.prefix
+          case nxv.label.name             => nxv.label.prefix
+          case nxv.organizationUuid.name  => nxv.organizationUuid.prefix
+          case nxv.organizationLabel.name => nxv.organizationLabel.prefix
+          case nxv.rev.name               => nxv.rev.prefix
+          case nxv.instant.name           => nxv.instant.prefix
+          case nxv.subject.name           => nxv.subject.prefix
+          case other                      => other
+        })
+      implicit val subjectIdEncoder: Encoder[Subject] = Encoder.encodeJson.contramap(_.id.asJson)
+      implicit val apiMappingEncoder: Encoder[Map[String, AbsoluteIri]] =
+        Encoder.encodeJson.contramap { map =>
+          Json.arr(
+            map
+              .foldLeft(ListBuffer.newBuilder[Json]) {
+                case (acc, (prefix, namespace)) =>
+                  acc += Json.obj(nxv.prefix.name -> Json.fromString(prefix), nxv.namespace.name -> namespace.asJson)
+              }
+              .result()
+              .toSeq: _*
+          )
+        }
       Encoder.encodeJson.contramap[ProjectEvent] { ev =>
         deriveConfiguredEncoder[ProjectEvent]
           .mapJson { json =>
@@ -157,6 +155,7 @@ object ProjectEvent {
           }
           .apply(ev)
       }
+    }
   }
 
 }

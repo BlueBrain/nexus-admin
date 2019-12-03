@@ -34,7 +34,7 @@ class OrganizationRoutes(organizations: Organizations[Task])(
   def routes: Route = (pathPrefix("orgs") & extractToken) { implicit token =>
     concat(
       // fetch
-      (get & org & pathEndOrSingleSlash & parameter('rev.as[Long].?)) { (orgLabel, optRev) =>
+      (get & org & pathEndOrSingleSlash & parameter("rev".as[Long].?)) { (orgLabel, optRev) =>
         authorizeOn(pathOf(orgLabel), orgs.read).apply {
           traceOne {
             complete(organizations.fetch(orgLabel, optRev).runNotFound)
@@ -49,11 +49,11 @@ class OrganizationRoutes(organizations: Organizations[Task])(
               traceOne {
                 concat(
                   // deprecate
-                  (delete & parameter('rev.as[Long]) & authorizeOn(pathOf(orgLabel), orgs.write)) { rev =>
+                  (delete & parameter("rev".as[Long]) & authorizeOn(pathOf(orgLabel), orgs.write)) { rev =>
                     complete(organizations.deprecate(orgLabel, rev).runToFuture)
                   },
                   // update
-                  (put & parameter('rev.as[Long]) & authorizeOn(pathOf(orgLabel), orgs.write)) { rev =>
+                  (put & parameter("rev".as[Long]) & authorizeOn(pathOf(orgLabel), orgs.write)) { rev =>
                     entity(as[OrganizationDescription]) { org =>
                       complete(organizations.update(orgLabel, Organization(orgLabel, org.description), rev).runToFuture)
                     } ~

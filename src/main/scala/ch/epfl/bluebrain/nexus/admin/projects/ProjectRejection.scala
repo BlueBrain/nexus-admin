@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.admin.config.Contexts._
 import ch.epfl.bluebrain.nexus.admin.types.ResourceRejection
 import ch.epfl.bluebrain.nexus.commons.http.directives.StatusFrom
 import ch.epfl.bluebrain.nexus.rdf.syntax._
+import com.github.ghik.silencer.silent
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.{Encoder, Json}
@@ -69,6 +70,7 @@ object ProjectRejection {
         s"Incorrect revision '$provided' provided, expected '$expected', the project may have been updated since last seen."
       )
 
+  @silent // the rejectionConfig is not seen as used
   implicit val projectRejectionEncoder: Encoder[ProjectRejection] = {
     implicit val rejectionConfig: Configuration = Configuration.default.withDiscriminator("@type")
     val enc                                     = deriveConfiguredEncoder[ProjectRejection].mapJson(_ addContext errorCtxUri)

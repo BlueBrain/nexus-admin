@@ -2,9 +2,9 @@ package ch.epfl.bluebrain.nexus.admin.directives
 
 import akka.http.scaladsl.unmarshalling.{FromStringUnmarshaller, Unmarshaller}
 import ch.epfl.bluebrain.nexus.admin.exceptions.AdminError.InvalidFormat
+import com.typesafe.scalalogging.Logger
 import io.circe.parser._
 import io.circe.{Decoder, Json}
-import journal.Logger
 
 object StringUnmarshaller {
 

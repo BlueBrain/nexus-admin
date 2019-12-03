@@ -19,7 +19,7 @@ import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationRejection._
 import ch.epfl.bluebrain.nexus.admin.organizations.{Organization, Organizations}
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF
 import ch.epfl.bluebrain.nexus.commons.search.FromPagination
-import ch.epfl.bluebrain.nexus.commons.test.Resources
+import ch.epfl.bluebrain.nexus.commons.test.{EitherValues, Resources}
 import ch.epfl.bluebrain.nexus.commons.search.QueryResult.UnscoredQueryResult
 import ch.epfl.bluebrain.nexus.commons.search.QueryResults.UnscoredQueryResults
 import ch.epfl.bluebrain.nexus.iam.client.IamClient
@@ -34,11 +34,13 @@ import monix.eval.Task
 import monix.execution.Scheduler.global
 import org.mockito.{ArgumentMatchersSugar, IdiomaticMockito}
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{EitherValues, Inspectors, Matchers, WordSpecLike}
+import org.scalatest.wordspec.AnyWordSpecLike
+import org.scalatest.Inspectors
+import org.scalatest.matchers.should.Matchers
 
 //noinspection TypeAnnotation
 class OrganizationRoutesSpec
-    extends WordSpecLike
+    extends AnyWordSpecLike
     with IdiomaticMockito
     with ArgumentMatchersSugar
     with ScalatestRouteTest
@@ -97,7 +99,7 @@ class OrganizationRoutesSpec
     val types   = Set(nxv.Organization.value)
     val orgId   = UUID.randomUUID
     val iri     = url"http://nexus.example.com/v1/orgs/org".value
-    val path    = Path("/org").right.value
+    val path    = Path("/org").rightValue
 
     val description  = Json.obj("description" -> Json.fromString("Org description"))
     val organization = Organization("org", Some("Org description"))
@@ -283,10 +285,10 @@ class OrganizationRoutesSpec
       iamClient.hasPermission(Path./, read)(any[Option[AuthToken]]) shouldReturn Task.pure(true)
       iamClient.hasPermission(Path.Empty, read)(any[Option[AuthToken]]) shouldReturn Task.pure(true)
       iamClient.identities shouldReturn Task(caller)
-      iamClient.acls(Path("/*").right.value, ancestors = true, self = true) shouldReturn Task(acls)
+      iamClient.acls(Path("/*").rightValue, ancestors = true, self = true) shouldReturn Task(acls)
 
       val orgs = List(1, 2, 3).map { i =>
-        val iri = Iri.Url(s"http://nexus.example.com/v1/orgs/org$i").right.value
+        val iri = Iri.Url(s"http://nexus.example.com/v1/orgs/org$i").rightValue
         UnscoredQueryResult(resource.copy(id = iri, value = resource.value.copy(label = s"org$i")))
       }
       organizations.list(SearchParams.empty, FromPagination(0, 50))(acls) shouldReturn Task(
@@ -305,10 +307,10 @@ class OrganizationRoutesSpec
       iamClient.hasPermission(Path./, read)(any[Option[AuthToken]]) shouldReturn Task.pure(true)
       iamClient.hasPermission(Path.Empty, read)(any[Option[AuthToken]]) shouldReturn Task.pure(true)
       iamClient.identities shouldReturn Task(caller)
-      iamClient.acls(Path("/*").right.value, ancestors = true, self = true) shouldReturn Task(acls)
+      iamClient.acls(Path("/*").rightValue, ancestors = true, self = true) shouldReturn Task(acls)
 
       val orgs = List(1, 2, 3).map { i =>
-        val iri = Iri.Url(s"http://nexus.example.com/v1/orgs/org$i").right.value
+        val iri = Iri.Url(s"http://nexus.example.com/v1/orgs/org$i").rightValue
         UnscoredQueryResult(resource.copy(id = iri, value = resource.value.copy(label = s"org$i")))
       }
       organizations.list(SearchParams(deprecated = Some(true)), FromPagination(0, 50))(acls) shouldReturn Task(
