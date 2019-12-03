@@ -4,6 +4,7 @@ import akka.actor.{ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvi
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.syntax.node.unsafe._
+import com.github.ghik.silencer.silent
 import com.typesafe.config.Config
 import pureconfig.generic.auto._
 import pureconfig.ConvertHelpers.catchReadError
@@ -18,14 +19,14 @@ import pureconfig.{ConfigConvert, ConfigSource}
 @SuppressWarnings(Array("LooksLikeInterpolatedString"))
 class Settings(config: Config) extends Extension {
 
-  private implicit val uriConverter: ConfigConvert[Uri] =
-    ConfigConvert.viaString[Uri](catchReadError(s => Uri(s)), _.toString)
-
-  private implicit val absoluteIriConverter: ConfigConvert[AbsoluteIri] =
-    ConfigConvert.viaString[AbsoluteIri](catchReadError(s => url"$s".value), _.toString)
-
-  val appConfig: AppConfig =
+  @silent // implicit val definitions are not recognized as being used
+  val appConfig: AppConfig = {
+    implicit val uriConverter: ConfigConvert[Uri] =
+      ConfigConvert.viaString[Uri](catchReadError(s => Uri(s)), _.toString)
+    implicit val absoluteIriConverter: ConfigConvert[AbsoluteIri] =
+      ConfigConvert.viaString[AbsoluteIri](catchReadError(s => url"$s".value), _.toString)
     ConfigSource.fromConfig(config).at("app").loadOrThrow[AppConfig]
+  }
 }
 
 object Settings extends ExtensionId[Settings] with ExtensionIdProvider {

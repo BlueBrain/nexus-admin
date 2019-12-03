@@ -23,8 +23,9 @@ import ch.epfl.bluebrain.nexus.rdf.Iri.Path./
 import ch.epfl.bluebrain.nexus.rdf.syntax.node.unsafe._
 import ch.epfl.bluebrain.nexus.sourcing.Aggregate
 import org.mockito.{ArgumentMatchersSugar, IdiomaticMockito, Mockito}
-import org.scalatest.{BeforeAndAfter, Matchers}
+import org.scalatest.BeforeAndAfter
 import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.matchers.should.Matchers
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
@@ -40,7 +41,7 @@ class OrganizationsSpec
     with ArgumentMatchersSugar
     with BeforeAndAfter {
 
-  override implicit val patienceConfig: PatienceConfig = PatienceConfig(3 seconds, 100 milliseconds)
+  override implicit val patienceConfig: PatienceConfig = PatienceConfig(3.seconds, 100.milliseconds)
 
   private implicit val clock: Clock          = Clock.fixed(Instant.ofEpochSecond(3600), ZoneId.systemDefault())
   private implicit val ctx: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
@@ -50,7 +51,7 @@ class OrganizationsSpec
   private val instant                  = clock.instant()
   private implicit val appConfig = Settings(system).appConfig.copy(
     http = HttpConfig("some", 8080, "v1", "http://nexus.example.com"),
-    iam = IamClientConfig(url"http://nexus.example.com".value, url"http://iam.nexus.example.com".value, "v1", 1 second)
+    iam = IamClientConfig(url"http://nexus.example.com".value, url"http://iam.nexus.example.com".value, "v1", 1.second)
   )
   private implicit val iamCredentials = Some(AuthToken("token"))
 
@@ -99,7 +100,7 @@ class OrganizationsSpec
     "not set permissions if user has all permissions on /" in {
       val organization = Organization(genString(), None)
 
-      val orgPath = Path.apply(s"/${organization.label}").right.value
+      val orgPath = Path.apply(s"/${organization.label}").rightValue
       iamClient.permissions(iamCredentials) shouldReturn IO.pure(permissions)
       iamClient.acls(orgPath, ancestors = true, self = false)(iamCredentials) shouldReturn IO
         .pure(
@@ -118,14 +119,13 @@ class OrganizationsSpec
         )
 
       orgs.create(organization).accepted
-      iamClient.putAcls(*, *, *)(*) wasNever called
-
+      iamClient.putAcls(any[Path], any[AccessControlList], any[Option[Long]])(any[Option[AuthToken]]) wasNever called
     }
 
     "not set permissions if user has all permissions on /orglabel" in {
       val organization = Organization(genString(), None)
 
-      val orgPath = Path.apply(s"/${organization.label}").right.value
+      val orgPath = Path.apply(s"/${organization.label}").rightValue
       iamClient.permissions(iamCredentials) shouldReturn IO.pure(permissions)
       iamClient.acls(orgPath, ancestors = true, self = false)(iamCredentials) shouldReturn IO
         .pure(
@@ -144,13 +144,13 @@ class OrganizationsSpec
         )
 
       orgs.create(organization).accepted
-      iamClient.putAcls(*, *, *)(*) wasNever called
+      iamClient.putAcls(any[Path], any[AccessControlList], any[Option[Long]])(any[Option[AuthToken]]) wasNever called
     }
 
     "set permissions when user doesn't have all permissions on /orglabel" in {
       val organization = Organization(genString(), None)
 
-      val orgPath = Path.apply(s"/${organization.label}").right.value
+      val orgPath = Path.apply(s"/${organization.label}").rightValue
       val subject = User("username", "realm")
       iamClient.permissions(iamCredentials) shouldReturn IO.pure(permissions)
       iamClient.acls(orgPath, ancestors = true, self = false)(iamCredentials) shouldReturn IO
@@ -184,7 +184,7 @@ class OrganizationsSpec
     "set permissions when user doesn't have all permissions on /" in {
       val organization = Organization(genString(), None)
 
-      val orgPath = Path.apply(s"/${organization.label}").right.value
+      val orgPath = Path.apply(s"/${organization.label}").rightValue
       val subject = User("username", "realm")
       iamClient.permissions(iamCredentials) shouldReturn IO.pure(permissions)
       iamClient.acls(orgPath, ancestors = true, self = false)(iamCredentials) shouldReturn IO
@@ -339,7 +339,7 @@ class OrganizationsSpec
   }
 
   private def mockIamCalls(orgLabel: String) = {
-    val orgPath = Path.apply(s"/$orgLabel").right.value
+    val orgPath = Path.apply(s"/$orgLabel").rightValue
     iamClient.permissions(iamCredentials) shouldReturn IO.pure(permissions)
     iamClient.acls(orgPath, ancestors = true, self = false)(iamCredentials) shouldReturn IO
       .pure(AccessControlLists.empty)

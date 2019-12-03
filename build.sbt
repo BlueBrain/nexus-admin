@@ -26,9 +26,9 @@ scalafmt: {
 
 // Dependency versions
 val alpakkaVersion             = "1.1.2"
-val commonsVersion             = "0.19.1"
-val iamVersion                 = "1.2.0+12-b6a9364c"
-val sourcingVersion            = "0.18.0"
+val commonsVersion             = "0.20.0"
+val iamVersion                 = "1.2.0+16-382dc073"
+val sourcingVersion            = "0.19.0"
 val akkaVersion                = "2.6.0"
 val akkaCorsVersion            = "0.4.2"
 val akkaHttpVersion            = "10.1.10"
@@ -36,39 +36,40 @@ val akkaPersistenceCassVersion = "0.100"
 val akkaPersistenceMemVersion  = "2.5.15.2"
 val catsVersion                = "2.0.0"
 val circeVersion               = "0.12.3"
-val journalVersion             = "3.0.19"
 val logbackVersion             = "1.2.3"
 val mockitoVersion             = "1.7.1"
 val monixVersion               = "3.1.0"
 val pureconfigVersion          = "0.12.1"
-val scalaTestVersion           = "3.0.8"
-val kryoVersion                = "1.1.0"
+val scalaLoggingVersion        = "3.9.2"
+val scalaTestVersion           = "3.1.0"
+val kryoVersion                = "1.0.0"
 
 // Dependencies modules
-lazy val iamClient           = "ch.epfl.bluebrain.nexus" %% "iam-client"                 % iamVersion
-lazy val sourcingProjections = "ch.epfl.bluebrain.nexus" %% "sourcing-projections"       % sourcingVersion
-lazy val commonsCore         = "ch.epfl.bluebrain.nexus" %% "commons-core"               % commonsVersion
-lazy val commonsKamon        = "ch.epfl.bluebrain.nexus" %% "commons-kamon"              % commonsVersion
-lazy val commonsTest         = "ch.epfl.bluebrain.nexus" %% "commons-test"               % commonsVersion
-lazy val akkaDowning         = "ch.epfl.bluebrain.nexus" %% "akka-downing"               % commonsVersion
-lazy val akkaCluster         = "com.typesafe.akka"       %% "akka-cluster"               % akkaVersion
-lazy val akkaHttp            = "com.typesafe.akka"       %% "akka-http"                  % akkaHttpVersion
-lazy val akkaHttpCors        = "ch.megard"               %% "akka-http-cors"             % akkaCorsVersion
-lazy val akkaHttpTestKit     = "com.typesafe.akka"       %% "akka-http-testkit"          % akkaHttpVersion
-lazy val akkaPersistenceCass = "com.typesafe.akka"       %% "akka-persistence-cassandra" % akkaPersistenceCassVersion
-lazy val akkaPersistenceMem  = "com.github.dnvriend"     %% "akka-persistence-inmemory"  % akkaPersistenceMemVersion
-lazy val akkaSlf4j           = "com.typesafe.akka"       %% "akka-slf4j"                 % akkaVersion
-lazy val akkaStream          = "com.typesafe.akka"       %% "akka-stream"                % akkaVersion
-lazy val akkaTestkit         = "com.typesafe.akka"       %% "akka-testkit"               % akkaVersion
-lazy val alpakkaSSE          = "com.lightbend.akka"      %% "akka-stream-alpakka-sse"    % alpakkaVersion
-lazy val catsCore            = "org.typelevel"           %% "cats-core"                  % catsVersion
-lazy val circeCore           = "io.circe"                %% "circe-core"                 % circeVersion
-lazy val journalCore         = "io.verizon.journal"      %% "core"                       % journalVersion
-lazy val mockito             = "org.mockito"             %% "mockito-scala"              % mockitoVersion
-lazy val monixEval           = "io.monix"                %% "monix-eval"                 % monixVersion
-lazy val logbackClassic      = "ch.qos.logback"          % "logback-classic"             % logbackVersion
-lazy val pureconfig          = "com.github.pureconfig"   %% "pureconfig"                 % pureconfigVersion
-lazy val kryo                = "io.altoo"                %% "akka-kryo-serialization"    % kryoVersion
+lazy val iamClient           = "ch.epfl.bluebrain.nexus"    %% "iam-client"                 % iamVersion
+lazy val sourcingProjections = "ch.epfl.bluebrain.nexus"    %% "sourcing-projections"       % sourcingVersion
+lazy val commonsCore         = "ch.epfl.bluebrain.nexus"    %% "commons-core"               % commonsVersion
+lazy val commonsKamon        = "ch.epfl.bluebrain.nexus"    %% "commons-kamon"              % commonsVersion
+lazy val commonsTest         = "ch.epfl.bluebrain.nexus"    %% "commons-test"               % commonsVersion
+lazy val akkaDowning         = "ch.epfl.bluebrain.nexus"    %% "akka-downing"               % commonsVersion
+lazy val akkaCluster         = "com.typesafe.akka"          %% "akka-cluster"               % akkaVersion
+lazy val akkaHttp            = "com.typesafe.akka"          %% "akka-http"                  % akkaHttpVersion
+lazy val akkaHttpCors        = "ch.megard"                  %% "akka-http-cors"             % akkaCorsVersion
+lazy val akkaHttpTestKit     = "com.typesafe.akka"          %% "akka-http-testkit"          % akkaHttpVersion
+lazy val akkaPersistenceCass = "com.typesafe.akka"          %% "akka-persistence-cassandra" % akkaPersistenceCassVersion
+lazy val akkaPersistenceMem  = "com.github.dnvriend"        %% "akka-persistence-inmemory"  % akkaPersistenceMemVersion
+lazy val akkaSlf4j           = "com.typesafe.akka"          %% "akka-slf4j"                 % akkaVersion
+lazy val akkaStream          = "com.typesafe.akka"          %% "akka-stream"                % akkaVersion
+lazy val akkaTestkit         = "com.typesafe.akka"          %% "akka-testkit"               % akkaVersion
+lazy val alpakkaSSE          = "com.lightbend.akka"         %% "akka-stream-alpakka-sse"    % alpakkaVersion
+lazy val catsCore            = "org.typelevel"              %% "cats-core"                  % catsVersion
+lazy val circeCore           = "io.circe"                   %% "circe-core"                 % circeVersion
+lazy val mockito             = "org.mockito"                %% "mockito-scala"              % mockitoVersion
+lazy val monixEval           = "io.monix"                   %% "monix-eval"                 % monixVersion
+lazy val logbackClassic      = "ch.qos.logback"             % "logback-classic"             % logbackVersion
+lazy val pureconfig          = "com.github.pureconfig"      %% "pureconfig"                 % pureconfigVersion
+lazy val kryo                = "io.altoo"                   %% "akka-kryo-serialization"    % kryoVersion
+lazy val scalaLogging        = "com.typesafe.scala-logging" %% "scala-logging"              % scalaLoggingVersion
+lazy val scalaTest           = "org.scalatest"              %% "scalatest"                  % scalaTestVersion
 
 lazy val admin = project
   .in(file("."))
@@ -92,17 +93,18 @@ lazy val admin = project
       circeCore,
       commonsKamon,
       iamClient,
-      journalCore,
       logbackClassic,
       kryo,
       monixEval,
       pureconfig,
+      scalaLogging,
       sourcingProjections,
       akkaTestkit        % Test,
       akkaHttpTestKit    % Test,
       akkaPersistenceMem % Test,
       commonsTest        % Test,
-      mockito            % Test
+      mockito            % Test,
+      scalaTest          % Test
     )
   )
 
@@ -124,7 +126,8 @@ lazy val client = project
       akkaTestkit     % Test,
       akkaHttpTestKit % Test,
       commonsTest     % Test,
-      mockito         % Test
+      mockito         % Test,
+      scalaTest       % Test
     )
   )
 

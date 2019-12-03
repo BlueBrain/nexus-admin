@@ -8,19 +8,21 @@ import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import org.mockito.IdiomaticMockito
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{EitherValues, Matchers, WordSpecLike}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 import ch.epfl.bluebrain.nexus.admin.directives.PathDirectives._
 import ch.epfl.bluebrain.nexus.admin.index.{OrganizationCache, ProjectCache}
 import ch.epfl.bluebrain.nexus.admin.organizations.Organization
 import ch.epfl.bluebrain.nexus.admin.projects.Project
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF
+import ch.epfl.bluebrain.nexus.commons.test.EitherValues
 import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.syntax._
 import monix.eval.Task
 
 class PathDirectivesSpec
-    extends WordSpecLike
+    extends AnyWordSpecLike
     with ScalatestRouteTest
     with Matchers
     with ScalaFutures

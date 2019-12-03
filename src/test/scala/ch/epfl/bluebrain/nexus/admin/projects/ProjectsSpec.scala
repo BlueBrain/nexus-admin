@@ -22,7 +22,9 @@ import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
 import ch.epfl.bluebrain.nexus.rdf.syntax.node.unsafe._
 import ch.epfl.bluebrain.nexus.sourcing.Aggregate
 import org.mockito.{ArgumentMatchersSugar, IdiomaticMockito, MockitoSugar}
-import org.scalatest._
+import org.scalatest.BeforeAndAfterEach
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
@@ -30,7 +32,7 @@ import scala.concurrent.duration._
 //noinspection TypeAnnotation
 class ProjectsSpec
     extends ActorSystemFixture("ProjectsSpec", true)
-    with WordSpecLike
+    with AnyWordSpecLike
     with BeforeAndAfterEach
     with IdiomaticMockito
     with ArgumentMatchersSugar
@@ -47,7 +49,7 @@ class ProjectsSpec
   private implicit val clock: Clock = Clock.fixed(instant, ZoneId.systemDefault)
   private implicit val appConfig = Settings(system).appConfig.copy(
     http = HttpConfig("nexus", 80, "v1", "http://nexus.example.com"),
-    iam = IamClientConfig(url"http://nexus.example.com".value, url"http://iam.nexus.example.com".value, "v1", 1 second)
+    iam = IamClientConfig(url"http://nexus.example.com".value, url"http://iam.nexus.example.com".value, "v1", 1.second)
   )
 
   private val index     = mock[ProjectCache[IO]]
@@ -404,8 +406,7 @@ class ProjectsSpec
         )
 
       projects.create("org", "proj", payload)(caller).accepted
-      iamClient.putAcls(*, *, *)(*) wasNever called
-
+      iamClient.putAcls(any[Path], any[AccessControlList], any[Option[Long]])(any[Option[AuthToken]]) wasNever called
     }
 
     "not set permissions if user has all permissions on /org" in new Context {
@@ -432,7 +433,7 @@ class ProjectsSpec
         )
 
       projects.create("org", "proj", payload)(caller).accepted
-      iamClient.putAcls(*, *, *)(*) wasNever called
+      iamClient.putAcls(any[Path], any[AccessControlList], any[Option[Long]])(any[Option[AuthToken]]) wasNever called
     }
 
     "not set permissions if user has all permissions on /org/proj" in new Context {
@@ -459,7 +460,7 @@ class ProjectsSpec
         )
 
       projects.create("org", "proj", payload)(caller).accepted
-      iamClient.putAcls(*, *, *)(*) wasNever called
+      iamClient.putAcls(any[Path], any[AccessControlList], any[Option[Long]])(any[Option[AuthToken]]) wasNever called
     }
 
     "set permissions when user doesn't have all permissions on /org/proj" in new Context {

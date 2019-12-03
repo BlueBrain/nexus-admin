@@ -21,7 +21,7 @@ trait QueryDirectives {
     * @param qs the preconfigured query settings
     */
   def paginated(implicit qs: PaginationConfig): Directive1[FromPagination] =
-    (parameter('from.as[Int] ? qs.default.from) & parameter('size.as[Int] ? qs.default.size)).tmap {
+    (parameter("from".as[Int] ? qs.default.from) & parameter("size".as[Int] ? qs.default.size)).tmap {
       case (from, size) => FromPagination(from.max(0), size.max(0).min(qs.maxSize))
     }
 
@@ -29,7 +29,7 @@ trait QueryDirectives {
     * @return the extracted search parameters from the request query parameters for projects listings.
     */
   def searchParamsProjects: Directive1[SearchParams] =
-    parameter('label.as[String].?).flatMap { label =>
+    parameter("label".as[String].?).flatMap { label =>
       searchParams.map(_.copy(projectLabel = label.filter(_.nonEmpty).map(Field(_))))
     }
 
@@ -37,16 +37,16 @@ trait QueryDirectives {
     * @return the extracted search parameters from the request query parameters for organizations listings.
     */
   def searchParamsOrgs: Directive1[SearchParams] =
-    parameter('label.as[String].?).flatMap { label =>
+    parameter("label".as[String].?).flatMap { label =>
       searchParams.map(_.copy(organizationLabel = label.filter(_.nonEmpty).map(Field(_))))
     }
 
   private def searchParams: Directive1[SearchParams] =
-    (parameter('deprecated.as[Boolean].?) &
-      parameter('rev.as[Long].?) &
-      parameter('createdBy.as[AbsoluteIri].?) &
-      parameter('updatedBy.as[AbsoluteIri].?) &
-      parameter('type.as[AbsoluteIri].*)).tmap {
+    (parameter("deprecated".as[Boolean].?) &
+      parameter("rev".as[Long].?) &
+      parameter("createdBy".as[AbsoluteIri].?) &
+      parameter("updatedBy".as[AbsoluteIri].?) &
+      parameter("type".as[AbsoluteIri].*)).tmap {
       case (deprecated, rev, createdBy, updatedBy, types) =>
         SearchParams(None, None, deprecated, rev, createdBy, updatedBy, types.toSet)
     }

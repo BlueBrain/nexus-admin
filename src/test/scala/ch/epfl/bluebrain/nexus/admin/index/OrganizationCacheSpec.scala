@@ -11,8 +11,7 @@ import ch.epfl.bluebrain.nexus.admin.organizations.Organization
 import ch.epfl.bluebrain.nexus.admin.routes.SearchParams
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF
 import ch.epfl.bluebrain.nexus.commons.search.FromPagination
-import ch.epfl.bluebrain.nexus.commons.test.ActorSystemFixture
-import ch.epfl.bluebrain.nexus.commons.test.Randomness
+import ch.epfl.bluebrain.nexus.commons.test.{ActorSystemFixture, EitherValues, Randomness}
 import ch.epfl.bluebrain.nexus.commons.test.io.IOOptionValues
 import ch.epfl.bluebrain.nexus.commons.search.QueryResult.UnscoredQueryResult
 import ch.epfl.bluebrain.nexus.commons.search.QueryResults.UnscoredQueryResults
@@ -20,7 +19,8 @@ import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.iam.client.types._
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
 import ch.epfl.bluebrain.nexus.rdf.syntax.node.unsafe._
-import org.scalatest.{EitherValues, Inspectors, Matchers, OptionValues}
+import org.scalatest.{Inspectors, OptionValues}
+import org.scalatest.matchers.should.Matchers
 
 import scala.concurrent.duration._
 
@@ -103,7 +103,7 @@ class OrganizationCacheSpec
       def sortedOrgsRev(rev: Long) = sortedOrgsNotDeprecated.filter(_.source.rev == rev)
 
       val aclsOrg1 = AccessControlLists(
-        Path(s"/${orgLabels.head}").right.value -> ResourceAccessControlList(
+        Path(s"/${orgLabels.head}").rightValue -> ResourceAccessControlList(
           url"http://localhost/".value,
           1L,
           Set.empty,

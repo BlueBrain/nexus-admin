@@ -4,14 +4,15 @@ import java.time.Instant
 import java.util.UUID
 
 import ch.epfl.bluebrain.nexus.admin.client.types.events.Event._
-import ch.epfl.bluebrain.nexus.commons.test.Resources
+import ch.epfl.bluebrain.nexus.commons.test.{EitherValues, Resources}
 import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
 import ch.epfl.bluebrain.nexus.iam.client.types.Identity.User
 import ch.epfl.bluebrain.nexus.rdf.syntax.node.unsafe._
-import org.scalatest.{EitherValues, Matchers, WordSpecLike}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
 //noinspection TypeAnnotation
-class DecodersSpec extends WordSpecLike with Matchers with Resources with EitherValues {
+class DecodersSpec extends AnyWordSpecLike with Matchers with Resources with EitherValues {
 
   implicit val iamConfig = IamClientConfig(
     url"https://nexus.example.com".value,
@@ -52,7 +53,7 @@ class DecodersSpec extends WordSpecLike with Matchers with Resources with Either
         )
       val json = jsonContentOf("/events/project-created.json")
 
-      json.as[Event].right.value shouldEqual event
+      json.as[Event].rightValue shouldEqual event
     }
 
     "decode project update event" in {
@@ -60,7 +61,7 @@ class DecodersSpec extends WordSpecLike with Matchers with Resources with Either
         ProjectUpdated(projectUuid, projectLabel, projectDescription, mappings, base, vocab, 2L, instant, subject)
       val json = jsonContentOf("/events/project-updated.json")
 
-      json.as[Event].right.value shouldEqual event
+      json.as[Event].rightValue shouldEqual event
     }
 
     "decode project deprecated event" in {
@@ -68,7 +69,7 @@ class DecodersSpec extends WordSpecLike with Matchers with Resources with Either
         ProjectDeprecated(projectUuid, 2L, instant, subject)
       val json = jsonContentOf("/events/project-deprecated.json")
 
-      json.as[Event].right.value shouldEqual event
+      json.as[Event].rightValue shouldEqual event
     }
 
     "decode organization created event" in {
@@ -76,21 +77,21 @@ class DecodersSpec extends WordSpecLike with Matchers with Resources with Either
         OrganizationCreated(orgUuid, orgLabel, orgDescription, instant, subject)
       val json = jsonContentOf("/events/organization-created.json")
 
-      json.as[Event].right.value shouldEqual event
+      json.as[Event].rightValue shouldEqual event
     }
     "decode organization updated event" in {
       val event: OrganizationEvent =
         OrganizationUpdated(orgUuid, 2L, orgLabel, None, instant, subject)
       val json = jsonContentOf("/events/organization-updated.json")
 
-      json.as[Event].right.value shouldEqual event
+      json.as[Event].rightValue shouldEqual event
     }
 
     "decode organization deprecated event" in {
       val event: OrganizationEvent = OrganizationDeprecated(orgUuid, 2L, instant, subject)
       val json                     = jsonContentOf("/events/organization-deprecated.json")
 
-      json.as[Event].right.value shouldEqual event
+      json.as[Event].rightValue shouldEqual event
     }
 
   }

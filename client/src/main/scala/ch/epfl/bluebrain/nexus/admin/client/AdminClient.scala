@@ -25,8 +25,8 @@ import ch.epfl.bluebrain.nexus.commons.search.{FromPagination, QueryResult, Quer
 import ch.epfl.bluebrain.nexus.iam.client.IamClientError.{Forbidden, Unauthorized}
 import ch.epfl.bluebrain.nexus.iam.client.types.AuthToken
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
+import com.typesafe.scalalogging.Logger
 import io.circe.{Decoder, DecodingFailure, ParsingFailure}
-import journal.Logger
 
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
 import scala.reflect.ClassTag

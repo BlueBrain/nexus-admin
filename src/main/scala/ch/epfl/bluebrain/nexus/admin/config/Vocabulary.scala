@@ -16,8 +16,9 @@ object Vocabulary {
     * Nexus vocabulary.
     */
   object nxv {
-    val base: Iri.AbsoluteIri          = url"https://bluebrain.github.io/nexus/vocabulary/".value
-    private[Vocabulary] implicit val _ = IriNode(base)
+    val base: Iri.AbsoluteIri = url"https://bluebrain.github.io/nexus/vocabulary/".value
+
+    private[Vocabulary] implicit val toIriNode: IriNode = IriNode(base)
 
     /**
       * @param suffix the segment to suffix to the base

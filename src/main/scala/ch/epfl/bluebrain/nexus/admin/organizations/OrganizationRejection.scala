@@ -7,6 +7,7 @@ import ch.epfl.bluebrain.nexus.admin.config.Contexts._
 import ch.epfl.bluebrain.nexus.admin.types.ResourceRejection
 import ch.epfl.bluebrain.nexus.commons.http.directives.StatusFrom
 import ch.epfl.bluebrain.nexus.rdf.syntax._
+import com.github.ghik.silencer.silent
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder
 import io.circe.{Encoder, Json}
@@ -50,6 +51,7 @@ object OrganizationRejection {
         s"Incorrect revision '$provided' provided, expected '$expected', the organization may have been updated since last seen."
       )
 
+  @silent
   implicit val organizationRejectionEncoder: Encoder[OrganizationRejection] = {
     implicit val rejectionConfig: Configuration = Configuration.default.withDiscriminator("@type")
     val enc                                     = deriveConfiguredEncoder[OrganizationRejection].mapJson(_ addContext errorCtxUri)

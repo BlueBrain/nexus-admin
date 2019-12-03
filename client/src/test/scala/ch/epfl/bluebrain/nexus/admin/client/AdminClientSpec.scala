@@ -23,15 +23,17 @@ import ch.epfl.bluebrain.nexus.commons.search.QueryResult.UnscoredQueryResult
 import ch.epfl.bluebrain.nexus.commons.search.QueryResults
 import ch.epfl.bluebrain.nexus.commons.search.QueryResults.UnscoredQueryResults
 import ch.epfl.bluebrain.nexus.commons.test.io.IOOptionValues
-import ch.epfl.bluebrain.nexus.commons.test.{Randomness, Resources}
+import ch.epfl.bluebrain.nexus.commons.test.{EitherValues, Randomness, Resources}
 import ch.epfl.bluebrain.nexus.iam.client.IamClientError
 import ch.epfl.bluebrain.nexus.iam.client.types.AuthToken
 import ch.epfl.bluebrain.nexus.rdf.syntax._
 import org.mockito.Mockito
 import org.mockito.IdiomaticMockito
-import org.scalatest._
 import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import ch.epfl.bluebrain.nexus.rdf.Iri
+import org.scalatest.{BeforeAndAfter, Inspectors}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
@@ -40,7 +42,7 @@ import scala.util.Random
 //noinspection NameBooleanParameters
 class AdminClientSpec
     extends TestKit(ActorSystem("AdminClientSpec"))
-    with WordSpecLike
+    with AnyWordSpecLike
     with Matchers
     with ScalaFutures
     with BeforeAndAfter
@@ -52,7 +54,7 @@ class AdminClientSpec
     with Resources
     with Eventually {
 
-  override implicit val patienceConfig: PatienceConfig = PatienceConfig(5 seconds, 15 milliseconds)
+  override implicit val patienceConfig: PatienceConfig = PatienceConfig(5.seconds, 15.milliseconds)
 
   implicit val ec: ExecutionContext = system.dispatcher
 
@@ -72,10 +74,10 @@ class AdminClientSpec
 
   private val client = new AdminClient[IO](source, config)
 
-  private val org       = jsonContentOf("/organization.json").as[Organization].right.value
-  private val orgNoDesc = jsonContentOf("/organization.json").removeKeys("description").as[Organization].right.value
+  private val org       = jsonContentOf("/organization.json").as[Organization].rightValue
+  private val orgNoDesc = jsonContentOf("/organization.json").removeKeys("description").as[Organization].rightValue
   private def proj(label: String = "testproject") =
-    jsonContentOf("/project.json", Map(quote("{label}") -> label)).as[Project].right.value
+    jsonContentOf("/project.json", Map(quote("{label}") -> label)).as[Project].rightValue
 
   private def orgRequest(label: String) =
     Get(s"http://admin.nexus.example.com/v1/orgs/$label").addCredentials(token)
@@ -244,7 +246,7 @@ class AdminClientSpec
           "/events/project-deprecated.json"
         )
 
-        val eventsSource = Source(Random.shuffle(resources).map(jsonContentOf(_).as[Event].right.value))
+        val eventsSource = Source(Random.shuffle(resources).map(jsonContentOf(_).as[Event].rightValue))
       }
 
       "apply function when new organization event is received" in new Ctx {
@@ -253,7 +255,7 @@ class AdminClientSpec
           case _: OrganizationUpdated    => IO(count.addAndGet(2)) >> IO.unit
           case _: OrganizationDeprecated => IO(count.addAndGet(3)) >> IO.unit
         }
-        val eventsIri = Iri.url("http://admin.nexus.example.com/v1/orgs/events").right.value
+        val eventsIri = Iri.url("http://admin.nexus.example.com/v1/orgs/events").rightValue
         source(eventsIri, None) shouldReturn eventsSource
         client.organizationEvents(f)
         eventually(count.get() shouldEqual 6)
@@ -265,7 +267,7 @@ class AdminClientSpec
           case _: ProjectUpdated    => IO(count.addAndGet(2)) >> IO.unit
           case _: ProjectDeprecated => IO(count.addAndGet(3)) >> IO.unit
         }
-        val eventsIri = Iri.url("http://admin.nexus.example.com/v1/projects/events").right.value
+        val eventsIri = Iri.url("http://admin.nexus.example.com/v1/projects/events").rightValue
         source(eventsIri, None) shouldReturn eventsSource
         client.projectEvents(f)
         eventually(count.get() shouldEqual 6)

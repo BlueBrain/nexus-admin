@@ -20,7 +20,7 @@ import ch.epfl.bluebrain.nexus.admin.projects.{Project, ProjectDescription, Proj
 import ch.epfl.bluebrain.nexus.admin.routes.SearchParams.Field
 import ch.epfl.bluebrain.nexus.admin.types.ResourceF
 import ch.epfl.bluebrain.nexus.commons.search.FromPagination
-import ch.epfl.bluebrain.nexus.commons.test.Resources
+import ch.epfl.bluebrain.nexus.commons.test.{EitherValues, Resources}
 import ch.epfl.bluebrain.nexus.commons.search.QueryResult.UnscoredQueryResult
 import ch.epfl.bluebrain.nexus.commons.search.QueryResults.UnscoredQueryResults
 import ch.epfl.bluebrain.nexus.iam.client.IamClient
@@ -36,11 +36,13 @@ import monix.eval.Task
 import monix.execution.Scheduler.global
 import org.mockito.{ArgumentMatchersSugar, IdiomaticMockito}
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{EitherValues, Inspectors, Matchers, WordSpecLike}
+import org.scalatest.wordspec.AnyWordSpecLike
+import org.scalatest.Inspectors
+import org.scalatest.matchers.should.Matchers
 
 //noinspection TypeAnnotation
 class ProjectRoutesSpec
-    extends WordSpecLike
+    extends AnyWordSpecLike
     with IdiomaticMockito
     with ArgumentMatchersSugar
     with ScalatestRouteTest
@@ -165,7 +167,7 @@ class ProjectRoutesSpec
   "Project routes" should {
 
     "create a project" in new Context {
-      iamClient.hasPermission(Path("/org").right.value, create)(any[Option[AuthToken]]) shouldReturn Task.pure(true)
+      iamClient.hasPermission(Path("/org").rightValue, create)(any[Option[AuthToken]]) shouldReturn Task.pure(true)
       iamClient.identities shouldReturn Task(caller)
       projects.create("org", "label", project) shouldReturn Task(Right(meta))
 
@@ -176,7 +178,7 @@ class ProjectRoutesSpec
     }
 
     "create a project without optional fields" in new Context {
-      iamClient.hasPermission(Path("/org").right.value, create)(any[Option[AuthToken]]) shouldReturn Task.pure(true)
+      iamClient.hasPermission(Path("/org").rightValue, create)(any[Option[AuthToken]]) shouldReturn Task.pure(true)
       iamClient.identities shouldReturn Task(caller)
       projects.create("org", "label", ProjectDescription(None, Map.empty, None, None)) shouldReturn Task(Right(meta))
 
@@ -187,7 +189,7 @@ class ProjectRoutesSpec
     }
 
     "reject the creation of a project without a label" in new Context {
-      iamClient.hasPermission(Path("/org").right.value, create)(any[Option[AuthToken]]) shouldReturn Task.pure(true)
+      iamClient.hasPermission(Path("/org").rightValue, create)(any[Option[AuthToken]]) shouldReturn Task.pure(true)
       iamClient.identities shouldReturn Task(caller)
 
       Put("/projects/org", payload) ~> addCredentials(cred) ~> routes ~> check {
@@ -219,7 +221,7 @@ class ProjectRoutesSpec
     }
 
     "reject the update of a project without name" in new Context {
-      iamClient.hasPermission(Path("/org").right.value, write)(any[Option[AuthToken]]) shouldReturn Task.pure(true)
+      iamClient.hasPermission(Path("/org").rightValue, write)(any[Option[AuthToken]]) shouldReturn Task.pure(true)
       iamClient.identities shouldReturn Task(caller)
 
       Put("/projects/org?rev=2", payload) ~> addCredentials(cred) ~> routes ~> check {
@@ -333,7 +335,7 @@ class ProjectRoutesSpec
       iamClient.identities shouldReturn Task(caller)
       iamClient.acls("*" / "*", ancestors = true, self = true) shouldReturn Task(acls)
       val projs = List(1, 2, 3).map { i =>
-        val iri = Iri.Url(s"http://nexus.example.com/v1/projects/org/label$i").right.value
+        val iri = Iri.Url(s"http://nexus.example.com/v1/projects/org/label$i").rightValue
         UnscoredQueryResult(resource.copy(id = iri, value = resource.value.copy(label = s"label$i")))
       }
       projects.list(SearchParams.empty, FromPagination(0, 50))(acls) shouldReturn Task(UnscoredQueryResults(3, projs))
@@ -347,12 +349,12 @@ class ProjectRoutesSpec
     }
 
     "list deprecated projects on an organization with revision 1" in new Context {
-      iamClient.hasPermission(Path("/org").right.value, read)(any[Option[AuthToken]]) shouldReturn Task.pure(true)
-      iamClient.hasPermission(Path("/org/").right.value, read)(any[Option[AuthToken]]) shouldReturn Task.pure(true)
+      iamClient.hasPermission(Path("/org").rightValue, read)(any[Option[AuthToken]]) shouldReturn Task.pure(true)
+      iamClient.hasPermission(Path("/org/").rightValue, read)(any[Option[AuthToken]]) shouldReturn Task.pure(true)
       iamClient.identities shouldReturn Task(caller)
       iamClient.acls("*" / "*", ancestors = true, self = true) shouldReturn Task(acls)
       val projs = List(1, 2, 3).map { i =>
-        val iri = Iri.Url(s"http://nexus.example.com/v1/projects/org/label$i").right.value
+        val iri = Iri.Url(s"http://nexus.example.com/v1/projects/org/label$i").rightValue
         UnscoredQueryResult(resource.copy(id = iri, value = resource.value.copy(label = s"label$i")))
       }
       projects.list(

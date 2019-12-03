@@ -8,6 +8,7 @@ import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
 import ch.epfl.bluebrain.nexus.rdf.Iri
 import ch.epfl.bluebrain.nexus.rdf.instances._
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
+import com.github.ghik.silencer.silent
 import io.circe.Decoder
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
@@ -174,6 +175,7 @@ object Event {
       subject: Subject
   ) extends ProjectEvent
 
+  @silent
   private implicit val config: Configuration = Configuration.default
     .withDiscriminator("@type")
     .copy(transformMemberNames = {
@@ -187,6 +189,7 @@ object Event {
       case other               => other
     })
 
+  @silent
   private implicit val subjectDecoder: Decoder[Subject] =
     Decoder.decodeString.flatMap { id =>
       Iri.absolute(id) match {
@@ -201,8 +204,10 @@ object Event {
 
   private final case class Mapping(prefix: String, namespace: AbsoluteIri)
 
+  @silent
   private implicit val mappingDecoder: Decoder[Mapping] = deriveConfiguredDecoder[Mapping]
 
+  @silent
   private implicit val mapDecoder: Decoder[Map[String, AbsoluteIri]] =
     Decoder.decodeList[Mapping].map(_.map(m => (m.prefix, m.namespace)).toMap)
 
