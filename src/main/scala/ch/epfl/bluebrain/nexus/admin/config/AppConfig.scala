@@ -10,8 +10,8 @@ import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
 import ch.epfl.bluebrain.nexus.iam.client.types.{AuthToken, Permission}
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.syntax.node.unsafe._
-import ch.epfl.bluebrain.nexus.sourcing.akka.SourcingConfig
-import ch.epfl.bluebrain.nexus.sourcing.akka.SourcingConfig.RetryStrategyConfig
+import ch.epfl.bluebrain.nexus.sourcing.RetryStrategyConfig
+import ch.epfl.bluebrain.nexus.sourcing.akka.aggregate.AggregateConfig
 import ch.epfl.bluebrain.nexus.sourcing.projections.IndexingConfig
 
 import scala.concurrent.duration.FiniteDuration
@@ -25,7 +25,7 @@ import scala.concurrent.duration.FiniteDuration
   * @param persistence    persistence configuration
   * @param indexing       Indexing configuration
   * @param keyValueStore  Distributed data configuration
-  * @param sourcing       Sourcing configuration
+  * @param aggregate      Aggregate configuration
   * @param iam            IAM configuration
   * @param pagination     pagination configuration
   * @param serviceAccount service account configuration
@@ -38,7 +38,7 @@ final case class AppConfig(
     persistence: PersistenceConfig,
     indexing: IndexingConfig,
     keyValueStore: KeyValueStoreConfig,
-    sourcing: SourcingConfig,
+    aggregate: AggregateConfig,
     iam: IamClientConfig,
     pagination: PaginationConfig,
     serviceAccount: ServiceAccountConfig,

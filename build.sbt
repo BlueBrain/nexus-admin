@@ -26,23 +26,23 @@ scalafmt: {
 
 // Dependency versions
 val alpakkaVersion             = "1.1.2"
-val commonsVersion             = "0.20.0"
-val iamVersion                 = "1.2.0+16-382dc073"
-val sourcingVersion            = "0.19.0"
-val akkaVersion                = "2.6.0"
+val commonsVersion             = "0.21.0"
+val iamVersion                 = "1.2.0+17-cb7513f6"
+val sourcingVersion            = "0.20.0"
+val akkaVersion                = "2.6.1"
 val akkaCorsVersion            = "0.4.2"
-val akkaHttpVersion            = "10.1.10"
+val akkaHttpVersion            = "10.1.11"
 val akkaPersistenceCassVersion = "0.100"
 val akkaPersistenceMemVersion  = "2.5.15.2"
-val catsVersion                = "2.0.0"
+val catsVersion                = "2.1.0"
 val circeVersion               = "0.12.3"
 val logbackVersion             = "1.2.3"
-val mockitoVersion             = "1.7.1"
+val mockitoVersion             = "1.10.4"
 val monixVersion               = "3.1.0"
-val pureconfigVersion          = "0.12.1"
-val scalaLoggingVersion        = "3.9.2"
+val pureconfigVersion          = "0.12.2"
 val scalaTestVersion           = "3.1.0"
-val kryoVersion                = "1.0.0"
+val scalaLoggingVersion        = "3.9.2"
+val kryoVersion                = "1.1.0"
 
 // Dependencies modules
 lazy val iamClient           = "ch.epfl.bluebrain.nexus"    %% "iam-client"                 % iamVersion
@@ -50,7 +50,6 @@ lazy val sourcingProjections = "ch.epfl.bluebrain.nexus"    %% "sourcing-project
 lazy val commonsCore         = "ch.epfl.bluebrain.nexus"    %% "commons-core"               % commonsVersion
 lazy val commonsKamon        = "ch.epfl.bluebrain.nexus"    %% "commons-kamon"              % commonsVersion
 lazy val commonsTest         = "ch.epfl.bluebrain.nexus"    %% "commons-test"               % commonsVersion
-lazy val akkaDowning         = "ch.epfl.bluebrain.nexus"    %% "akka-downing"               % commonsVersion
 lazy val akkaCluster         = "com.typesafe.akka"          %% "akka-cluster"               % akkaVersion
 lazy val akkaHttp            = "com.typesafe.akka"          %% "akka-http"                  % akkaHttpVersion
 lazy val akkaHttpCors        = "ch.megard"                  %% "akka-http-cors"             % akkaCorsVersion
@@ -83,7 +82,6 @@ lazy val admin = project
     resolvers            += "dnvriend" at "https://dl.bintray.com/dnvriend/maven",
     libraryDependencies ++= Seq(
       akkaCluster,
-      akkaDowning,
       akkaHttp,
       akkaHttpCors,
       akkaPersistenceCass,

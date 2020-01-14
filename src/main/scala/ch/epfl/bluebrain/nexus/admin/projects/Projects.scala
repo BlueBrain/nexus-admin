@@ -7,6 +7,7 @@ import akka.actor.ActorSystem
 import akka.persistence.query.scaladsl.EventsByTagQuery
 import akka.persistence.query.{NoOffset, PersistenceQuery}
 import akka.stream.scaladsl.Source
+import akka.util.Timeout
 import cats.effect.{Async, ConcurrentEffect, Effect, Timer}
 import cats.implicits._
 import ch.epfl.bluebrain.nexus.admin.config.AppConfig
@@ -30,7 +31,7 @@ import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Subject
 import ch.epfl.bluebrain.nexus.iam.client.types.{AccessControlList, AccessControlLists, AuthToken, Permission}
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
-import ch.epfl.bluebrain.nexus.sourcing.akka._
+import ch.epfl.bluebrain.nexus.sourcing.akka.aggregate.{AggregateConfig, AkkaAggregate}
 import ch.epfl.bluebrain.nexus.sourcing.projections.ProgressFlow.{PairMsg, ProgressFlowElem}
 import ch.epfl.bluebrain.nexus.sourcing.projections.{Message, StreamSupervisor}
 import retry.CatsEffect._
@@ -285,7 +286,7 @@ object Projects {
   )(implicit appConfig: AppConfig, as: ActorSystem, clock: Clock = Clock.systemUTC): F[Projects[F]] = {
     implicit val iamCredentials: Option[AuthToken] = appConfig.serviceAccount.credentials
     implicit val ownerPermissions: Set[Permission] = appConfig.permissions.ownerPermissions
-    implicit val retryPolicy: RetryPolicy[F]       = appConfig.sourcing.retry.retryPolicy[F]
+    implicit val retryPolicy: RetryPolicy[F]       = appConfig.aggregate.retry.retryPolicy[F]
 
     val aggF: F[Agg[F]] =
       AkkaAggregate.shardedF(
@@ -293,8 +294,8 @@ object Projects {
         ProjectState.Initial,
         next,
         Eval.apply[F],
-        appConfig.sourcing.passivationStrategy(),
-        appConfig.sourcing.akkaSourcingConfig,
+        appConfig.aggregate.passivationStrategy(),
+        appConfig.aggregate.akkaAggregateConfig,
         appConfig.cluster.shards
       )
     aggF.map(agg => new Projects(agg, index, organizations, iamClient))
@@ -303,8 +304,9 @@ object Projects {
   def indexer[F[_]: Timer](
       projects: Projects[F]
   )(implicit F: Effect[F], config: AppConfig, as: ActorSystem): F[Unit] = {
-    implicit val sc: SourcingConfig   = config.sourcing
+    implicit val ac: AggregateConfig  = config.aggregate
     implicit val ec: ExecutionContext = as.dispatcher
+    implicit val tm: Timeout          = ac.askTimeout
 
     val projectionId = "projects-indexer"
     val source: Source[PairMsg[Any], _] = PersistenceQuery(as)
