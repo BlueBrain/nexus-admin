@@ -42,6 +42,7 @@ val monixVersion               = "3.1.0"
 val pureconfigVersion          = "0.12.2"
 val scalaTestVersion           = "3.1.0"
 val scalaLoggingVersion        = "3.9.2"
+val splitBrainLithiumVersion   = "0.10.0"
 val kryoVersion                = "1.1.0"
 
 // Dependencies modules
@@ -69,6 +70,7 @@ lazy val pureconfig          = "com.github.pureconfig"      %% "pureconfig"     
 lazy val kryo                = "io.altoo"                   %% "akka-kryo-serialization"    % kryoVersion
 lazy val scalaLogging        = "com.typesafe.scala-logging" %% "scala-logging"              % scalaLoggingVersion
 lazy val scalaTest           = "org.scalatest"              %% "scalatest"                  % scalaTestVersion
+lazy val splitBrainLithium   = "com.swissborg"              %% "lithium"                    % splitBrainLithiumVersion
 
 lazy val admin = project
   .in(file("."))
@@ -79,7 +81,7 @@ lazy val admin = project
     name                 := "admin",
     moduleName           := "admin",
     Docker / packageName := "nexus-admin",
-    resolvers            += "dnvriend" at "https://dl.bintray.com/dnvriend/maven",
+    resolvers            ++= Seq("dnvriend" at "https://dl.bintray.com/dnvriend/maven", "swissborg" at "https://dl.bintray.com/swissborg/maven"),
     libraryDependencies ++= Seq(
       akkaCluster,
       akkaHttp,
@@ -97,6 +99,7 @@ lazy val admin = project
       pureconfig,
       scalaLogging,
       sourcingProjections,
+      splitBrainLithium,
       akkaTestkit        % Test,
       akkaHttpTestKit    % Test,
       akkaPersistenceMem % Test,
