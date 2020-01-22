@@ -26,14 +26,13 @@ import ch.epfl.bluebrain.nexus.commons.test.io.IOOptionValues
 import ch.epfl.bluebrain.nexus.commons.test.{EitherValues, Randomness, Resources}
 import ch.epfl.bluebrain.nexus.iam.client.IamClientError
 import ch.epfl.bluebrain.nexus.iam.client.types.AuthToken
-import ch.epfl.bluebrain.nexus.rdf.syntax._
-import org.mockito.Mockito
-import org.mockito.IdiomaticMockito
-import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import ch.epfl.bluebrain.nexus.rdf.Iri
-import org.scalatest.{BeforeAndAfter, Inspectors}
+import ch.epfl.bluebrain.nexus.rdf.implicits._
+import org.mockito.{IdiomaticMockito, Mockito}
+import org.scalatest.concurrent.{Eventually, ScalaFutures}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
+import org.scalatest.{BeforeAndAfter, Inspectors}
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
@@ -59,8 +58,8 @@ class AdminClientSpec
   implicit val ec: ExecutionContext = system.dispatcher
 
   private val config = AdminClientConfig(
-    url"https://nexus.example.com".value,
-    url"http://admin.nexus.example.com".value,
+    url"https://nexus.example.com",
+    url"http://admin.nexus.example.com",
     "v1"
   )
   private val token = OAuth2BearerToken("token")
@@ -110,16 +109,16 @@ class AdminClientSpec
       val orgLabel = genString()
       oc(orgRequest(orgLabel)) shouldReturn IO.pure(org)
       client.fetchOrganization(orgLabel).some shouldEqual Organization(
-        url"http://admin.nexus.example.com/v1/orgs/testorg".value,
+        url"http://admin.nexus.example.com/v1/orgs/testorg",
         "testorg",
         Some("Test organization"),
         UUID.fromString("504b6940-1b14-43a7-80e3-d08c52c3fc87"),
         1L,
         false,
         Instant.parse("2018-12-19T11:31:30.00Z"),
-        url"http://iam.nexus.example.com/v1/realms/example-realm/users/example-user".value,
+        url"http://iam.nexus.example.com/v1/realms/example-realm/users/example-user",
         Instant.parse("2018-12-20T11:31:30.00Z"),
-        url"http://iam.nexus.example.com/v1/realms/example-realm/users/example-user2".value
+        url"http://iam.nexus.example.com/v1/realms/example-realm/users/example-user2"
       )
     }
 
@@ -127,16 +126,16 @@ class AdminClientSpec
       val orgLabel = genString()
       oc(orgRequest(orgLabel)) shouldReturn IO.pure(orgNoDesc)
       client.fetchOrganization(orgLabel).some shouldEqual Organization(
-        url"http://admin.nexus.example.com/v1/orgs/testorg".value,
+        url"http://admin.nexus.example.com/v1/orgs/testorg",
         "testorg",
         None,
         UUID.fromString("504b6940-1b14-43a7-80e3-d08c52c3fc87"),
         1L,
         false,
         Instant.parse("2018-12-19T11:31:30.00Z"),
-        url"http://iam.nexus.example.com/v1/realms/example-realm/users/example-user".value,
+        url"http://iam.nexus.example.com/v1/realms/example-realm/users/example-user",
         Instant.parse("2018-12-20T11:31:30.00Z"),
-        url"http://iam.nexus.example.com/v1/realms/example-realm/users/example-user2".value
+        url"http://iam.nexus.example.com/v1/realms/example-realm/users/example-user2"
       )
     }
 
@@ -165,24 +164,24 @@ class AdminClientSpec
       val projectLabel = genString()
       pc(projRequest(orgLabel, projectLabel)) shouldReturn IO.pure(proj())
       client.fetchProject(orgLabel, projectLabel).some shouldEqual Project(
-        url"http://admin.nexus.example.com/v1/projects/testorg/testproject".value,
+        url"http://admin.nexus.example.com/v1/projects/testorg/testproject",
         "testproject",
         "testorg",
         Some("Test project"),
-        url"https://nexus.example.com/base".value,
-        url"https://nexus.example.com/voc".value,
+        url"https://nexus.example.com/base",
+        url"https://nexus.example.com/voc",
         Map(
-          "nxv" -> url"https://bluebrain.github.io/nexus/vocabulary/".value,
-          "rdf" -> url"http://www.w3.org/1999/02/22-rdf-syntax-ns#".value
+          "nxv" -> url"https://bluebrain.github.io/nexus/vocabulary/",
+          "rdf" -> url"http://www.w3.org/1999/02/22-rdf-syntax-ns#"
         ),
         UUID.fromString("db7cee63-3f93-4d4a-9cc2-ebdace7f3b4f"),
         UUID.fromString("504b6940-1b14-43a7-80e3-d08c52c3fc87"),
         1L,
         deprecated = false,
         Instant.parse("2018-12-19T11:31:30.00Z"),
-        url"http://iam.nexus.example.com/v1/realms/example-realm/users/example-user".value,
+        url"http://iam.nexus.example.com/v1/realms/example-realm/users/example-user",
         Instant.parse("2018-12-20T11:31:30.00Z"),
-        url"http://iam.nexus.example.com/v1/realms/example-realm/users/example-user2".value
+        url"http://iam.nexus.example.com/v1/realms/example-realm/users/example-user2"
       )
     }
 

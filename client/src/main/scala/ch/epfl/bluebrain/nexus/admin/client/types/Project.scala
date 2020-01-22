@@ -6,7 +6,7 @@ import java.util.UUID
 import cats.Show
 import ch.epfl.bluebrain.nexus.rdf.Iri
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
-import ch.epfl.bluebrain.nexus.rdf.instances._
+import ch.epfl.bluebrain.nexus.rdf.implicits._
 import io.circe.{Decoder, DecodingFailure}
 
 /**

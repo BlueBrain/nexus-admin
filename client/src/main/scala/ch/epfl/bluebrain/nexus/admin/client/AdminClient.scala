@@ -18,13 +18,13 @@ import ch.epfl.bluebrain.nexus.admin.client.types.{Organization, Project, Servic
 import ch.epfl.bluebrain.nexus.commons.http.HttpClient
 import ch.epfl.bluebrain.nexus.commons.http.HttpClient.UntypedHttpClient
 import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport._
-import ch.epfl.bluebrain.nexus.commons.rdf.syntax._
 import ch.epfl.bluebrain.nexus.commons.search.QueryResult.UnscoredQueryResult
 import ch.epfl.bluebrain.nexus.commons.search.QueryResults._
 import ch.epfl.bluebrain.nexus.commons.search.{FromPagination, QueryResult, QueryResults}
 import ch.epfl.bluebrain.nexus.iam.client.IamClientError.{Forbidden, Unauthorized}
 import ch.epfl.bluebrain.nexus.iam.client.types.AuthToken
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
+import ch.epfl.bluebrain.nexus.rdf.implicits._
 import com.typesafe.scalalogging.Logger
 import io.circe.{Decoder, DecodingFailure, ParsingFailure}
 
@@ -51,7 +51,7 @@ class AdminClient[F[_]] private[client] (source: EventSource[Event], cfg: AdminC
     * Fetches the service description information (name and version)
     */
   def serviceDescription: F[ServiceDescription] =
-    serviceDescClient(Get(cfg.internalIri.toAkkaUri))
+    serviceDescClient(Get(cfg.internalIri.asAkka))
 
   /**
     * Fetch [[Project]].
@@ -98,7 +98,7 @@ class AdminClient[F[_]] private[client] (source: EventSource[Event], cfg: AdminC
   def fetchProjects(organization: String, page: FromPagination)(
       implicit credentials: Option[AuthToken]
   ): F[QueryResults[Project]] = {
-    val uri = (cfg.projectsIri + organization).toAkkaUri
+    val uri = (cfg.projectsIri + organization).asAkka
       .withQuery(Query("from" -> page.from.toString, "size" -> page.size.toString))
     pcQr(request(uri)).recoverWith {
       case UnknownError(StatusCodes.NotFound, _) =>
@@ -193,7 +193,7 @@ class AdminClient[F[_]] private[client] (source: EventSource[Event], cfg: AdminC
       .run()
 
   private def request(iri: AbsoluteIri)(implicit credentials: Option[AuthToken]): HttpRequest =
-    request(iri.toAkkaUri)
+    request(iri.asAkka)
 
   private def request(uri: Uri)(implicit credentials: Option[AuthToken]): HttpRequest =
     addCredentials(Get(uri))

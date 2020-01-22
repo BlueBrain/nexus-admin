@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.admin.client.types.events.Event._
 import ch.epfl.bluebrain.nexus.commons.test.{EitherValues, Resources}
 import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
 import ch.epfl.bluebrain.nexus.iam.client.types.Identity.User
-import ch.epfl.bluebrain.nexus.rdf.syntax.node.unsafe._
+import ch.epfl.bluebrain.nexus.rdf.implicits._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
@@ -15,8 +15,8 @@ import org.scalatest.wordspec.AnyWordSpecLike
 class DecodersSpec extends AnyWordSpecLike with Matchers with Resources with EitherValues {
 
   implicit val iamConfig = IamClientConfig(
-    url"https://nexus.example.com".value,
-    url"http://localhost:8080".value,
+    url"https://nexus.example.com",
+    url"http://localhost:8080",
     "v1"
   )
 
@@ -29,11 +29,11 @@ class DecodersSpec extends AnyWordSpecLike with Matchers with Resources with Eit
   val projectUuid        = UUID.fromString("94463ac0-3e9b-4261-80f5-e4253956eee2")
   val projectDescription = Some("the project description")
   val mappings = Map(
-    "nxv" -> url"https://bluebrain.github.io/nexus/vocabulary/".value,
-    "rdf" -> url"http://www.w3.org/1999/02/22-rdf-syntax-ns#".value
+    "nxv" -> url"https://bluebrain.github.io/nexus/vocabulary/",
+    "rdf" -> url"http://www.w3.org/1999/02/22-rdf-syntax-ns#"
   )
-  val base  = url"http://localhost:8080/base/".value
-  val vocab = url"http://localhost:8080/vocab/".value
+  val base  = url"http://localhost:8080/base/"
+  val vocab = url"http://localhost:8080/vocab/"
 
   "Encoders and decoders" should {
 
