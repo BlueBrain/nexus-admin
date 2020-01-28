@@ -21,7 +21,7 @@ import ch.epfl.bluebrain.nexus.commons.search.QueryResults.UnscoredQueryResults
 import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.iam.client.types._
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
-import ch.epfl.bluebrain.nexus.rdf.syntax.node.unsafe._
+import ch.epfl.bluebrain.nexus.rdf.implicits._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{Inspectors, OptionValues}
 
@@ -48,7 +48,7 @@ class ProjectCacheSpec
   val index        = ProjectCache[IO]
   val organization = Organization(genString(), Some(genString()))
   val orgResource = ResourceF(
-    url"http://nexus.example.com/v1/orgs/${organization.label}".value,
+    url"http://nexus.example.com/v1/orgs/${organization.label}",
     UUID.randomUUID(),
     2L,
     false,
@@ -60,15 +60,15 @@ class ProjectCacheSpec
     organization
   )
   val mappings = Map(
-    "nxv" -> url"https://bluebrain.github.io/nexus/vocabulary/".value,
-    "rdf" -> url"http://www.w3.org/1999/02/22-rdf-syntax-ns#type".value
+    "nxv" -> url"https://bluebrain.github.io/nexus/vocabulary/",
+    "rdf" -> url"http://www.w3.org/1999/02/22-rdf-syntax-ns#type"
   )
-  val base = url"http://nexus.example.com/base".value
-  val voc  = url"http://nexus.example.com/voc".value
+  val base = url"http://nexus.example.com/base"
+  val voc  = url"http://nexus.example.com/voc"
   val project =
     Project(genString(), UUID.randomUUID(), organization.label, Some(genString()), mappings, base, voc)
   val projectResource = ResourceF(
-    url"http://nexus.example.com/v1/orgs/org".value,
+    url"http://nexus.example.com/v1/orgs/org",
     UUID.randomUUID(),
     1L,
     false,
@@ -91,7 +91,7 @@ class ProjectCacheSpec
     "list projects" in {
       implicit val acls: AccessControlLists = AccessControlLists(
         / -> ResourceAccessControlList(
-          url"http://localhost/".value,
+          url"http://localhost/",
           1L,
           Set.empty,
           Instant.EPOCH,
@@ -114,7 +114,7 @@ class ProjectCacheSpec
         val project =
           Project(label, UUID.randomUUID(), projectsOrganization.label, Some(genString()), mappings, base, voc)
         projectResource.copy(
-          id = url"http://nexus.example.com/v1/projects/${projectsOrganization.label}/${project.label}".value,
+          id = url"http://nexus.example.com/v1/projects/${projectsOrganization.label}/${project.label}",
           uuid = UUID.randomUUID(),
           value = project,
           deprecated = true
@@ -125,7 +125,7 @@ class ProjectCacheSpec
         val project =
           Project(label, UUID.randomUUID(), projectsOrganization2.label, Some(genString()), mappings, base, voc)
         projectResource.copy(
-          id = url"http://nexus.example.com/v1/projects/${projectsOrganization.label}/${project.label}".value,
+          id = url"http://nexus.example.com/v1/projects/${projectsOrganization.label}/${project.label}",
           uuid = UUID.randomUUID(),
           value = project
         )
@@ -133,7 +133,7 @@ class ProjectCacheSpec
 
       val aclsProj1 = AccessControlLists(
         orgLabel / projectLabels.head -> ResourceAccessControlList(
-          url"http://localhost/".value,
+          url"http://localhost/",
           1L,
           Set.empty,
           Instant.EPOCH,

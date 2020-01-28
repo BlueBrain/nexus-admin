@@ -15,8 +15,7 @@ import ch.epfl.bluebrain.nexus.commons.http.JsonLdCirceSupport._
 import ch.epfl.bluebrain.nexus.commons.search.FromPagination
 import ch.epfl.bluebrain.nexus.commons.test.EitherValues
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
-import ch.epfl.bluebrain.nexus.rdf.syntax._
-import ch.epfl.bluebrain.nexus.rdf.instances._
+import ch.epfl.bluebrain.nexus.rdf.implicits._
 import io.circe.generic.auto._
 import org.mockito.IdiomaticMockito
 import org.scalatest.concurrent.ScalaFutures
@@ -31,7 +30,7 @@ class QueryDirectivesSpec
     with EitherValues
     with IdiomaticMockito {
 
-  private def genIri: AbsoluteIri              = url"http://nexus.example.com/${UUID.randomUUID()}".value
+  private def genIri: AbsoluteIri              = url"http://nexus.example.com/${UUID.randomUUID()}"
   private def encode(url: AbsoluteIri): String = URLEncoder.encode(url.asString, "UTF-8")
   private val appConfig: AppConfig             = Settings(system).appConfig
   private implicit val http: HttpConfig        = appConfig.http

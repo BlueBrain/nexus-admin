@@ -7,7 +7,7 @@ import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationEvent
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectEvent
 import ch.epfl.bluebrain.nexus.commons.serialization.AkkaCoproductSerializer
 import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
-import ch.epfl.bluebrain.nexus.rdf.instances._
+import ch.epfl.bluebrain.nexus.rdf.implicits._
 import com.github.ghik.silencer.silent
 import io.circe.{Decoder, Encoder}
 import io.circe.generic.extras.Configuration

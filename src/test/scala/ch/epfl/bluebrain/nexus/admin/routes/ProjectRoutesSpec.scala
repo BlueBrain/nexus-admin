@@ -30,7 +30,7 @@ import ch.epfl.bluebrain.nexus.iam.client.types._
 import ch.epfl.bluebrain.nexus.rdf.Iri
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
-import ch.epfl.bluebrain.nexus.rdf.syntax.node.unsafe._
+import ch.epfl.bluebrain.nexus.rdf.implicits._
 import io.circe.Json
 import monix.eval.Task
 import monix.execution.Scheduler.global
@@ -60,8 +60,8 @@ class ProjectRoutesSpec
   private val appConfig: AppConfig            = Settings(system).appConfig
   private implicit val httpConfig: HttpConfig = appConfig.http
   private implicit val iamClientConfig = IamClientConfig(
-    url"https://nexus.example.com".value,
-    url"http://localhost:8080".value,
+    url"https://nexus.example.com",
+    url"http://localhost:8080",
     "v1"
   )
 
@@ -86,7 +86,7 @@ class ProjectRoutesSpec
 
     val acls: AccessControlLists = AccessControlLists(
       Path./ -> ResourceAccessControlList(
-        url"http://localhost/".value,
+        url"http://localhost/",
         1L,
         Set.empty,
         Instant.EPOCH,
@@ -107,9 +107,9 @@ class ProjectRoutesSpec
     val desc    = Some("Project description")
     val orgId   = UUID.randomUUID
     val projId  = UUID.randomUUID
-    val base    = url"https://nexus.example.com/base".value
-    val voc     = url"https://nexus.example.com/voc".value
-    val iri     = url"http://nexus.example.com/v1/projects/org/label".value
+    val base    = url"https://nexus.example.com/base"
+    val voc     = url"https://nexus.example.com/voc"
+    val iri     = url"http://nexus.example.com/v1/projects/org/label"
 
     val payload = Json.obj(
       "description" -> Json.fromString("Project description"),
@@ -127,7 +127,7 @@ class ProjectRoutesSpec
       )
     )
     val organization = ResourceF(
-      url"http://nexus.example.com/v1/orgs/org".value,
+      url"http://nexus.example.com/v1/orgs/org",
       orgId,
       1L,
       deprecated = false,
@@ -139,8 +139,8 @@ class ProjectRoutesSpec
       Organization("org", Some("Org description"))
     )
     val mappings = Map(
-      "nxv" -> url"https://bluebrain.github.io/nexus/vocabulary/".value,
-      "rdf" -> url"http://www.w3.org/1999/02/22-rdf-syntax-ns#".value
+      "nxv" -> url"https://bluebrain.github.io/nexus/vocabulary/",
+      "rdf" -> url"http://www.w3.org/1999/02/22-rdf-syntax-ns#"
     )
     val project = ProjectDescription(desc, mappings, Some(base), Some(voc))
     val resource =

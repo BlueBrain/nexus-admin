@@ -9,7 +9,7 @@ import ch.epfl.bluebrain.nexus.commons.search.FromPagination
 import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
 import ch.epfl.bluebrain.nexus.iam.client.types.{AuthToken, Permission}
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
-import ch.epfl.bluebrain.nexus.rdf.syntax.node.unsafe._
+import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.sourcing.RetryStrategyConfig
 import ch.epfl.bluebrain.nexus.sourcing.akka.aggregate.AggregateConfig
 import ch.epfl.bluebrain.nexus.sourcing.projections.IndexingConfig
@@ -79,12 +79,12 @@ object AppConfig {
     /**
       * The public IRI of the service.
       */
-    val publicIri: AbsoluteIri = url"$publicUri".value
+    val publicIri: AbsoluteIri = url"$publicUri"
 
     /**
       * The public IRI of the service including the http prefix.
       */
-    val prefixIri: AbsoluteIri = url"$publicUri/$prefix".value
+    val prefixIri: AbsoluteIri = url"$publicUri/$prefix"
 
     /**
       * The root IRI for projects

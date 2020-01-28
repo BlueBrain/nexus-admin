@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.admin.exceptions
 import akka.http.scaladsl.model.StatusCodes
 import ch.epfl.bluebrain.nexus.admin.config.Contexts._
 import ch.epfl.bluebrain.nexus.commons.http.directives.StatusFrom
-import ch.epfl.bluebrain.nexus.rdf.syntax._
+import ch.epfl.bluebrain.nexus.rdf.implicits._
 import com.github.ghik.silencer.silent
 import io.circe.generic.extras.Configuration
 import io.circe.generic.extras.semiauto.deriveConfiguredEncoder

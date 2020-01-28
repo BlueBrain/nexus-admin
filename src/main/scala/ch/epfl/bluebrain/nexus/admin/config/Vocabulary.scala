@@ -5,7 +5,7 @@ import cats.syntax.show._
 import ch.epfl.bluebrain.nexus.rdf.Iri
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
 import ch.epfl.bluebrain.nexus.rdf.Node.IriNode
-import ch.epfl.bluebrain.nexus.rdf.syntax.node.unsafe._
+import ch.epfl.bluebrain.nexus.rdf.implicits._
 
 /**
   * Constant vocabulary values
@@ -16,7 +16,7 @@ object Vocabulary {
     * Nexus vocabulary.
     */
   object nxv {
-    val base: Iri.AbsoluteIri = url"https://bluebrain.github.io/nexus/vocabulary/".value
+    val base: Iri.AbsoluteIri = url"https://bluebrain.github.io/nexus/vocabulary/"
 
     private[Vocabulary] implicit val toIriNode: IriNode = IriNode(base)
 
@@ -76,7 +76,7 @@ object Vocabulary {
       *                    vocabulary term
       */
     def apply(lastSegment: String)(implicit base: IriNode): Metadata =
-      Metadata("_" + lastSegment, url"${base.value.show + lastSegment}".value, lastSegment)
+      Metadata("_" + lastSegment, url"${base.value.show + lastSegment}", lastSegment)
 
     implicit def metadatataIri(m: Metadata): IriNode             = IriNode(m.value)
     implicit def metadatataAbsoluteIri(m: Metadata): AbsoluteIri = m.value

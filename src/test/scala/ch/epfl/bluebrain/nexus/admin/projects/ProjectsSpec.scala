@@ -19,7 +19,7 @@ import ch.epfl.bluebrain.nexus.iam.client.types._
 import ch.epfl.bluebrain.nexus.iam.client.types.Identity.User
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path._
-import ch.epfl.bluebrain.nexus.rdf.syntax.node.unsafe._
+import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.sourcing.Aggregate
 import org.mockito.{ArgumentMatchersSugar, IdiomaticMockito, MockitoSugar}
 import org.scalatest.BeforeAndAfterEach
@@ -49,7 +49,7 @@ class ProjectsSpec
   private implicit val clock: Clock = Clock.fixed(instant, ZoneId.systemDefault)
   private implicit val appConfig = Settings(system).appConfig.copy(
     http = HttpConfig("nexus", 80, "v1", "http://nexus.example.com"),
-    iam = IamClientConfig(url"http://nexus.example.com".value, url"http://iam.nexus.example.com".value, "v1", 1.second)
+    iam = IamClientConfig(url"http://nexus.example.com", url"http://iam.nexus.example.com", "v1", 1.second)
   )
 
   private val index     = mock[ProjectCache[IO]]
@@ -72,15 +72,15 @@ class ProjectsSpec
     val desc   = Some("Project description")
     val orgId  = UUID.randomUUID
     val projId = UUID.randomUUID
-    val iri    = url"http://nexus.example.com/v1/projects/org/proj".value
+    val iri    = url"http://nexus.example.com/v1/projects/org/proj"
     val mappings = Map(
-      "nxv" -> url"https://bluebrain.github.io/nexus/vocabulary/".value,
-      "rdf" -> url"http://www.w3.org/1999/02/22-rdf-syntax-ns#type".value
+      "nxv" -> url"https://bluebrain.github.io/nexus/vocabulary/",
+      "rdf" -> url"http://www.w3.org/1999/02/22-rdf-syntax-ns#type"
     )
-    val base = url"https://nexus.example.com/base/".value
-    val voc  = url"https://nexus.example.com/voc/".value
+    val base = url"https://nexus.example.com/base/"
+    val voc  = url"https://nexus.example.com/voc/"
     val organization = ResourceF(
-      url"http://nexus.example.com/v1/orgs/org".value,
+      url"http://nexus.example.com/v1/orgs/org",
       orgId,
       1L,
       false,
@@ -183,7 +183,7 @@ class ProjectsSpec
       orgs.fetch(orgId) shouldReturn IO.pure(Some(organization))
       index.getBy("org", "proj") shouldReturn IO.pure(None)
       mockIamCalls()
-      val wrongPayload = payload.copy(base = Some(url"http://example.com/a".value))
+      val wrongPayload = payload.copy(base = Some(url"http://example.com/a"))
       projects.create("org", "proj", wrongPayload)(caller).rejected[ProjectRejection] shouldEqual InvalidProjectFormat(
         "the value of the project's 'base' parameter must end with hash (#) or slash (/)"
       )
@@ -197,7 +197,7 @@ class ProjectsSpec
       mockIamCalls()
       val created = projects.create("org", "proj", payload)(caller).accepted
       index.getBy("org", "proj") shouldReturn IO.pure(Some(resource.copy(uuid = created.uuid)))
-      val wrongPayload = payload.copy(base = Some(url"http://example.com/a".value))
+      val wrongPayload = payload.copy(base = Some(url"http://example.com/a"))
       projects
         .update("org", "proj", wrongPayload, 1L)(caller)
         .rejected[ProjectRejection] shouldEqual InvalidProjectFormat(
@@ -210,7 +210,7 @@ class ProjectsSpec
       orgs.fetch(orgId) shouldReturn IO.pure(Some(organization))
       index.getBy("org", "proj") shouldReturn IO.pure(None)
       mockIamCalls()
-      val wrongPayload = payload.copy(vocab = Some(url"http://example.com/a".value))
+      val wrongPayload = payload.copy(vocab = Some(url"http://example.com/a"))
       projects.create("org", "proj", wrongPayload)(caller).rejected[ProjectRejection] shouldEqual InvalidProjectFormat(
         "the value of the project's 'vocab' parameter must end with hash (#) or slash (/)"
       )
@@ -224,7 +224,7 @@ class ProjectsSpec
       mockIamCalls()
       val created = projects.create("org", "proj", payload)(caller).accepted
       index.getBy("org", "proj") shouldReturn IO.pure(Some(resource.copy(uuid = created.uuid)))
-      val wrongPayload = payload.copy(vocab = Some(url"http://example.com/a".value))
+      val wrongPayload = payload.copy(vocab = Some(url"http://example.com/a"))
       projects
         .update("org", "proj", wrongPayload, 1L)(caller)
         .rejected[ProjectRejection] shouldEqual InvalidProjectFormat(
@@ -267,8 +267,8 @@ class ProjectsSpec
       created.updatedAt shouldEqual instant
       created.createdBy shouldEqual caller
       created.updatedBy shouldEqual caller
-      val defaultBase = url"http://nexus.example.com/v1/resources/org/proj/_/".value
-      val defaultVoc  = url"http://nexus.example.com/v1/vocabs/org/proj/".value
+      val defaultBase = url"http://nexus.example.com/v1/resources/org/proj/_/"
+      val defaultVoc  = url"http://nexus.example.com/v1/vocabs/org/proj/"
       val bare        = Project("proj", orgId, "org", None, Map.empty, defaultBase, defaultVoc)
       index.replace(created.uuid, created.withValue(bare)) was called
     }
@@ -393,7 +393,7 @@ class ProjectsSpec
         .pure(
           AccessControlLists(
             / -> ResourceAccessControlList(
-              url"http://nexus.example.com/acls/".value,
+              url"http://nexus.example.com/acls/",
               1L,
               Set.empty,
               Instant.now(),
@@ -420,7 +420,7 @@ class ProjectsSpec
         .pure(
           AccessControlLists(
             / + "org" -> ResourceAccessControlList(
-              url"http://nexus.example.com/acls/".value,
+              url"http://nexus.example.com/acls/",
               1L,
               Set.empty,
               Instant.now(),
@@ -447,7 +447,7 @@ class ProjectsSpec
         .pure(
           AccessControlLists(
             "org" / "proj" -> ResourceAccessControlList(
-              url"http://nexus.example.com/acls/".value,
+              url"http://nexus.example.com/acls/",
               1L,
               Set.empty,
               Instant.now(),
@@ -475,7 +475,7 @@ class ProjectsSpec
         .pure(
           AccessControlLists(
             "org" / "proj" -> ResourceAccessControlList(
-              url"http://nexus.example.com/acls/org/proj".value,
+              url"http://nexus.example.com/acls/org/proj",
               1L,
               Set.empty,
               Instant.now(),
