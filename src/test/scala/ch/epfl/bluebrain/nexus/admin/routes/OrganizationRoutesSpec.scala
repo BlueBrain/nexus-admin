@@ -28,7 +28,7 @@ import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.iam.client.types._
 import ch.epfl.bluebrain.nexus.rdf.Iri
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
-import ch.epfl.bluebrain.nexus.rdf.syntax.node.unsafe._
+import ch.epfl.bluebrain.nexus.rdf.implicits._
 import io.circe.Json
 import monix.eval.Task
 import monix.execution.Scheduler.global
@@ -57,8 +57,8 @@ class OrganizationRoutesSpec
   private val appConfig: AppConfig            = Settings(system).appConfig
   private implicit val httpConfig: HttpConfig = appConfig.http
   private implicit val iamClientConfig: IamClientConfig = IamClientConfig(
-    url"https://nexus.example.com".value,
-    url"http://localhost:8080".value,
+    url"https://nexus.example.com",
+    url"http://localhost:8080",
     "v1"
   )
 
@@ -82,7 +82,7 @@ class OrganizationRoutesSpec
 
     val acls: AccessControlLists = AccessControlLists(
       Path./ -> ResourceAccessControlList(
-        url"http://localhost/".value,
+        url"http://localhost/",
         1L,
         Set.empty,
         Instant.EPOCH,
@@ -98,7 +98,7 @@ class OrganizationRoutesSpec
     val instant = Instant.now
     val types   = Set(nxv.Organization.value)
     val orgId   = UUID.randomUUID
-    val iri     = url"http://nexus.example.com/v1/orgs/org".value
+    val iri     = url"http://nexus.example.com/v1/orgs/org"
     val path    = Path("/org").rightValue
 
     val description  = Json.obj("description" -> Json.fromString("Org description"))

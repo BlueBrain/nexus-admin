@@ -23,7 +23,7 @@ import ch.epfl.bluebrain.nexus.iam.client.config.IamClientConfig
 import ch.epfl.bluebrain.nexus.iam.client.types.Identity.User
 import ch.epfl.bluebrain.nexus.iam.client.types.{AuthToken, Permission}
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
-import ch.epfl.bluebrain.nexus.rdf.syntax.node.unsafe._
+import ch.epfl.bluebrain.nexus.rdf.implicits._
 import com.typesafe.config.{Config, ConfigFactory}
 import io.circe.Json
 import monix.eval.Task
@@ -75,11 +75,11 @@ class EventRoutesSpec
   val projectUuid        = UUID.fromString("94463ac0-3e9b-4261-80f5-e4253956eee2")
   val projectLabel       = "theprojectlabel"
   val projectDescription = "the project description"
-  val projectBase        = url"http://localhost:8080/base/".value
-  val projectVocab       = url"http://localhost:8080/vocab/".value
+  val projectBase        = url"http://localhost:8080/base/"
+  val projectVocab       = url"http://localhost:8080/vocab/"
   val apiMappings = Map(
-    "nxv" -> url"https://bluebrain.github.io/nexus/vocabulary/".value,
-    "rdf" -> url"http://www.w3.org/1999/02/22-rdf-syntax-ns#".value
+    "nxv" -> url"https://bluebrain.github.io/nexus/vocabulary/",
+    "rdf" -> url"http://www.w3.org/1999/02/22-rdf-syntax-ns#"
   )
 
   val orgEvents = List(

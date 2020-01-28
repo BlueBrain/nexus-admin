@@ -18,7 +18,7 @@ import ch.epfl.bluebrain.nexus.admin.types.ResourceF
 import ch.epfl.bluebrain.nexus.commons.test.EitherValues
 import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
-import ch.epfl.bluebrain.nexus.rdf.syntax._
+import ch.epfl.bluebrain.nexus.rdf.implicits._
 import monix.eval.Task
 
 class PathDirectivesSpec
@@ -32,7 +32,7 @@ class PathDirectivesSpec
   private implicit val orgCache: OrganizationCache[Task] = mock[OrganizationCache[Task]]
   private implicit val projCache: ProjectCache[Task]     = mock[ProjectCache[Task]]
 
-  private def genIri: AbsoluteIri = url"http://nexus.example.com/${UUID.randomUUID()}".value
+  private def genIri: AbsoluteIri = url"http://nexus.example.com/${UUID.randomUUID()}"
 
   private val clock: Clock = Clock.fixed(Instant.ofEpochSecond(3600), ZoneId.systemDefault())
   private val instant      = clock.instant()

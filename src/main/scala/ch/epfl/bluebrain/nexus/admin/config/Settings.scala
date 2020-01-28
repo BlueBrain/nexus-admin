@@ -3,7 +3,7 @@ package ch.epfl.bluebrain.nexus.admin.config
 import akka.actor.{ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider}
 import akka.http.scaladsl.model.Uri
 import ch.epfl.bluebrain.nexus.rdf.Iri.AbsoluteIri
-import ch.epfl.bluebrain.nexus.rdf.syntax.node.unsafe._
+import ch.epfl.bluebrain.nexus.rdf.implicits._
 import com.github.ghik.silencer.silent
 import com.typesafe.config.Config
 import pureconfig.generic.auto._
@@ -24,7 +24,7 @@ class Settings(config: Config) extends Extension {
     implicit val uriConverter: ConfigConvert[Uri] =
       ConfigConvert.viaString[Uri](catchReadError(s => Uri(s)), _.toString)
     implicit val absoluteIriConverter: ConfigConvert[AbsoluteIri] =
-      ConfigConvert.viaString[AbsoluteIri](catchReadError(s => url"$s".value), _.toString)
+      ConfigConvert.viaString[AbsoluteIri](catchReadError(s => url"$s"), _.toString)
     ConfigSource.fromConfig(config).at("app").loadOrThrow[AppConfig]
   }
 }

@@ -18,7 +18,7 @@ import ch.epfl.bluebrain.nexus.commons.search.QueryResults.UnscoredQueryResults
 import ch.epfl.bluebrain.nexus.iam.client.types.Identity.Anonymous
 import ch.epfl.bluebrain.nexus.iam.client.types._
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
-import ch.epfl.bluebrain.nexus.rdf.syntax.node.unsafe._
+import ch.epfl.bluebrain.nexus.rdf.implicits._
 import org.scalatest.{Inspectors, OptionValues}
 import org.scalatest.matchers.should.Matchers
 
@@ -43,7 +43,7 @@ class OrganizationCacheSpec
   val index        = OrganizationCache[IO]
   val organization = Organization(genString(), Some(genString()))
   val orgResource = ResourceF(
-    url"http://nexus.example.com/v1/orgs/${organization.label}".value,
+    url"http://nexus.example.com/v1/orgs/${organization.label}",
     UUID.randomUUID(),
     2L,
     false,
@@ -68,7 +68,7 @@ class OrganizationCacheSpec
     "list organizations" in {
       implicit val acls: AccessControlLists = AccessControlLists(
         Path./ -> ResourceAccessControlList(
-          url"http://localhost/".value,
+          url"http://localhost/",
           1L,
           Set.empty,
           Instant.EPOCH,
@@ -84,7 +84,7 @@ class OrganizationCacheSpec
         case (label, idx) =>
           val organization = Organization(label, Some(genString()))
           orgResource.copy(
-            id = url"http://nexus.example.com/v1/orgs/${organization.label}".value,
+            id = url"http://nexus.example.com/v1/orgs/${organization.label}",
             uuid = UUID.randomUUID(),
             deprecated = idx > 24,
             rev = idx.toLong,
@@ -104,7 +104,7 @@ class OrganizationCacheSpec
 
       val aclsOrg1 = AccessControlLists(
         Path(s"/${orgLabels.head}").rightValue -> ResourceAccessControlList(
-          url"http://localhost/".value,
+          url"http://localhost/",
           1L,
           Set.empty,
           Instant.EPOCH,

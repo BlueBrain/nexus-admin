@@ -8,7 +8,7 @@ import ch.epfl.bluebrain.nexus.admin.organizations.OrganizationEvent._
 import ch.epfl.bluebrain.nexus.admin.projects.ProjectEvent._
 import ch.epfl.bluebrain.nexus.commons.test.{ActorSystemFixture, EitherValues, Resources}
 import ch.epfl.bluebrain.nexus.iam.client.types.Identity
-import ch.epfl.bluebrain.nexus.rdf.syntax.node.unsafe._
+import ch.epfl.bluebrain.nexus.rdf.implicits._
 import io.circe.Json
 import io.circe.parser.parse
 import org.scalatest.Inspectors
@@ -25,11 +25,11 @@ class EventSerializerSpec
   private val projId  = UUID.fromString("27f5429c-b56f-4f8e-8481-f4334ebb334c")
   private val instant = Instant.parse("2018-12-21T15:37:44.203831Z")
   private val subject = Identity.User("alice", "bbp")
-  private val base    = url"http://localhost:8080/base".value
-  private val voc     = url"http://localhost:8080/voc".value
+  private val base    = url"http://localhost:8080/base"
+  private val voc     = url"http://localhost:8080/voc"
   private val mappings = Map(
-    "nxv" -> url"https://bluebrain.github.io/nexus/vocabulary/".value,
-    "rdf" -> url"http://www.w3.org/1999/02/22-rdf-syntax-ns#".value
+    "nxv" -> url"https://bluebrain.github.io/nexus/vocabulary/",
+    "rdf" -> url"http://www.w3.org/1999/02/22-rdf-syntax-ns#"
   )
 
   private val data: Map[AnyRef, (String, Json)] = Map(

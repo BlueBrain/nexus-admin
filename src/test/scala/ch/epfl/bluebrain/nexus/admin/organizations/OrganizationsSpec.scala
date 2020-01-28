@@ -20,7 +20,7 @@ import ch.epfl.bluebrain.nexus.iam.client.types._
 import ch.epfl.bluebrain.nexus.iam.client.types.Identity.{Subject, User}
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path
 import ch.epfl.bluebrain.nexus.rdf.Iri.Path./
-import ch.epfl.bluebrain.nexus.rdf.syntax.node.unsafe._
+import ch.epfl.bluebrain.nexus.rdf.implicits._
 import ch.epfl.bluebrain.nexus.sourcing.Aggregate
 import org.mockito.{ArgumentMatchersSugar, IdiomaticMockito, Mockito}
 import org.scalatest.BeforeAndAfter
@@ -51,7 +51,7 @@ class OrganizationsSpec
   private val instant                  = clock.instant()
   private implicit val appConfig = Settings(system).appConfig.copy(
     http = HttpConfig("some", 8080, "v1", "http://nexus.example.com"),
-    iam = IamClientConfig(url"http://nexus.example.com".value, url"http://iam.nexus.example.com".value, "v1", 1.second)
+    iam = IamClientConfig(url"http://nexus.example.com", url"http://iam.nexus.example.com", "v1", 1.second)
   )
   private implicit val iamCredentials = Some(AuthToken("token"))
 
@@ -77,7 +77,7 @@ class OrganizationsSpec
 
       val metadata = orgs.create(organization).accepted
 
-      metadata.id shouldEqual url"http://nexus.example.com/v1/orgs/${organization.label}".value
+      metadata.id shouldEqual url"http://nexus.example.com/v1/orgs/${organization.label}"
 
       metadata.rev shouldEqual 1L
 
@@ -106,7 +106,7 @@ class OrganizationsSpec
         .pure(
           AccessControlLists(
             / -> ResourceAccessControlList(
-              url"http://nexus.example.com/acls/${organization.label}".value,
+              url"http://nexus.example.com/acls/${organization.label}",
               1L,
               Set.empty,
               Instant.now(),
@@ -131,7 +131,7 @@ class OrganizationsSpec
         .pure(
           AccessControlLists(
             orgPath -> ResourceAccessControlList(
-              url"http://nexus.example.com/acls/${organization.label}".value,
+              url"http://nexus.example.com/acls/${organization.label}",
               1L,
               Set.empty,
               Instant.now(),
@@ -157,7 +157,7 @@ class OrganizationsSpec
         .pure(
           AccessControlLists(
             orgPath -> ResourceAccessControlList(
-              url"http://nexus.example.com/acls/${organization.label}".value,
+              url"http://nexus.example.com/acls/${organization.label}",
               1L,
               Set.empty,
               Instant.now(),
@@ -191,7 +191,7 @@ class OrganizationsSpec
         .pure(
           AccessControlLists(
             / -> ResourceAccessControlList(
-              url"http://nexus.example.com/acls/".value,
+              url"http://nexus.example.com/acls/",
               5L,
               Set.empty,
               Instant.now(),
@@ -201,7 +201,7 @@ class OrganizationsSpec
               AccessControlList(caller -> Set(Permission.unsafe("test/permission2")))
             ),
             orgPath -> ResourceAccessControlList(
-              url"http://nexus.example.com/acls/${organization.label}".value,
+              url"http://nexus.example.com/acls/${organization.label}",
               1L,
               Set.empty,
               Instant.now(),
@@ -233,7 +233,7 @@ class OrganizationsSpec
       val resource = orgs.update(organization.label, updatedOrg, 1L).accepted
 
       resource shouldEqual ResourceF.unit(
-        url"http://nexus.example.com/v1/orgs/${updatedOrg.label}".value,
+        url"http://nexus.example.com/v1/orgs/${updatedOrg.label}",
         metadata.uuid,
         2L,
         deprecated = false,
@@ -245,7 +245,7 @@ class OrganizationsSpec
       )
 
       orgs.fetch(updatedOrg.label).some shouldEqual ResourceF(
-        url"http://nexus.example.com/v1/orgs/${updatedOrg.label}".value,
+        url"http://nexus.example.com/v1/orgs/${updatedOrg.label}",
         metadata.uuid,
         2L,
         deprecated = false,
@@ -285,7 +285,7 @@ class OrganizationsSpec
       orgs.update(updatedOrg.label, updatedOrg, 1L).accepted
 
       orgs.fetch(updatedOrg.label, Some(1L)).some shouldEqual ResourceF(
-        url"http://nexus.example.com/v1/orgs/${organization.label}".value,
+        url"http://nexus.example.com/v1/orgs/${organization.label}",
         metadata.uuid,
         1L,
         deprecated = false,
